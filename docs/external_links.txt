@@ -1,0 +1,8 @@
+# This file shall help keeping track of external links being used in the documentation for regular verification
+# Docker
+https://hub.docker.com/r/scistag
+# Links to the Cairo SVG installation
+https://www.cairographics.org/download/
+https://thecodeblogger.com/2020/09/24/wsl-setup-vs-code-for-python-development
+https://www.jetbrains.com/help/pycharm/using-wsl-as-a-remote-interpreter.html
+https://github.com/SciStag/SciStag/issues/2

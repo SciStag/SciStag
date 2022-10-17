@@ -1,0 +1,17 @@
+Goals v0.0.3 - Sep/October 2022
+-------------------------------
+- Refactoring the Widget class to minimize amount of getter and setter methods and to remove the cryptic params
+  parameter for init methods.
+- Buttons, Sliders, Progress bars as Widgets
+- Granting access to Material Design icons
+- Unit test coverage of >80%
+- Finalization of Emoji support
+
+# Goals v0.0.2 - Sep 2022
+-------------------------
+- Making scistag independent of CairoSVG while keeping at least standard support for Emoji rendering
+- Adding the possibility to compress and store Images in scikit.imagestag.Image
+- Setting up linting
+- Setting up coverage tests
+- Setting up basic documentation generator
+- Setting up CI/CD on GitHub

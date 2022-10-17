@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge"/>
+    <title>Slidestag Application</title>
+</head>
+<body>
+<p align="center">
+    {% if use_mjpeg %}
+    <img id="sliderFrame" src="/sessions/{{ session_id }}/slideStream"
+         style="touch-action: none; justify-content: center; display: flex;">
+    {% else %}
+    <img id="sliderFrame" src="/sessions/{{ session_id }}/screen"
+         style="touch-action: none; justify-content: center; display: flex;">
+    {% endif %}
+    <br>
+    <video id="video" autoplay></video>
+    <canvas id="canvas" hidden></canvas>
+</p>
+
+<script>
+    let session_id = "{{ session_id }}";
+</script>
+{% if support_user_interaction %}
+{% if use_mjpeg %}
+<script>usingMjpeg = true;</script>
+{% else %}
+<script src="{{ slider_root_url }}/static/js/image_update.js"></script>
+{% endif %}}
+<script src="{{ slider_root_url }}/static/js/user_interaction.js"></script>
+{% endif %}
+{% if support_webcam %}
+<script src="{{ slider_root_url }}/static/js/webcam_support.js"></script>
+{% endif %}
+</body>
+</html>

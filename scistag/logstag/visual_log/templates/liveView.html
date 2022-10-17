@@ -1,0 +1,44 @@
+<!-- Auto-reloader - reloads a page with a given internal to asap visualize
+  modifications in Visual Studio Code's or PyCharm's HTML live view -->
+<html lang="en">
+<head>
+    <title>{{ title }}</title>
+</head>
+
+<script>
+    pageUpdateTimeout = {{ reload_timeout }};
+    pageUpdateFrequency = {{ reload_frequency }};
+    pageRetryFrequency = {{ retry_frequency }};
+    let lastData = ""
+
+    function fetch_newest_page() {
+        fetch("{{ reload_url }}", {
+            method: "GET",
+            keepalive: true,
+            timeout: pageUpdateTimeout,
+        }).then(res => {
+            setTimeout(fetch_newest_page, pageUpdateFrequency);
+            if (res.status !== 200) {
+                return;
+            }
+            res.text().then(data => {
+                if (data.includes("</body>") && lastData !== data) {
+                    document.getElementById('includedContent').innerHTML = data;
+                    lastData = data;
+                }
+            })
+        }).catch(function (error) { // just try again until server recovered
+            setTimeout(fetch_newest_page, pageRetryFrequency);
+        });
+    }
+</script>
+
+<body>
+<div id="includedContent"></div>
+
+<script>
+    setTimeout(fetch_newest_page, pageUpdateFrequency);
+</script>
+</body>
+
+</html>

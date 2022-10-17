@@ -1,0 +1,29 @@
+<style>
+    .wrapper {
+        display: flex;
+        justify-content: space-between;
+        min-height: 100vh;
+        color: black;
+        padding: 0
+    }
+
+    .left {
+        background-color: lightgray;
+        width: {{ live_content_width }}px;
+        padding: 0 20px 20px 20px
+    }
+
+    .right {
+        background-color: white;
+        flex: 1;
+        padding: 20px
+    }
+</style>
+<div class="wrapper">
+    <div class="left">
+        @LIVELOG_CONTENT
+    </div>
+    <div class="right" align="left">
+        @MAINLOG_CONTENT
+    </div>
+</div>

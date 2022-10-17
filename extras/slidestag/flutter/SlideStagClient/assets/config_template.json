@@ -1,0 +1,6 @@
+{
+  "slideStag":
+  {
+    "serverUrl":  "https://192.168.1.25:5010/apps/SlideStag?format=json"
+  }
+}

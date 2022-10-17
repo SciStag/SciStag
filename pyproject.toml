@@ -1,0 +1,77 @@
+[tool.poetry]
+name = "scistag"
+version = "0.0.2"
+description = "A stack of helpful libraries & applications for the rapid development of data driven solutions."
+authors = ["Michael Ikemann"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/scistag/scistag"
+homepage = "https://github.com/scistag/scistag"
+include = ['scistag/data/scistag_essentials.zip',
+    'scistag/data/addon_packages.json']
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+matplotlib = "^3.5.2"
+requests = "^2.27.1"
+pandas = "^1.4.2"
+pydantic = "^1.10.2"
+pillow = "^9.2.0"
+pretty-html-table = { version = "^0.9.16", optional = true }
+Markdown = { version = "^3.4.1", optional = true }
+tabulate = { version = "^0.9.0", optional = true }
+filetype = { version = "^1.1.0", optional = true }
+pyarrow = { version = "^9.0.0", optional = true }
+Jinja2 = { version = "^3.1.2", optional = true }
+CairoSVG = { version = "^2.5.2", optional = true }
+opencv-contrib-python = { version = "^4.5.4.60", optional = true }
+azure-storage-blob = { version = "^12.13.1", optional = true }
+
+
+[tool.poetry.extras]
+logstag = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2"]
+datastag = ["pyarrow"]
+svg = ["CairoSVG"]
+opencv = ["opencv-contrib-python"]
+azure = ["azure-storage-blob"]
+
+
+[tool.poetry.group.dev.dependencies]
+pylint = "^2.14.0"
+coverage = "^6.4.1"
+pytest = "^7.1.2"
+pytest-mock = "^3.7.0"
+pytest-order = "^1.0.1"
+pytest-xdist = "^2.5.0"
+pre-commit = "^2.20.0"
+
+[tool.poetry.group.docu]
+optional = true
+
+[tool.poetry.group.docu.dependencies]
+Sphinx = { version = "^5.1.1" }
+sphinx-rtd-theme = { version = "^1.0.0" }
+myst-parser = { version = "^0.18.0" }
+sphinx_mdinclude = { version = "^0.5.2" }
+anybadge = { version = "^1.14.0" }
+sphinx-autodoc-typehints = { version = "^1.19.2" }
+
+[tool.poetry.group.flask]
+optional = true
+dependencies = { gunicorn = "^20.1.0", Flask = "^2.1.2" }
+
+[tool.poetry.group.moveiepy]
+dependencies = { moviepy = "^1.0.3", imgkit = "1.2.2" }
+optional = true
+
+[tool.poetry.group.kivy]
+dependencies = { Kivy.version = "^2.1.0" }
+optional = true
+
+[tool.poetry.group.juoyter]
+dependencies = { jupyterlab.version = "^3.4.7", jupyter.version = "^1.0.0" }
+optional = true

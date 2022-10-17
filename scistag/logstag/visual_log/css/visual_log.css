@@ -1,0 +1,52 @@
+body {
+    font-size: 12pt;
+    font-family: Tahoma, sans-serif;
+}
+
+.logtext {
+    display: inline;
+    font-family: courier, monospace;
+    font-size: 12pt;
+}
+
+code {
+    font-family: courier, monospace;
+    font-size: 12pt;
+    font-weight: bold;
+}
+
+table.source_code {
+    border-collapse: collapse;
+    padding: 16px;
+    border: 2px solid;
+    background-color: #e5e5e5;
+    text-align: center;
+}
+
+.split {
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    overflow-x: hidden;
+    padding: 0px 20px 20px 20px;
+}
+
+.centered {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.loader {
+    border: 4px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 4px solid #3498db;
+    width: 10px;
+    height: 10px;
+    -webkit-animation: spin 2s linear infinite; /* Safari */
+    animation: spin 2s linear infinite;
+    display:inline-block;
+}
+

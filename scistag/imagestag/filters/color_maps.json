@@ -1,0 +1,122 @@
+{
+  "categories": [
+    {
+      "name": "Perceptually Uniform Sequential",
+      "maps": [
+        "viridis",
+        "plasma",
+        "inferno",
+        "magma",
+        "cividis"
+      ]
+    },
+    {
+      "name": "Sequential",
+      "maps": [
+        "Greys",
+        "Purples",
+        "Blues",
+        "Greens",
+        "Oranges",
+        "Reds",
+        "YlOrBr",
+        "YlOrRd",
+        "OrRd",
+        "PuRd",
+        "RdPu",
+        "BuPu",
+        "GnBu",
+        "PuBu",
+        "YlGnBu",
+        "PuBuGn",
+        "BuGn",
+        "YlGn"
+      ]
+    },
+    {
+      "name": "Sequential2",
+      "maps": [
+        "binary",
+        "gist_yarg",
+        "gist_gray",
+        "gray",
+        "bone",
+        "pink",
+        "spring",
+        "summer",
+        "autumn",
+        "winter",
+        "cool",
+        "Wistia",
+        "hot",
+        "afmhot",
+        "gist_heat",
+        "copper"
+      ]
+    },
+    {
+      "name": "Diverging",
+      "maps": [
+        "PiYG",
+        "PRGn",
+        "BrBG",
+        "PuOr",
+        "RdGy",
+        "RdBu",
+        "RdYlBu",
+        "RdYlGn",
+        "Spectral",
+        "coolwarm",
+        "bwr",
+        "seismic"
+      ]
+    },
+    {
+      "name": "Cyclic",
+      "maps": [
+        "twilight",
+        "twilight_shifted",
+        "hsv"
+      ]
+    },
+    {
+      "name": "Qualitative",
+      "maps": [
+        "Pastel1",
+        "Pastel2",
+        "Paired",
+        "Accent",
+        "Dark2",
+        "Set1",
+        "Set2",
+        "Set3",
+        "tab10",
+        "tab20",
+        "tab20b",
+        "tab20c"
+      ]
+    },
+    {
+      "name": "Miscellaneous",
+      "maps": [
+        "flag",
+        "prism",
+        "ocean",
+        "gist_earth",
+        "terrain",
+        "gist_stern",
+        "gnuplot",
+        "gnuplot2",
+        "CMRmap",
+        "cubehelix",
+        "brg",
+        "gist_rainbow",
+        "rainbow",
+        "jet",
+        "turbo",
+        "nipy_spectral",
+        "gist_ncar"
+      ]
+    }
+  ]
+}

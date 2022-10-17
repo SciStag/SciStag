@@ -1,0 +1,81 @@
+{
+  "tests": {
+    "info": "Test data archives required for the execution of unit tests",
+    "essential": {
+      "info": "The base test data collection",
+      "remoteFilenames": [
+        "https://github.com/SciStag/SciStagEssentialData/releases/download/v0.0.2/scistag_test_data_0_0_2.zip"
+      ],
+      "localFilename": "tests/scistag_test_data.zip",
+      "md5": "a673ec9886758b2f81a54f8b633ce35a",
+      "size": 4108855
+    }
+  },
+  "emojis": {
+    "info": "Emoji data archives to enable imagestag.emoji to render Google's Noto Emojis in high quality resolutions, e.g. to use them in a presentation or use them for high dpi prints.",
+    "svg": {
+      "info": "The original vector files of Google's Noto emojis. Best quality. (Linux/Docker/OS X/Windows WSL)",
+      "remoteFilenames": [
+        "https://github.com/SciStag/SciStagEssentialData/releases/download/v0.0.2/scistag_vector_emojis_0_0_2.zip"
+      ],
+      "localFilename": "imagestack/scistag_vector_emojis.zip",
+      "md5": "276e4ee3c7c2cf84ed11affae3b2bb04",
+      "size": 14875766
+    },
+    "128": {
+      "info": "The 128x128 pixel png representation of the the emojis. For non-unix platforms. (classic Windows)",
+      "remoteFilenames": [
+        "https://github.com/SciStag/SciStagEssentialData/releases/download/v0.0.2/scistag_png_emojis_128_0_0_2.zip"
+      ],
+      "localFilename": "imagestack/scistag_png_emojis_128.zip",
+      "md5": "ce5ffbd01b3d8045fcef8d55ba892ef5",
+      "size": 27054322,
+      "test": true
+    },
+    "256": {
+      "info": "The 256x256 png representation of the the emojis.",
+      "remoteFilenames": [
+        "https://github.com/SciStag/SciStagEssentialData/releases/download/v0.0.2/scistag_png_emojis_256_0_0_2.zip"
+      ],
+      "localFilename": "imagestack/scistag_png_emojis_256.zip",
+      "md5": "e6e28e19af07e72798563caa5780fd4c",
+      "size": 59323500
+    },
+    "512": {
+      "info": "The 512x512 png representation of the the emojis.",
+      "remoteFilenames": [
+        "https://github.com/SciStag/SciStagEssentialData/releases/download/v0.0.2/scistag_png_emojis_512_0_0_2.zip"
+      ],
+      "localFilename": "imagestack/scistag_png_emojis_512.zip",
+      "md5": "d89771a636a2c54eefd39f824459dec4",
+      "size": 133943385
+    },
+    "1024": {
+      "info": "The 1024x1024 png representation of the the emojis. Highest-reasonable quality for Windows",
+      "remoteFilenames": [
+        "https://github.com/SciStag/SciStagEssentialData/releases/download/v0.0.2/scistag_png_emojis_1024_0_0_2.zip"
+      ],
+      "localFilename": "imagestack/scistag_png_emojis_1024.zip",
+      "md5": "c2962d5160c65bb55736de04caee02f4",
+      "size": 309331875
+    },
+    "2048": {
+      "info": "The 2048x2048 png representation of the the emojis. If memory and disk space don't really matter.",
+      "remoteFilenames": [
+        "https://github.com/SciStag/SciStagEssentialData/releases/download/v0.0.2/scistag_png_emojis_2048_0_0_2.zip"
+      ],
+      "localFilename": "imagestack/scistag_png_emojis_2048.zip",
+      "md5": "42f14907d15d74201de3c2e64d67cc55",
+      "size": 754419321
+    },
+    "4096": {
+      "info": "The 4096x4096 png representation of the the emojis. If you really need these use SciStag in WSL.",
+      "remoteFilenames": [
+        "https://github.com/SciStag/SciStagEssentialData/releases/download/v0.0.2/scistag_png_emojis_4096_0_0_2.zip"
+      ],
+      "localFilename": "imagestack/scistag_png_emojis_4096.zip",
+      "md5": "e9fda34fa2322114432210f176f4b3eb",
+      "size": 1859626404
+    }
+  }
+}
