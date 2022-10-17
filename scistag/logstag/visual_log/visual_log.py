@@ -920,7 +920,7 @@ class VisualLog:
         if rounded is not None:
             data = (data * (10 ** rounded)).astype(int)
         if hash_val is not None:
-            if data.dtype == np.float:
+            if data.dtype == float:
                 raise NotImplementedError("Hashing not supported for float"
                                           "matrices")
             result_hash_val = hashlib.md5(data.tobytes()).hexdigest()

@@ -100,7 +100,6 @@ def test_image():
     vl.sub_test("Logging an image provided as byte stream")
     vl.checkpoint()
     vl.image("image from byte stream", image_data.encode())
-    vl.assert_cp_diff(hash_val="d55172dc8a0f239660274632c19cae1a")
     # insert image from web (as url)
     vl.image("Image link from URL", TestConstants.STAG_URL, download=False,
              scaling=0.5)

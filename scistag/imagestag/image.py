@@ -307,10 +307,12 @@ class Image(ImageBase):
         if self.width == size[0] and self.height == size[1]:
             return self
         if self.framework == ImsFramework.PIL:
-            return Image(self._pil_handle.resize(size, PIL.Image.LANCZOS),
-                         framework=ImsFramework.PIL)
+            return Image(
+                self._pil_handle.resize(size, PIL.Image.Resampling.LANCZOS),
+                framework=ImsFramework.PIL)
         else:
-            return Image(self.to_pil().resize(size, PIL.Image.LANCZOS))
+            return Image(
+                self.to_pil().resize(size, PIL.Image.Resampling.LANCZOS))
 
     def resized_ext(self, size: Size2DTypes | None = None,
                     max_size: Size2DTypes | tuple[
