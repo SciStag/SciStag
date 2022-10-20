@@ -10,7 +10,7 @@ from scistag.common import ConfigStag
 from scistag.gitstag import GitScanner
 import scistag.tests
 
-REPO_SIZE_LIMIT = 1500000
+REPO_SIZE_LIMIT = 2000000
 "The maximum repo limit of non-ignored files in byte"
 REPO_DIR_COUNT_LIMIT = 240
 "The maximum number of directories in the repo"

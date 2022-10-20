@@ -15,7 +15,11 @@ ROBOTO_FONT_SIZE = 2054916
 ROBOTO_FONT_COUNT = 13
 "The number of fonts assumed on the server"
 
-skip_tests = ConfigStag.get("testConfig.azure.skip", True)
+connection_string = ConfigStag.get(
+    "testConfig.azure.storage.testSourceConnectionString")
+
+skip_tests = ConfigStag.get("testConfig.azure.skip",
+                            len(connection_string) == 0)
 "Defines if the Azure tests shall be skipped"
 
 
@@ -26,8 +30,6 @@ def test_iteration():
     :return:
     """
     # test pre-fetch
-    connection_string = ConfigStag.get(
-        "testConfig.azure.storage.testSourceConnectionString")
     azure_source = FileSource.from_source(connection_string + "/fonts",
                                           fetch_file_list=True)
     assert len(azure_source._file_list) == TOTAL_FONT_COUNT
@@ -51,8 +53,6 @@ def test_prefix():
     """
     Testing prefix filtering
     """
-    connection_string = ConfigStag.get(
-        "testConfig.azure.storage.testSourceConnectionString")
     azure_source = FileSource.from_source(connection_string + "/fonts/Roboto",
                                           fetch_file_list=True)
     assert len(azure_source._file_list) == ROBOTO_FONT_COUNT
@@ -72,8 +72,6 @@ def test_basics():
     """
     Provoke errors and edge cases
     """
-    connection_string = ConfigStag.get(
-        "testConfig.azure.storage.testSourceConnectionString")
     azure_source = FileSource.from_source(connection_string + "/fonts/Roboto")
     assert azure_source.read_file("notExistingFile.txt") is None
     assert azure_source.exists("scistag_essentials.zip")
@@ -87,8 +85,6 @@ def test_tags():
     """
     Test the tag search functionality
     """
-    connection_string = ConfigStag.get(
-        "testConfig.azure.storage.testSourceConnectionString")
     azure_source = FileSourceAzureStorage(connection_string,
                                           tag_filter="licenseFile = 'SciStag'",
                                           fetch_file_list=True)
@@ -101,8 +97,6 @@ def test_tags():
         file_count += 1
     assert file_count == 1
 
-    connection_string = ConfigStag.get(
-        "testConfig.azure.storage.testSourceConnectionString")
     azure_source = FileSourceAzureStorage(connection_string + "/fonts",
                                           tag_filter="licenseFile = 'Roboto'",
                                           fetch_file_list=True)

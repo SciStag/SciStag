@@ -5,7 +5,7 @@ base interface for different logging output file types.
 
 from __future__ import annotations
 
-from scistag.extras.jinja import jinja_available, jinja2
+from scistag.optional.jinja_opt import jinja_available, jinja2
 from scistag.logstag.visual_log.visual_log import MAIN_LOG
 
 
