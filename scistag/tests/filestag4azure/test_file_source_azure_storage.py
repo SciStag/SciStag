@@ -15,14 +15,11 @@ ROBOTO_FONT_SIZE = 2054916
 ROBOTO_FONT_COUNT = 13
 "The number of fonts assumed on the server"
 
-key = ConfigStag.get("testConfig.azure.storage.testSourceConnectionKey", "")
-
-connection_string = \
-    f"azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;AccountKey={key};EndpointSuffix=core.windows.net/testsource"
+connection_string = ConfigStag.get(
+    "testConfig.azure.storage.testSourceConnectionString")
 
 skip_tests = ConfigStag.get("testConfig.azure.skip",
-                            key is None or
-                            len(key) == 0)
+                            len(connection_string) == 0)
 "Defines if the Azure tests shall be skipped"
 
 

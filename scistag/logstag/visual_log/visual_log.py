@@ -158,9 +158,12 @@ class VisualLog:
         self.ref_dir = FilePath.norm_path(
             target_dir + "/ref" if ref_dir is None else ref_dir)
         "The directory in which reference files for comparison shall be stored"
-        self._tmp_path = FilePath.norm_path(
+        self.tmp_path = FilePath.norm_path(
             target_dir + "/temp" if tmp_dir is None else tmp_dir)
+        os.makedirs(self.tmp_path, exist_ok=True)
         "Output directory for temporary files"
+        if log_to_disk:
+            os.makedirs(self.ref_dir, exist_ok=True)
         self.target_dir = os.path.abspath(target_dir)
         "The directory in which the logs shall be stored"
         if log_to_disk:
@@ -1246,7 +1249,6 @@ class VisualLog:
         :param data: The data to store
         """
         hashed_name = self._get_hashed_filename(name)
-        os.makedirs(self.ref_dir, exist_ok=True)
         hash_fn = self.ref_dir + "/" + hashed_name + ".dmp"
         FileStag.save_file(hash_fn, data)
 
@@ -1353,10 +1355,9 @@ class VisualLog:
             gets concatenated.
         :return: The path or combined path
         """
-        os.makedirs(self._tmp_path, exist_ok=True)
         if relative is not None:
-            return FilePath.norm_path(self._tmp_path + "/" + relative)
-        return self._tmp_path
+            return FilePath.norm_path(self.tmp_path + "/" + relative)
+        return self.tmp_path
 
     def _build_body(self, base_log: dict[str:bytes]):
         """
@@ -1492,8 +1493,8 @@ class VisualLog:
         Finalizes the report and writes it to disk
         """
         self.write_to_disk(render=True)
-        if FilePath.exists(self._tmp_path):
-            shutil.rmtree(self._tmp_path)
+        if FilePath.exists(self.tmp_path):
+            shutil.rmtree(self.tmp_path)
 
     def create_web_service(self, support_flask: bool = False,
                            url_prefix: str = "") -> "WebStagService":
