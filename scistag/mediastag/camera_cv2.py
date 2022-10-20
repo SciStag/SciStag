@@ -9,7 +9,7 @@ from scistag.imagestag import Image
 from scistag.mediastag.video_source_camera import VideoSourceCamera
 
 
-class VideoSourceCameraCv2(VideoSourceCamera):
+class CameraCv2(VideoSourceCamera):
     """
     A camera source wrapping OpenCV's camera access capabilities
     """

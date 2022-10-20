@@ -4,14 +4,14 @@ import cv2
 
 from scistag.logstag import VisualLiveLog
 from scistag.logstag.console_stag import Console
-from scistag.mediastag.video_source_camera_cv2 import VideoSourceCameraCv2
+from scistag.mediastag.camera_cv2 import CameraCv2
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 plt.plot([5, 4])
 
-cv2_cam = VideoSourceCameraCv2(0)
+cv2_cam = CameraCv2(0)
 cv2_cam.start()
 time_stamp = 0.0
 

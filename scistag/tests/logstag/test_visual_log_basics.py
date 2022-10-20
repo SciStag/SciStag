@@ -29,18 +29,18 @@ def test_basics_logging_methods():
     # test title
     vl.checkpoint()
     vl.title("Title")
-    vl.assert_cp_diff(hash_val="f8f23673dda04dd051c01f4c8cb95469")
+    vl.assert_cp_diff(hash_val="86f74d4efab7c70690f1e86e9efec8dc")
     # test sub titles
     vl.checkpoint()
     vl.sub("A sub title")
     vl.sub_x3("Sub sub title")
     vl.sub_x4("Sub sub sub title")
-    vl.assert_cp_diff(hash_val="bfdd65071e64655135ba6818ad1a60f5")
+    vl.assert_cp_diff(hash_val="e69598020011731a12ae74e4d1a259e0")
     vl.sub_test("Text and code")
     vl.checkpoint()
     vl.test("Just a piece of text")
     vl.code("How about a little bit of source code?")
-    vl.assert_cp_diff(hash_val="e7fd24a8883dab906a2897fb7ab5266b")
+    vl.assert_cp_diff(hash_val="4effb382e6beccb1e0641600787684b3")
 
 
 def test_errors():
@@ -87,7 +87,7 @@ def test_image():
     vl._log_txt_images = False
     vl.sub_test("An image from the web scaled to 50%")
     vl.image("anotherStag", TestConstants.STAG_URL, scaling=0.5, download=False)
-    vl.assert_cp_diff(hash_val="157e4dea82946ba4f82f2d2c488e1dbd")
+    vl.assert_cp_diff(hash_val="174fe6b4198bf246f010602c8286b4b1")
     vl.checkpoint()
     vl.sub_test("An image from the web scaled to 50% w/ downloading")
     vl.image("anotherStag", TestConstants.STAG_URL, scaling=0.5, download=True)
@@ -95,7 +95,7 @@ def test_image():
     vl.sub_test("An image from the web scaled to 100%")
     vl.image("anotherStag", TestConstants.STAG_URL, scaling=1.0)
     vl._log_txt_images = True
-    vl.assert_cp_diff(hash_val="877b42db7c5998d81264704927bfcf94")
+    vl.assert_cp_diff(hash_val="ed5961647c457c3249ee916dd3b44c7d")
     # add image from bytes stream
     vl.sub_test("Logging an image provided as byte stream")
     vl.checkpoint()
@@ -181,7 +181,7 @@ def test_eval():
     """
     eval_data = vl.evaluate("4*5")
     assert eval_data == 20
-    assert vl.evaluate("print('test123')") is None
+    assert vl.evaluate("print('', end='')") is None
 
 
 def test_text():
@@ -222,7 +222,7 @@ def test_dataframe():
     vl._use_pretty_html_table = False
     vl.df("A simple dataframe w/o pretty html", df)
     vl._use_pretty_html_table = True
-    vl.assert_cp_diff(hash_val="07b0542842e1799312fa83c2023279e2")
+    vl.assert_cp_diff(hash_val="977c2398088db1beb5d798c65fc73bb4")
 
     # testing data frame assertion
     with mock.patch('builtins.print'):

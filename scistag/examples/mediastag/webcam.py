@@ -4,7 +4,7 @@ A simple demo showing how to access the camera in SciStag
 
 from tkinter import Label, Tk
 from PIL import ImageTk
-from scistag.mediastag.video_source_camera_cv2 import VideoSourceCameraCv2
+from scistag.mediastag.camera_cv2 import CameraCv2
 
 # Timestamp of last received image
 last_timestamp = 0.0
@@ -28,7 +28,7 @@ def main():
     label.grid(row=0, column=0)
     # Use camera 0. Change by your needs.
     # You can also provide a gstreamer pipeline definition.
-    camera = VideoSourceCameraCv2(source=0)
+    camera = CameraCv2(source=0)
     camera.start()
     update_frame()
     root.mainloop()

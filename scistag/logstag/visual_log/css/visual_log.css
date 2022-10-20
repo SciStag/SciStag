@@ -20,7 +20,20 @@ table.source_code {
     padding: 16px;
     border: 2px solid;
     background-color: #e5e5e5;
-    text-align: center;
+    text-align: left;
+}
+
+table.log_table {
+    border-collapse: collapse;
+    padding: 8px;
+    border: 1px solid;
+    background-color: white;
+    text-align: left;
+}
+
+table.log_table td, table.log_table th {
+    padding: 6px;
+    border: 1px solid black;
 }
 
 .split {
@@ -47,6 +60,6 @@ table.source_code {
     height: 10px;
     -webkit-animation: spin 2s linear infinite; /* Safari */
     animation: spin 2s linear infinite;
-    display:inline-block;
+    display: inline-block;
 }
 

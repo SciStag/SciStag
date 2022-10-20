@@ -9,12 +9,17 @@ archives in cloud storages.
 from __future__ import annotations
 import os
 from dataclasses import dataclass
+
+import pandas as pd
 from pydantic import BaseModel
 from fnmatch import fnmatch
 from typing import Callable, Union
 from collections import Counter
 from abc import abstractmethod
-from scistag.filestag import FileStag
+from scistag.filestag.file_stag import FileStag
+from scistag.filestag.bundle import Bundle
+
+CACHE_VERSION = "cache_version"
 
 
 class FileSourceElement:
@@ -344,6 +349,15 @@ class FileSource:
         """
         return self._file_list
 
+    def get_file_list_as_df(self) -> "pd.DataFrame":
+        """
+        Returns the file list as dataframe
+
+        :return: The file list
+        """
+        file_list = [entry.dict() for entry in self._file_list]
+        return pd.DataFrame(file_list)
+
     def encode_file_list(self, version: int = -1) -> bytes:
         """
         Encodes the file list so it can be stored on disk
@@ -354,9 +368,10 @@ class FileSource:
             If -1 is passed the version is ignored.
         :return: The encoded file list
         """
-        file_list = FileListModel(files=self._file_list, user_version=version)
-        import json
-        return json.dumps(file_list.dict()).encode("utf-8")
+        df = self.get_file_list_as_df()
+        data = Bundle.bundle(
+            {"version": 1, "data": df, CACHE_VERSION: version}, compression=0)
+        return data
 
     def load_file_list(self, source: bytes | str, version: int = -1) -> bool:
         """
@@ -374,12 +389,16 @@ class FileSource:
             source = FileStag.load_file(source)
         if source is None:
             return False
-        import json
-        data = json.loads(source.decode("utf-8"))
-        flm = FileListModel.parse_obj(data)
-        if flm.user_version != version and version != -1:
+        data = Bundle.unpack(source)
+        assert isinstance(data, dict) and data.get("version") == 1
+        if version != -1 and data.get(CACHE_VERSION, -1) != version:
             return False
-        self._file_list = flm.files
+        df: pd.DataFrame = data['data']
+        key_list = df.columns.to_list()
+        self._file_list = [
+            FileListEntry.parse_obj(dict(zip(key_list, cur_elment))) for
+            cur_elment in df.itertuples(index=False, name=None)
+        ]
         return True
 
     def save_file_list(self, target: str, version: int = -1) -> bool:
@@ -430,7 +449,7 @@ class FileSource:
         ext_details = {
             key: {
                 "totalFileSizeMb": size_by_filetype[key] / 1000000.0,
-                "totalCount": file_type_counter[key]} for key in
+                "totalFileCount": file_type_counter[key]} for key in
             sorted_keys}
         self._statistics = {"totalFileCount": len(self._file_list),
                             "totalFileSizeMb": total_size / 1000000,

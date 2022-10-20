@@ -29,7 +29,8 @@ class VisualLiveLog(VisualLog):
 
     def __init__(self, target_dir, title, refresh_time_s: float = 0.25,
                  max_fig_size: Size2DTypes | None = None,
-                 max_live_fig_size: Size2DTypes | None = None):
+                 max_live_fig_size: Size2DTypes | None = None,
+                 **params):
         """
         :param target_dir: The directory in which the report shall be stored
         :param title: The log's title
@@ -38,10 +39,13 @@ class VisualLiveLog(VisualLog):
             embedded figures and images
         :param max_live_fig_size: The optimum, maximum width and height for
             embedded figures and images in the live preview
+        :param params: Additional parameters to be passed on to
+            :class:`VisualLog`
         """
         super().__init__(target_dir=target_dir, title=title,
                          refresh_time_s=refresh_time_s,
-                         max_fig_size=max_fig_size)
+                         max_fig_size=max_fig_size,
+                         **params)
         if max_live_fig_size is None:
             max_live_fig_size = Size2D(400, 400)
         if not isinstance(max_live_fig_size, Size2D):
@@ -89,7 +93,7 @@ class VisualLiveLog(VisualLog):
         :return: True if an update should be executed, e.g. by modifying
         widgets and/or handling begin_update manually.
         """
-        return time.time() - self.last_update >= self.refresh_time_s
+        return time.time() - self.last_update >= self._refresh_time_s
 
     def begin_update(self, clear: bool = False,
                      blocking=False) -> SubLogLock:
@@ -117,10 +121,10 @@ class VisualLiveLog(VisualLog):
         :return: True if an updated is allowed
         """
         self.last_update_start = time.time()
-        if time.time() - self.last_update < self.refresh_time_s:
+        if time.time() - self.last_update < self._refresh_time_s:
             if blocking:
-                while time.time() - self.last_update < self.refresh_time_s:
-                    time.sleep(self.refresh_time_s / 10)
+                while time.time() - self.last_update < self._refresh_time_s:
+                    time.sleep(self._refresh_time_s / 10)
             else:
                 return SubLogLock(log=None)
         sll = self.begin_sub_log("liveLog",
@@ -148,7 +152,7 @@ class VisualLiveLog(VisualLog):
         """
         cur_time = time.time()
         super().end_sub_log()
-        if cur_time - self.last_update > self.refresh_time_s:
+        if cur_time - self.last_update > self._refresh_time_s:
             self.last_update = self.last_update_start
             self.write_to_disk()
             self._frames_since_check += 1
