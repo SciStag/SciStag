@@ -36,6 +36,8 @@ jobs:
           export TEST_RELEASE=1
           poetry run coverage run -m pytest
           poetry run coverage lcov -i
+        env:
+          SC_testConfig_azure_storage_testSourceConnectionString: ${{ secrets.SC_TESTCONFIG_AZURE_STORAGE_TESTSOURCECONNECTIONSTRING }}
       - name: Coveralls
         uses: coverallsapp/github-action@master
         with:

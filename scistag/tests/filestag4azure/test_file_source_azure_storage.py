@@ -19,6 +19,7 @@ connection_string = ConfigStag.get(
     "testConfig.azure.storage.testSourceConnectionString")
 
 skip_tests = ConfigStag.get("testConfig.azure.skip",
+                            connection_string is None or
                             len(connection_string) == 0)
 "Defines if the Azure tests shall be skipped"
 
