@@ -23,7 +23,6 @@ skip_tests = ConfigStag.get("testConfig.azure.skip",
                             len(connection_string) == 0)
 "Defines if the Azure tests shall be skipped"
 
-
 @pytest.mark.skipif(skip_tests, reason="Azure tests disabled or not configured")
 def test_iteration():
     """
