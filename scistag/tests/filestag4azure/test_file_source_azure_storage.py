@@ -15,13 +15,16 @@ ROBOTO_FONT_SIZE = 2054916
 ROBOTO_FONT_COUNT = 13
 "The number of fonts assumed on the server"
 
-connection_string = ConfigStag.get(
-    "testConfig.azure.storage.testSourceConnectionString")
+key = ConfigStag.get("testConfig.azure.storage.testSourceConnectionKey", "")
+
+connection_string = \
+    f"azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;AccountKey={key};EndpointSuffix=core.windows.net/testsource"
 
 skip_tests = ConfigStag.get("testConfig.azure.skip",
-                            connection_string is None or
-                            len(connection_string) == 0)
+                            key is None or
+                            len(key) == 0)
 "Defines if the Azure tests shall be skipped"
+
 
 @pytest.mark.skipif(skip_tests, reason="Azure tests disabled or not configured")
 def test_iteration():
