@@ -29,8 +29,8 @@ jobs:
         uses: actions/cache@v2
         with:
           path: .venv
-          key: pydeps-${{ hashFiles('**/poetry.lock') }}
-      - run: poetry install -E "full" --no-interaction --no-root
+          key: pydepsn-${{ hashFiles('**/poetry.lock') }}
+      - run: poetry install -E "full" --with dev --no-interaction --no-root
         if: steps.cache-deps.outputs.cache-hit != 'true'
       - run: |
           export TEST_RELEASE=1
