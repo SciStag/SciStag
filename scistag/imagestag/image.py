@@ -704,14 +704,19 @@ class Image(ImageBase):
         from scistag.imagestag.canvas import Canvas
         return Canvas(target_image=self)
 
-    def encode(self, filetype: str = "png", quality: int = 90,
+    def encode(self,
+               filetype: str | tuple[str, int] = "png",
+               quality: int = 90,
                background_color: Color | None = None) -> bytes | None:
         """
         Compresses the image and returns the compressed file's data as bytes
         object.
 
         :param filetype: The output file type. Valid types are
-            "png", "jpg"/"jpeg", "bmp" and "gif"
+            "png", "jpg"/"jpeg", "bmp" and "gif".
+
+            You can also pass the filetype and quality as a str, int tuple
+            such as("jpg", 60).
         :param quality: The image quality between (0 = worst quality) and
             (95 = best quality). >95 = minimal loss
         :param background_color: The background color to store an RGBA image as
@@ -719,6 +724,10 @@ class Image(ImageBase):
         :return: The bytes object if no error occurred, otherwise None
         """
         image = self
+        if isinstance(filetype, tuple):
+            assert (len(filetype) == 2 and isinstance(filetype[0], str) and
+                    isinstance(filetype[1], int))
+            filetype, quality = filetype
         filetype = filetype.lstrip(".").lower()
         if filetype == "jpg":
             filetype = "jpeg"

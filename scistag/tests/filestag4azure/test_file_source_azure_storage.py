@@ -3,7 +3,7 @@ import pytest
 import scistag.tests
 from scistag.common import ConfigStag
 from scistag.filestag import FileSource
-from scistag.filestag4azure.file_source_azure_storage import \
+from scistag.filestag.file_source_azure_storage import \
     FileSourceAzureStorage
 
 ROBOTO_FONT_SIZE_WITHOUT_MD = 2043356

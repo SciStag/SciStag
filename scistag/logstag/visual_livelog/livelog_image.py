@@ -42,7 +42,7 @@ class LiveLogImage(LiveLogWidget):
 
     def write(self):
         if self.image is not None:
-            self.log.image("liveLogImage", self.image)
+            self.log.image(self.image, "liveLogImage")
 
     def __bool__(self):
         return super().__bool__() and self.image is not None

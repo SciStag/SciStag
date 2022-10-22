@@ -70,13 +70,13 @@ def test_image():
                     scaling=0.5)
     vl.checkpoint()
     vl._log_images = False
-    vl.image("an image which shouldn't get logged", image_data)
+    vl.image(image_data, alt_text="an image which shouldn't get logged")
     vl._log_images = True
     vl.assert_cp_diff("d41d8cd98f00b204e9800998ecf8427e")
     # insert image via canvas
-    vl.image("stag_canvas", source=image_data.to_canvas())
+    vl.image(source=image_data.to_canvas(), name="stag_canvas")
     # insert image via pixel data
-    vl.image("stag_canvas", source=image_data.get_pixels())
+    vl.image(source=image_data.get_pixels(), name="stag_canvas_2")
     # test using general assert
     vl.assert_val("assert_stag", image_data,
                   hash_val='4e5e428357fcf315f25b148747d633db')
@@ -86,25 +86,29 @@ def test_image():
     vl.checkpoint()
     vl._log_txt_images = False
     vl.sub_test("An image from the web scaled to 50%")
-    vl.image("anotherStag", TestConstants.STAG_URL, scaling=0.5, download=False)
-    vl.assert_cp_diff(hash_val="174fe6b4198bf246f010602c8286b4b1")
+    vl.image(TestConstants.STAG_URL, "anotherStag_1", scaling=0.5,
+             download=False)
+    vl.assert_cp_diff(hash_val="c9aa5a4232351b81ec4b8607126c0dd0")
     vl.checkpoint()
     vl.sub_test("An image from the web scaled to 50% w/ downloading")
-    vl.image("anotherStag", TestConstants.STAG_URL, scaling=0.5, download=True)
+    vl.image(TestConstants.STAG_URL, "anotherStag_2", scaling=0.5,
+             download=True)
     vl.checkpoint()
     vl.sub_test("An image from the web scaled to 100%")
-    vl.image("anotherStag", TestConstants.STAG_URL, scaling=1.0)
+    vl.image(TestConstants.STAG_URL, "anotherStag_3", scaling=1.0)
     vl._log_txt_images = True
-    vl.assert_cp_diff(hash_val="ed5961647c457c3249ee916dd3b44c7d")
+    vl.assert_cp_diff(hash_val="a37201edd6c4c71f056f0a559ad6824b")
     # add image from bytes stream
     vl.sub_test("Logging an image provided as byte stream")
     vl.checkpoint()
-    vl.image("image from byte stream", image_data.encode())
+    vl.image(image_data.encode(), alt_text="image from byte stream")
     # insert image from web (as url)
-    vl.image("Image link from URL", TestConstants.STAG_URL, download=False,
+    vl.image(TestConstants.STAG_URL, alt_text="Image link from URL",
+             download=False,
              scaling=0.5)
     # insert image from web (inserted)
-    vl.image("Image download from URL", TestConstants.STAG_URL, download=True,
+    vl.image(TestConstants.STAG_URL, alt_text="Image download from URL",
+             download=True,
              scaling=0.5)
 
 
@@ -144,7 +148,7 @@ def test_figure():
                      hash_val='b2927d2e8972b8a912e1155983f872be')
 
     vl._log_images = False
-    vl.figure("not_plotted_figure", plot)
+    vl.figure(plot, "not_plotted_figure")
     vl._log_images = True
 
     vl.sub_test("Logging figures created with matplotlib using add_matplot")
@@ -154,7 +158,7 @@ def test_figure():
         plt.title("A grid with random colors")
         data = np.random.default_rng().uniform(0, 1.0, (16, 16, 3))
         plt.imshow(data)
-    vl.figure("random figure", figure)
+    vl.figure(figure, "random figure")
 
     vl.sub_test("Logging figures created with matplotlib using MPLock()")
     with MPLock() as plt:
@@ -162,7 +166,7 @@ def test_figure():
         plt.title("A grid with random colors")
         data = np.random.default_rng().uniform(0, 1.0, (16, 16, 3))
         plt.imshow(data)
-        vl.figure("random figure using MPLock", figure)
+        vl.figure(figure, "random figure using MPLock")
 
     vl.sub_test("Logging axes created with matplotlib using MPLock()")
     with MPLock() as plt:
@@ -215,12 +219,12 @@ def test_dataframe():
     df = pd.DataFrame(d)
     vl.checkpoint()
     vl.sub_test("Logging a simple Pandas DataFrame")
-    vl.df("A simple dataframe", df)
+    vl.df(df, "A simple dataframe")
     vl.checkpoint()
     vl.assert_cp_diff(hash_val="d41d8cd98f00b204e9800998ecf8427e")
     vl.sub_test("HTML table printed w/o pretty html")
     vl._use_pretty_html_table = False
-    vl.df("A simple dataframe w/o pretty html", df)
+    vl.df(df, "A simple dataframe w/o pretty html")
     vl._use_pretty_html_table = True
     vl.assert_cp_diff(hash_val="977c2398088db1beb5d798c65fc73bb4")
 
@@ -241,13 +245,13 @@ def test_dataframe():
                      hash_val="914de108cea30eb542f1fb57dcb18afc")
     vl.sub_test("Log table without tabulate")
     vl._use_tabulate = False
-    vl.df("DataFrame w/o tabulate", df)
+    vl.df(df, "DataFrame w/o tabulate")
     vl.sub_test("Log table without HTML")
     vl.markdown_html = False
-    vl.df("DataFrame w/o tabulate", df)
+    vl.df(df, "DataFrame w/o tabulate")
     vl.markdown_html = True
     vl._use_tabulate = True
-    vl.df("DataFrame w/o tabulate", df)
+    vl.df(df, "DataFrame w/o tabulate")
     vl._use_tabulate = True
 
 

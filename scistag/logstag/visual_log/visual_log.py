@@ -29,6 +29,7 @@ from scistag.logstag import LogLevel
 from scistag.logstag.console_stag import Console
 from scistag.logstag.visual_log.sub_log import SubLog, SubLogLock
 from scistag.logstag.visual_log.visual_log_service import VisualLogService
+from ...webstag.web_helper import WebHelper
 
 # Error messages
 
@@ -105,7 +106,7 @@ class VisualLog:
                  continuous_write=False,
                  refresh_time_s=0.5,
                  max_fig_size: Size2DTypes | None = None,
-                 image_format: str = "png",
+                 image_format: str | tuple[str, int] = "png",
                  image_quality: int = 90):
         """
         Begins a test with visual outputs
@@ -139,6 +140,9 @@ class VisualLog:
             embedded figures and images
         :param image_format: The default output image format to store images
             and figures with. "png" by default.
+
+            You can also pass the image format and image quality in a tuple
+            such as ("jpg", 60).
 
             Alternatively "jpg" or "bmp" can be used (to minimize the bandwidth
             or in the later case if you are the intranet w/ unlimited bandwidth
@@ -535,8 +539,8 @@ class VisualLog:
         code += "</table>\n"
         self.html(code)
 
-    def image(self, name: str,
-              source: Image | Canvas | str | bytes | np.ndarray,
+    def image(self, source: Image | Canvas | str | bytes | np.ndarray,
+              name: str | None = None,
               alt_text: str | None = None,
               pixel_format: Optional["PixelFormat"] | str | None = None,
               download: bool = False,
@@ -545,8 +549,8 @@ class VisualLog:
         """
         Writes the image to disk for manual verification
 
-        :param name: The name of the test.
-            Will result in a file named logs/TEST_DIR/test_name.png
+        :param name: The name of the image under which it shall be stored
+            on disk (in case write_to_disk is enabled).
         :param source: The data object
         :param alt_text: An alternative text if no image can be displayed
         :param pixel_format: The pixel format (in case the image is passed
@@ -559,6 +563,8 @@ class VisualLog:
         """
         if not self._log_images:
             return
+        if name is None:
+            name = "image"
         if alt_text is None:
             alt_text = name
         if self._log_txt_images:
@@ -665,8 +671,11 @@ class VisualLog:
             if self._need_images_on_disk():
                 FileStag.save_file(target_filename, source)
         else:
+            extension = (self._image_format if
+                         isinstance(self._image_format, str)
+                         else self._image_format[0])
             target_filename = \
-                self.target_dir + f"/{filename}.{self._image_format}"
+                self.target_dir + f"/{filename}.{extension}"
             if self._need_images_on_disk():
                 FileStag.save_file(target_filename, encoded_image)
         if not self._embed_images:
@@ -858,14 +867,17 @@ class VisualLog:
         res = escaped.encode('ascii', 'xmlcharrefreplace')
         return res.decode("utf-8")
 
-    def log(self, text: Any, level: LogLevel = LogLevel.INFO):
+    def log(self, *args: Any, level: LogLevel = LogLevel.INFO,
+            space: str = " "):
         """
         Adds a log text to the log
 
         :param text: The text to add to the log
         :param level: The importance / category of the log entry
+        :param space: The character or text to be used for spaces
         :return:
         """
+        text = space.join(args)
         if text is None:
             text = "None"
         if not isinstance(text, str):
@@ -884,6 +896,24 @@ class VisualLog:
             self._add_md(f"```\n{text}\n```")
         self._add_txt(text)
         self.clip_logs()
+
+    def log_timestamp(self, prefix: str = "", postfix: str = ""):
+        """
+        Logs a timestamp to the log
+
+        :param prefix: The text before the timestamp
+        :param postfix: The text after the timestamp
+        :return:
+        """
+        from datetime import datetime
+        dt_object = datetime.now()
+        cur_time = f"{str(dt_object.date())} {str(dt_object.time())}"
+        elements = [cur_time]
+        if len(prefix) > 0:
+            elements.insert(0, prefix)
+        if len(postfix) > 0:
+            elements.append(postfix)
+        self.log("".join(elements))
 
     def get_vl_statistics(self) -> dict:
         """
@@ -909,7 +939,7 @@ class VisualLog:
                      f"{time.time() - self._start_time:0.2f} seconds"]],
                    index=True)
 
-    def df(self, name: str, df: pd.DataFrame, index: bool = True):
+    def df(self, df: pd.DataFrame, name: str | None = None, index: bool = True):
         """
         Adds a dataframe to the log
 
@@ -917,6 +947,8 @@ class VisualLog:
         :param df: The data frame
         :param index: Defines if the index shall be printed
         """
+        if name is None:
+            name = "dataframe"
         for element in self.forward_targets.values():
             element.df(name=name, df=df, index=index)
         if self._use_pretty_html_table:
@@ -951,7 +983,8 @@ class VisualLog:
             self._add_txt(string_table)
         self.clip_logs()
 
-    def figure(self, name: str, figure: plt.Figure | plt.Axes | Figure | Plot,
+    def figure(self, figure: plt.Figure | plt.Axes | Figure | Plot,
+               name: str | None = None,
                alt_text: str | None = None,
                _out_image_data: io.IOBase | None = None):
         """
@@ -964,11 +997,13 @@ class VisualLog:
         :param _out_image_data: Receives the image data if provided (for
             debugging and assertion purposes)
         """
+        if name is None:
+            name = "figure"
         if not self._log_images and _out_image_data is None:
             return
         if isinstance(figure, (Figure, Plot)):
             image = figure.render()
-            self.image(name, image, alt_text=alt_text)
+            self.image(image, name, alt_text=alt_text)
             if _out_image_data is not None:
                 _out_image_data.write(
                     image.encode(filetype=self._image_format,
@@ -979,7 +1014,7 @@ class VisualLog:
         image_data = MPHelper.figure_to_png(figure, transparent=False)
         if _out_image_data is not None:
             _out_image_data.write(image_data)
-        self.image(name, image_data, alt_text=alt_text)
+        self.image(image_data, name, alt_text=alt_text)
 
     def log_dict(self, dict_or_list: dict | list):
         """
@@ -1044,7 +1079,7 @@ class VisualLog:
             and can then be copies & pasted.
         """
         image_data = io.BytesIO()
-        self.figure(name, figure=figure, alt_text=alt_text,
+        self.figure(figure=figure, name=name, alt_text=alt_text,
                     _out_image_data=image_data)
         assert len(image_data.getvalue()) > 0
         result_hash_val = hashlib.md5(image_data.getvalue()).hexdigest()
@@ -1090,7 +1125,7 @@ class VisualLog:
         """
         if isinstance(data, Canvas):
             data = data.to_image()
-        self.image(name=name, source=data, alt_text=alt_text, scaling=scaling)
+        self.image(source=data, name=name, alt_text=alt_text, scaling=scaling)
         return data.get_hash()
 
     def assert_text(self, name: str, text: str, hash_val: str):
@@ -1518,10 +1553,11 @@ class VisualLog:
 
     def run_server(self,
                    host: str = "127.0.0.1",
-                   port=8010,
+                   port: int | tuple[int, int] = 8010,
                    public_ips: str | list[str] | None = None,
                    builder: VisualLogBuilderCallback | None = None,
                    continuous: bool | None = None,
+                   wait: bool = False,
                    auto_clear: bool | None = None,
                    overwrite: bool | None = None,
                    threaded: bool = False,
@@ -1541,10 +1577,14 @@ class VisualLog:
             - 127.0.0.1 = Local access only (default) as
               "there is no place like localhost".
             - "0.0.0.0" = Listen at all local network adapters
-        :param port: The port ot listen at. 8010 by default
+        :param port: The port ot listen at or a port range to select the
+            first port within. 8010 by default. 0 for a random port.
         :param public_ips: If you run the service on a virtual machine in
             the cloud you can pass its public IPs to log the correct
             connection URls to the console.
+
+            If you pass "auto" as ip the public IP will be auto-detected via
+            ipify.
         :param builder: An (optional) function to be called to build or
             (repetitively) rebuild the log's content.
 
@@ -1559,6 +1599,15 @@ class VisualLog:
             continuously.
 
             False by default.
+        :param wait: Defines if also a non-continuous log shall wait till
+            the log has been terminated. (via :meth:`terminate`) or the
+            application was killed via Ctrl-C.
+
+            Has no effect if threaded is False (because the server will anyway
+            block the further execution then) or if continuous is set to True.
+
+            Basically it acts like the "continuous" mode just with the
+            difference that the builder function is just called once.
         :param auto_clear: Defines if then log shall be cleared automatically
             when being rebuild with `continuous=True`.
         :param overwrite: If set to False it will only call the `builder`
@@ -1611,6 +1660,7 @@ class VisualLog:
                                services=[service],
                                silent=not server_logs,
                                **kwargs)
+        port = server.port
         self._server = server
         if continuous is not None:
             if builder is None:
@@ -1625,12 +1675,6 @@ class VisualLog:
                     raise ValueError(_CONTINUOUS_REQUIRES_OVERWRITE)
         else:
             continuous = False
-        if not continuous:
-            overwrite = overwrite if overwrite is not None else True
-            if builder is not None:  # call once
-                if overwrite is True or not self.load_old_logs():
-                    builder(self)
-                    self.write_to_disk()
         if public_ips is not None:  # clean public IPs
             if isinstance(public_ips, str):
                 public_ips = [public_ips]
@@ -1638,6 +1682,11 @@ class VisualLog:
             public_ips = [host]
             if host != "127.0.0.1" and host != "localhost":
                 public_ips.append("localhost")
+        # auto-detect public if "auto" is passed
+        for index, element in enumerate(public_ips):
+            if element == "auto":
+                public_ips[index] = WebHelper.get_public_ip()
+        # show URLs if desired
         if show_urls:
             print("\nVisualLog web service started\n")
             print("Connect at:")
@@ -1647,10 +1696,35 @@ class VisualLog:
                 print(
                     f"* http://{cur_ip}:{port}{url_prefix}/live for "
                     f"the auto-reloader")
+                print('\n')
+        overwrite = overwrite if overwrite is not None else True
+        if not continuous and not threaded:  # if the server will block execute
+            # once here, otherwise after the server started
+            if builder is not None:  # call once
+                if overwrite is True or not self.load_old_logs():
+                    builder(self)
+                    self.write_to_disk()
         server.start(threaded=threaded, test=test)
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
+        elif threaded:
+            if builder is not None:  # call once
+                if overwrite is True or not self.load_old_logs():
+                    builder(self)
+                    self.write_to_disk()
+            if wait:
+                self.sleep()
+
+    def sleep(self):
+        """
+        Sleeps and handles input events until the application is either
+        terminated by Ctrl-L or by an exit button added to the log or a quit
+        call triggered.
+        """
+        print("\nZzzzzzz - Press Ctrl-C to terminate\n")
+        while not self._shall_terminate:
+            time.sleep(self.refresh_time_s)
 
     def run(self,
             builder: VisualLogBuilderCallback,
