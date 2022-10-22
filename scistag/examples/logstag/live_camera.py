@@ -36,7 +36,7 @@ class LiveCameraDemo:
             # new image available? normalize it's size to ~1 Megapixel
             self.image = new_image.resized_ext(max_size=(1024, 1024))
         if self.image is not None:
-            vl.image("LiveView", self.image)
+            vl.image(self.image, "LiveView")
         else:
             vl.log("Did not receive any image yet :(")
         vl.log("")

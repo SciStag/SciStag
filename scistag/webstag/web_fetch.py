@@ -131,8 +131,8 @@ class WebCache:
         """
         Caches the new web element on disk.
 
-        :param url: The url
-        :param data: The data
+        :param url: The url of the file being stored
+        :param data: The data of the file being stored as bytes string
         """
         if not cls.cleaned:
             WebCache.cleanup()
