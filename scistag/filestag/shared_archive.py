@@ -5,8 +5,7 @@ import zipfile
 from multiprocessing import RLock
 import fnmatch
 
-ZIP_SOURCE_PROTOCOL = "localzip://"
-"A file path flagging the file as being stored in a zipfile"
+from scistag.filestag.protocols import ZIP_SOURCE_PROTOCOL
 
 
 class SharedArchive:
@@ -19,7 +18,7 @@ class SharedArchive:
 
     Then data can be loaded flexible via FileStag, independent of if it's located in the web, in a zip archive or
     as simple local file:
-    FileStag.load_file("localzip://@sharedData/testFile.zip")
+    FileStag.load_file("zip://@sharedData/testFile.zip")
     FileStag.load_file("local_file.txt")
     FileStag.load_file("https://www....")
 
@@ -124,7 +123,7 @@ class SharedArchive:
 
         :param identifier: The archive identifier. Alternate: a full identifier
             in the form
-        localzip://@identifier/filename
+        zip://@identifier/filename
         :param filename: The name of the file to load.
         :return: True if the file exists
         """
@@ -150,8 +149,8 @@ class SharedArchive:
 
         :param identifier: The archive identifier. Alternate: a full identifier
             in the form
-        localzip://@identifier/filename or a path to a zipfile, e.g.
-            localzip://filename.zip/filename
+        zip://@identifier/filename or a path to a zipfile, e.g.
+            zip://filename.zip/filename
         :param filename: The name of the file to load.
         :return: The data if the file could be found
         """
@@ -180,7 +179,7 @@ class SharedArchive:
         :param name_filter: The name mask to search for
         :param long_identifier: Defines if the scan shall return long
             identifiers
-            (localzip://@identifier/filename) so the results can be used for
+            (zip://@identifier/filename) so the results can be used for
             FileStag.load_file). True by default.
         :return: All file in given archive matching the mask
         """
@@ -281,11 +280,11 @@ class SharedArchive:
             return archive_name, filename_in_zip
         if "/" not in identifier:
             raise ValueError(
-                "No filename provided. Form: localzip://@identifier/filename")
+                "No filename provided. Form: zip://@identifier/filename")
         slash_index = identifier.index("/")
         filename = identifier[slash_index + 1:].lstrip("/")
         identifier = identifier[1:slash_index]
         return identifier, filename
 
 
-__all__ = ["SharedArchive", "ZIP_SOURCE_PROTOCOL"]
+__all__ = ["SharedArchive"]

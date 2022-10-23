@@ -200,17 +200,20 @@ class Image(ImageBase):
 
         :param source: The data source
         """
-        if isinstance(source, str):
-            self._pil_handle = PIL.Image.open(source)
-        elif isinstance(source, bytes):
-            data = io.BytesIO(source)
-            self._pil_handle = PIL.Image.open(data)
-        elif isinstance(source, np.ndarray):
-            self._pil_handle = PIL.Image.fromarray(source)
-        elif isinstance(source, PIL.Image.Image):
-            self._pil_handle = source
-        else:
-            raise NotImplementedError
+        try:
+            if isinstance(source, str):
+                self._pil_handle = PIL.Image.open(source)
+            elif isinstance(source, bytes):
+                data = io.BytesIO(source)
+                self._pil_handle = PIL.Image.open(data)
+            elif isinstance(source, np.ndarray):
+                self._pil_handle = PIL.Image.fromarray(source)
+            elif isinstance(source, PIL.Image.Image):
+                self._pil_handle = source
+            else:
+                raise NotImplementedError
+        except PIL.UnidentifiedImageError:
+            raise ValueError("Invalid or damaged image data")
         if self._pil_handle.mode == "P":
             if 'transparency' in self._pil_handle.info:
                 self._pil_handle = self._pil_handle.convert("RGBA")
@@ -230,13 +233,22 @@ class Image(ImageBase):
         return (self.pixel_format == PixelFormat.BGR or self.pixel_format ==
                 PixelFormat.BGRA)
 
+    @property
+    def size(self) -> tuple[int, int]:
+        """
+        Returns the image's size in pixels
+
+        :return: The size as tuple (width, height)
+        """
+        return self.width, self.height
+
     def get_size(self) -> tuple[int, int]:
         """
         Returns the image's size in pixels
 
         :return: The size as tuple (width, height)
         """
-        return (self.width, self.height)
+        return self.width, self.height
 
     def get_size_as_size(self) -> Size2D:
         """

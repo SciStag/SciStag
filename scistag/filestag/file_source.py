@@ -19,6 +19,7 @@ import pandas as pd
 from pydantic import BaseModel
 
 from scistag.filestag.bundle import Bundle
+from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
 from scistag.filestag.file_stag import FileStag
 
 CACHE_VERSION = "cache_version"
@@ -226,6 +227,9 @@ class FileSource:
         stored version it will be replaced
         """
         self.sorting_callback = sorting_callback
+        if sorting_callback is not None and not fetch_file_list:
+            raise ValueError("Sorting is only supported in combination w/"
+                             " fetch_file_list=True")
         """
         A function to be called (and pass into sorted) to sort the file list
         before it's stored.
@@ -331,10 +335,10 @@ class FileSource:
         if isinstance(source, bytes):
             from scistag.filestag.file_source_zip import FileSourceZip
             return FileSourceZip(source=source, **params)
-        if source.startswith("azure://"):
-            from scistag.filestag.file_source_azure_storage import \
-                FileSourceAzureStorage
-            return FileSourceAzureStorage(source=source, **params)
+        if source.startswith(AZURE_PROTOCOL_HEADER):
+            from scistag.filestag.azure_storage_file_source import \
+                AzureStorageFileSource
+            return AzureStorageFileSource(source=source, **params)
         if not (source.endswith("/") or source.endswith(
                 "\\")) and source.endswith(".zip"):
             from scistag.filestag.file_source_zip import FileSourceZip
@@ -435,6 +439,24 @@ class FileSource:
         """
         FileStag.save_file(target, self.encode_file_list(version=version))
 
+    def set_file_list(self, new_list: list[str] | list[FileListEntry]):
+        """
+        Sets a custom file list provided by the user.
+
+        Helpful for large jobs where the total file list is split into
+        several working packages in advance and the shares need to be
+        customized.
+
+        :param new_list: The new list to be assigned. Either a list of
+            "FileListEntry"s with all details or a list of filenames
+        """
+        if len(new_list) and isinstance(new_list[0], str):
+            lst = [FileListEntry(filename=element, file_size=-1) for element in
+                   new_list]
+        else:
+            lst = new_list
+        self.update_file_list(lst)
+
     def get_statistics(self) -> dict | None:
         """
         Returns statistics about the file source if available.
@@ -481,7 +503,7 @@ class FileSource:
     def __str__(self):
         result = self.__class__.__name__ + "\n"
         statistics = self.get_statistics()
-        from scistag.common.dict import dict_to_bullet_list
+        from scistag.common.dict_helper import dict_to_bullet_list
         if statistics is not None:
             result += dict_to_bullet_list(statistics)
         result += f"* search-mask: {self.search_mask}"

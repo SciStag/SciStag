@@ -26,6 +26,7 @@ class LogLevel(IntEnum):
     CRITICAL = logging.CRITICAL
     "Really evil errors"
 
+    @classmethod
     def _missing_(cls, value: object) -> Any:
         if value == "info":
             return cls.INFO

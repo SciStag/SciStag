@@ -1,5 +1,5 @@
 """
-Implements the :class:`FileSourceAzureStorage` class which allows iterating
+Implements the :class:`AzureStorageFileSource` class which allows iterating
 files stored in an Azure Blob Storage
 """
 from __future__ import annotations
@@ -7,17 +7,13 @@ from typing import TYPE_CHECKING
 from collections.abc import Iterable
 from scistag.filestag.file_source import FileSource, FileSourceIterator, \
     FileListEntry
+from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
 
 if TYPE_CHECKING:
     from azure.storage.blob import BlobServiceClient, ContainerClient
 
-AZURE_PROTOCOL_HEADER = "azure://"
-"SciStag identifier for Azure storage"
-DEFAULT_ENDPOINTS_HEADER = "DefaultEndpoints"
-"The header with which an Azure connection string begins"
 
-
-class FileSourceAzureStorage(FileSource):
+class AzureStorageFileSource(FileSource):
     """
     FileSource implementation for processing files store in an Azure storage
     blob
@@ -26,8 +22,10 @@ class FileSourceAzureStorage(FileSource):
     container name, optionally further search parameters such as the file and
     then run
 
-    ``for cur_file in FileSourceAzure("azure://DefaultEnd=...=...;AccountKey=...
-    /container/path:", mask="*.png"): ...``
+    ..  code-block: python
+
+        for cur_file in AzureStorageFileSource("azure://DefaultEnd=...=...;AccountKey=...
+        /container/path:", mask="*.png"): ...
 
     to automatically connect through the storage and iterate through all files.
     """
@@ -143,6 +141,8 @@ class FileSourceAzureStorage(FileSource):
 
     def handle_get_next_filename(self, iterator: FileSourceIterator) -> \
             tuple[str, int] | None:
+        if self._file_list is not None:
+            return super().handle_get_next_filename(iterator)
         while True:
             if iterator.file_index == 0:
                 iterator.processing_data[
@@ -191,7 +191,7 @@ class FileSourceAzureStorage(FileSource):
     def handle_fetch_file_list(self, force: bool = False):
         if self._file_list is not None and not force:
             return
-        from scistag.common.iter import limit_iter
+        from scistag.common.iter_helper import limit_iter
         blob_iterator = self.setup_blob_iterator()
         if self.tag_filter_expression is not None:
             cleaned_list = [(element['name'], 0)

@@ -50,7 +50,7 @@ class WebStagService:
         the unified handle_unified_request method.
         :return:
         """
-        from scistag.webstag.server.flask.webstag_service_blueprint import \
+        from scistag.webstag.server.flask_server.webstag_service_blueprint import \
             WebStagServiceBlueprint
 
         blue_print = WebStagServiceBlueprint(self)

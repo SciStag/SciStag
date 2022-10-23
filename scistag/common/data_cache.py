@@ -6,7 +6,7 @@ caching.
 from __future__ import annotations
 from typing import Callable, Any
 
-from scistag.common.threading.stag_lock import StagLock
+from scistag.common.mt.stag_lock import StagLock
 
 
 class DataCache:

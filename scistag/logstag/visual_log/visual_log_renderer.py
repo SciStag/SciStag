@@ -125,7 +125,13 @@ class VisualLogRenderer:
         if last_end < len(body) + 1:
             self.body_pieces.append(body[last_end:].encode("utf-8"))
 
-    def build_page(self, body):
+    def build_page(self, body) -> bytes:
+        """
+        Combines the head's header, body and footer to a full html page
+
+        :param body: The page's body
+        :return: The full, deliverable page
+        """
         return b''.join(
             [self.header_rendered, body, self.footer_rendered])
 

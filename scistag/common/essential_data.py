@@ -81,7 +81,7 @@ def verify_essential_data(quick=False) -> bool:
                     exp_md5=ESSENTIAL_DATA_MD5, quick=quick)
 
 
-_ESSENTIAL_DATA_PATH = "localzip://@scistagessential/"
+_ESSENTIAL_DATA_PATH = "zip://@scistagessential/"
 
 
 def get_edp() -> str:
