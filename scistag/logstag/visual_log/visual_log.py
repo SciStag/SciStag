@@ -125,7 +125,7 @@ class VisualLog:
         :param clear_target_dir: Defines if the target dir shall be deleted
             before starting (take care!)
         :param log_to_disk: Defines if the logger shall write it's results
-            to disk
+            to disk. True by default.
         :param embed_images: Defines if images shall be directly embedded into
             the HTML log instead of being stored as separate files.
 
@@ -260,6 +260,10 @@ class VisualLog:
         """
         A backup of the latest rendered page of each dynamic data type
         (excluding PDFs and PNGs which are just created on demand)
+        """
+        self._body_backups: dict[str, bytes] = {}
+        """
+        A backup of the latest body renderings for each content type
         """
         self.static_files: dict[str, bytes] = {}
         "Statically hosted files for a pure web based provision of the log"
@@ -867,7 +871,7 @@ class VisualLog:
         res = escaped.encode('ascii', 'xmlcharrefreplace')
         return res.decode("utf-8")
 
-    def log(self, *args: Any, level: LogLevel = LogLevel.INFO,
+    def log(self, *args: Any, level: LogLevel | str = LogLevel.INFO,
             space: str = " "):
         """
         Adds a log text to the log
@@ -877,6 +881,8 @@ class VisualLog:
         :param space: The character or text to be used for spaces
         :return:
         """
+        if isinstance(level, str):
+            level = LogLevel(level)
         text = space.join(args)
         if text is None:
             text = "None"
@@ -1026,7 +1032,7 @@ class VisualLog:
 
         :param dict_or_list: The dictionary or list
         """
-        from scistag.common.dict import dict_to_bullet_list
+        from scistag.common.dict_helper import dict_to_bullet_list
         dict_tree = dict_to_bullet_list(dict_or_list, level=0, bold=True)
         self.md(dict_tree, exclude_targets={'txt'})
         if len(self._consoles) or self._txt_export:
@@ -1438,24 +1444,48 @@ class VisualLog:
         with self._page_lock:
             self._page_backups[page_type] = content
 
-    def get_latest_page(self, page_type: str):
+    def get_page(self, format_type: str) -> bytes:
         """
-        Receives the newest update of the page of given type.
+        Receives the newest update of the page of given output type.
 
         If not done automatically (e.g. when using a VisualLiveLog)
         you might have to call render_pages yourself.
 
         This method is multi-threading secure.
 
-        :param page_type: The type of the page you want to receive
+        Assumes that render() or write_to_disk() or render was called before
+        since the last change. This is not necessary if continuous_write is
+        enabled.
+
+        :param format_type: The type of the page you want to receive
         :return: The page's content.
         """
         with self._page_lock:
-            if page_type in self._page_backups:
-                return self._page_backups[page_type]
+            if format_type in self._page_backups:
+                return self._page_backups[format_type]
             return b""
 
-    def render(self, formats: set[str] | None = None):
+    def get_body(self, format_type: str) -> bytes:
+        """
+        Returns the latest body data.
+
+        Contains only the part of that format w/ header and footer.
+        Can be used to for example embed one log's content in another log
+        such as main_log.html(sub_log.get_body("html"))
+
+        Assumes that render() or write_to_disk() or render was called before
+        since the last change. This is not necessary if continuous_write is
+        enabled.
+
+        :param format_type: The type of the page you want to receive
+        :return: The page's content.
+        """
+        with self._page_lock:
+            if format_type in self._body_backups:
+                return self._body_backups[format_type]
+            return b""
+
+    def render(self, formats: set[str] | None = None) -> VisualLog:
         """
         Renders all pages - so combines the main log with the sub logs
         of the supported output types (html, txt, md etc.) and stores
@@ -1463,11 +1493,16 @@ class VisualLog:
 
         The page data for each type can be received via :meth:`get_latest_page`.
 
-        :param formats:
+        :param formats: A set of the formats which shall be rendered.
+
+            None = All configured formats.
+        :return: The VisualLog object
         """
         if formats is None:
             formats = self._log_formats
         bodies = self._build_body(self._logs)
+        with self._page_lock:
+            self._body_backups = bodies
         # store html
         if self._html_export and self._html_filename is not None and len(
                 self._html_filename) > 0 and HTML in formats:
@@ -1488,9 +1523,10 @@ class VisualLog:
                 console.clear()
                 body = bodies[CONSOLE]
                 console.print(body.decode("ascii"))
+        return self
 
     def write_to_disk(self, formats: set[str] | None = None,
-                      render=True):
+                      render=True) -> VisualLog:
         """
         Writes the rendered pages from all (or all specified) formats to
         disk.
@@ -1499,6 +1535,7 @@ class VisualLog:
 
             e.g. {"html, "txt") etc. By default all formats will be stored.
         :param render: Defines if the pages shall be rendered (if necessary)
+        :return: The VisualLog object
         """
         if formats is None:
             formats = self._log_formats
@@ -1511,24 +1548,28 @@ class VisualLog:
             if self._html_export and self._html_filename is not None and \
                     len(self._html_filename) > 0 and HTML in formats:
                 FileStag.save_file(self._html_filename,
-                                   self.get_latest_page(HTML))
+                                   self.get_page(HTML))
                 # store markdown
             if self._md_export and self._md_filename is not None and \
                     len(self._md_filename) > 0 and MD in formats:
-                FileStag.save_file(self._md_filename, self.get_latest_page(MD))
+                FileStag.save_file(self._md_filename, self.get_page(MD))
             # store txt
             if self._txt_export and self._txt_filename is not None and \
                     len(self._txt_filename) > 0 and TXT in formats:
                 FileStag.save_file(self._txt_filename,
-                                   self.get_latest_page(TXT))
+                                   self.get_page(TXT))
+        return self
 
-    def finalize(self):
+    def finalize(self) -> VisualLog:
         """
         Finalizes the report and writes it to disk
+
+        :return: The VisualLog object
         """
         self.write_to_disk(render=True)
         if FilePath.exists(self._tmp_path):
             shutil.rmtree(self._tmp_path)
+        return self
 
     def create_web_service(self, support_flask: bool = False,
                            url_prefix: str = "") -> "WebStagService":

@@ -27,7 +27,7 @@ class VisualLogService:
         """
         Returns the most recent index.html
         """
-        return self.log.get_latest_page("html")
+        return self.log.get_page("html")
 
     def live(self):
         """

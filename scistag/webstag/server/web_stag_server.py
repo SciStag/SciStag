@@ -114,7 +114,7 @@ class WebStagServer:
             cur_service: WebStagService
             self._flask.register_blueprint(cur_service.service,
                                            **cur_service.reg_params)
-        from scistag.webstag.server.flask.flask_hosting_thread import \
+        from scistag.webstag.server.flask_server.flask_hosting_thread import \
             FlaskHostingThread
         self.server_thread = FlaskHostingThread(self)
         with self._access_lock:

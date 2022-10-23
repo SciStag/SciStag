@@ -6,6 +6,7 @@ from fnmatch import fnmatch
 from threading import RLock
 from typing import Optional, Dict
 
+import scistag.filestag.protocols
 import scistag.filestag.shared_archive
 
 FEATURE_FS_PATH = 'fspath'
@@ -32,7 +33,7 @@ The shared identifier heading with which all shared zip archives in
 FileStag start with
 """
 ADDON_FS_BASE_PATH = \
-    scistag.filestag.shared_archive.ZIP_SOURCE_PROTOCOL + \
+    scistag.filestag.protocols.ZIP_SOURCE_PROTOCOL + \
     f"@{FS_IDENTIFIER_HEADING}"
 """
 The path under which the addon's data can be accessed using FileStag.load_file 
@@ -261,7 +262,7 @@ class AddonManager:
             and ? placeholders.
         :return: A dictionary of the format str: str for every matched addon
             and it's corresponding FileStag path,
-            e.g. `{"emojis.512": "localzip://@addons.emojis.512/"}`
+            e.g. `{"emojis.512": "zip://@addons.emojis.512/"}`
         """
         with cls.access_lock:
             addons = cls.get_all_addons()

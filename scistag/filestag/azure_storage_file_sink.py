@@ -7,14 +7,16 @@ from __future__ import annotations
 
 from typing import Union, TYPE_CHECKING
 
-from scistag.filestag.file_source_azure_storage import FileSourceAzureStorage, \
-    AZURE_PROTOCOL_HEADER, DEFAULT_ENDPOINTS_HEADER
+from scistag.filestag import FileSink, FileStorageOptions
+from scistag.filestag.azure_storage_file_source import AzureStorageFileSource
+from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
+    AZURE_DEFAULT_ENDPOINTS_HEADER
 
 if TYPE_CHECKING:
     from azure.storage.blob import BlobServiceClient, ContainerClient
 
 
-class FileSinkAzureStorage:
+class AzureStorageFileSink(FileSink):
     """
     Helper class for storing files in Azure storage
     """
@@ -24,7 +26,9 @@ class FileSinkAzureStorage:
                  service: "BlobServiceClient" | str | None = None,
                  container: "ContainerClient" | str | None = None,
                  create_container=True,
-                 sub_folder: str | None = None):
+                 recreate_container: bool = False,
+                 sub_folder: str | None = None,
+                 **params):
         """
         :param target: A FileStag conform Azure Storage URL of the form
             azure://DefaultEndspoints...key=.../ContainerNam/SubFolder/Logs/
@@ -38,17 +42,21 @@ class FileSinkAzureStorage:
             does not exist yet.
 
             True by default.
+        :param recreate_container: Defines if we shall delete the old container
+            and all it's contents to create a "fresh"
         :param sub_folder: If provided all uploaded files will be stored in
             this "virtual" sub folder instead of the container's root,
             e.g. "images/".
+        :param params: Additional initializer parameters. See :class:`FileSink`.
         """
+        super().__init__(target=target, **params)
         if sub_folder is None:
             sub_folder = ""
         if target is not None:
             if not target.startswith(AZURE_PROTOCOL_HEADER):
                 raise ValueError(
                     "Target has to be in the form azure://DefaultEndPoints...")
-            conn_str, _container, mask = FileSourceAzureStorage.split_azure_url(
+            conn_str, _container, mask = AzureStorageFileSource.split_azure_url(
                 target)
             if len(_container):
                 container = _container
@@ -60,7 +68,7 @@ class FileSinkAzureStorage:
         if service is not None and isinstance(service, str):
             from azure.storage.blob import BlobServiceClient
             # setup from connection string if provided
-            if service.startswith(DEFAULT_ENDPOINTS_HEADER):
+            if service.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
                 service = BlobServiceClient.from_connection_string(service)
             else:
                 raise ValueError("Connection string has the wrong format")
@@ -69,25 +77,21 @@ class FileSinkAzureStorage:
         if container is None:
             raise ValueError("No container client or url provided")
         if isinstance(container, str):
-            container = self.setup_container(service=service,
-                                             container_name=container,
-                                             create=create_container)
+            container = \
+                self.setup_container(service=service,
+                                     container_name=container,
+                                     create=create_container,
+                                     recreate_container=recreate_container)
             if container is None:
                 raise ValueError("Could not access container")
         self.service = service
         self.container = container
 
-    def store(self,
-              filename: str,
-              data: bytes,
-              overwrite: bool = True) -> bool:
-        """
-        Stores a file in the FileSink
-        :param filename: The name of the file
-        :param data: The file's content
-        :param overwrite: Defines if the file may be overwritten.
-        :return: True on success
-        """
+    def _store_int(self,
+                   filename: str,
+                   data: bytes,
+                   overwrite: bool,
+                   options: FileStorageOptions | None = None) -> bool:
         return self.upload_file(filename=filename,
                                 data=data,
                                 container=self.container,
@@ -120,12 +124,12 @@ class FileSinkAzureStorage:
         """
         if filename.startswith(AZURE_PROTOCOL_HEADER):
             con_str, container, search_path = \
-                FileSourceAzureStorage.split_azure_url(filename)
+                AzureStorageFileSource.split_azure_url(filename)
             if len(container) == 0:
                 raise ValueError("No container name provided")
             if len(search_path) == 0:
                 raise ValueError("No filename provided")
-            service = FileSourceAzureStorage.service_from_connection_string(
+            service = AzureStorageFileSource.service_from_connection_string(
                 con_str)
             container = cls.setup_container(service, container_name=container,
                                             create=create_container)
@@ -135,7 +139,7 @@ class FileSinkAzureStorage:
         if service is not None and isinstance(service, str):
             # setup from connection string if provided
             from azure.storage.blob import BlobServiceClient
-            if service.startswith(DEFAULT_ENDPOINTS_HEADER):
+            if service.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
                 service = BlobServiceClient.from_connection_string(service)
         if service is None:
             from azure.storage.blob import ContainerClient
@@ -150,8 +154,13 @@ class FileSinkAzureStorage:
                                             create=create_container)
             if container is None:
                 raise ValueError("Could not access container")
-        blob_client = container.get_blob_client(filename)
-        blob_client.upload_blob(data, overwrite=overwrite)
+        from azure.core.exceptions import ClientAuthenticationError, \
+            ResourceExistsError
+        try:
+            blob_client = container.get_blob_client(filename)
+            blob_client.upload_blob(data, overwrite=overwrite)
+        except (ClientAuthenticationError, ResourceExistsError):
+            return False
         return True
 
     @staticmethod
