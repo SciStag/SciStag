@@ -376,6 +376,16 @@ class VisualLog:
         for key in self._logs.keys():
             self._logs[key].clear()
 
+    def embed(self, log: VisualLog):
+        """
+        Embeds another VisualLog's content into this one
+
+        :param log: The source log
+        """
+        for cur_format in self._log_formats:
+            if cur_format in log._log_formats:
+                self._logs[cur_format].append(log.get_body(cur_format))
+
     @property
     def max_fig_size(self) -> Size2D:
         """
