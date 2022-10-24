@@ -8,7 +8,8 @@ from __future__ import annotations
 from typing import Union, TYPE_CHECKING
 
 from scistag.filestag import FileSink, FileStorageOptions
-from scistag.filestag.azure_storage_file_source import AzureStorageFileSource
+from scistag.filestag.azure.azure_storage_file_source import \
+    AzureStorageFileSource
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
     AZURE_DEFAULT_ENDPOINTS_HEADER
 
