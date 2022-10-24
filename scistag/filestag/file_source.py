@@ -7,17 +7,20 @@ archives in cloud storages.
 """
 
 from __future__ import annotations
+
 import os
+from abc import abstractmethod
+from collections import Counter
 from dataclasses import dataclass
+from fnmatch import fnmatch
+from typing import Callable, Union, Any
 
 import pandas as pd
 from pydantic import BaseModel
-from fnmatch import fnmatch
-from typing import Callable, Union
-from collections import Counter
-from abc import abstractmethod
-from scistag.filestag.file_stag import FileStag
+
 from scistag.filestag.bundle import Bundle
+from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
+from scistag.filestag.file_stag import FileStag
 
 CACHE_VERSION = "cache_version"
 
@@ -153,7 +156,9 @@ class FileSource:
                  max_file_count: int = -1,
                  file_list_name: str | tuple[str, int] | None = None,
                  max_web_cache_age: float = 0.0,
-                 dont_load=False):
+                 dont_load=False,
+                 sorting_callback: Callable[
+                                       [FileListEntry], Any] | None = None):
         """
         For a detailed parameter description see :meth:`from_path`
         """
@@ -221,6 +226,14 @@ class FileSource:
         The version of the file list to assume. If it mismatches the
         stored version it will be replaced
         """
+        self.sorting_callback = sorting_callback
+        if sorting_callback is not None and not fetch_file_list:
+            raise ValueError("Sorting is only supported in combination w/"
+                             " fetch_file_list=True")
+        """
+        A function to be called (and pass into sorted) to sort the file list
+        before it's stored.
+        """
         if file_list_name is not None:
             if isinstance(file_list_name, tuple):
                 self._file_list_name, self._file_list_version = file_list_name
@@ -233,6 +246,8 @@ class FileSource:
                     search_path: str = "",
                     recursive: bool = True,
                     filter_callback: FilterCallback | None = None,
+                    sorting_callback: \
+                            Callable[[FileListEntry], Any] | None = None,
                     index_filter: tuple[int, int] | None = None,
                     fetch_file_list: bool = False,
                     max_file_count: int = -1,
@@ -261,6 +276,14 @@ class FileSource:
         :param filter_callback: A callback function to call for each file to
             verify if it shall be processed or ignored.
             See :const:`FilterCallback`
+        :param sorting_callback:
+            A function to be called (and pass into sorted) to sort the file list
+            before it is stored.
+
+            Is called for every element and has to return the sorting value,
+            either a string, float or another size comparable data type.
+
+            Does only work in combination with fetch_file_list.
         :param index_filter: The index filter helps splitting a processing task
             to multiple, threads nodes and/or processes.
 
@@ -307,14 +330,15 @@ class FileSource:
                   "file_list_name": file_list_name,
                   "max_web_cache_age": max_web_cache_age,
                   "max_file_count": max_file_count,
+                  "sorting_callback": sorting_callback,
                   "dont_load": dont_load}
         if isinstance(source, bytes):
             from scistag.filestag.file_source_zip import FileSourceZip
             return FileSourceZip(source=source, **params)
-        if source.startswith("azure://"):
-            from scistag.filestag4azure.file_source_azure_storage import \
-                FileSourceAzureStorage
-            return FileSourceAzureStorage(source=source, **params)
+        if source.startswith(AZURE_PROTOCOL_HEADER):
+            from scistag.filestag.azure.azure_storage_file_source import \
+                AzureStorageFileSource
+            return AzureStorageFileSource(source=source, **params)
         if not (source.endswith("/") or source.endswith(
                 "\\")) and source.endswith(".zip"):
             from scistag.filestag.file_source_zip import FileSourceZip
@@ -396,12 +420,12 @@ class FileSource:
         df: pd.DataFrame = data['data']
         key_list = df.columns.to_list()
         self._file_list = [
-            FileListEntry.parse_obj(dict(zip(key_list, cur_elment))) for
-            cur_elment in df.itertuples(index=False, name=None)
+            FileListEntry.parse_obj(dict(zip(key_list, cur_element))) for
+            cur_element in df.itertuples(index=False, name=None)
         ]
         return True
 
-    def save_file_list(self, target: str, version: int = -1) -> bool:
+    def save_file_list(self, target: str, version: int = -1):
         """
         Saves the file list to a file so it can be quickly restored after
         a restart of the application.
@@ -414,6 +438,24 @@ class FileSource:
             If -1 is passed the version is ignored.
         """
         FileStag.save_file(target, self.encode_file_list(version=version))
+
+    def set_file_list(self, new_list: list[str] | list[FileListEntry]):
+        """
+        Sets a custom file list provided by the user.
+
+        Helpful for large jobs where the total file list is split into
+        several working packages in advance and the shares need to be
+        customized.
+
+        :param new_list: The new list to be assigned. Either a list of
+            "FileListEntry"s with all details or a list of filenames
+        """
+        if len(new_list) and isinstance(new_list[0], str):
+            lst = [FileListEntry(filename=element, file_size=-1) for element in
+                   new_list]
+        else:
+            lst = new_list
+        self.update_file_list(lst)
 
     def get_statistics(self) -> dict | None:
         """
@@ -461,7 +503,7 @@ class FileSource:
     def __str__(self):
         result = self.__class__.__name__ + "\n"
         statistics = self.get_statistics()
-        from scistag.common.dict import dict_to_bullet_list
+        from scistag.common.dict_helper import dict_to_bullet_list
         if statistics is not None:
             result += dict_to_bullet_list(statistics)
         result += f"* search-mask: {self.search_mask}"
@@ -565,6 +607,8 @@ class FileSource:
         :param new_list: The new list
         """
         self._file_list = new_list
+        if self.sorting_callback is not None:  # apply sorting
+            self._file_list = sorted(self._file_list, key=self.sorting_callback)
         self.file_set = set([element.filename for element in new_list])
         self._statistics = None
 

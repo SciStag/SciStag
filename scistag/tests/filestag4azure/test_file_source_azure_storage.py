@@ -3,8 +3,9 @@ import pytest
 import scistag.tests
 from scistag.common import ConfigStag
 from scistag.filestag import FileSource
-from scistag.filestag4azure.file_source_azure_storage import \
-    FileSourceAzureStorage
+from scistag.filestag.azure.azure_storage_file_source import \
+    AzureStorageFileSource
+from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
 
 ROBOTO_FONT_SIZE_WITHOUT_MD = 2043356
 "The size of the fonts assumed on the server without the README"
@@ -88,11 +89,11 @@ def test_tags():
     """
     Test the tag search functionality
     """
-    azure_source = FileSourceAzureStorage(connection_string,
+    azure_source = AzureStorageFileSource(connection_string,
                                           tag_filter="licenseFile = 'SciStag'",
                                           fetch_file_list=True)
     assert len(azure_source._file_list) == 1
-    azure_source = FileSourceAzureStorage(connection_string,
+    azure_source = AzureStorageFileSource(connection_string,
                                           tag_filter="licenseFile = 'SciStag'",
                                           fetch_file_list=False)
     file_count = 0
@@ -100,12 +101,12 @@ def test_tags():
         file_count += 1
     assert file_count == 1
 
-    azure_source = FileSourceAzureStorage(connection_string + "/fonts",
+    azure_source = AzureStorageFileSource(connection_string + "/fonts",
                                           tag_filter="licenseFile = 'Roboto'",
                                           fetch_file_list=True)
     assert len(azure_source._file_list) == 1
     # filter prefix and tag without prefetch
-    azure_source = FileSourceAzureStorage(connection_string + "/fonts",
+    azure_source = AzureStorageFileSource(connection_string + "/fonts",
                                           tag_filter="licenseFile = 'SciStag'",
                                           fetch_file_list=False)
     counter = 0
@@ -113,7 +114,7 @@ def test_tags():
         counter += 1
     assert counter == 0
     # filter prefix and tag without prefetch
-    azure_source = FileSourceAzureStorage(connection_string,
+    azure_source = AzureStorageFileSource(connection_string,
                                           tag_filter="licenseFile = 'SciStag'",
                                           fetch_file_list=False)
     counter = 0
@@ -121,7 +122,7 @@ def test_tags():
         counter += 1
     assert counter == 1
     # filter prefix and tag with prefetch
-    azure_source = FileSourceAzureStorage(connection_string + "/fonts",
+    azure_source = AzureStorageFileSource(connection_string + "/fonts",
                                           tag_filter="licenseFile = 'SciStag'",
                                           fetch_file_list=True)
     azure_source.handle_fetch_file_list()
@@ -139,31 +140,31 @@ def test_conn_string():
     # just connection string
     conn_string = \
         "DefaultEndpointsProtocol=https;AccountName=123;AccountKey=456;EndpointSuffix=core.windows.net"
-    full_url = f"azure://{conn_string}"
-    elements = FileSourceAzureStorage.split_azure_url(full_url)
+    full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}"
+    elements = AzureStorageFileSource.split_azure_url(full_url)
     assert elements[0] == conn_string and elements[1] == "" and elements[
         2] == ""
     # connection string and container name
     container = "testData"
-    full_url = f"azure://{conn_string}/{container}"
-    elements = FileSourceAzureStorage.split_azure_url(full_url)
+    full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}"
+    elements = AzureStorageFileSource.split_azure_url(full_url)
     assert elements[0] == conn_string and elements[1] == container and elements[
         2] == ""
     # connection string and container name and unnecessary slash
     container = "testData"
-    full_url = f"azure://{conn_string}/{container}/"
-    elements = FileSourceAzureStorage.split_azure_url(full_url)
+    full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/"
+    elements = AzureStorageFileSource.split_azure_url(full_url)
     assert elements[0] == conn_string and elements[1] == container and elements[
         2] == ""
     prefix = "subPath"
-    full_url = f"azure://{conn_string}/{container}/{prefix}"
-    elements = FileSourceAzureStorage.split_azure_url(full_url)
+    full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/{prefix}"
+    elements = AzureStorageFileSource.split_azure_url(full_url)
     assert elements[0] == conn_string and elements[1] == container and elements[
         2] == prefix
     # prefix and unnecessary slash
-    full_url = f"azure://{conn_string}/{container}/{prefix}/"
-    elements = FileSourceAzureStorage.split_azure_url(full_url)
+    full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/{prefix}/"
+    elements = AzureStorageFileSource.split_azure_url(full_url)
     assert elements[0] == conn_string and elements[1] == container and elements[
         2] == prefix
-    elements = FileSourceAzureStorage.split_azure_url(conn_string)
+    elements = AzureStorageFileSource.split_azure_url(conn_string)
     assert elements is None

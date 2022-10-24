@@ -6,6 +6,24 @@ import os
 from scistag.imagestag import Image, Color, ColorTypes
 
 
+def _show_cairo_msg():
+    """
+    Prints a warning message that either the Cairo package or libraries are
+    missing.
+    """
+    print(
+        '\nCairoSVG graphics rendering not available, high-quality rendering '
+        'disabled.\n\n'
+        'Install Cairo on Linux, in Docker containers, OS X or in Windows '
+        'Subsystem for Linux (WSL)\n'
+        'via "pip install scistag[svg]" or "pip install cairosvg" for the '
+        'module and the\n'
+        'required library via "sudo apt-get install cairosvg"\n\n'
+        'Call scistag.imagestag.SvgRenderer.set_verbose(true) to suppress this '
+        'message\n'
+        "See help(scistag.imagestag.SvgRenderer) for further details")
+
+
 class SvgRenderer:
     """
     SVG rendering class which renders an SVG using the Cairo SVG library.
@@ -72,8 +90,7 @@ class SvgRenderer:
             except (OSError, ModuleNotFoundError):
                 cls._cairo_available = False
                 if not cls._verbose:
-                    print(
-                        "SVG graphics rendering not available. help(scistag.imagestag.SvgRenderer) for details")
+                    _show_cairo_msg()
             cls._initialized = True
 
     @classmethod

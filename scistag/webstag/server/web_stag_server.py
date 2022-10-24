@@ -25,7 +25,7 @@ class WebStagServer:
 
     def __init__(self, services: list[WebStagService] | None = None,
                  host_name: str = "127.0.0.1",
-                 port: int = 8010,
+                 port: int | tuple[int, int] = 8010,
                  flask_ssl_context=None,
                  silent=False):
         """
@@ -36,7 +36,10 @@ class WebStagServer:
             Examples:
             - 127.0.0.1 = local connections only
             - 0.0.0.0 = all available network interfaces
-        :param port: The TCP port at which the service shall be hosted
+        :param port: The TCP port at which the service shall be hosted.
+
+            Either an explicit port or a range tuple to search within.
+            If 0 is passed a random port will be selected.
         :param flask_ssl_context: Advanced SSL context settings, see
             https://werkzeug.palletsprojects.com/en/2.2.x/serving/#werkzeug.serving.run_simple
         :param silent: Defines if server logs and other output to stdout
@@ -54,16 +57,33 @@ class WebStagServer:
         self.server_thread: Thread | None = None
         "The thread which executes the server"
         self.host_name = host_name
+        if port == 0:
+            port = (0, 0)
+        if isinstance(port, tuple):
+            from scistag.netstag import NetHelper
+            free_ports = NetHelper.find_free_ports(host_name,
+                                                   port_range=port,
+                                                   count=1)
+            if len(free_ports) == 0:
+                raise OSError("No free network port found")
+            port = free_ports[0]
         """
         The host name, e.g. IP such as 0.0.0.0 for all network adapters or 
         127.0.0.1 for local hosting.
         """
-        self.port = port
+        self._port = port
         "The port at which the server shall be hosted"
         self.ssl_context = flask_ssl_context
         "The SSL context settings"
         self.silent = silent
         "Suppresses output to the logs and to the console"
+
+    @property
+    def port(self):
+        """
+        The network port the server uses
+        """
+        return self._port
 
     def add_service(self, service: WebStagService):
         """
@@ -94,7 +114,7 @@ class WebStagServer:
             cur_service: WebStagService
             self._flask.register_blueprint(cur_service.service,
                                            **cur_service.reg_params)
-        from scistag.webstag.server.flask.flask_hosting_thread import \
+        from scistag.webstag.server.flask_server.flask_hosting_thread import \
             FlaskHostingThread
         self.server_thread = FlaskHostingThread(self)
         with self._access_lock:

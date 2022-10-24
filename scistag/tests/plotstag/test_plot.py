@@ -9,6 +9,7 @@ from .test_image_layer import stag
 from . import vl
 from . import skip_plotstag
 
+
 @pytest.mark.skipif(skip_plotstag, reason="PlotStag tests disabled")
 def test_plot():
     """
@@ -51,7 +52,7 @@ def test_plotting_methods():
         cp = plt.imshow(pixels)
         plt.title("A stag with title")
         plt.tight_layout()
-        vl.figure("TestPlot", cp.figure)
+        vl.figure(cp.figure, "TestPlot")
 
     four_figure = Figure(cols=2, rows=2)
     for plot in four_figure:
@@ -59,7 +60,7 @@ def test_plotting_methods():
             plt.imshow(pixels)
             plt.title("A stag with title")
             plt.tight_layout()
-    vl.figure("four_stags", four_figure)
+    vl.figure(four_figure, "four_stags")
 
     four_figure = Figure(cols=2, rows=2)
     for plot in four_figure:
@@ -70,4 +71,4 @@ def test_plotting_methods():
             plt.title("A custom figure")
             plt.tight_layout()
             plot.add_matplot(figure=figure, size_ratio=1.0)
-    vl.figure("four_stags_custom_figure", four_figure)
+    vl.figure(four_figure, "four_stags_custom_figure")

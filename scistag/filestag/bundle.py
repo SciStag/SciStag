@@ -11,7 +11,7 @@ from typing import Any, Callable, Literal, Optional
 
 from pydantic import BaseModel
 
-from scistag.common.threading.stag_lock import StagLock
+from scistag.common.mt.stag_lock import StagLock
 from scistag.filestag.memory_zip import MemoryZip
 
 IS_TUPLE_FLAG = "is_tuple"

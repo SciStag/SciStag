@@ -27,7 +27,7 @@ The file source path.
 
 This can either be a classic local file name path, the path to the URL
 of a file or any other protocol supported by FileStag such as
-localzip://zipFilename/fileNameInZip.
+zip://zipFilename/fileNameInZip.
 """
 
 FileTargetTypes = Union[str]
@@ -36,7 +36,7 @@ The file target path.
 
 This can either be a classic local file name path, the path to the URL
 of a file or any other protocol supported by FileStag such as
-localzip://zipFilename/fileNameInZip.
+zip://zipFilename/fileNameInZip.
 """
 
 
@@ -75,7 +75,8 @@ class FileStag:
             as ``timeout_s`` or ``max_cache_age`` for files from the web.
         :return: The data if the file could be found
         """
-        from .shared_archive import ZIP_SOURCE_PROTOCOL, SharedArchive
+        from .shared_archive import SharedArchive
+        from scistag.filestag import ZIP_SOURCE_PROTOCOL
         if source.startswith(FILE_PATH_PROTOCOL_URL_HEADER):
             source = source[len(FILE_PATH_PROTOCOL_URL_HEADER):]
         if source.startswith(ZIP_SOURCE_PROTOCOL):
@@ -230,7 +231,8 @@ class FileStag:
         :param params: Advanced parameters, protocol dependent
         :return: True if the file exists
         """
-        from .shared_archive import ZIP_SOURCE_PROTOCOL, SharedArchive
+        from .shared_archive import SharedArchive
+        from scistag.filestag import ZIP_SOURCE_PROTOCOL
         if filename.startswith(FILE_PATH_PROTOCOL_URL_HEADER):
             filename = filename[len(FILE_PATH_PROTOCOL_URL_HEADER):]
         if filename.startswith(ZIP_SOURCE_PROTOCOL):

@@ -1,17 +1,19 @@
 """
-Implements the :class:`FileSourceAzureStorage` class which allows iterating
+Implements the :class:`AzureStorageFileSource` class which allows iterating
 files stored in an Azure Blob Storage
 """
 from __future__ import annotations
+from typing import TYPE_CHECKING
 from collections.abc import Iterable
 from scistag.filestag.file_source import FileSource, FileSourceIterator, \
     FileListEntry
+from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
 
-AZURE_PROTOCOL_HEADER = "azure://"
-"SciStag identifier for Azure storage"
+if TYPE_CHECKING:
+    from azure.storage.blob import BlobServiceClient, ContainerClient
 
 
-class FileSourceAzureStorage(FileSource):
+class AzureStorageFileSource(FileSource):
     """
     FileSource implementation for processing files store in an Azure storage
     blob
@@ -20,8 +22,10 @@ class FileSourceAzureStorage(FileSource):
     container name, optionally further search parameters such as the file and
     then run
 
-    ``for cur_file in FileSourceAzure("azure://DefaultEnd=...=...;AccountKey=...
-    /container/path:", mask="*.png"): ...``
+    ..  code-block: python
+
+        for cur_file in AzureStorageFileSource("azure://DefaultEnd=...=...;AccountKey=...
+        /container/path:", mask="*.png"): ...
 
     to automatically connect through the storage and iterate through all files.
     """
@@ -41,14 +45,16 @@ class FileSourceAzureStorage(FileSource):
         self.timeout: int = int(params.pop("timeout", 30))
         "The connection timeout in seconds"
         super().__init__(**params)
-        from azure.storage.blob import BlobServiceClient, ContainerClient
+        if not source.startswith(AZURE_PROTOCOL_HEADER):
+            raise ValueError(
+                "source has be in the form azure://DefaultEndpoints...")
         source, container, search_path = self.split_azure_url(source)
         assert len(container)
-        self.service_client: BlobServiceClient = BlobServiceClient.from_connection_string(
-            source)
+        self.service_client: "BlobServiceClient" = \
+            self.service_from_connection_string(source)
         "Connector to the Azure storage"
-        self.container_client: ContainerClient = self.service_client.get_container_client(
-            container)
+        self.container_client: "ContainerClient" = \
+            self.service_client.get_container_client(container)
         "Connector to a specific container"
         self.connection_string = source
         "The connection string"
@@ -77,18 +83,31 @@ class FileSourceAzureStorage(FileSource):
                 self.save_file_list(self._file_list_name,
                                     version=self._file_list_version)
 
+    @staticmethod
+    def service_from_connection_string(
+            connection_string: str) -> "BlobServiceClient":
+        """
+        Creates a blob service connection using the provided connection string
+        :param connection_string: Connection string of the from
+            DefaultEndpoints...
+        :return: The blob client
+        """
+        from azure.storage.blob import BlobServiceClient
+        return BlobServiceClient.from_connection_string(connection_string)
+
     def _get_source_identifier(self) -> str:
         return f"{self.connection_string}|{self.container_name}"
 
     @classmethod
     def split_azure_url(cls, url: str) -> tuple[str, str, str] | None:
         """
-        Splits an Azure url of the foamt ``azure://CONNECTION_STRING_INCLUDING_KEY/container_name`` into it's
+        Splits an Azure url of the foamt ``azure://CONNECTION_STRING_INCLUDING_KEY/container_name`` into its
         components.
 
         :param url: The URL
-        :return: ConnectionString, ContainerName, SearchPath. If the container name or the search path are not
-            provided, empty strings will be returned.
+        :return: ConnectionString, ContainerName, SearchPath. If the container
+            name or the search path are not provided, empty strings will be
+            returned.
         """
         if not url.startswith(AZURE_PROTOCOL_HEADER):
             return None
@@ -122,6 +141,8 @@ class FileSourceAzureStorage(FileSource):
 
     def handle_get_next_filename(self, iterator: FileSourceIterator) -> \
             tuple[str, int] | None:
+        if self._file_list is not None:
+            return super().handle_get_next_filename(iterator)
         while True:
             if iterator.file_index == 0:
                 iterator.processing_data[
@@ -170,7 +191,7 @@ class FileSourceAzureStorage(FileSource):
     def handle_fetch_file_list(self, force: bool = False):
         if self._file_list is not None and not force:
             return
-        from scistag.common.iter import limit_iter
+        from scistag.common.iter_helper import limit_iter
         blob_iterator = self.setup_blob_iterator()
         if self.tag_filter_expression is not None:
             cleaned_list = [(element['name'], 0)

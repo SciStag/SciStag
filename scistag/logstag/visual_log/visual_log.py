@@ -29,6 +29,7 @@ from scistag.logstag import LogLevel
 from scistag.logstag.console_stag import Console
 from scistag.logstag.visual_log.sub_log import SubLog, SubLogLock
 from scistag.logstag.visual_log.visual_log_service import VisualLogService
+from ...webstag.web_helper import WebHelper
 
 # Error messages
 
@@ -105,7 +106,7 @@ class VisualLog:
                  continuous_write=False,
                  refresh_time_s=0.5,
                  max_fig_size: Size2DTypes | None = None,
-                 image_format: str = "png",
+                 image_format: str | tuple[str, int] = "png",
                  image_quality: int = 90):
         """
         Begins a test with visual outputs
@@ -124,7 +125,7 @@ class VisualLog:
         :param clear_target_dir: Defines if the target dir shall be deleted
             before starting (take care!)
         :param log_to_disk: Defines if the logger shall write it's results
-            to disk
+            to disk. True by default.
         :param embed_images: Defines if images shall be directly embedded into
             the HTML log instead of being stored as separate files.
 
@@ -139,6 +140,9 @@ class VisualLog:
             embedded figures and images
         :param image_format: The default output image format to store images
             and figures with. "png" by default.
+
+            You can also pass the image format and image quality in a tuple
+            such as ("jpg", 60).
 
             Alternatively "jpg" or "bmp" can be used (to minimize the bandwidth
             or in the later case if you are the intranet w/ unlimited bandwidth
@@ -256,6 +260,10 @@ class VisualLog:
         """
         A backup of the latest rendered page of each dynamic data type
         (excluding PDFs and PNGs which are just created on demand)
+        """
+        self._body_backups: dict[str, bytes] = {}
+        """
+        A backup of the latest body renderings for each content type
         """
         self.static_files: dict[str, bytes] = {}
         "Statically hosted files for a pure web based provision of the log"
@@ -535,8 +543,8 @@ class VisualLog:
         code += "</table>\n"
         self.html(code)
 
-    def image(self, name: str,
-              source: Image | Canvas | str | bytes | np.ndarray,
+    def image(self, source: Image | Canvas | str | bytes | np.ndarray,
+              name: str | None = None,
               alt_text: str | None = None,
               pixel_format: Optional["PixelFormat"] | str | None = None,
               download: bool = False,
@@ -545,8 +553,8 @@ class VisualLog:
         """
         Writes the image to disk for manual verification
 
-        :param name: The name of the test.
-            Will result in a file named logs/TEST_DIR/test_name.png
+        :param name: The name of the image under which it shall be stored
+            on disk (in case write_to_disk is enabled).
         :param source: The data object
         :param alt_text: An alternative text if no image can be displayed
         :param pixel_format: The pixel format (in case the image is passed
@@ -559,6 +567,8 @@ class VisualLog:
         """
         if not self._log_images:
             return
+        if name is None:
+            name = "image"
         if alt_text is None:
             alt_text = name
         if self._log_txt_images:
@@ -665,8 +675,11 @@ class VisualLog:
             if self._need_images_on_disk():
                 FileStag.save_file(target_filename, source)
         else:
+            extension = (self._image_format if
+                         isinstance(self._image_format, str)
+                         else self._image_format[0])
             target_filename = \
-                self.target_dir + f"/{filename}.{self._image_format}"
+                self.target_dir + f"/{filename}.{extension}"
             if self._need_images_on_disk():
                 FileStag.save_file(target_filename, encoded_image)
         if not self._embed_images:
@@ -858,14 +871,19 @@ class VisualLog:
         res = escaped.encode('ascii', 'xmlcharrefreplace')
         return res.decode("utf-8")
 
-    def log(self, text: Any, level: LogLevel = LogLevel.INFO):
+    def log(self, *args: Any, level: LogLevel | str = LogLevel.INFO,
+            space: str = " "):
         """
         Adds a log text to the log
 
         :param text: The text to add to the log
         :param level: The importance / category of the log entry
+        :param space: The character or text to be used for spaces
         :return:
         """
+        if isinstance(level, str):
+            level = LogLevel(level)
+        text = space.join(args)
         if text is None:
             text = "None"
         if not isinstance(text, str):
@@ -884,6 +902,24 @@ class VisualLog:
             self._add_md(f"```\n{text}\n```")
         self._add_txt(text)
         self.clip_logs()
+
+    def log_timestamp(self, prefix: str = "", postfix: str = ""):
+        """
+        Logs a timestamp to the log
+
+        :param prefix: The text before the timestamp
+        :param postfix: The text after the timestamp
+        :return:
+        """
+        from datetime import datetime
+        dt_object = datetime.now()
+        cur_time = f"{str(dt_object.date())} {str(dt_object.time())}"
+        elements = [cur_time]
+        if len(prefix) > 0:
+            elements.insert(0, prefix)
+        if len(postfix) > 0:
+            elements.append(postfix)
+        self.log("".join(elements))
 
     def get_vl_statistics(self) -> dict:
         """
@@ -909,7 +945,7 @@ class VisualLog:
                      f"{time.time() - self._start_time:0.2f} seconds"]],
                    index=True)
 
-    def df(self, name: str, df: pd.DataFrame, index: bool = True):
+    def df(self, df: pd.DataFrame, name: str | None = None, index: bool = True):
         """
         Adds a dataframe to the log
 
@@ -917,6 +953,8 @@ class VisualLog:
         :param df: The data frame
         :param index: Defines if the index shall be printed
         """
+        if name is None:
+            name = "dataframe"
         for element in self.forward_targets.values():
             element.df(name=name, df=df, index=index)
         if self._use_pretty_html_table:
@@ -951,7 +989,8 @@ class VisualLog:
             self._add_txt(string_table)
         self.clip_logs()
 
-    def figure(self, name: str, figure: plt.Figure | plt.Axes | Figure | Plot,
+    def figure(self, figure: plt.Figure | plt.Axes | Figure | Plot,
+               name: str | None = None,
                alt_text: str | None = None,
                _out_image_data: io.IOBase | None = None):
         """
@@ -964,11 +1003,13 @@ class VisualLog:
         :param _out_image_data: Receives the image data if provided (for
             debugging and assertion purposes)
         """
+        if name is None:
+            name = "figure"
         if not self._log_images and _out_image_data is None:
             return
         if isinstance(figure, (Figure, Plot)):
             image = figure.render()
-            self.image(name, image, alt_text=alt_text)
+            self.image(image, name, alt_text=alt_text)
             if _out_image_data is not None:
                 _out_image_data.write(
                     image.encode(filetype=self._image_format,
@@ -979,7 +1020,7 @@ class VisualLog:
         image_data = MPHelper.figure_to_png(figure, transparent=False)
         if _out_image_data is not None:
             _out_image_data.write(image_data)
-        self.image(name, image_data, alt_text=alt_text)
+        self.image(image_data, name, alt_text=alt_text)
 
     def log_dict(self, dict_or_list: dict | list):
         """
@@ -991,7 +1032,7 @@ class VisualLog:
 
         :param dict_or_list: The dictionary or list
         """
-        from scistag.common.dict import dict_to_bullet_list
+        from scistag.common.dict_helper import dict_to_bullet_list
         dict_tree = dict_to_bullet_list(dict_or_list, level=0, bold=True)
         self.md(dict_tree, exclude_targets={'txt'})
         if len(self._consoles) or self._txt_export:
@@ -1044,7 +1085,7 @@ class VisualLog:
             and can then be copies & pasted.
         """
         image_data = io.BytesIO()
-        self.figure(name, figure=figure, alt_text=alt_text,
+        self.figure(figure=figure, name=name, alt_text=alt_text,
                     _out_image_data=image_data)
         assert len(image_data.getvalue()) > 0
         result_hash_val = hashlib.md5(image_data.getvalue()).hexdigest()
@@ -1090,7 +1131,7 @@ class VisualLog:
         """
         if isinstance(data, Canvas):
             data = data.to_image()
-        self.image(name=name, source=data, alt_text=alt_text, scaling=scaling)
+        self.image(source=data, name=name, alt_text=alt_text, scaling=scaling)
         return data.get_hash()
 
     def assert_text(self, name: str, text: str, hash_val: str):
@@ -1403,24 +1444,48 @@ class VisualLog:
         with self._page_lock:
             self._page_backups[page_type] = content
 
-    def get_latest_page(self, page_type: str):
+    def get_page(self, format_type: str) -> bytes:
         """
-        Receives the newest update of the page of given type.
+        Receives the newest update of the page of given output type.
 
         If not done automatically (e.g. when using a VisualLiveLog)
         you might have to call render_pages yourself.
 
         This method is multi-threading secure.
 
-        :param page_type: The type of the page you want to receive
+        Assumes that render() or write_to_disk() or render was called before
+        since the last change. This is not necessary if continuous_write is
+        enabled.
+
+        :param format_type: The type of the page you want to receive
         :return: The page's content.
         """
         with self._page_lock:
-            if page_type in self._page_backups:
-                return self._page_backups[page_type]
+            if format_type in self._page_backups:
+                return self._page_backups[format_type]
             return b""
 
-    def render(self, formats: set[str] | None = None):
+    def get_body(self, format_type: str) -> bytes:
+        """
+        Returns the latest body data.
+
+        Contains only the part of that format w/ header and footer.
+        Can be used to for example embed one log's content in another log
+        such as main_log.html(sub_log.get_body("html"))
+
+        Assumes that render() or write_to_disk() or render was called before
+        since the last change. This is not necessary if continuous_write is
+        enabled.
+
+        :param format_type: The type of the page you want to receive
+        :return: The page's content.
+        """
+        with self._page_lock:
+            if format_type in self._body_backups:
+                return self._body_backups[format_type]
+            return b""
+
+    def render(self, formats: set[str] | None = None) -> VisualLog:
         """
         Renders all pages - so combines the main log with the sub logs
         of the supported output types (html, txt, md etc.) and stores
@@ -1428,11 +1493,16 @@ class VisualLog:
 
         The page data for each type can be received via :meth:`get_latest_page`.
 
-        :param formats:
+        :param formats: A set of the formats which shall be rendered.
+
+            None = All configured formats.
+        :return: The VisualLog object
         """
         if formats is None:
             formats = self._log_formats
         bodies = self._build_body(self._logs)
+        with self._page_lock:
+            self._body_backups = bodies
         # store html
         if self._html_export and self._html_filename is not None and len(
                 self._html_filename) > 0 and HTML in formats:
@@ -1453,9 +1523,10 @@ class VisualLog:
                 console.clear()
                 body = bodies[CONSOLE]
                 console.print(body.decode("ascii"))
+        return self
 
     def write_to_disk(self, formats: set[str] | None = None,
-                      render=True):
+                      render=True) -> VisualLog:
         """
         Writes the rendered pages from all (or all specified) formats to
         disk.
@@ -1464,6 +1535,7 @@ class VisualLog:
 
             e.g. {"html, "txt") etc. By default all formats will be stored.
         :param render: Defines if the pages shall be rendered (if necessary)
+        :return: The VisualLog object
         """
         if formats is None:
             formats = self._log_formats
@@ -1476,24 +1548,28 @@ class VisualLog:
             if self._html_export and self._html_filename is not None and \
                     len(self._html_filename) > 0 and HTML in formats:
                 FileStag.save_file(self._html_filename,
-                                   self.get_latest_page(HTML))
+                                   self.get_page(HTML))
                 # store markdown
             if self._md_export and self._md_filename is not None and \
                     len(self._md_filename) > 0 and MD in formats:
-                FileStag.save_file(self._md_filename, self.get_latest_page(MD))
+                FileStag.save_file(self._md_filename, self.get_page(MD))
             # store txt
             if self._txt_export and self._txt_filename is not None and \
                     len(self._txt_filename) > 0 and TXT in formats:
                 FileStag.save_file(self._txt_filename,
-                                   self.get_latest_page(TXT))
+                                   self.get_page(TXT))
+        return self
 
-    def finalize(self):
+    def finalize(self) -> VisualLog:
         """
         Finalizes the report and writes it to disk
+
+        :return: The VisualLog object
         """
         self.write_to_disk(render=True)
         if FilePath.exists(self._tmp_path):
             shutil.rmtree(self._tmp_path)
+        return self
 
     def create_web_service(self, support_flask: bool = False,
                            url_prefix: str = "") -> "WebStagService":
@@ -1518,10 +1594,11 @@ class VisualLog:
 
     def run_server(self,
                    host: str = "127.0.0.1",
-                   port=8010,
+                   port: int | tuple[int, int] = 8010,
                    public_ips: str | list[str] | None = None,
                    builder: VisualLogBuilderCallback | None = None,
                    continuous: bool | None = None,
+                   wait: bool = False,
                    auto_clear: bool | None = None,
                    overwrite: bool | None = None,
                    threaded: bool = False,
@@ -1541,10 +1618,14 @@ class VisualLog:
             - 127.0.0.1 = Local access only (default) as
               "there is no place like localhost".
             - "0.0.0.0" = Listen at all local network adapters
-        :param port: The port ot listen at. 8010 by default
+        :param port: The port ot listen at or a port range to select the
+            first port within. 8010 by default. 0 for a random port.
         :param public_ips: If you run the service on a virtual machine in
             the cloud you can pass its public IPs to log the correct
             connection URls to the console.
+
+            If you pass "auto" as ip the public IP will be auto-detected via
+            ipify.
         :param builder: An (optional) function to be called to build or
             (repetitively) rebuild the log's content.
 
@@ -1559,6 +1640,15 @@ class VisualLog:
             continuously.
 
             False by default.
+        :param wait: Defines if also a non-continuous log shall wait till
+            the log has been terminated. (via :meth:`terminate`) or the
+            application was killed via Ctrl-C.
+
+            Has no effect if threaded is False (because the server will anyway
+            block the further execution then) or if continuous is set to True.
+
+            Basically it acts like the "continuous" mode just with the
+            difference that the builder function is just called once.
         :param auto_clear: Defines if then log shall be cleared automatically
             when being rebuild with `continuous=True`.
         :param overwrite: If set to False it will only call the `builder`
@@ -1611,6 +1701,7 @@ class VisualLog:
                                services=[service],
                                silent=not server_logs,
                                **kwargs)
+        port = server.port
         self._server = server
         if continuous is not None:
             if builder is None:
@@ -1625,12 +1716,6 @@ class VisualLog:
                     raise ValueError(_CONTINUOUS_REQUIRES_OVERWRITE)
         else:
             continuous = False
-        if not continuous:
-            overwrite = overwrite if overwrite is not None else True
-            if builder is not None:  # call once
-                if overwrite is True or not self.load_old_logs():
-                    builder(self)
-                    self.write_to_disk()
         if public_ips is not None:  # clean public IPs
             if isinstance(public_ips, str):
                 public_ips = [public_ips]
@@ -1638,6 +1723,11 @@ class VisualLog:
             public_ips = [host]
             if host != "127.0.0.1" and host != "localhost":
                 public_ips.append("localhost")
+        # auto-detect public if "auto" is passed
+        for index, element in enumerate(public_ips):
+            if element == "auto":
+                public_ips[index] = WebHelper.get_public_ip()
+        # show URLs if desired
         if show_urls:
             print("\nVisualLog web service started\n")
             print("Connect at:")
@@ -1647,10 +1737,35 @@ class VisualLog:
                 print(
                     f"* http://{cur_ip}:{port}{url_prefix}/live for "
                     f"the auto-reloader")
+                print('\n')
+        overwrite = overwrite if overwrite is not None else True
+        if not continuous and not threaded:  # if the server will block execute
+            # once here, otherwise after the server started
+            if builder is not None:  # call once
+                if overwrite is True or not self.load_old_logs():
+                    builder(self)
+                    self.write_to_disk()
         server.start(threaded=threaded, test=test)
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
+        elif threaded:
+            if builder is not None:  # call once
+                if overwrite is True or not self.load_old_logs():
+                    builder(self)
+                    self.write_to_disk()
+            if wait:
+                self.sleep()
+
+    def sleep(self):
+        """
+        Sleeps and handles input events until the application is either
+        terminated by Ctrl-L or by an exit button added to the log or a quit
+        call triggered.
+        """
+        print("\nZzzzzzz - Press Ctrl-C to terminate\n")
+        while not self._shall_terminate:
+            time.sleep(self.refresh_time_s)
 
     def run(self,
             builder: VisualLogBuilderCallback,

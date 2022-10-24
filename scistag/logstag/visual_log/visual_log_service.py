@@ -5,6 +5,7 @@ content via http.
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -27,7 +28,14 @@ class VisualLogService:
         """
         Returns the most recent index.html
         """
-        return self.log.get_latest_page("html")
+        return self.log.get_page("html")
+
+    def get_pid(self):
+        """
+        Returns the log's process id
+        :return: The log's process ID
+        """
+        return f"{os.getpid()}"
 
     def live(self):
         """

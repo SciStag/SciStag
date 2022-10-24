@@ -1,9 +1,18 @@
-Goals v0.0.3 - Sep/October 2022
+Goals v0.0.4 - November 2022
 -------------------------------
 - Refactoring the Widget class to minimize amount of getter and setter methods and to remove the cryptic params
   parameter for init methods.
 - Buttons, Sliders, Progress bars as Widgets
 - Granting access to Material Design icons
+
+Goals v0.0.3 - October 2022
+-------------------------------
+- Advanced support for FileSinks in zip archives & Azure
+- Effective logging and access for logs on virtual machines
+- Providing access to the system's health status via the VisualLog server
+- Providing time measurement and assumed process finishing in VirtualLog
+- Add timestamps to log entries for a better overview
+- Storing intermediate VisualLog reports in the cloud
 - Unit test coverage of >80%
 - Finalization of Emoji support
 
