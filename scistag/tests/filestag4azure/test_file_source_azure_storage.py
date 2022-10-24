@@ -3,7 +3,7 @@ import pytest
 import scistag.tests
 from scistag.common import ConfigStag
 from scistag.filestag import FileSource
-from scistag.filestag.azure_storage_file_source import \
+from scistag.filestag.azure.azure_storage_file_source import \
     AzureStorageFileSource
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
 

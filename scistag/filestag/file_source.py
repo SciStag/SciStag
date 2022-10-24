@@ -336,7 +336,7 @@ class FileSource:
             from scistag.filestag.file_source_zip import FileSourceZip
             return FileSourceZip(source=source, **params)
         if source.startswith(AZURE_PROTOCOL_HEADER):
-            from scistag.filestag.azure_storage_file_source import \
+            from scistag.filestag.azure.azure_storage_file_source import \
                 AzureStorageFileSource
             return AzureStorageFileSource(source=source, **params)
         if not (source.endswith("/") or source.endswith(
