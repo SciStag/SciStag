@@ -64,7 +64,7 @@ def test_zip_in_memory():
     """
     Test using a memory zip
     """
-    zip_data = FileStag.load_file(ESSENTIAL_DATA_ARCHIVE_NAME)
+    zip_data = FileStag.load(ESSENTIAL_DATA_ARCHIVE_NAME)
     with FileSource.from_source(zip_data) as test_source:
         assert test_source._file_list is None
 
@@ -85,7 +85,7 @@ def test_dynamic_filtering():
     """
     Test using a memory zip
     """
-    zip_data = FileStag.load_file(ESSENTIAL_DATA_ARCHIVE_NAME)
+    zip_data = FileStag.load(ESSENTIAL_DATA_ARCHIVE_NAME)
     with FileSource.from_source(zip_data, search_mask="*.png") as test_source:
         assert test_source._file_list is None
         files_handled = 0

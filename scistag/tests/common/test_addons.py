@@ -123,7 +123,7 @@ def test_addon_access():
     assert len(paths) == 1
     assert "emojis.svg" in paths
     svg_path = paths["emojis.svg"]
-    test_file = FileStag.load_file(
+    test_file = FileStag.load(
         svg_path + "images/noto/emojis/svg/emoji_u00a9.svg")
     assert len(test_file) == 2483
     installed_addons = AddonManager.get_installed_addons()

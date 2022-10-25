@@ -71,7 +71,7 @@ class VisualLiveLog(VisualLog):
         self._frames_since_check = 0
         "Frames / updates executed since last check"
         new_template = \
-            FileStag.load_text_file(FilePath.absolute_comb(
+            FileStag.load_text(FilePath.absolute_comb(
                 "templates/left_right_layout.html"))
         self._renderers[HTML].set_sub_logs(['liveLog'])
         self._renderers[HTML]. \

@@ -19,20 +19,20 @@ class VisualLogHtmlRenderer(VisualLogRenderer):
     def __init__(self):
         super().__init__()
         self.title = "Visual Live Log"
-        self.css = FileStag.load_text_file(
+        self.css = FileStag.load_text(
             os.path.dirname(__file__) + "/css/visual_log.css")
 
         new_body_template = \
-            FileStag.load_text_file(FilePath.absolute_comb(
+            FileStag.load_text(FilePath.absolute_comb(
                 "templates/staticLog/default_log.html"))
         self.set_body_template(new_body_template,
                                sub_logs=[MAIN_LOG])
         new_header_template = \
-            FileStag.load_text_file(FilePath.absolute_comb(
+            FileStag.load_text(FilePath.absolute_comb(
                 "templates/base_header.html"))
         self.set_header_template(new_header_template)
         new_footer_template = \
-            FileStag.load_text_file(FilePath.absolute_comb(
+            FileStag.load_text(FilePath.absolute_comb(
                 "templates/base_footer.html"))
         self.set_footer_template(new_footer_template)
 

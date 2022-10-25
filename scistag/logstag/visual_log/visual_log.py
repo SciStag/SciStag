@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from scistag.common import StagLock
+from scistag.common import StagLock, Component
 from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Image, Canvas, Size2D, Size2DTypes
 from scistag.plotstag import Figure, Plot, MPHelper
@@ -55,6 +55,8 @@ if TYPE_CHECKING:
     from .visual_log_renderer_html import VisualLogHtmlRenderer
     from scistag.webstag.server import WebStagServer
     from scistag.webstag.server import WebStagService
+    from scistag.logstag.visual_log.pyplot_log_context import \
+        PyPlotLogContext
 
 HTML = "html"
 "Html output"
@@ -78,7 +80,7 @@ to be called once or continuously to update the log.
 """
 
 
-class VisualLog:
+class VisualLog(Component):
     """
     Class for the live creation of technical documentations, logs in various
     formats such as HTML, Markdown, Text or PDFs or for  interactive, HTML based
@@ -107,7 +109,9 @@ class VisualLog:
                  refresh_time_s=0.5,
                  max_fig_size: Size2DTypes | None = None,
                  image_format: str | tuple[str, int] = "png",
-                 image_quality: int = 90):
+                 image_quality: int = 90,
+                 cache_dir: str | None = None,
+                 cache_name: str = ""):
         """
         Begins a test with visual outputs
 
@@ -150,6 +154,14 @@ class VisualLog:
         :param image_quality: The default image output quality. 90 by default.
 
             Values between 0 and 100 are valid.
+        :param cache_dir: The directory in which data which shall be cached
+            between multiple execution sessions shall be dumped to disk.
+
+            By default "{target_dir}/.stscache".
+        :param cache_name: The cache's identifier. If multiple logs store data
+            into the same logging directory this can be used to ensure their
+            caching directories don't accidentally overlap w/o having to
+            provide the whole path via cache_dir.
         """
         try:
             if clear_target_dir and log_to_disk:
@@ -159,14 +171,21 @@ class VisualLog:
             pass
         if formats_out is None:
             formats_out = {"html"}
-        self.ref_dir = FilePath.norm_path(
-            target_dir + "/ref" if ref_dir is None else ref_dir)
-        "The directory in which reference files for comparison shall be stored"
-        self._tmp_path = FilePath.norm_path(
-            target_dir + "/temp" if tmp_dir is None else tmp_dir)
-        "Output directory for temporary files"
+        if len(cache_name) > 0:
+            cache_name = f"{cache_name}/"
+        if cache_dir is None:
+            cache_dir = f"{os.path.abspath(target_dir)}/.stscache/{cache_name}"
+        else:
+            cache_dir = f"{cache_dir}/{cache_name}"
+        super().__init__(cache_dir=cache_dir)
         self.target_dir = os.path.abspath(target_dir)
         "The directory in which the logs shall be stored"
+        self.ref_dir = FilePath.norm_path(
+            self.target_dir + "/ref" if ref_dir is None else ref_dir)
+        "The directory in which reference files for comparison shall be stored"
+        self._tmp_path = FilePath.norm_path(
+            self.target_dir + "/temp" if tmp_dir is None else tmp_dir)
+        "Output directory for temporary files"
         if log_to_disk:
             os.makedirs(self.target_dir, exist_ok=True)
         self._log_to_disk = log_to_disk
@@ -338,7 +357,7 @@ class VisualLog:
             abs_filename = os.path.abspath(self.target_dir + "/" + filename)
             if not abs_filename.startswith(self.target_dir):
                 return None
-            return FileStag.load_file(abs_filename)
+            return FileStag.load(abs_filename)
 
     def set_log_limit(self, limit: int):
         """
@@ -488,17 +507,17 @@ class VisualLog:
         on disk.
         """
         base_path = self._get_module_path()
-        css = FileStag.load_file(base_path + "/css/visual_log.css")
+        css = FileStag.load(base_path + "/css/visual_log.css")
         if self._log_to_disk:
-            FileStag.save_file(f"{self.target_dir}/css/visual_log.css",
-                               css,
-                               create_dir=True)
+            FileStag.save(f"{self.target_dir}/css/visual_log.css",
+                          css,
+                          create_dir=True)
         self.add_static_file("css/visual_log.css",
                              css)
         import jinja2
         environment = jinja2.Environment()
         template = environment.from_string(
-            FileStag.load_text_file(base_path + "/templates/liveView.html"))
+            FileStag.load_text(base_path + "/templates/liveView.html"))
         rendered_lv = template.render(title="VisualLiveLog Viewer",
                                       reload_timeout=2000,
                                       retry_frequency=100,
@@ -506,8 +525,8 @@ class VisualLog:
                                           self._refresh_time_s * 1000),
                                       reload_url="index.html")
         if self._log_to_disk:
-            FileStag.save_text_file(self.target_dir + "/liveView.html",
-                                    rendered_lv)
+            FileStag.save_text(self.target_dir + "/liveView.html",
+                               rendered_lv)
         rendered_lv = template.render(title="VisualLiveLog Viewer",
                                       reload_timeout=2000,
                                       retry_frequency=100,
@@ -683,7 +702,7 @@ class VisualLog:
             target_filename = self.target_dir + \
                               f"/{filename}.{file_type.extension}"
             if self._need_images_on_disk():
-                FileStag.save_file(target_filename, source)
+                FileStag.save(target_filename, source)
         else:
             extension = (self._image_format if
                          isinstance(self._image_format, str)
@@ -691,7 +710,7 @@ class VisualLog:
             target_filename = \
                 self.target_dir + f"/{filename}.{extension}"
             if self._need_images_on_disk():
-                FileStag.save_file(target_filename, encoded_image)
+                FileStag.save(target_filename, encoded_image)
         if not self._embed_images:
             self._add_html(
                 f'<img src="{os.path.basename(target_filename)}">{html_lb}')
@@ -1032,6 +1051,25 @@ class VisualLog:
             _out_image_data.write(image_data)
         self.image(image_data, name, alt_text=alt_text)
 
+    def pyplot(self) -> "PyPlotLogContext":
+        """
+        Opens a matplotlib context to add a figure directly to the plot.
+
+        Also takes care off that no other thread is using matplotlib so you
+        can safely plot using this function and matplotlib from multiple
+        threads at once.
+
+        ..  code-block:
+
+            with vl.pyplot() as plt:
+                figure = plt.figure(figsize=(8,4))
+                plt.imshow(some_image_matrix)
+        """
+        from scistag.logstag.visual_log.pyplot_log_context import \
+            PyPlotLogContext
+        log_context = PyPlotLogContext(self)
+        return log_context
+
     def log_dict(self, dict_or_list: dict | list):
         """
         Logs a dictionary or a list.
@@ -1299,7 +1337,7 @@ class VisualLog:
         hashed_name = self._get_hashed_filename(name)
         os.makedirs(self.ref_dir, exist_ok=True)
         hash_fn = self.ref_dir + "/" + hashed_name + ".dmp"
-        FileStag.save_file(hash_fn, data)
+        FileStag.save(hash_fn, data)
 
     def load_ref(self, name: str) -> bytes | None:
         """
@@ -1311,7 +1349,7 @@ class VisualLog:
         hashed_name = self._get_hashed_filename(name)
         hash_fn = self.ref_dir + "/" + hashed_name + ".dmp"
         if FileStag.exists(hash_fn):
-            return FileStag.load_file(hash_fn)
+            return FileStag.load(hash_fn)
         return None
 
     def _get_hashed_filename(self, name):
@@ -1557,17 +1595,17 @@ class VisualLog:
             # store html
             if self._html_export and self._html_filename is not None and \
                     len(self._html_filename) > 0 and HTML in formats:
-                FileStag.save_file(self._html_filename,
-                                   self.get_page(HTML))
+                FileStag.save(self._html_filename,
+                              self.get_page(HTML))
                 # store markdown
             if self._md_export and self._md_filename is not None and \
                     len(self._md_filename) > 0 and MD in formats:
-                FileStag.save_file(self._md_filename, self.get_page(MD))
+                FileStag.save(self._md_filename, self.get_page(MD))
             # store txt
             if self._txt_export and self._txt_filename is not None and \
                     len(self._txt_filename) > 0 and TXT in formats:
-                FileStag.save_file(self._txt_filename,
-                                   self.get_page(TXT))
+                FileStag.save(self._txt_filename,
+                              self.get_page(TXT))
         return self
 
     def finalize(self) -> VisualLog:
@@ -1603,7 +1641,7 @@ class VisualLog:
         return service
 
     def run_server(self,
-                   host: str = "127.0.0.1",
+                   host_name: str = "127.0.0.1",
                    port: int | tuple[int, int] = 8010,
                    public_ips: str | list[str] | None = None,
                    builder: VisualLogBuilderCallback | None = None,
@@ -1623,7 +1661,7 @@ class VisualLog:
         This way you can either provide the log as a static website or
         even update it dynamically and
 
-        :param host: The IP(s) to listen at.
+        :param host_name: The IP(s) to listen at.
 
             - 127.0.0.1 = Local access only (default) as
               "there is no place like localhost".
@@ -1706,7 +1744,7 @@ class VisualLog:
         from scistag.webstag.server import WebStagServer
         service = self.create_web_service(support_flask=True,
                                           url_prefix=url_prefix)
-        server = WebStagServer(host_name=host,
+        server = WebStagServer(host_name=host_name,
                                port=port,
                                services=[service],
                                silent=not server_logs,
@@ -1730,8 +1768,8 @@ class VisualLog:
             if isinstance(public_ips, str):
                 public_ips = [public_ips]
         else:
-            public_ips = [host]
-            if host != "127.0.0.1" and host != "localhost":
+            public_ips = [host_name]
+            if host_name != "127.0.0.1" and host_name != "localhost":
                 public_ips.append("localhost")
         # auto-detect public if "auto" is passed
         for index, element in enumerate(public_ips):

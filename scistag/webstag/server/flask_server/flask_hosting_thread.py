@@ -6,13 +6,13 @@ in a separate thread.
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from threading import Thread
+from scistag.common.mt import ManagedThread
 
 if TYPE_CHECKING:
     from scistag.webstag.server.web_stag_server import WebStagServer
 
 
-class FlaskHostingThread(Thread):
+class FlaskHostingThread(ManagedThread):
     """
     Executes a Flask server in a separate thread so that it can run in parallel
     to another main application.
@@ -22,7 +22,7 @@ class FlaskHostingThread(Thread):
         """
         :param server: The server to run in this thread
         """
-        super().__init__()
+        super().__init__("FlaskServer")
         self.server = server
         from scistag.webstag.server.web_stag_server import WebStagServer
         assert isinstance(server, WebStagServer)

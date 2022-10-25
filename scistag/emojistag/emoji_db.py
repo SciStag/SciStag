@@ -98,7 +98,7 @@ class EmojiDb:
             if len(cls._markdown_names) > 0:
                 return cls._markdown_names
             edp = get_edp()
-            file_data = FileStag.load_file(edp + _EMOJI_NAMES_MARKDOWN)
+            file_data = FileStag.load(edp + _EMOJI_NAMES_MARKDOWN)
             cls._markdown_names = json.load(io.BytesIO(file_data))
             return cls._markdown_names
 
@@ -115,7 +115,7 @@ class EmojiDb:
             if len(cls._unicode_names) > 0:
                 return cls._unicode_names
             edp = get_edp()
-            file_data = FileStag.load_file(edp + _EMOJI_NAMES)
+            file_data = FileStag.load(edp + _EMOJI_NAMES)
             cls._unicode_names = json.load(io.BytesIO(file_data))
             return cls._unicode_names
 
@@ -144,7 +144,7 @@ class EmojiDb:
             if len(cls._main_dict) > 0:
                 return cls._main_dict
             edp = get_edp()
-            file_data = FileStag.load_file(edp + _EMOJI_DB_NAME)
+            file_data = FileStag.load(edp + _EMOJI_DB_NAME)
             cls._main_dict = json.load(io.BytesIO(file_data))
             return cls._main_dict
 
@@ -258,7 +258,7 @@ class EmojiDb:
             extensions[
                 EMOJI_SVG_ADDON] + \
             f"images/noto/emojis/svg/emoji_u{combined}.svg"
-        return FileStag.load_file(emoji_path)
+        return FileStag.load(emoji_path)
 
     @classmethod
     def get_emoji_png(cls,
@@ -273,7 +273,7 @@ class EmojiDb:
         combined = "_".join(lower_cased)
         edp = get_edp()
         emoji_path = edp + f"images/noto/cpngs/emoji_u{combined}.png"
-        return FileStag.load_file(emoji_path)
+        return FileStag.load(emoji_path)
 
     @classmethod
     def get_emoji_details(cls, sequence: list[str]) -> EmojiInfo | None:

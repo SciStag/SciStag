@@ -55,7 +55,7 @@ class LiveCameraDemo:
                              image_quality=80)
         view = cls()  # create object instance
         test_log.run_server(continuous=True,  # update continuously
-                            host="0.0.0.0",  # host on all adapters
+                            host_name="0.0.0.0",  # host on all adapters
                             threaded=True,  # required for continuous hosting
                             auto_clear=True,  # clear log for us each turn
                             url_prefix="/webcamDemo",  # host at /webCamDemo

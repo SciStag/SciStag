@@ -148,7 +148,7 @@ class ColorMapFilter(ImageFilter):
             if cls._color_map_data is not None:
                 return
             fn = FilePath.absolute_comb("color_maps.json")
-            group_data = FileStag.load_json_file(fn)
+            group_data = FileStag.load_json(fn)
             cls._color_map_data = ColorMapData.parse_obj(group_data)
             cls._color_map_names = set()
             for element in cls._color_map_data.categories:

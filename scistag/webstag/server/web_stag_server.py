@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 
 from threading import Thread
 
+from scistag.common.mt import ManagedThread
+
 if TYPE_CHECKING:
     from flask import Flask
 
@@ -54,7 +56,7 @@ class WebStagServer:
         "The services to be hosted"
         self._started = False
         "Defines if the server was started already"
-        self.server_thread: Thread | None = None
+        self.server_thread: ManagedThread | None = None
         "The thread which executes the server"
         self.host_name = host_name
         if port == 0:

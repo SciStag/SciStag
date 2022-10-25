@@ -25,7 +25,7 @@ class MemoryZip(zipfile.ZipFile):
         if source is not None:
             data = source
             if not isinstance(data, bytes):
-                data = FileStag.load_file(source)
+                data = FileStag.load(source)
             self._stream = io.BytesIO(data)
             super().__init__(file=self._stream, mode="a", **kwargs)
         else:

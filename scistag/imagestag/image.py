@@ -169,7 +169,7 @@ class Image(ImageBase):
         if isinstance(source, str):
             if source.startswith("http://") or source.startswith("http:s//"):
                 params['cache'] = params.get("cache", True)
-            source = FileStag.load_file(source, **params)
+            source = FileStag.load(source, **params)
             if source is None:
                 raise ValueError("Image data could not be received")
         return source, pixel_format

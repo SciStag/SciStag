@@ -46,10 +46,10 @@ class FileSourceZip(FileSource):
         if isinstance(source, str):  # local file
             self.source_filename = source
             self.source_identifier = source
-            if FileStag.is_simple_filename(source):
+            if FileStag.is_simple(source):
                 source = zipfile.ZipFile(source, "r")
             else:  # from repo or from the web
-                data_stream = io.BytesIO(FileStag.load_file(source))
+                data_stream = io.BytesIO(FileStag.load(source))
                 source = zipfile.ZipFile(data_stream, "r")
         elif isinstance(source, bytes):  # from bytes
             data_stream = io.BytesIO(source)

@@ -2,6 +2,8 @@
 Implements the :class:`Component` class - the base class for all intelligent
 components such as Widgets ans Slides.
 """
+import os
+from typing import Any
 
 
 class Component:
@@ -20,7 +22,7 @@ class Component:
     * See :attr:`properties` for details about the property handling.
     """
 
-    def __init__(self):
+    def __init__(self, cache_dir: str = None):
         self.properties = {}
         """
         Stores this classes' properties and their behavior.
@@ -40,7 +42,10 @@ class Component:
         To define read-only properties set theirs "readOnly" flag such as 
         ``self.properties['x'] = {"readOnly": True}`` 
         
-        For further details see :const:`Component.PROPERTIES`.        
+        For further details see :const:`Component.PROPERTIES`.
+        
+        :param cache_dir: The directory in which temporary computing results
+            can be stored on disk.        
         """
         self._cache = {}
         """
@@ -51,6 +56,9 @@ class Component:
         handle_unload(). This can be used to store data only while a component 
         is being used, a Widget is visible etc. See :meth:`handle_load`.
         """
+        from scistag.common.disk_cache import DiskCache
+        self._disk_cache = DiskCache(cache_dir=cache_dir)
+        "Cache for persisting data between execution sessions"
         self.loaded = False
         "Defines if the component was correctly loaded"
         self._is_loading = False
@@ -100,7 +108,9 @@ class Component:
 
     def unload(self):
         """
-        Call this this to unload all data from your component.
+        Call this to unload all data from your component which was created
+        during the handle_load execution and not flagged via a slash ("/")
+        in its name as element to cache on disk.
         """
         if not self.loaded:
             raise RuntimeError(
@@ -219,26 +229,36 @@ class Component:
         :param value: The value to assign
         """
         assert len(key) > 0
-        if not key[0].isalpha():
+        if not key[0].isalpha() and not key.startswith("./"):
             raise ValueError("Keys has to start with a character")
+        if "/" in key:
+            self._disk_cache.set(key, value, {})
+            return
         # flag of volatile if added during loading process
         if key not in self._cache and self._is_loading:
             self._volatile_cache_entries.add(key)
         self._cache[key] = value
 
-    def __getitem__(self, item):
+    def __getitem__(self, key) -> Any:
         """
         Returns a value from the cache.
 
         If the element does not exist a ValueError exception will be raised.
 
-        :param item: The item's name.
+        :param key: The item's name.
         :return: The item's value
+
+        Throws KeyError if the item is not found.
         """
-        if item in self._cache:
-            return self._cache[item]
+        if "/" in key:
+            data = self._disk_cache.get(key)
+            if data is None:
+                raise KeyError("Cache item not found")
+            return data
+        if key in self._cache:
+            return self._cache[key]
         else:
-            raise ValueError("Cache item not found")
+            raise KeyError("Cache item not found")
 
     def __delitem__(self, key):
         """
@@ -248,18 +268,22 @@ class Component:
 
         :param key: The element's name
         """
+        if "/" in key:
+            data = self._disk_cache.delete(key)
         if key not in self._cache:
-            raise ValueError(f"The value {key} is not defined in the cache")
+            raise KeyError(f"The value {key} is not defined in the cache")
         del self._cache[key]
 
-    def __contains__(self, item) -> bool:
+    def __contains__(self, key) -> bool:
         """
         Returns if an element exists in the cache.
 
-        :param item: The item's name
+        :param key: The item's name
         :return: True if the item exists.
         """
-        return item in self._cache
+        if "/" in key:
+            return key in self._disk_cache
+        return key in self._cache
 
     PROPERTIES = {}
     """

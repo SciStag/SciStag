@@ -49,7 +49,7 @@ class RegisteredFont:
         for variation in self.variations:
             if flags == variation[1]:
                 full_name = self.base_path + variation[0] + self.extension
-                data = FileStag.load_file(full_name)
+                data = FileStag.load(full_name)
                 font = Font(source=data, size=size, framework=ImsFramework.PIL)
                 return font
         return None

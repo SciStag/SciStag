@@ -410,7 +410,7 @@ class FileSource:
         :return: True if a valid list could be loaded.
         """
         if not isinstance(source, bytes):
-            source = FileStag.load_file(source)
+            source = FileStag.load(source)
         if source is None:
             return False
         data = Bundle.unpack(source)
@@ -437,7 +437,7 @@ class FileSource:
 
             If -1 is passed the version is ignored.
         """
-        FileStag.save_file(target, self.encode_file_list(version=version))
+        FileStag.save(target, self.encode_file_list(version=version))
 
     def set_file_list(self, new_list: list[str] | list[FileListEntry]):
         """

@@ -62,7 +62,7 @@ class ConfigStag:
             UnderScores will be replaced by dots. All variables will be imported relative to base_branch
         """
         with cls.access_lock:
-            data = FileStag.load_file(source)
+            data = FileStag.load(source)
             if data is None:
                 if environment is not None and len(environment) > 0:
                     cls.import_environment(base_branch, environment)
