@@ -56,7 +56,7 @@ class LiveCameraDemo:
         view = cls()  # create object instance
         test_log.run_server(continuous=True,  # update continuously
                             host_name="0.0.0.0",  # host on all adapters
-                            threaded=True,  # required for continuous hosting
+                            mt=True,  # required for continuous hosting
                             auto_clear=True,  # clear log for us each turn
                             url_prefix="/webcamDemo",  # host at /webCamDemo
                             builder=view.update_function)  # our update func

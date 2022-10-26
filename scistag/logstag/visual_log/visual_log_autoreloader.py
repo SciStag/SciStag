@@ -11,15 +11,23 @@ embeds its content and provides on a website.
 
 from __future__ import annotations
 
-import ctypes
 import inspect
 import os.path
 import sys
 import time
 from importlib import reload
+from typing import Union, TYPE_CHECKING
 
 from scistag.filestag import FileStag
 from scistag.logstag import VisualLog
+
+if TYPE_CHECKING:
+    from scistag.common.cache import Cache
+
+ERROR_TEXT = "Yikes! An error occurred 🙍 - Please fix the bug 🐛 above and save the file to continue"
+"Error text to be shown when the module stopped working"
+HEALTHY_AGAIN_TEXT = "Yay - the module is healthy again, let's rock on! 🤘👨"
+"Text to be shown when healthy again"
 
 
 class VisualLogAutoReloader:
@@ -28,16 +36,24 @@ class VisualLogAutoReloader:
     The main log which is staying alive during the restart sessions and is
     connected to the http server to host it's content.
     """
-    initial_filename: str = ""
+    _initial_filename: str = ""
     "The name of the source file which initially started the reload process"
-    embedded_log: VisualLog | None = None
+    _embedded_log: VisualLog | None = None
     """
     The log which shall get embedded. (the actual content).
     
     This log will be re-created each modification turn.
     """
-    reloading: bool = False
+    _reloading: bool = False
     "Defines if the log is currently reloading"
+    _cache_backup: Union["Cache", None] = None
+    "A backup of the log's cache from the last execution session"
+    content = None
+    "The last file content state"
+    imp_module = None
+    "The name of the module we need to reimport"
+    was_sick: bool = False
+    "Flag if the last time there was an error which stopped the reloading"
 
     @classmethod
     def setup(cls, refresh_time_s: float = 0.1, **params):
@@ -65,7 +81,7 @@ class VisualLogAutoReloader:
 
         :param log: The new log of the current run
         """
-        cls.embedded_log = log
+        cls._embedded_log = log
 
     @classmethod
     def update_content(cls):
@@ -73,11 +89,11 @@ class VisualLogAutoReloader:
         Updates the log's content by rendering first the embedded log
         and then the main (server) log which embeds it.
         """
-        if cls.log_server is None or cls.embedded_log is None:
+        if cls.log_server is None or cls._embedded_log is None:
             return
-        cls.embedded_log.render()
+        cls._embedded_log.render()
         cls.log_server.clear_logs()
-        cls.log_server.embed(cls.embedded_log)
+        cls.log_server.embed(cls._embedded_log)
         cls.log_server.render()
 
     @classmethod
@@ -95,7 +111,7 @@ class VisualLogAutoReloader:
         :return: True if the function from which this method was called
             was once the "__main__" module.
         """
-        return cls.initial_filename == inspect.stack()[_stack_level].filename
+        return cls._initial_filename == inspect.stack()[_stack_level].filename
 
     @classmethod
     def start(cls,
@@ -128,46 +144,76 @@ class VisualLogAutoReloader:
         if check_time_s is None:
             check_time_s = 0.05
         host_name = server_params.pop("host_name", host_name)
-        if cls.reloading:
+        if cls._reloading:
             return
-        cls.reloading = True
-        cls.initial_filename = inspect.stack()[_stack_level].filename
-        content = FileStag.load(cls.initial_filename)
-        short_name = os.path.splitext(os.path.basename(cls.initial_filename))[0]
+        cls._reloading = True
+        cls._initial_filename = inspect.stack()[_stack_level].filename
+        cls.content = FileStag.load(cls._initial_filename)
+        short_name = os.path.splitext(os.path.basename(cls._initial_filename))[
+            0]
         import importlib.util
         spec = importlib.util.spec_from_file_location(short_name,
-                                                      cls.initial_filename)
-        imp_module = importlib.util.module_from_spec(spec)
-        sys.modules[short_name] = imp_module
+                                                      cls._initial_filename)
+        cls.imp_module = importlib.util.module_from_spec(spec)
+        sys.modules[short_name] = cls.imp_module
 
         # Setup and run the server which will then host our (live) log's
         # content and stay alive during the restarts.
         cls.setup()
         cls.update_content()
-        threaded = server_params.pop("threaded", True)
-        cls.log_server.run_server(host_name, threaded=threaded,
+        mt = server_params.pop("mt", True)
+        cls.log_server.run_server(host_name, mt=mt,
                                   **server_params)
-
         try:
+            print(f"Auto-reloading enabled for module {cls.imp_module}")
             while True:
                 time.sleep(check_time_s)
-                new_content = FileStag.load(cls.initial_filename)
-                if new_content is None:
-                    new_content = b""
-                if content == new_content:
-                    continue
-                content = new_content
-                cls.reloading = True
-                try:
-                    reload(imp_module)
-                    VisualLogAutoReloader.update_content()
-                    print(".", end="")
-                except Exception as e:
-                    print(f"An error occurred: {str(e)}")
-                    if isinstance(e, KeyboardInterrupt):
-                        raise KeyboardInterrupt
-                cls.reloading = False
+                cls.run_loop()
         except KeyboardInterrupt:
             if cls.log_server.server.server_thread is not None:
-                cls.log_server.server.server_thread.kill()
+                cls.log_server.kill_server()
 
+    @classmethod
+    def run_loop(cls):
+        """
+        Handles the main loop which verifies if any element was modified
+        and reloads all modified modules if required.
+        """
+        new_content = FileStag.load(cls._initial_filename)
+        if new_content is None:
+            new_content = b""
+        if cls.content == new_content:
+            return
+        cls.content = new_content
+        cls._reloading = True
+        try:
+            cls._cache_backup = cls._embedded_log.cache
+            st = time.time()
+            reload(cls.imp_module)
+            rl_time = time.time() - st
+            VisualLogAutoReloader.update_content()
+            if cls.was_sick:
+                print(
+                    f"\u001b[32m\n{HEALTHY_AGAIN_TEXT} \u001b[0m")
+            else:
+                print(f"... reloaded module in {rl_time:0.3f}s")
+        except Exception as e:
+            cls.was_sick = True
+            print("\u001b[31m", end="")
+            import traceback
+            print(traceback.format_exc())
+            print(f"\n{ERROR_TEXT}")
+            print("\u001b[0m", end="")
+            if isinstance(e, KeyboardInterrupt):
+                raise KeyboardInterrupt
+        cls._reloading = False
+
+    @classmethod
+    def get_cache_backup(cls) -> Union["Cache", None]:
+        """
+        Shall return the last VisualLog's cache data from the previous
+        execution session.
+
+        :return: The cache object if one was "rescued", otherwise None
+        """
+        return cls._cache_backup

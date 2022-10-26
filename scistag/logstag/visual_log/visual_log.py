@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from scistag.common import StagLock, Component
+from scistag.common import StagLock, Component, Cache
 from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Image, Canvas, Size2D, Size2DTypes
 from scistag.plotstag import Figure, Plot, MPHelper
@@ -46,7 +46,7 @@ _CONTINUOUS_REQUIRES_OVERWRITE = "It does not make sense to run the " \
                                  "updating it."
 
 _CONTINUOUS_REQUIRED_BG_THREAD = "To update the log via this method " \
-                                 "you have to set 'threaded' to True " \
+                                 "you have to set 'mt' to True " \
                                  "so the server can run in a " \
                                  "background thread."
 
@@ -80,7 +80,7 @@ to be called once or continuously to update the log.
 """
 
 
-class VisualLog(Component):
+class VisualLog:
     """
     Class for the live creation of technical documentations, logs in various
     formats such as HTML, Markdown, Text or PDFs or for  interactive, HTML based
@@ -111,7 +111,9 @@ class VisualLog(Component):
                  image_format: str | tuple[str, int] = "png",
                  image_quality: int = 90,
                  cache_dir: str | None = None,
-                 cache_name: str = ""):
+                 cache_version: int = 1,
+                 cache_name: str = "",
+                 auto_reload: bool = False):
         """
         Begins a test with visual outputs
 
@@ -154,6 +156,10 @@ class VisualLog(Component):
         :param image_quality: The default image output quality. 90 by default.
 
             Values between 0 and 100 are valid.
+        :param cache_version: The cache version. 1 by default.
+
+            When ever you change this version all old cache values will be
+            removed and/or ignored from the cache.
         :param cache_dir: The directory in which data which shall be cached
             between multiple execution sessions shall be dumped to disk.
 
@@ -162,6 +168,8 @@ class VisualLog(Component):
             into the same logging directory this can be used to ensure their
             caching directories don't accidentally overlap w/o having to
             provide the whole path via cache_dir.
+        :param auto_reload: Defines if this log will be executed in auto_reload
+            mode in its cache should be update and restored each turn.
         """
         try:
             if clear_target_dir and log_to_disk:
@@ -171,15 +179,17 @@ class VisualLog(Component):
             pass
         if formats_out is None:
             formats_out = {"html"}
-        if len(cache_name) > 0:
-            cache_name = f"{cache_name}/"
-        if cache_dir is None:
-            cache_dir = f"{os.path.abspath(target_dir)}/.stscache/{cache_name}"
-        else:
-            cache_dir = f"{cache_dir}/{cache_name}"
-        super().__init__(cache_dir=cache_dir)
+
+        self._cache: Cache | None = None
+        """
+        The log's data cache to store computation results between execution
+        sessions
+        """
+
         self.target_dir = os.path.abspath(target_dir)
         "The directory in which the logs shall be stored"
+        # setup the cache
+        self._setup_cache(auto_reload, cache_version, cache_dir, cache_name)
         self.ref_dir = FilePath.norm_path(
             self.target_dir + "/ref" if ref_dir is None else ref_dir)
         "The directory in which reference files for comparison shall be stored"
@@ -291,15 +301,20 @@ class VisualLog(Component):
         "Defines if the log service shall be terminated, e.g if it's running
         endlessly via :meth:`run` or :meth:`run_server`. 
         """
-        self._provide_live_view()
+        self._provide_live_view()  # setup live view html page
         self._server: Union["WebStagServer", None] = None
         "The web server (if one was being started via :meth:`run_server`)"
         # Statistics
-        self._total_update_counter = 0
-        self._update_counter = 0
-        self._last_statistic_update = time.time()
         self._start_time = time.time()
-        self._update_rate = 0
+        "The time stamp of when the log was creation"
+        self._total_update_counter = 0
+        "The total number of updates to this log"
+        self._update_counter = 0
+        # The amount of updates since the last statistics update
+        self._last_statistic_update = time.time()
+        "THe last time the _update rate was computed as time stamp"
+        self._update_rate: float = 0
+        # The last computed updated rate in updates per second
 
     @property
     def refresh_time_s(self) -> float:
@@ -912,7 +927,8 @@ class VisualLog(Component):
         """
         if isinstance(level, str):
             level = LogLevel(level)
-        text = space.join(args)
+        elements = [str(element) for element in args]
+        text = space.join(elements)
         if text is None:
             text = "None"
         if not isinstance(text, str):
@@ -1649,7 +1665,7 @@ class VisualLog(Component):
                    wait: bool = False,
                    auto_clear: bool | None = None,
                    overwrite: bool | None = None,
-                   threaded: bool = False,
+                   mt: bool = False,
                    test: bool = False,
                    server_logs: bool = False,
                    url_prefix: str = "",
@@ -1706,7 +1722,7 @@ class VisualLog(Component):
             This way you can host the log results of a (potentially)
             long-running data engineering or ML training session without
             accidentally re-running it.
-        :param threaded: If set to true the server will be started in a
+        :param mt: If set to true the server will be started in a
             background thread and the method will return asap.
 
             You have to pass `threaded=True` if this log shall be updated
@@ -1758,7 +1774,7 @@ class VisualLog(Component):
                 if auto_clear is not None and auto_clear:
                     raise ValueError(_ONLY_AUTO_CLEAR_ON_CONTINUOUS)
             else:
-                if not threaded or test:
+                if not mt or test:
                     raise ValueError(_CONTINUOUS_REQUIRED_BG_THREAD)
                 if overwrite is not None and not overwrite:
                     raise ValueError(_CONTINUOUS_REQUIRES_OVERWRITE)
@@ -1787,23 +1803,39 @@ class VisualLog(Component):
                     f"the auto-reloader")
                 print('\n')
         overwrite = overwrite if overwrite is not None else True
-        if not continuous and not threaded:  # if the server will block execute
+        if not continuous and not mt:  # if the server will block execute
             # once here, otherwise after the server started
             if builder is not None:  # call once
                 if overwrite is True or not self.load_old_logs():
                     builder(self)
                     self.write_to_disk()
-        server.start(threaded=threaded, test=test)
+        server.start(mt=mt, test=test)
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
-        elif threaded:
+        elif mt:
             if builder is not None:  # call once
                 if overwrite is True or not self.load_old_logs():
                     builder(self)
                     self.write_to_disk()
             if wait:
                 self.sleep()
+
+    def kill_server(self) -> bool:
+        """
+        Kills the http server running in the background.
+
+        If you hosted this log as a webserver running in the background using
+        run_server(mt=True) you can use this method to (by force) kill the
+        server being used. Note that this may lead to memory leaks and should
+        only be used to really shut down an application and to for example
+        prevent Flask keeping the process alive upon Ctrl-C.
+
+        :return: True on success
+        """
+        if self.server is None:
+            raise AssertionError("Server not started, nothing to shut down")
+        return self.server.kill()
 
     def sleep(self):
         """
@@ -1908,6 +1940,22 @@ class VisualLog(Component):
             next_update = max(next_update + self.refresh_time_s, cur_time)
             self._update_statistics(cur_time)
 
+    @property
+    def server(self) -> "WebStagServer":
+        """
+        Returns the server (if one was created) and started via
+        :meth:`run_server`.
+        """
+        return self._server
+
+    @property
+    def cache(self) -> Cache:
+        """
+        Returns the log's cache object to cache computation data between
+        functions repetitions or even multiple execution sessions.
+        """
+        return self._cache
+
     def _update_statistics(self, cur_time: float):
         """
         Updates the statistics if necessary
@@ -1923,10 +1971,35 @@ class VisualLog(Component):
             self._last_statistic_update = cur_time
             self._update_counter = 0
 
-    @property
-    def server(self) -> "WebStagServer":
+    def _setup_cache(self, auto_reload, cache_version, cache_dir, cache_name):
         """
-        Returns the server (if one was created) and started via
-        :meth:`run_server`.
+        Configures the data cache
+
+        :param auto_reload: Auto-reloading used?
+        :param cache_version: The cache version. 1 by default.
+
+            When ever you change this version all old cache values will be
+            removed and/or ignored from the cache.
+        :param cache_dir: The cache target directory on disk
+        :param cache_name: The unique name of the cache, e.g. for the case
+            multiple logs use the same logging directory
         """
-        return self._server
+        if len(cache_name) > 0:
+            cache_name = f"{cache_name}/"
+        if cache_dir is None:
+            cache_dir = \
+                f"{os.path.abspath(self.target_dir)}/.stscache/{cache_name}"
+        else:
+            cache_dir = f"{cache_dir}/{cache_name}"
+        auto_reload_cache = None
+        if auto_reload:  # if auto-reloading is enabled try to restore cache
+            # check if there is a valid, prior cache available
+            from .visual_log_autoreloader import VisualLogAutoReloader
+            auto_reload_cache = VisualLogAutoReloader.get_cache_backup()
+            if auto_reload_cache is not None and \
+                    auto_reload_cache.version != cache_version:
+                auto_reload_cache = None
+        self._cache = Cache(cache_dir=cache_dir,
+                            version=cache_version,
+                            ) if auto_reload_cache is None \
+            else auto_reload_cache
