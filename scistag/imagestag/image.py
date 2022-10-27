@@ -201,6 +201,8 @@ class Image(ImageBase):
         :param source: The data source
         """
         try:
+            if source is None:
+                raise ValueError("No image data provided")
             if isinstance(source, str):
                 self._pil_handle = PIL.Image.open(source)
             elif isinstance(source, bytes):
