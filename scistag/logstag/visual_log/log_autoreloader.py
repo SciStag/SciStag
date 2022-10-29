@@ -30,8 +30,8 @@ HEALTHY_AGAIN_TEXT = "Yay - the module is healthy again, let's rock on! 🤘👨
 "Text to be shown when healthy again"
 
 
-class VisualLogAutoReloader:
-    log_server: VisualLog | None = None
+class LogAutoReloader:
+    main_log: VisualLog | None = None
     """
     The main log which is staying alive during the restart sessions and is
     connected to the http server to host it's content.
@@ -70,8 +70,8 @@ class VisualLogAutoReloader:
         :param params: Additional creation parameters. See :class:`VisualLog`.
         """
         log_to_disk = params.pop("log_to_disk", False)
-        cls.log_server = VisualLog(log_to_disk=log_to_disk,
-                                   refresh_time_s=refresh_time_s)
+        cls.main_log = VisualLog(log_to_disk=log_to_disk,
+                                 refresh_time_s=refresh_time_s)
 
     @classmethod
     def set_log(cls, log):
@@ -89,12 +89,12 @@ class VisualLogAutoReloader:
         Updates the log's content by rendering first the embedded log
         and then the main (server) log which embeds it.
         """
-        if cls.log_server is None or cls._embedded_log is None:
+        if cls.main_log is None or cls._embedded_log is None:
             return
         cls._embedded_log.render()
-        cls.log_server.clear_logs()
-        cls.log_server.embed(cls._embedded_log)
-        cls.log_server.render()
+        cls.main_log.clear_logs()
+        cls.main_log.embed(cls._embedded_log)
+        cls.main_log.render()
 
     @classmethod
     def is_main(cls, _stack_level=1) -> bool:
@@ -117,6 +117,9 @@ class VisualLogAutoReloader:
     def start(cls,
               log: VisualLog,
               host_name: str = "127.0.0.1",
+              port: int | tuple[int, int] = 8010,
+              public_ips: str | list[str] | None = None,
+              url_prefix: str = "",
               check_time_s: float | None = None,
               server_params: dict | None = None,
               _stack_level=1):
@@ -131,6 +134,18 @@ class VisualLogAutoReloader:
         :param host_name: The host name at which the log shall be hosted.
 
             Localhost by default.
+        :param port: The port ot listen at or a port range to select the
+            first port within. 8010 by default. 0 for a random port.
+        :param public_ips: If you run the service on a virtual machine in
+            the cloud you can pass its public IPs to log the correct
+            connection URls to the console.
+
+            If you pass "auto" as ip the public IP will be auto-detected via
+            ipify.
+        :param url_prefix: The url prefix at which the service shall be hosted.
+
+            "" = At http://server
+            "log/" = At http://server/log
         :param server_params: Additional server parameters to be passed into
             :meth:`VisualLivelog.run_server` server main loop.
         :param check_time_s: The time interval at which files are checked
@@ -138,7 +153,7 @@ class VisualLogAutoReloader:
         :param _stack_level: The (relative) stack level of the file which
             shall be auto_reloaded.
         """
-        VisualLogAutoReloader.set_log(log)
+        LogAutoReloader.set_log(log)
         if server_params is None:
             server_params = dict()
         if check_time_s is None:
@@ -162,16 +177,21 @@ class VisualLogAutoReloader:
         cls.setup()
         cls.update_content()
         mt = server_params.pop("mt", True)
-        cls.log_server.run_server(host_name, mt=mt,
-                                  **server_params)
+        if host_name is not None:
+            cls.main_log.run_server(host_name=host_name,
+                                    port=port,
+                                    public_ips=public_ips,
+                                    url_prefix=url_prefix,
+                                    mt=mt,
+                                    **server_params)
         try:
             print(f"Auto-reloading enabled for module {cls.imp_module}")
             while True:
                 time.sleep(check_time_s)
                 cls.run_loop()
         except KeyboardInterrupt:
-            if cls.log_server.server.server_thread is not None:
-                cls.log_server.kill_server()
+            if cls.main_log.server.server_thread is not None:
+                cls.main_log.kill_server()
 
     @classmethod
     def run_loop(cls):
@@ -179,19 +199,26 @@ class VisualLogAutoReloader:
         Handles the main loop which verifies if any element was modified
         and reloads all modified modules if required.
         """
+        events = []
+        if cls._embedded_log is not None:
+            events = cls.main_log.get_events(clear=True)
+            for event in events:
+                cls._embedded_log.add_event(event)
+            if len(events):
+                cls._embedded_log.handle_event_list()
         new_content = FileStag.load(cls._initial_filename)
         if new_content is None:
             new_content = b""
-        if cls.content == new_content:
+        if cls.content == new_content and not cls._embedded_log.invalid:
             return
         cls.content = new_content
         cls._reloading = True
         try:
             cls._cache_backup = cls._embedded_log.cache
-            st = time.time()
+            loop_start_time = time.time()
             reload(cls.imp_module)
-            rl_time = time.time() - st
-            VisualLogAutoReloader.update_content()
+            rl_time = time.time() - loop_start_time
+            LogAutoReloader.update_content()
             if cls.was_sick:
                 print(
                     f"\u001b[32m\n{HEALTHY_AGAIN_TEXT} \u001b[0m")

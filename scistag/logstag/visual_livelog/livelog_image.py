@@ -7,13 +7,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from scistag.imagestag import Image
-from scistag.logstag.visual_livelog import LiveLogWidget
+from scistag.logstag.visual_livelog import LogWidget
 
 if TYPE_CHECKING:
     from scistag.logstag import VisualLiveLog
 
 
-class LiveLogImage(LiveLogWidget):
+class LogImage(LogWidget):
     """
     Defines an image widget which is displayed in the visual live log
     """

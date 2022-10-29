@@ -7,28 +7,39 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from scistag.logstag import VisualLiveLog
+    from scistag.logstag import VisualLog
+    from scistag.logstag.visual_log.log_event import LogEvent
 
 
-class LiveLogWidget:
+class LogWidget:
     """
     Defines a widget which can be attached to a VisualLiveLog
     """
 
-    def __init__(self, log: "VisualLiveLog"):
+    def __init__(self, log: "VisualLog", name: str):
         """
         :param log: The log to which this widget belongs
+        :param name: The widget's name
         """
+        self.name = name
+        "The widget's name"
         self.log = log
         "The log to which this widget belongs"
         self.visible = True
         "Defines if the widget is currently visible"
+        self.log.register_widget(name, self)
 
     def write(self):
         """
         Tells the widget to write all of it's data to the log
         """
         pass
+
+    def handle_event(self, event: "LogEvent"):
+        """
+        Is called for each event received by the web server
+        """
+        raise NotImplementedError("Not implemented")
 
     def __bool__(self):
         """

@@ -95,18 +95,24 @@ class WebClassServiceEntry:
         path = request.relative_path
         if path in self.methods or MISSING_FALLBACK_NAME in self.methods:
             method = self.methods.get(path, MISSING_FALLBACK_NAME)
-            if self.multithread:  # no lock needed?
-                result = method()
-            else:
-                with self.access_lock:  # lock!
-                    result = method()
+            parameters = {}
+            for key, element in request.parameters.items():
+                parameters[key] = element
+            try:
+                if self.multithread:  # no lock needed?
+                    result = method(**parameters)
+                else:
+                    with self.access_lock:  # lock!
+                        result = method(**parameters)
+            except TypeError:
+                return WebResponse(body="Invalid parameters provided",
+                                   status=400)
             if result is None:
                 return WebResponse(body="OK")
-            else:
-                if isinstance(result, tuple) and len(result) >= 2:
-                    assert isinstance(result[1], int)  # Verify HTTP code
-                    return WebResponse(body=result[0], status=result[1])
-                elif isinstance(result, WebResponse):
-                    return result
-                return WebResponse(body=result)
+            if isinstance(result, tuple) and len(result) >= 2:
+                assert isinstance(result[1], int)  # Verify HTTP code
+                return WebResponse(body=result[0], status=result[1])
+            if isinstance(result, WebResponse):
+                return result
+            return WebResponse(body=result)
         return WebResponse(body="Method not found", status=404)

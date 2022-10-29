@@ -95,7 +95,12 @@ class DiskCache:
             if not self.dir_created:
                 os.makedirs(self.cache_dir, exist_ok=True)
 
-    def set(self, key: str, value: Any, params: dict, version: int = 1):
+    def set(self, key: str,
+            value: Any,
+            params: dict,
+            version: int | str = 1,
+            hash_params: bool = False
+            ):
         """
         Persists a single value in the cache
 
@@ -105,10 +110,14 @@ class DiskCache:
         :param version: The cache version for this entry.
         :param params: The creation parameters which were passed into
             the loading function and should match upon a cache fetch try.
+        :param hash_params: Defines the parameters shall be hashed to
+            detect modifications.
         """
         key, eff_version = Cache.get_key_and_version(key,
                                                      self._version,
                                                      version)
+        if params is None or not hash_params:
+            params = {}
         with self._access_lock:
             params = dict(params)
             params["__version"] = eff_version
@@ -121,7 +130,11 @@ class DiskCache:
                                              "version": 1}))
                 FileStag.save(bundle_fn, Bundle.bundle(params))
 
-    def get(self, key, params: dict = None, version: int = 1,
+    def get(self,
+            key,
+            params: dict = None,
+            version: int | str = 1,
+            hash_params: bool = False,
             default=None) -> Any | None:
         """
         Tries to read an element from the disk cache.
@@ -132,6 +145,8 @@ class DiskCache:
             the loading function and still should match.
         :param version: The assumed version of this element we are searching
             for. If the version does not match the old entry is ignored.
+        :param hash_params: Defines the parameters shall be hashed to
+            detect modifications.
         :param default: The default value to return if no cache entry could
             be found
         :return: Either the cache data or the default value as fallback
@@ -141,7 +156,7 @@ class DiskCache:
                                                          self._version,
                                                          version)
             cache_name = self.get_cache_name(key)
-            if params is None:
+            if params is None or not hash_params:
                 params = {}
             params = dict(params)
             with self._access_lock:

@@ -3,6 +3,8 @@ Implements the :class:`Cache` class which allows easy caching data on disk
 and in memory to minimize repetitive downloads and re-computations.
 """
 from __future__ import annotations
+
+import hashlib
 import time
 
 from typing import Any, Callable
@@ -191,19 +193,18 @@ class Cache:
             assert len(split_val) == 2
             key: str = split_val[0]
             minor = split_val[1]
-            assert minor.isnumeric()
-            minor = int(minor)
-        if minor == 0:  # session id only as cache version
+        minor = str(minor)
+        if minor == "0":  # session id only as cache version
             return key, f"{major}.{cls._app_session_id}"
-        elif minor > 0:  # major + minor
-            return key, f"{major}.{minor}"
-        else:  # minor only
+        if minor.startswith("-"):  # minor only
             return key, f"{minor}"
+        return key, f"{major}.{minor}"
 
-    def cache(self, key: str,
+    def cache(self,
+              key: str,
               generator: Callable,
-              params: dict | None = None,
-              version: int | None = None):
+              *args,
+              **kwargs):
         """
         Tries to find the element **key** in the cache and return's it's
         content. If no element with such a name and/or version number can be
@@ -213,22 +214,48 @@ class Cache:
         :param key: The key of the cache element
         :param generator: The function to call if the element is not stored
             in the cache yet.
-        :param params: The parameters to be passed into the function.
-        :param version: The version to assign to the cache entry. If either
+        :keyword version: The version to assign to the cache entry. If either
             this or the cache's main version get modified all prior cache
             entries will be ignored until they were update to this new version.
 
             Default version for memory cache entries is 0, for disk cache
             entries 1.
-        :return: The content
+        :keyword hash_val: A single value, a list of values or a dict of values
+            of which a hash value is computed and added to the version
+            number to automatically invalidate it if any of the values
+            changed.
+        :param args: Argument parameters to be passed into the generator
+        :param kwargs: Keyword parameter to be passed into the generator
+        :return: The cached or newly created content
         """
+        hash_val = kwargs.pop("hash_val", None)
+        version = kwargs.pop("version", None)
+        if hash_val is not None:
+            version = str(version) if version else "0"
+            from scistag.filestag import Bundle
+            hash_data = Bundle.bundle(hash_val, compression=0)
+            version += "." + hashlib.md5(hash_data).hexdigest()
+        arg_list = list(args)
+        param_list = []
+        # build effective argument and keyword argument lists
+        params = {}
+        if len(kwargs):  # store key words in params
+            for ele_key, item in kwargs.items():
+                params[ele_key] = item
+        func_params = dict(params)
+        for index, element in enumerate(param_list):
+            params[f"_arg{index + len(param_list)}"] = element
+            arg_list.append(element)
+        if len(args) > 0:  # attach arguments to parameter set if provided
+            for index, element in enumerate(args):
+                params[f"_arg{index + len(param_list)}"] = element
+        # try to fetch from cache
         with self._access_lock:
-            if params is None:
-                params = {}
             old_value = self.get(key, version=version, params=params)
             if old_value is not None:  # cached? fine
                 return old_value
-        new_data = generator(**params)
+        new_data = generator(*arg_list, **func_params)
+        # update cache otherwise
         with self._access_lock:
             self.set(key, new_data, params, version=version)
             return new_data
@@ -257,7 +284,8 @@ class Cache:
             assert len(key) > 0
             if params is None:
                 params = {}
-            if not key[0].isalpha() and not key.startswith("./"):
+            if not key[0].isalpha() and not key.startswith(
+                    "./") and not key.startswith("_"):
                 raise ValueError("Keys has to start with a character")
             if "/" in key:
                 self._disk_cache.set(org_key, value, params=params,
@@ -272,9 +300,10 @@ class Cache:
 
     def get(self,
             key: str,
+            default=None,
             version=None,
             params: dict | None = None,
-            default=None):
+            hash_params=False):
         """
         Returns a value from the cache.
 
@@ -287,6 +316,8 @@ class Cache:
             elements.
         :param params: The parameters which were passed into the function
             and still need t match.
+        :param hash_params: Defines the parameters shall be hashed to
+            detect modifications.
         :param default: The value to return by default if no cache element
             could be found.
         :return: The item's value.
@@ -300,14 +331,16 @@ class Cache:
             key, eff_version = self.get_key_and_version(key, self._version,
                                                         minor=version)
             if "/" in key:
-                data = self._disk_cache.get(org_key, params=params,
+                data = self._disk_cache.get(org_key,
+                                            params=params,
+                                            hash_params=hash_params,
                                             version=version)
                 if data is None:
                     return default
                 return data
             if (key in self._mem_cache and
                     self._mem_cache_versions[key] == eff_version and
-                    self._mem_cache_params[key] == params):
+                    (not hash_params or self._mem_cache_params[key] == params)):
                 return self._mem_cache[key]
             else:
                 return default

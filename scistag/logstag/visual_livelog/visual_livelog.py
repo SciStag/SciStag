@@ -14,10 +14,10 @@ from ..visual_log.visual_log import VisualLog, HTML
 from ..visual_log.sub_log import SubLogLock
 
 if TYPE_CHECKING:
-    from .livelog_progress_bar import LiveLogProgress
-    from .livelog_image import LiveLogImage
-    from .livelog_text import LiveLogText
-    from .livelog_widget import LiveLogWidget
+    from .livelog_progress_bar import LogProgress
+    from .livelog_image import LogImage
+    from .livelog_text import LogText
+    from .log_widget import LogWidget
 
 
 class VisualLiveLog(VisualLog):
@@ -79,7 +79,7 @@ class VisualLiveLog(VisualLog):
             new_template,
             live_content_width=int(self._max_live_fig_size.width),
             live_content_height=int(self._max_live_fig_size.height))
-        self.widgets: list["LiveLogWidget"] = []
+        self.widgets: list["LogWidget"] = []
         """
         The widgets which are displayed in the live log area
         """
@@ -180,7 +180,7 @@ class VisualLiveLog(VisualLog):
         """
         return self._max_live_fig_size
 
-    def add_widget(self, widget: LiveLogWidget):
+    def add_widget(self, widget: LogWidget):
         """
         Adds a widget which is then displayed in the log's live log area
 
@@ -188,7 +188,7 @@ class VisualLiveLog(VisualLog):
         """
         self.widgets.append(widget)
 
-    def remove_widget(self, widget: LiveLogWidget):
+    def remove_widget(self, widget: LogWidget):
         """
         Removes given widget
         """
@@ -196,32 +196,32 @@ class VisualLiveLog(VisualLog):
             raise KeyError("Unknown widget")
         self.widgets.remove(widget)
 
-    def add_image_widget(self) -> "LiveLogImage":
+    def add_image_widget(self) -> "LogImage":
         """
         Adds an image widget which can display an image in the live log area
 
         :return: The widget handle which can be used to update the image
         """
-        from .livelog_image import LiveLogImage
-        image_widget = LiveLogImage(self)
+        from .livelog_image import LogImage
+        image_widget = LogImage(self)
         self.add_widget(image_widget)
         return image_widget
 
-    def add_text_widget(self, text: str | None) -> "LiveLogText":
+    def add_text_widget(self, text: str | None) -> "LogText":
         """
         Adds a text widget which can display text in the live log area
 
         :param text: The initial text
         :return: The text widget
         """
-        from .livelog_text import LiveLogText
-        text_widget = LiveLogText(log=self, text=text)
+        from .livelog_text import LogText
+        text_widget = LogText(log=self, text=text)
         self.add_widget(text_widget)
         return text_widget
 
     def add_progress_bar(self, progress: int | float,
                          max_progress: int | float,
-                         text: str | None = None) -> "LiveLogProgress":
+                         text: str | None = None) -> "LogProgress":
         """
         Adds a progress bar widget
 
@@ -233,10 +233,10 @@ class VisualLiveLog(VisualLog):
         :param text: Defines the text to be displayed above the progress bar
         :return: The new widget
         """
-        from .livelog_progress_bar import LiveLogProgress
-        prog_widget = LiveLogProgress(self, progress=progress,
-                                      max_progress=max_progress,
-                                      text=text)
+        from .livelog_progress_bar import LogProgress
+        prog_widget = LogProgress(self, progress=progress,
+                                  max_progress=max_progress,
+                                  text=text)
         self.add_widget(prog_widget)
         return prog_widget
 
@@ -254,7 +254,7 @@ class VisualLiveLog(VisualLog):
                 }}</style> """
         self.html(style)
 
-    def handle_widget_modified(self, widget: "LiveLogWidget"):
+    def handle_widget_modified(self, widget: "LogWidget"):
         """
         Is called from a widget when ever it was modified directly
 
