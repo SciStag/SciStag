@@ -148,11 +148,12 @@ class DiskCache:
                 params["__version"] = eff_version
                 stored_params = {}
                 bundle_fn = cache_name + BUNDLE_EXTENSION
-                bundle_data = Bundle.unpack(FileStag.load(cache_name))
+                stream_data = FileStag.load(cache_name)
+                if stream_data is None:
+                    return default
+                bundle_data = Bundle.unpack(stream_data)
                 assert bundle_data.get("version", 0) == 1
                 data = bundle_data["data"]
-                if data is None:
-                    return default
                 if FileStag.exists(bundle_fn):
                     stored_params = Bundle.unpack(FileStag.load(bundle_fn))
                 if stored_params != params:

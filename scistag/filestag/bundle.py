@@ -205,6 +205,8 @@ class Bundle:
         :param data: The data to unpack (as returned by :meth:`bundle`)
         :return: The dictionary, tuple or list containing the bundled objects
         """
+        if data is None:
+            raise ValueError("data is None")
         cls._ensure_base_types()
         options = UnpackOptions()
         with MemoryZip(data) as mem_zip:

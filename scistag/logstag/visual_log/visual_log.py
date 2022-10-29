@@ -1725,7 +1725,7 @@ class VisualLog:
         :param mt: If set to true the server will be started in a
             background thread and the method will return asap.
 
-            You have to pass `threaded=True` if this log shall be updated
+            You have to pass `mt=True` if this log shall be updated
             `continuous`ly.
 
             If the log is dynamic, but you do not want to be stuck in this
