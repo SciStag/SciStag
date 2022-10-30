@@ -725,11 +725,13 @@ class FileSource:
         """
         if not fnmatch(os.path.basename(filename), self.search_mask):
             return False
+        if len(self.search_path) > 0 and not filename.startswith(
+                self.search_path):
+            return False
+        rest = filename[len(self.search_path):]
         if not self.recursive:
-            if filename.startswith(self.search_path):
-                rest = filename[len(self.search_path):]
-                if "/" in rest or "\\" in rest:
-                    return False
+            if "/" in rest or "\\" in rest:
+                return False
         return True
 
     def handle_skip_check(self, file_info: FileIterationData) -> str | None:

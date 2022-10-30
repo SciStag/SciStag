@@ -30,7 +30,7 @@ HEALTHY_AGAIN_TEXT = "Yay - the module is healthy again, let's rock on! 🤘👨
 "Text to be shown when healthy again"
 
 
-class LogAutoReloader:
+class VisualLogAutoReloader:
     main_log: VisualLog | None = None
     """
     The main log which is staying alive during the restart sessions and is
@@ -153,7 +153,7 @@ class LogAutoReloader:
         :param _stack_level: The (relative) stack level of the file which
             shall be auto_reloaded.
         """
-        LogAutoReloader.set_log(log)
+        VisualLogAutoReloader.set_log(log)
         if server_params is None:
             server_params = dict()
         if check_time_s is None:
@@ -204,24 +204,24 @@ class LogAutoReloader:
             events = cls.main_log.get_events(clear=True)
             for event in events:
                 cls._embedded_log.add_event(event)
-            if len(events):
-                cls._embedded_log.handle_event_list()
         new_content = FileStag.load(cls._initial_filename)
         if new_content is None:
             new_content = b""
-        if cls.content == new_content and not cls._embedded_log.invalid:
-            return
-        cls.content = new_content
-        cls._reloading = True
         try:
+            cls._embedded_log.handle_event_list()
+            if cls.content == new_content and not cls._embedded_log.invalid:
+                return
+            cls.content = new_content
+            cls._reloading = True
             cls._cache_backup = cls._embedded_log.cache
             loop_start_time = time.time()
             reload(cls.imp_module)
             rl_time = time.time() - loop_start_time
-            LogAutoReloader.update_content()
+            VisualLogAutoReloader.update_content()
             if cls.was_sick:
                 print(
                     f"\u001b[32m\n{HEALTHY_AGAIN_TEXT} \u001b[0m")
+                cls.was_sick = False
             else:
                 print(f"... reloaded module in {rl_time:0.3f}s")
         except Exception as e:

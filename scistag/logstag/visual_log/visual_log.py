@@ -23,7 +23,8 @@ import pandas as pd
 import scistag.logstag.visual_log.widgets.log_button
 from scistag.common import StagLock, Component, Cache
 from scistag.filestag import FileStag, FilePath
-from scistag.imagestag import Image, Canvas, Size2D, Size2DTypes
+from scistag.imagestag import Image, Canvas, Size2D, Size2DTypes, \
+    InterpolationMethod
 from scistag.plotstag import Figure, Plot, MPHelper
 from scistag.webstag import web_fetch
 from scistag.logstag import LogLevel
@@ -968,6 +969,7 @@ class VisualLog:
             text = "None"
         if not isinstance(text, str):
             text = str(text)
+        print(text)
         for element in self.forward_targets.values():
             element.log(text, level=level)
         escaped_text = self._encode_html(text)
@@ -1805,21 +1807,21 @@ class VisualLog:
         """
         self._start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
-            from scistag.logstag.visual_log.log_autoreloader import \
-                LogAutoReloader
+            from scistag.logstag.visual_log.visual_log_autoreloader import \
+                VisualLogAutoReloader
             if continuous:
                 raise NotImplementedError(
                     "Continuous mode is not supported yet by auto-reload")
             if builder is not None:
                 builder(self)
             self.handle_event_list()
-            LogAutoReloader.start(log=self,
-                                  host_name=host_name,
-                                  port=port,
-                                  public_ips=public_ips,
-                                  url_prefix=url_prefix,
-                                  _stack_level=2
-                                  )
+            VisualLogAutoReloader.start(log=self,
+                                        host_name=host_name,
+                                        port=port,
+                                        public_ips=public_ips,
+                                        url_prefix=url_prefix,
+                                        _stack_level=2
+                                        )
             return
         from scistag.webstag.server import WebStagServer
         service = self.create_web_service(support_flask=True,
@@ -1941,17 +1943,17 @@ class VisualLog:
         """
         self._start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
-            from scistag.logstag.visual_log.log_autoreloader import \
-                LogAutoReloader
+            from scistag.logstag.visual_log.visual_log_autoreloader import \
+                VisualLogAutoReloader
             if continuous:
                 raise NotImplementedError(
                     "Continuous mode is not supported yet by auto-reload")
             if builder is not None:
                 builder(self)
             self.handle_event_list()
-            LogAutoReloader.start(log=self,
-                                  host_name=None,
-                                  _stack_level=2)
+            VisualLogAutoReloader.start(log=self,
+                                        host_name=None,
+                                        _stack_level=2)
             return
         if continuous is None:
             continuous = False
@@ -2086,8 +2088,8 @@ class VisualLog:
         auto_reload_cache = None
         if auto_reload:  # if auto-reloading is enabled try to restore cache
             # check if there is a valid, prior cache available
-            from .log_autoreloader import LogAutoReloader
-            auto_reload_cache = LogAutoReloader.get_cache_backup()
+            from .visual_log_autoreloader import VisualLogAutoReloader
+            auto_reload_cache = VisualLogAutoReloader.get_cache_backup()
             if auto_reload_cache is not None and \
                     auto_reload_cache.version != cache_version:
                 auto_reload_cache = None
@@ -2181,3 +2183,17 @@ class VisualLog:
         Returns if this log was invalidated and should be rebuilt
         """
         return self._invalid
+
+    @classmethod
+    def is_main(cls) -> bool:
+        """
+        Returns if the file calling this method was the main entry point
+        before the module got reloaded.
+
+        Only available if auto-reloading is being used.
+
+        :return: True if the calling method is in the main module.
+        """
+        from scistag.logstag.visual_log.visual_log_autoreloader import \
+            VisualLogAutoReloader
+        return VisualLogAutoReloader.is_main(2)

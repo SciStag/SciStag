@@ -41,7 +41,7 @@ class LogButton(LogWidget):
     def write(self):
         html = \
             f"""
-            <input id="clickMe" type="button" value="{self.caption}" onclick="fetch('triggerEvent?name={self.name}&type={CLICK_EVENT_TYPE}')" />
+            <input class="greenButton" type="button" value="{self.caption}" onclick="fetch('triggerEvent?name={self.name}&type={CLICK_EVENT_TYPE}')" />
             """
         self.log.html(html)
 
