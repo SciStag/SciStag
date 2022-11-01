@@ -2004,6 +2004,7 @@ class VisualLog:
         """
         if builder is not None:
             builder(self)
+        self.write_to_disk()
 
     def kill_server(self) -> bool:
         """
