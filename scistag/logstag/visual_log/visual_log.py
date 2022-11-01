@@ -81,18 +81,25 @@ if TYPE_CHECKING:
     from scistag.imagestag.pixel_format import PixelFormat
     from scistag.logstag.visual_log.log_event import LogEvent
 
-VisualLogBuilderCallback = Callable[["VisualLog"], None]
+BuilderCallback = Callable[["VisualLog"], None]
 """
 Type definition for a function which can be passed to VisualLog's initializer
 to be called once or continuously to update the log.
 """
 
+BuilderTypes = Union[BuilderCallback]
+"""
+The supported builder callback types
+"""
+
 
 class VisualLog:
     """
-    Class for the live creation of technical documentations, logs in various
-    formats such as HTML, Markdown, Text or PDFs or for  interactive, HTML based
-    applications.
+    The VisualLog class enables you to create detailed, static data processing
+    documentation logs in various formats such as html, md and pdf up to
+    complex interactive browser based HTML and JavaScript applications
+    forwarding all user inputs via JavaScript to your Python logic and the
+    updates you trigger back to the user's view in the browser.
 
     To view the log live in your IDE next to your code:
     - Build the log via run_server.
@@ -121,10 +128,8 @@ class VisualLog:
                  cache_dir: str | None = None,
                  cache_version: int = 1,
                  cache_name: str = "",
-                 auto_reload: bool = False):
+                 auto_reload: bool | BuilderTypes = False):
         """
-        Begins a test with visual outputs
-
         :param target_dir: The output directory
         :param title: The log's name
         :param formats_out: A set of the formats to export.
@@ -199,7 +204,9 @@ class VisualLog:
         self.target_dir = os.path.abspath(target_dir)
         "The directory in which the logs shall be stored"
         # setup the cache
-        self._setup_cache(auto_reload, cache_version, cache_dir, cache_name)
+        do_auto_reload = isinstance(auto_reload, bool) and auto_reload \
+                         or auto_reload is not None
+        self._setup_cache(do_auto_reload, cache_version, cache_dir, cache_name)
         self.ref_dir = FilePath.norm_path(
             self.target_dir + "/ref" if ref_dir is None else ref_dir)
         "The directory in which reference files for comparison shall be stored"
@@ -329,10 +336,15 @@ class VisualLog:
         "List of unhandled events"
         self._widgets = {}
         "Set of widgets"
-        if auto_reload:
+        if do_auto_reload:
             self._events = self.cache.get(LOG_EVENT_CACHE_NAME, default=[])
         self._invalid = False
         "Defines if this log was invalidated via :meth:`invalidate`"
+        # execute auto-reloader if provided
+        if not isinstance(auto_reload, bool) and auto_reload is not None:
+            self.run_server(host_name="127.0.0.1",
+                            builder=auto_reload, auto_reload=True,
+                            auto_reload_stag_level=2)
 
     @property
     def refresh_time_s(self) -> float:
@@ -1698,7 +1710,7 @@ class VisualLog:
                    port: int | tuple[int, int] = 8010,
                    url_prefix: str = "",
                    public_ips: str | list[str] | None = None,
-                   builder: VisualLogBuilderCallback | None = None,
+                   builder: BuilderTypes | None = None,
                    continuous: bool | None = None,
                    wait: bool = False,
                    auto_clear: bool | None = None,
@@ -1708,6 +1720,7 @@ class VisualLog:
                    server_logs: bool = False,
                    show_urls: bool = True,
                    auto_reload=False,
+                   auto_reload_stag_level: 1 = 1,
                    **kwargs):
         """
         Hosts the log as web service.
@@ -1802,6 +1815,12 @@ class VisualLog:
             - mt - As multithreading is required to use this feature
             - continous - which is is currently not supported yet.
             - ...
+        :param auto_reload_stag_level: Defines which module shall be observed
+            and reloaded upon modifications.
+
+            By default it is the method of the calling module (1). If you need
+            e.g. to track the caller's caller (2) increase this number
+            accordingly.
         :param kwargs: Additional parameters which shall be passed to the
             WebStagServer upon creation.
         """
@@ -1812,15 +1831,14 @@ class VisualLog:
             if continuous:
                 raise NotImplementedError(
                     "Continuous mode is not supported yet by auto-reload")
-            if builder is not None:
-                builder(self)
+            self._run_builder(builder)
             self.handle_event_list()
             VisualLogAutoReloader.start(log=self,
                                         host_name=host_name,
                                         port=port,
                                         public_ips=public_ips,
                                         url_prefix=url_prefix,
-                                        _stack_level=2
+                                        _stack_level=auto_reload_stag_level + 1
                                         )
             return
         from scistag.webstag.server import WebStagServer
@@ -1873,7 +1891,7 @@ class VisualLog:
             # once here, otherwise after the server started
             if builder is not None:  # call once
                 if overwrite is True or not self.load_old_logs():
-                    builder(self)
+                    self._run_builder(builder)
                     self.handle_event_list()
                     self.write_to_disk()
         server.start(mt=mt, test=test)
@@ -1883,14 +1901,14 @@ class VisualLog:
         elif mt:
             if builder is not None:  # call once
                 if overwrite is True or not self.load_old_logs():
-                    builder(self)
+                    self._run_builder(builder)
                     self.handle_event_list()
                     self.write_to_disk()
             if wait:
                 self.sleep()
 
     def run(self,
-            builder: VisualLogBuilderCallback,
+            builder: BuilderCallback,
             continuous: bool | None = None,
             auto_clear: bool | None = None,
             overwrite: bool | None = None,
@@ -1948,8 +1966,7 @@ class VisualLog:
             if continuous:
                 raise NotImplementedError(
                     "Continuous mode is not supported yet by auto-reload")
-            if builder is not None:
-                builder(self)
+            self._run_builder(builder)
             self.handle_event_list()
             VisualLogAutoReloader.start(log=self,
                                         host_name=None,
@@ -1969,7 +1986,7 @@ class VisualLog:
             overwrite = overwrite if overwrite is not None else True
             if builder is not None:  # call once
                 if overwrite is True or not self.load_old_logs():
-                    builder(self)
+                    self._run_builder(builder)
                     self.handle_event_list()
                     self.write_to_disk()
                 else:
@@ -1978,6 +1995,15 @@ class VisualLog:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
         return True
+
+    def _run_builder(self, builder: BuilderTypes | None = None):
+        """
+        Runs the associated builder
+
+        :param builder: The builder to be called from rebuild the log
+        """
+        if builder is not None:
+            builder(self)
 
     def kill_server(self) -> bool:
         """
@@ -2006,7 +2032,7 @@ class VisualLog:
             time.sleep(self.refresh_time_s)
 
     def _run_continuous(self, auto_clear: bool,
-                        builder: VisualLogBuilderCallback):
+                        builder: BuilderCallback):
         """
         Runs the builder until :meth:`terminate` is called.
 
@@ -2023,7 +2049,7 @@ class VisualLog:
                     break
             if auto_clear:
                 self.clear_logs()
-            builder(self)
+            self._run_builder(builder)
             self.handle_event_list()
             self.write_to_disk()
             cur_time = time.time()
@@ -2197,3 +2223,33 @@ class VisualLog:
         from scistag.logstag.visual_log.visual_log_autoreloader import \
             VisualLogAutoReloader
         return VisualLogAutoReloader.is_main(2)
+
+    @staticmethod
+    def setup_mocks(target_dir: str = "./"):
+        """
+        Creates a set of files in the defined directory which contain
+        replacements for the essential logging classes such as VisualLog,
+        VisualLogBuilder etc. which can be used on systems without
+        a valid SciStag installation such as MicroPython.
+
+        ..  code-block:python
+
+            try:
+                from scistag.logstag import VisualLog, VisualLogBuilder
+                VisualLog.setup_mocks()
+            except ModuleNotFoundError:
+                from visual_log_mock import VisualLog, VisualLogBuilder
+        """
+        from .visual_log_mock import VisualLogMock
+        VisualLogMock.get_mocks(target_dir)
+
+    @property
+    def mock(self) -> bool:
+        """
+        Returns if this builder is a mock with limited functionality.
+
+        See :meth:`setup_mocks`
+
+        :return: True if it is a mock
+        """
+        return False
