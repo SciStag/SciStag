@@ -86,6 +86,11 @@ class VisualLogMock:
         """
         return self.log(text)
 
+    def finalize(self, *_, **__):
+        """
+        Finalizes the log
+        """
+
     @staticmethod
     def get_mocks(target_path: str = "./"):
         """
