@@ -123,7 +123,7 @@ class VisualLogMock:
             mock_file.write(content)
 
     @property
-    def is_simple_log(self) -> bool:
+    def is_simple(self) -> bool:
         """
         Returns if this builder is a log with limited functionality.
 
