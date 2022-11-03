@@ -296,7 +296,7 @@ class VisualLog:
         """
         from .visual_log_renderer_html import VisualLogHtmlRenderer
         self._renderers: dict[str, "VisualLogRenderer"] = {
-            HTML: VisualLogHtmlRenderer()}
+            HTML: VisualLogHtmlRenderer(title=self._title)}
         "The renderers for the single supported formats"
         self.forward_targets: dict[str, VisualLog] = {}
         "List of logs to which all rendering commands shall be forwarded"
@@ -623,6 +623,7 @@ class VisualLog:
               pixel_format: Optional["PixelFormat"] | str | None = None,
               download: bool = False,
               scaling: float = 1.0,
+              max_width: int | float | None = None,
               optical_scaling: float = 1.0,
               html_linebreak=True):
         """
@@ -630,13 +631,20 @@ class VisualLog:
 
         :param name: The name of the image under which it shall be stored
             on disk (in case write_to_disk is enabled).
-        :param source: The data object
+        :param source: The data object, e.g. an scitag.imagestag.Image, a numpy array, an URL or a FileStag
+            compatible link.
         :param alt_text: An alternative text if no image can be displayed
         :param pixel_format: The pixel format (in case the image is passed
             as numpy array). By default gray will be used for single channel,
             RGB for triple band and RGBA for quad band sources.
         :param download: Defines if an image shall be downloaded
         :param scaling: The factor by which the image shall be scaled
+        :param max_width: Defines if the image shall be scaled to a given size.
+
+            Possible values
+            - True = Scale to the log's max_fig_size.
+            - float = Scale the image to the defined percentual size of the max_fig_size, 1.0 = max_fig_size
+
         :param optical_scaling: Defines the factor with which the image shall
             be visualized on the html page without really rescaling the image
             itself and thus giving the possibility to zoom in the browser.
@@ -649,7 +657,7 @@ class VisualLog:
             name = "image"
         if alt_text is None:
             alt_text = name
-        if self._log_txt_images:
+        if self._log_txt_images or max_width is not None or scaling != 1.0:
             download = True
         if isinstance(source, np.ndarray):
             source = Image(source, pixel_format=pixel_format)
@@ -657,7 +665,7 @@ class VisualLog:
         if isinstance(source, str):
             if not source.lower().startswith("http") or download or \
                     self._embed_images:
-                source = web_fetch(source, cache=True)
+                source = Image(source=source)
             else:
                 self._insert_image_reference(name, source, alt_text, scaling,
                                              html_linebreak)
@@ -670,11 +678,18 @@ class VisualLog:
             source = source.to_image()
         file_location = ""
         size_definition = ""
-        if scaling != 1.0 or optical_scaling != 1.0:
+        if scaling != 1.0 or optical_scaling != 1.0 or max_width is not None:
+            max_size = None
+            if max_width is not None:
+                if scaling != 1.0:
+                    raise ValueError("Can't set max_size and scaling at the same time.")
+                scaling = None
+                if isinstance(max_width, float):
+                    max_width = int(round(self.max_fig_size.width * max_width))
+                max_size = (max_width, None)
             if not isinstance(source, Image):
-                source = Image(source).resized_ext(factor=scaling)
-            else:
-                source = source.resized_ext(factor=scaling)
+                source = Image(source)
+            source = source.resized_ext(factor=scaling, max_size=max_size)
             size_definition = \
                 f" width={int(round(source.width * optical_scaling))} " \
                 f"height={int(round(source.height * optical_scaling))}"
@@ -841,6 +856,20 @@ class VisualLog:
                 self._add_md(f"{text}\\")
             self._add_txt(text)
         self.clip_logs()
+
+    def line_break(self):
+        """
+        Inserts a simple line break
+        """
+        self._add_html("<br>")
+        self._add_txt(" ", md=True)
+
+    def page_break(self):
+        """
+        Inserts a page break
+        """
+        self._add_html('<div style="break-after:page"></div>')
+        self._add_txt("\n_________________________________________________________________________________\n", md=True)
 
     def sub(self, text: str, level: int = 2):
         """
@@ -1467,17 +1496,20 @@ class VisualLog:
             self.write_to_disk(formats={MD})
         return True
 
-    def _add_txt(self, txt_code: str, console: bool = True):
+    def _add_txt(self, txt_code: str, console: bool = True, md: bool = False):
         """
         Adds text code to the txt / console log
 
         :param txt_code: The text to add
         :param console: Defines if the text shall also be added ot the
             console's log (as it's mostly identical). True by default.
+        :param md: Defines if the text shall be added to markdown as well
         :return: True if txt logging is enabled
         """
         if console and len(self._consoles):
             self._add_to_console(txt_code)
+        if md and MD in self._logs:
+            self.md(txt_code)
         if TXT not in self._logs:
             return
         self._logs[TXT].append((txt_code + "\n").encode("utf-8"))
@@ -2242,12 +2274,12 @@ class VisualLog:
                 from visual_log_mock import VisualLog, VisualLogBuilder
         """
         from .visual_log_mock import VisualLogMock
-        VisualLogMock.get_mocks(target_dir)
+        VisualLogMock.setup_mocks(target_dir)
 
     @property
-    def mock(self) -> bool:
+    def is_simple(self) -> bool:
         """
-        Returns if this builder is a mock with limited functionality.
+        Returns if this builder is a minimalistic logger with limited functionality.
 
         See :meth:`setup_mocks`
 

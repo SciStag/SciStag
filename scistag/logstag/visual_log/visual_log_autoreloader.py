@@ -70,8 +70,10 @@ class VisualLogAutoReloader:
         :param params: Additional creation parameters. See :class:`VisualLog`.
         """
         log_to_disk = params.pop("log_to_disk", False)
-        cls.main_log = VisualLog(log_to_disk=log_to_disk,
-                                 refresh_time_s=refresh_time_s)
+        cls.main_log = VisualLog(
+            title=cls._embedded_log._title,
+            log_to_disk=log_to_disk,
+            refresh_time_s=refresh_time_s)
 
     @classmethod
     def set_log(cls, log):

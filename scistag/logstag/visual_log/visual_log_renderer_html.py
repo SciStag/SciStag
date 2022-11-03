@@ -16,9 +16,12 @@ class VisualLogHtmlRenderer(VisualLogRenderer):
     VisualLog plugin for creating HTML files
     """
 
-    def __init__(self):
+    def __init__(self, title: str = "SciStag VisualLog"):
+        """
+        :param title: The log's title
+        """
         super().__init__()
-        self.title = "Visual Live Log"
+        self.title = title
         self.css = FileStag.load_text(
             os.path.dirname(__file__) + "/css/visual_log.css")
 

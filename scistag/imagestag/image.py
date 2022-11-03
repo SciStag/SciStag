@@ -443,7 +443,8 @@ class Image(ImageBase):
                 factor = (factor, factor)
             size = int(round(self.width * factor[0])), int(
                 round(self.height * factor[1]))
-        assert size is not None and size[0] > 0 and size[1] > 0
+        if not (size is not None and size[0] > 0 and size[1] > 0):
+            raise ValueError("No valid rescaling parameters provided")
         if size != (self.width, self.height):
             handle = handle.resize(size, resample=resample_method)
         if target_aspect is not None:

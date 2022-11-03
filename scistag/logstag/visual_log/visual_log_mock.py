@@ -86,13 +86,25 @@ class VisualLogMock:
         """
         return self.log(text)
 
+    def line_break(self):
+        """
+        Inserts a simple line break
+        """
+        self.text("")
+
+    def page_break(self):
+        """
+        Inserts a page break
+        """
+        self.text("\n_________________________________________________________________________________\n")
+
     def finalize(self, *_, **__):
         """
         Finalizes the log
         """
 
     @staticmethod
-    def get_mocks(target_path: str = "./"):
+    def setup_mocks(target_path: str = "./"):
         """
         Stores the VisualLogMock class in the defined directory so it can
         easily be imported. Call this once in a new project.
@@ -111,9 +123,9 @@ class VisualLogMock:
             mock_file.write(content)
 
     @property
-    def mock(self) -> bool:
+    def is_simple_log(self) -> bool:
         """
-        Returns if this builder is a mock with limited functionality.
+        Returns if this builder is a log with limited functionality.
 
         :return: True if it is a mock
         """
