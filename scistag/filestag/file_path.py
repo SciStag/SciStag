@@ -131,3 +131,34 @@ class FilePath:
             (e.g. ("image", ".png")
         """
         return tuple(os.path.splitext(filename))
+
+    @classmethod
+    def split_path_components(cls, path_name: str) -> list[str]:
+        """
+        Returns the single path components as a list
+
+        As of now just a wrapper of os.path.split().
+
+        :param path_name: The filename or dir name
+        :return: The single path components
+        """
+        # clean path
+        slashed = path_name.replace("\\", "/")
+        while "//" in slashed:
+            slashed = path_name.replace("//", "/")
+        return slashed.split("/")
+
+    @classmethod
+    def make_dirs(cls, path: str, exist_ok: bool = False) -> bool:
+        """
+        Creates the defined directory and all directories in between
+
+        :param path: The path of the directory to create
+        :param exist_ok: Defines if the operation shall fail if the directory
+            already exists.
+        :return: True on success
+        """
+        if os.path.exists(path) and not exist_ok:
+            return False
+        os.makedirs(path, exist_ok=True)
+        return True

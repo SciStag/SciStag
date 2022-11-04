@@ -47,8 +47,8 @@ class FileStag:
     """
 
     @classmethod
-    def is_simple_filename(cls,
-                           filename: FileSourceTypes | FileTargetTypes) -> bool:
+    def is_simple(cls,
+                  filename: FileSourceTypes | FileTargetTypes) -> bool:
         """
         Returns if the file path points to a simple file on disk which does not
         require loading it to memory
@@ -62,9 +62,9 @@ class FileStag:
         return True
 
     @classmethod
-    def load_file(cls,
-                  source: FileSourceTypes,
-                  **params) -> bytes | None:
+    def load(cls,
+             source: FileSourceTypes,
+             **params) -> bytes | None:
         """
         Loads a file by filename from a local file, a registered web archive
         or the web
@@ -90,13 +90,13 @@ class FileStag:
             return None
 
     @classmethod
-    def save_file(cls,
-                  target: FileTargetTypes,
-                  data: bytes, **params) -> bool:
+    def save(cls,
+             target: FileTargetTypes,
+             data: bytes, **params) -> bool:
         """
         Saves data to a file
 
-        :param target: The file's source, see :meth:`load_file`.
+        :param target: The file's target name, see :meth:`load_file`.
         :param data: The data to be stored
         :param params: The advanced storage parameters, depending on the
             type of storage, such as timeout_s for file's stored via network.
@@ -104,7 +104,7 @@ class FileStag:
         """
         if target.startswith(FILE_PATH_PROTOCOL_URL_HEADER):
             target = target[len(FILE_PATH_PROTOCOL_URL_HEADER):]
-        if not cls.is_simple_filename(target):
+        if not cls.is_simple(target):
             raise NotImplementedError("At the moment only local file storage"
                                       "is supported")
         try:
@@ -115,10 +115,35 @@ class FileStag:
         return True
 
     @classmethod
-    def load_text_file(cls,
-                       source: FileSourceTypes,
-                       encoding: str = "utf-8",
-                       **params) -> str | None:
+    def delete(cls,
+               target: FileTargetTypes,
+               **params) -> bool:
+
+        """
+        Deletes a file
+
+        :param target: The file's target name, see :meth:`load_file` for
+            the supported protocols.
+        :param params: The advanced storage parameters, depending on the
+            type of storage, such as timeout_s for file's stored via network.
+        :return: True on success
+        """
+        if target.startswith(FILE_PATH_PROTOCOL_URL_HEADER):
+            target = target[len(FILE_PATH_PROTOCOL_URL_HEADER):]
+        if not cls.is_simple(target):
+            raise NotImplementedError("At the moment only local file deletion"
+                                      "is supported")
+        try:
+            os.remove(target)
+        except FileNotFoundError:
+            return False
+        return True
+
+    @classmethod
+    def load_text(cls,
+                  source: FileSourceTypes,
+                  encoding: str = "utf-8",
+                  **params) -> str | None:
         """
         Loads a text file from a given file source
 
@@ -128,17 +153,17 @@ class FileStag:
             e.g. timeout_s for a timeout from file's from the web.
         :return: The file's content
         """
-        data = cls.load_file(source, **params)
+        data = cls.load(source, **params)
         if data is None:
             return None
         return data.decode(encoding=encoding)
 
     @classmethod
-    def save_text_file(cls,
-                       target: FileTargetTypes,
-                       text: str,
-                       encoding: str = "utf-8",
-                       **params) -> bool:
+    def save_text(cls,
+                  target: FileTargetTypes,
+                  text: str,
+                  encoding: str = "utf-8",
+                  **params) -> bool:
         """
         Saves text data to a file
 
@@ -150,13 +175,13 @@ class FileStag:
         :return: True on success
         """
         encoded_text = text.encode(encoding=encoding)
-        return cls.save_file(target, data=encoded_text, **params)
+        return cls.save(target, data=encoded_text, **params)
 
     @classmethod
-    def load_json_file(cls,
-                       source: FileSourceTypes,
-                       encoding: str = "utf-8",
-                       **params) -> dict | None:
+    def load_json(cls,
+                  source: FileSourceTypes,
+                  encoding: str = "utf-8",
+                  **params) -> dict | None:
         """
         Loads a json dictionary from a given file source
 
@@ -166,19 +191,19 @@ class FileStag:
             e.g. timeout_s for a timeout from file's from the web.
         :return: The file's content
         """
-        data = cls.load_file(source, **params)
+        data = cls.load(source, **params)
         if data is None:
             return None
         data = data.decode(encoding=encoding)
         return json.loads(data)
 
     @classmethod
-    def save_json_file(cls,
-                       target: FileTargetTypes,
-                       data: dict,
-                       indent: int | None = None,
-                       encoding: str = "utf-8",
-                       **params) -> bool:
+    def save_json(cls,
+                  target: FileTargetTypes,
+                  data: dict,
+                  indent: int | None = None,
+                  encoding: str = "utf-8",
+                  **params) -> bool:
         """
         Saves json data to a file target
 
@@ -193,7 +218,7 @@ class FileStag:
         text = json.dumps(data) if indent is None else json.dumps(data,
                                                                   indent=indent)
         encoded_text = text.encode(encoding=encoding)
-        return cls.save_file(target, data=encoded_text, **params)
+        return cls.save(target, data=encoded_text, **params)
 
     @classmethod
     def copy(cls, source: str, target: str, create_dir: bool = False,
@@ -215,10 +240,10 @@ class FileStag:
                 os.makedirs(dirname, exist_ok=True)
             else:
                 return False
-        data = cls.load_file(source, **params)
+        data = cls.load(source, **params)
         if data is None:
             return False
-        return cls.save_file(target, data)
+        return cls.save(target, data)
 
     @classmethod
     def exists(cls,

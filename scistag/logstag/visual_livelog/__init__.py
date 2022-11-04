@@ -5,10 +5,10 @@ video livestreams.
 """
 
 from .visual_livelog import VisualLiveLog
-from .livelog_widget import LiveLogWidget
-from .livelog_image import LiveLogImage
-from .livelog_text import LiveLogText
-from .livelog_progress_bar import LiveLogProgress
+from ..visual_log.widgets.log_widget import LogWidget
+from .livelog_image import LogImage
+from .livelog_text import LogText
+from .livelog_progress_bar import LogProgress
 
-__all__ = ["VisualLiveLog", "LiveLogWidget", "LiveLogImage", "LiveLogText",
-           "LiveLogProgress"]
+__all__ = ["VisualLiveLog", "LogWidget", "LogImage", "LogText",
+           "LogProgress"]

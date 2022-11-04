@@ -14,7 +14,8 @@ if TYPE_CHECKING:
 
 class VisualLogService:
     """
-    Provides the log as a WebService
+    Hosts the VisualLog as web service and enables the user to interact with
+    the data.
     """
 
     def __init__(self, log: VisualLog):
@@ -23,6 +24,24 @@ class VisualLogService:
         """
         self.log = log
         "The log we are hosting"
+
+    def trigger_event(self, *args, **params):
+        """
+        Is called when an event is triggered.
+
+        Adds the event the log's event list and handled it upon the next
+        re-execution.
+
+        :param params: The query parameters
+        """
+        event_name = params.pop("name", "")
+        event_type = params.pop("type", "")
+        if len(event_name):
+            from scistag.logstag.visual_log.log_event import LogEvent
+            self.log.add_event(LogEvent(name=event_name,
+                                        event_type=event_type))
+            return "OK"
+        return "Bad request", 400
 
     def get_index(self) -> bytes:
         """

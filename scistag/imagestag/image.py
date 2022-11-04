@@ -169,7 +169,7 @@ class Image(ImageBase):
         if isinstance(source, str):
             if source.startswith("http://") or source.startswith("http:s//"):
                 params['cache'] = params.get("cache", True)
-            source = FileStag.load_file(source, **params)
+            source = FileStag.load(source, **params)
             if source is None:
                 raise ValueError("Image data could not be received")
         return source, pixel_format
@@ -201,6 +201,8 @@ class Image(ImageBase):
         :param source: The data source
         """
         try:
+            if source is None:
+                raise ValueError("No image data provided")
             if isinstance(source, str):
                 self._pil_handle = PIL.Image.open(source)
             elif isinstance(source, bytes):
@@ -282,49 +284,58 @@ class Image(ImageBase):
             return Image(cropped, framework=self.framework,
                          pixel_format=self.pixel_format)
 
-    def resize(self, size: Size2DTypes):
+    def resize(self,
+               size: Size2DTypes,
+               interpolation: InterpolationMethod = InterpolationMethod.LANCZOS
+               ):
         """
         Resizes the image to given resolution (modifying this image directly)
 
         :param size: The new size
-        :param _no_opencv: Defines if OpenCV usage is forbidden
+        :param interpolation: The interpolation method.
         """
+        resample_method = interpolation.to_pil()
+        resample_method_cv = interpolation.to_cv()
         size = Size2D(size).to_int_tuple()
         if size[0] == self.width and size[1] == self.height:
             return
         if self.framework == ImsFramework.PIL:
             self.__dict__["_pil_handle"] = \
                 self._pil_handle.resize(size,
-                                        PIL.Image.Resampling.LANCZOS)
+                                        resample=resample_method)
         else:
             if opencv_available():
                 self.__dict__["_pixel_data"] = \
                     cv.resize(self._pixel_data, dsize=size,
-                              interpolation=cv.INTER_LANCZOS4)
+                              interpolation=resample_method_cv)
             else:
                 image = Image(self._pixel_data, framework=ImsFramework.PIL,
                               pixel_format=self.pixel_format)
-                image.resize(size)
+                image.resize(size, interpolation=interpolation)
                 self.__dict__["_pixel_data"] = image.get_pixels(
                     desired_format=self.pixel_format)
         self.__dict__["width"], self.__dict__["height"] = size
 
-    def resized(self, size: Size2DTypes) -> "Image":
+    def resized(self,
+                size: Size2DTypes,
+                interpolation: InterpolationMethod = InterpolationMethod.LANCZOS) -> "Image":
         """
         Returns an image resized to given resolution
 
         :param size: The new size
+        :param interpolation: The interpolation method.
         """
         size = Size2D(size).to_int_tuple()
         if self.width == size[0] and self.height == size[1]:
             return self
+        resample_method = interpolation.to_pil()
         if self.framework == ImsFramework.PIL:
             return Image(
-                self._pil_handle.resize(size, PIL.Image.Resampling.LANCZOS),
+                self._pil_handle.resize(size, resample=resample_method),
                 framework=ImsFramework.PIL)
         else:
             return Image(
-                self.to_pil().resize(size, PIL.Image.Resampling.LANCZOS))
+                self.to_pil().resize(size, resample=resample_method))
 
     def resized_ext(self, size: Size2DTypes | None = None,
                     max_size: Size2DTypes | tuple[
@@ -432,7 +443,8 @@ class Image(ImageBase):
                 factor = (factor, factor)
             size = int(round(self.width * factor[0])), int(
                 round(self.height * factor[1]))
-        assert size is not None and size[0] > 0 and size[1] > 0
+        if not (size is not None and size[0] > 0 and size[1] > 0):
+            raise ValueError("No valid rescaling parameters provided")
         if size != (self.width, self.height):
             handle = handle.resize(size, resample=resample_method)
         if target_aspect is not None:

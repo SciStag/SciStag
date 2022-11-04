@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 
 from threading import Thread
 
+from scistag.common.mt import ManagedThread
+
 if TYPE_CHECKING:
     from flask import Flask
 
@@ -54,7 +56,7 @@ class WebStagServer:
         "The services to be hosted"
         self._started = False
         "Defines if the server was started already"
-        self.server_thread: Thread | None = None
+        self.server_thread: ManagedThread | None = None
         "The thread which executes the server"
         self.host_name = host_name
         if port == 0:
@@ -99,11 +101,11 @@ class WebStagServer:
             assert service not in self._services
             self._services.append(service)
 
-    def start(self, threaded=False, test=False):
+    def start(self, mt=False, test=False):
         """
         Starts the server
 
-        :param threaded: Defines if the server shall be started in a background
+        :param mt: Defines if the server shall be started in a background
             thread.
         :param test: Defines if the server shall not be started at all but
             configured for a unit test
@@ -121,10 +123,25 @@ class WebStagServer:
             self._started = True
         if test:
             return
-        if threaded:
+        if mt:
             self.server_thread.start()
         else:
             self._run_server()
+
+    def kill(self) -> bool:
+        """
+        Kills the server by force if it's running in background mode (mt=True).
+
+        This method can be used to get rid of a Flask server running in an
+        infinite background thread. This method may lead to memory leaks so
+        use with care and in preparation only to really shut down the whole
+        application.
+
+        :return: True on success.
+        """
+        if self.server_thread is None:
+            return False
+        return self.server_thread.force_kill()
 
     @staticmethod
     def _disabled_server_banner(*args, **kwargs):

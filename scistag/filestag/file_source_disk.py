@@ -49,7 +49,7 @@ class FileSourceDisk(FileSource):
         cpl = len(cleaned_path)
         full_list = [element[cpl + 1:] for index, element in
                      enumerate(full_list) if os.path.isfile(element) and
-                     self.handle_file_list_filter(element[cpl + 1:])]
+                     self.handle_file_list_filter(element)]
         elements = sorted(full_list)
         self.update_file_list([FileListEntry(filename=cur_element,
                                              file_size=os.path.getsize(

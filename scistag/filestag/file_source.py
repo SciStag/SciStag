@@ -410,7 +410,7 @@ class FileSource:
         :return: True if a valid list could be loaded.
         """
         if not isinstance(source, bytes):
-            source = FileStag.load_file(source)
+            source = FileStag.load(source)
         if source is None:
             return False
         data = Bundle.unpack(source)
@@ -437,7 +437,7 @@ class FileSource:
 
             If -1 is passed the version is ignored.
         """
-        FileStag.save_file(target, self.encode_file_list(version=version))
+        FileStag.save(target, self.encode_file_list(version=version))
 
     def set_file_list(self, new_list: list[str] | list[FileListEntry]):
         """
@@ -725,11 +725,13 @@ class FileSource:
         """
         if not fnmatch(os.path.basename(filename), self.search_mask):
             return False
+        if len(self.search_path) > 0 and not filename.startswith(
+                self.search_path):
+            return False
+        rest = filename[len(self.search_path):].lstrip("/").lstrip("\\")
         if not self.recursive:
-            if filename.startswith(self.search_path):
-                rest = filename[len(self.search_path):]
-                if "/" in rest or "\\" in rest:
-                    return False
+            if "/" in rest or "\\" in rest:
+                return False
         return True
 
     def handle_skip_check(self, file_info: FileIterationData) -> str | None:

@@ -53,7 +53,7 @@ def test_register_and_unload():
     """
     assert SharedArchive.load_file("NotExisting") is None
 
-    data = FileStag.load_file(ESSENTIAL_DATA_ARCHIVE_NAME)
+    data = FileStag.load(ESSENTIAL_DATA_ARCHIVE_NAME)
     # test if archive is not registered twice
     prev_count = len(SharedArchive.archives)
     SharedArchive.register(ESSENTIAL_DATA_ARCHIVE_NAME, "scistagessential")

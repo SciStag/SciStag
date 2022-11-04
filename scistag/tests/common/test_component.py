@@ -121,9 +121,9 @@ def test_cache():
     other_db = test_object["otherDb"]
     assert isinstance(other_db, pd.DataFrame)
     del test_object["otherDb"]  # test __delitem__
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         del test_object["invalidValue"]
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         _ = test_object["otherInvalidValue"]
     assert "otherDb" not in test_object
     assert test_object.temp_data == "Some dynamic loaded data"

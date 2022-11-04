@@ -33,6 +33,7 @@ class VisualTestLog(VisualLog):
                          formats_out=formats_out,
                          ref_dir=cur_dir + "/refdata",
                          log_to_disk=log_images,
+                         log_to_stdout=False,
                          clear_target_dir=False,
                          **params)
         self.log_images = log_images
