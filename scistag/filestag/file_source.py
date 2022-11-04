@@ -728,7 +728,7 @@ class FileSource:
         if len(self.search_path) > 0 and not filename.startswith(
                 self.search_path):
             return False
-        rest = filename[len(self.search_path):]
+        rest = filename[len(self.search_path):].lstrip("/").lstrip("\\")
         if not self.recursive:
             if "/" in rest or "\\" in rest:
                 return False

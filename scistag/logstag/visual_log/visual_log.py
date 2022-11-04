@@ -669,7 +669,7 @@ class VisualLog:
             name = "image"
         if alt_text is None:
             alt_text = name
-        if self._log_txt_images or max_width is not None or scaling != 1.0:
+        if self._log_txt_images or max_width is not None:
             download = True
         if isinstance(source, np.ndarray):
             source = Image(source, pixel_format=pixel_format)
