@@ -34,6 +34,8 @@ from scistag.logstag.visual_log.visual_log_service import VisualLogService
 from ...webstag.web_helper import WebHelper
 
 # Error messages
+TABLE_PIPE = "|"
+"Defines the character which starts and ends an ASCII table in a log file"
 
 _ONLY_AUTO_CLEAR_ON_CONTINUOUS = "'auto_clear' can only be used in " \
                                  "combination with 'continuous=True'"
@@ -112,13 +114,14 @@ class VisualLog:
         Key+Left and Win Key+Right
     """
 
-    def __init__(self, target_dir: str = "./logs",
-                 title: str = "SciStag - VisualLog",
+    def __init__(self, title: str = "SciStag - VisualLog",
+                 target_dir: str = "./logs",
                  formats_out: set[str] | None = None,
                  ref_dir: str | None = None,
                  tmp_dir: str | None = None,
                  clear_target_dir: bool = False,
                  log_to_disk=True,
+                 log_to_stdout=True,
                  embed_images: bool | None = None,
                  continuous_write=False,
                  refresh_time_s=0.5,
@@ -145,6 +148,7 @@ class VisualLog:
             before starting (take care!)
         :param log_to_disk: Defines if the logger shall write it's results
             to disk. True by default.
+        :param log_to_stdout: Defines if the system shall automatically log to stdout via print as well
         :param embed_images: Defines if images shall be directly embedded into
             the HTML log instead of being stored as separate files.
 
@@ -336,6 +340,8 @@ class VisualLog:
         "List of unhandled events"
         self._widgets = {}
         "Set of widgets"
+        self.log_to_stdout = log_to_stdout
+        "Defines if all log messages shall also be send to stdout via print"
         if do_auto_reload:
             self._events = self.cache.get(LOG_EVENT_CACHE_NAME, default=[])
         self._invalid = False
@@ -433,7 +439,7 @@ class VisualLog:
         """
         return FilePath.dirname(__file__)
 
-    def clear_logs(self):
+    def clear(self):
         """
         Clears the whole log (excluding headers and footers)
         """
@@ -581,11 +587,11 @@ class VisualLog:
         self.add_static_file('liveView.html',
                              rendered_lv)
 
-    def table(self, table_data: list[list[any]], index=False, header=False):
+    def table(self, data: list[list[any]], index=False, header=False):
         """
         Adds a table to the log.
 
-        :param table_data: The table data. A list of rows including a list of
+        :param data: The table data. A list of rows including a list of
             columns.
 
             Each row has to provide the same count of columns.
@@ -595,7 +601,7 @@ class VisualLog:
         :param header: Defines if the table has a header
         """
         code = '<table class="log_table">\n'
-        for row_index, row in enumerate(table_data):
+        for row_index, row in enumerate(data):
             tabs = "\t"
             code += f"{tabs}<tr>\n"
             for col_index, col in enumerate(row):
@@ -615,7 +621,13 @@ class VisualLog:
                 tabs = tabs[0:-1]
             code += f"{tabs}</tr>\n"
         code += "</table>\n"
-        self.html(code)
+        self._add_html(code)
+        for row in data:
+            row_text = "| "
+            for index, col in enumerate(row):
+                row_text += col + " | "
+            self._add_txt(row_text, md=True)
+        return self
 
     def image(self, source: Image | Canvas | str | bytes | np.ndarray,
               name: str | None = None,
@@ -992,13 +1004,45 @@ class VisualLog:
         res = escaped.encode('ascii', 'xmlcharrefreplace')
         return res.decode("utf-8")
 
+    def _log_advanced(self, text, level: LogLevel):
+        """
+        Detects tables and other objects in a log and pretty prints the tables while keeping the other log data intact
+
+        :param text: The log text
+        :param level: The log level
+        """
+        lines = text.split("\n")
+        common_block = ""
+        cur_table = None
+        for line in lines:
+            if line.startswith(TABLE_PIPE):
+                if len(common_block) > 0:
+                    self.log(common_block, level=level)
+                    common_block = ""
+                if cur_table is None:
+                    cur_table = []
+                elements = [element.lstrip(" ").rstrip(" ") for element in line.split("|")]
+                if len(elements) > 2:
+                    elements = elements[1:-1]
+                cur_table.append(elements)
+            else:
+                # when back to normal mode visualize current in-progress element
+                if cur_table is not None:
+                    self.table(cur_table)
+                    cur_table = None
+                common_block += line + "\n"
+        if len(common_block) > 0:
+            self.log(common_block, level=level)
+
     def log(self, *args: Any, level: LogLevel | str = LogLevel.INFO,
+            detect_objects: bool = False,
             space: str = " "):
         """
         Adds a log text to the log
 
         :param text: The text to add to the log
         :param level: The importance / category of the log entry
+        :param detect_objects: Defines if special objects such as tables shall be detected and printed beautiful
         :param space: The character or text to be used for spaces
         :return:
         """
@@ -1006,11 +1050,13 @@ class VisualLog:
             level = LogLevel(level)
         elements = [str(element) for element in args]
         text = space.join(elements)
+        if detect_objects and TABLE_PIPE in text:
+            self._log_advanced(text, level)
+            return
         if text is None:
             text = "None"
         if not isinstance(text, str):
             text = str(text)
-        print(text)
         for element in self.forward_targets.values():
             element.log(text, level=level)
         escaped_text = self._encode_html(text)
@@ -1506,6 +1552,8 @@ class VisualLog:
         :param md: Defines if the text shall be added to markdown as well
         :return: True if txt logging is enabled
         """
+        if self.log_to_stdout:
+            print(txt_code)
         if console and len(self._consoles):
             self._add_to_console(txt_code)
         if md and MD in self._logs:
@@ -1744,10 +1792,10 @@ class VisualLog:
                    public_ips: str | list[str] | None = None,
                    builder: BuilderTypes | None = None,
                    continuous: bool | None = None,
-                   wait: bool = False,
+                   wait: bool = True,
                    auto_clear: bool | None = None,
                    overwrite: bool | None = None,
-                   mt: bool = False,
+                   mt: bool = True,
                    test: bool = False,
                    server_logs: bool = False,
                    show_urls: bool = True,
@@ -2081,7 +2129,7 @@ class VisualLog:
                 if self._shall_terminate:
                     break
             if auto_clear:
-                self.clear_logs()
+                self.clear()
             self._run_builder(builder)
             self.handle_event_list()
             self.write_to_disk()

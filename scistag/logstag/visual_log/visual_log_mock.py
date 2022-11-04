@@ -57,6 +57,7 @@ class VisualLogMock:
 
     def table(self, data, *_, **__) -> "VisualLogMock":
         for row in data:
+            print("| ", end="")
             for index, col in enumerate(row):
                 if self.log_to_stdout:
                     print(col, end=" | ")

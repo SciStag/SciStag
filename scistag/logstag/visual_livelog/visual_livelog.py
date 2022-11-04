@@ -130,7 +130,7 @@ class VisualLiveLog(VisualLog):
         sll = self.begin_sub_log("liveLog",
                                  max_fig_size=self._max_live_fig_size)
         if clear:
-            self.clear_logs()
+            self.clear()
         return sll
 
     def emd_update(self):

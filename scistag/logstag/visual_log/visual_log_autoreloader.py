@@ -94,7 +94,7 @@ class VisualLogAutoReloader:
         if cls.main_log is None or cls._embedded_log is None:
             return
         cls._embedded_log.render()
-        cls.main_log.clear_logs()
+        cls.main_log.clear()
         cls.main_log.embed(cls._embedded_log)
         cls.main_log.render()
 

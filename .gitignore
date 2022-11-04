@@ -151,3 +151,4 @@ shelf
 *.mp4
 *.lcov
 pylintrc
+/.idea/serialmonitor_settings.xml
