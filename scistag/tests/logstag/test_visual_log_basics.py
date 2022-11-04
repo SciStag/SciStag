@@ -69,9 +69,9 @@ def test_image():
                     hash_val='4e5e428357fcf315f25b148747d633db',
                     scaling=0.5)
     vl.checkpoint()
-    vl._log_images = False
+    vl.log_images = False
     vl.image(image_data, alt_text="an image which shouldn't get logged")
-    vl._log_images = True
+    vl.log_images = True
     vl.assert_cp_diff("d41d8cd98f00b204e9800998ecf8427e")
     # insert image via canvas
     vl.image(source=image_data.to_canvas(), name="stag_canvas")
@@ -84,7 +84,7 @@ def test_image():
         vl.assert_val("assert_stag", image_data,
                       hash_val='4e5e428357fcf315f25b148747d633da')
     vl.checkpoint()
-    vl._log_txt_images = False
+    vl.log_txt_images = False
     vl.sub_test("An image from the web scaled to 50%")
     vl.image(TestConstants.STAG_URL, "anotherStag_1", scaling=0.5,
              download=False)
@@ -96,7 +96,7 @@ def test_image():
     vl.checkpoint()
     vl.sub_test("An image from the web scaled to 100%")
     vl.image(TestConstants.STAG_URL, "anotherStag_3", scaling=1.0)
-    vl._log_txt_images = True
+    vl.log_txt_images = True
     vl.assert_cp_diff(hash_val="a37201edd6c4c71f056f0a559ad6824b")
     # add image from bytes stream
     vl.sub_test("Logging an image provided as byte stream")
@@ -147,9 +147,9 @@ def test_figure():
     vl.assert_figure('test directly logging plot', plot,
                      hash_val='b2927d2e8972b8a912e1155983f872be')
 
-    vl._log_images = False
+    vl.log_images = False
     vl.figure(plot, "not_plotted_figure")
-    vl._log_images = True
+    vl.log_images = True
 
     vl.sub_test("Logging figures created with matplotlib using add_matplot")
     np.random.seed(42)
@@ -223,9 +223,9 @@ def test_dataframe():
     vl.checkpoint()
     vl.assert_cp_diff(hash_val="d41d8cd98f00b204e9800998ecf8427e")
     vl.sub_test("HTML table printed w/o pretty html")
-    vl._use_pretty_html_table = False
+    vl.use_pretty_html_table = False
     vl.df(df, "A simple dataframe w/o pretty html")
-    vl._use_pretty_html_table = True
+    vl.use_pretty_html_table = True
     vl.assert_cp_diff(hash_val="977c2398088db1beb5d798c65fc73bb4")
 
     # testing data frame assertion
@@ -244,15 +244,15 @@ def test_dataframe():
         vl.assert_df("test_dataframe", df,
                      hash_val="914de108cea30eb542f1fb57dcb18afc")
     vl.sub_test("Log table without tabulate")
-    vl._use_tabulate = False
+    vl.use_tabulate = False
     vl.df(df, "DataFrame w/o tabulate")
     vl.sub_test("Log table without HTML")
     vl.markdown_html = False
     vl.df(df, "DataFrame w/o tabulate")
     vl.markdown_html = True
-    vl._use_tabulate = True
+    vl.use_tabulate = True
     vl.df(df, "DataFrame w/o tabulate")
-    vl._use_tabulate = True
+    vl.use_tabulate = True
 
 
 def test_np_assert():

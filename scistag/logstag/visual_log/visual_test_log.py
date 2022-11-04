@@ -67,6 +67,6 @@ class VisualTestLog(VisualLog):
                 continue
             difference = difference + data[length:]
             keys.append(key)
-        assert sorted(list(keys)) == sorted(list(self._log_formats))
+        assert sorted(list(keys)) == sorted(list(self.log_formats))
         result_hash_val = hashlib.md5(difference).hexdigest()
         self.hash_check_log(result_hash_val, hash_val)

@@ -40,7 +40,7 @@ class LiveCameraDemo:
         else:
             vl.log("Did not receive any image yet :(")
         vl.log("")
-        vl.log_vl_statistics()
+        vl.log_statistics()
 
     @classmethod
     def start(cls):
