@@ -72,7 +72,6 @@ def test_image():
     vl.log.log_images = False
     vl.image(image_data, alt_text="an image which shouldn't get logged")
     vl.log.log_images = True
-    vl.image.show()
     vl.test.assert_cp_diff("d41d8cd98f00b204e9800998ecf8427e")
     # insert image via canvas
     vl.image(source=image_data.to_canvas(), name="stag_canvas")

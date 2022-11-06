@@ -4,6 +4,7 @@ omit =
     */cli/*
     */examples/*
     */tests/*
+    */workbench/*
     */third_party/*
 branch = True
 
