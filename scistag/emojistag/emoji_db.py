@@ -1,66 +1,24 @@
+"""
+Defines the class :class:`EmojiDb` which is the heart of this package.
+
+It loads and provides information about all known Emojis and their details
+such as the unicode encoding or their category.
+"""
+
 from __future__ import annotations
 import io
 import json
-from threading import RLock
-from typing import Union, Optional
-
-from pydantic import BaseModel
+from fnmatch import fnmatch
 
 import scistag.addons
+from scistag.common.mt.stag_lock import StagLock
 from scistag.common.essential_data import get_edp
-from scistag.filestag import FileStag
-from scistag.imagestag import svg
+from scistag.filestag.file_stag import FileStag
 
-EmojiIdentifierTypes = Union[str, list[str]]
-"""
-An emoji name such as "deer" (see :meth:`EmojiDb.get_unicode_dict`, a  markdown
-emoji identifier such as ``":deer:"`` (GitHub definitions), a single unicode
-character or a unicode sequence (without leading zeros).
-"""
-
-EMOJI_SVG_ADDON = "emojis.svg"
-"Addon name for SVG emojis"
-
-_EMOJI_DB_NAME = "data/emoji/emoji_db.json"
-"Main emoji database file, containing detailed information about all Emojis"
-_EMOJI_NAMES = "data/emoji/emoji_names.json"
-"""
-Emoji conversion dictionary. Containing the unicode codes for all unicode codes 
-as defined by unicode.org
-"""
-_EMOJI_NAMES_MARKDOWN = "data/emoji/markdown_emoji_names.json"
-"""
-Markdown emoji conversion dictionary. Containing the unicode codes for common 
-Emoji names used in markdown
-"""
-
-
-class EmojiInfo(BaseModel):
-    """
-    Contains the information about a single emoji
-    """
-    name: str
-    "The emojis name as defined in the unicode standard, e.g. Older Woman"
-    group: str
-    "The emoji's group, e.g. Animals & Nature"
-    subgroup: str
-    "The emoji's sub group, e.g. animal-mammal"
-    markdownName: Optional[str]
-    """
-    If there is a GitHub markdown shortcut for the emoji it's provided here.
-    
-    Note that that EmojiStag and SciStag might not used the same definition
-    version at all times but all common emojis should be available.
-    """
-    countryCode: Optional[str]
-    """
-    If the emoji is a country flag it's two letter code, e.g. DE for Germany
-    is provided here
-    """
-    countryName: Optional[str]
-    """
-    The full country name in English such as Germany
-    """
+from .emoji_definitions import (EmojiIdentifierTypes, EMOJI_SVG_ADDON,
+                                EMOJI_NAMES, EMOJI_DB_NAME,
+                                EMOJI_NAMES_MARKDOWN)
+from .emoji_info import EmojiInfo
 
 
 class EmojiDb:
@@ -69,7 +27,7 @@ class EmojiDb:
     By default it uses the Noto Emoji dataset embedded into the SciStag module.
     """
 
-    _access_lock = RLock()
+    _access_lock = StagLock()
     "Shared access lock"
     _initialized = False
     "Defines if the emoji db was initialized"
@@ -80,14 +38,20 @@ class EmojiDb:
     _markdown_names = {}
     "Markdown name conversion dictionary"
     _unicode_names = {}
-    "Unicode name conversion dictionary"
+    """
+    The dictionary contains all official names of the emojis and their
+    corresponding unicode sequence
+    """
     _valid_sequences = set()
     "Set of valid unicode sequences"
     _main_dict = {}
-    "Unicode name conversion dictionary"
+    """
+    Contains all details about every single known emoji such as name,
+    category, subcategory and of course unicode sequence
+    """
 
     @classmethod
-    def get_markdown_dict(cls) -> dict:
+    def _get_markdown_dict(cls) -> dict:
         """
         Returns the markdown name dictionary. Contains all common markdown
         emoji names as key and their corresponding unique sequence as value
@@ -98,12 +62,12 @@ class EmojiDb:
             if len(cls._markdown_names) > 0:
                 return cls._markdown_names
             edp = get_edp()
-            file_data = FileStag.load(edp + _EMOJI_NAMES_MARKDOWN)
+            file_data = FileStag.load(edp + EMOJI_NAMES_MARKDOWN)
             cls._markdown_names = json.load(io.BytesIO(file_data))
             return cls._markdown_names
 
     @classmethod
-    def get_unicode_dict(cls) -> dict:
+    def _get_unicode_dict(cls) -> dict:
         """
         Returns the unicode name dictionary. Contains all common emoji names as
         key and their corresponding unique sequence as value for more than
@@ -115,26 +79,27 @@ class EmojiDb:
             if len(cls._unicode_names) > 0:
                 return cls._unicode_names
             edp = get_edp()
-            file_data = FileStag.load(edp + _EMOJI_NAMES)
+            file_data = FileStag.load(edp + EMOJI_NAMES)
             cls._unicode_names = json.load(io.BytesIO(file_data))
             return cls._unicode_names
 
     @classmethod
-    def get_valid_sequences(cls) -> set:
+    def get_all_valid_sequences(cls) -> set:
         """
-        Returns a set of valid emoji sequences
+        Returns a set of all (known) valid emoji sequences
 
-        :return A set of valid emoji sequences (all uppercased)
+        :return A set of valid emoji sequences (all uppercased and with
+            an underscore separating the single elements)
         """
         with cls._access_lock:
             if len(cls._valid_sequences) > 0:
                 return cls._valid_sequences
-            unicode_dict = cls.get_unicode_dict()
+            unicode_dict = cls._get_unicode_dict()
             cls._valid_sequences = set(unicode_dict.values())
             return cls._valid_sequences
 
     @classmethod
-    def get_main_dict(cls) -> dict:
+    def _get_main_dict(cls) -> dict:
         """
         Returns the main dictionary containing all details about an emoji.
 
@@ -144,28 +109,33 @@ class EmojiDb:
             if len(cls._main_dict) > 0:
                 return cls._main_dict
             edp = get_edp()
-            file_data = FileStag.load(edp + _EMOJI_DB_NAME)
+            file_data = FileStag.load(edp + EMOJI_DB_NAME)
             cls._main_dict = json.load(io.BytesIO(file_data))
+            # hotfix for property remaining, will be fixed with next data
+            # update
+            for key, value in cls._main_dict.items():
+                value["sequence"] = key.split("_")
+                value["category"] = value["group"]
+                value["subcategory"] = value["subgroup"]
             return cls._main_dict
 
     @classmethod
-    def get_emoji_sequence_for_name(cls, identifier: str) -> list:
+    def get_sequence_for_name(cls, identifier: str) -> list:
         """
         Returns the unicode sequence for given unicode identifier
 
         :param identifier: Either the full qualified identifier as defined by
-            unicode.org supporting all >3600 emojis, see
-            :meth:`get_unicode_dict()` for the full list or the markdown
-            shortcode enclosed by two colons such as ":deer:"
-            as defined in :meth:`get_markdown_dict()`.
+            unicode.org supporting all >3600 emojis as defined by unicode.org.
+            or the markdown  shortcode enclosed by two colons such as ":deer:"
+            as defined on GitHub.
         :return: The unicode sequence if the emoji could be found,
             otherwise an empty list
         """
         if identifier.startswith(":") and identifier.endswith(":"):
-            return cls.get_markdown_dict().get(identifier[1:-1], "").split("_")
-        unicode_dict = cls.get_unicode_dict()
+            return cls._get_markdown_dict().get(identifier[1:-1], "").split("_")
+        unicode_dict = cls._get_unicode_dict()
         if identifier in unicode_dict:
-            return cls.get_unicode_dict().get(identifier, "").split("_")
+            return cls._get_unicode_dict().get(identifier, "").split("_")
         sequence = identifier.encode('unicode-escape').decode('ascii')
         sequence = sequence.split("\\")[1:]
         sequence = [element.lstrip("Uu").lstrip("0") for element in sequence]
@@ -174,17 +144,20 @@ class EmojiDb:
         return []
 
     @classmethod
-    def get_sequence(cls, identifier: EmojiIdentifierTypes) -> list[str]:
+    def get_character_sequence(cls, identifier: EmojiIdentifierTypes) -> \
+            list[str]:
         """
-        Converts an emoji identifier to a  unicode sequence. Does not alter
-        the value if a unicode sequence was passed already.
+        Converts an emoji identifier to a unicode character sequence which
+        can be printed to the console or a markdown document.
+
+        Does not alter the value if a unicode sequence was passed already.
 
         :param identifier: The emoji identifier, either it's unicode name,
             markdown name surrounded by colons or a single emoji character.
-        :return: The unicode sequence
+        :return: The unicode characters
         """
         if isinstance(identifier, str):
-            identifier = cls.get_emoji_sequence_for_name(identifier)
+            identifier = cls.get_sequence_for_name(identifier)
         return identifier
 
     @classmethod
@@ -194,7 +167,7 @@ class EmojiDb:
 
         :return: The emoji character (if valid), otherwise an empty string
         """
-        sequence = cls.get_sequence(identifier)
+        sequence = cls.get_character_sequence(identifier)
         if len(sequence) == 0:
             return ""
         encoding = "".join(["\\U" + element.zfill(8) for element in sequence])
@@ -211,7 +184,7 @@ class EmojiDb:
             zeros.
         :return: True if the sequence is known
         """
-        return "_".join(sequence).upper() in cls.get_valid_sequences()
+        return "_".join(sequence).upper() in cls.get_all_valid_sequences()
 
     @classmethod
     def get_extensions(cls) -> dict:
@@ -221,6 +194,7 @@ class EmojiDb:
         :return: Dictionary of extensions and their corresponding FileStag path
             to access their data
         """
+        from scistag.imagestag import svg
         with cls._access_lock:
             if not cls._initialized:
                 cls._extensions = \
@@ -242,7 +216,7 @@ class EmojiDb:
         return cls._svg_emojis
 
     @classmethod
-    def get_emoji_svg(cls, sequence: list[str]) -> bytes | None:
+    def get_svg(cls, sequence: list[str]) -> bytes | None:
         """
         Tries to read the SVG of an emoji from the database
 
@@ -261,8 +235,8 @@ class EmojiDb:
         return FileStag.load(emoji_path)
 
     @classmethod
-    def get_emoji_png(cls,
-                      sequence: list[str]) -> bytes | None:
+    def get_png(cls,
+                sequence: list[str]) -> bytes | None:
         """
         Tries to read the SVG of an emoji from the database
 
@@ -276,19 +250,104 @@ class EmojiDb:
         return FileStag.load(emoji_path)
 
     @classmethod
-    def get_emoji_details(cls, sequence: list[str]) -> EmojiInfo | None:
+    def get_details(cls, sequence: list[str]) -> EmojiInfo | None:
         """
         Returns details about am emoji
 
         :param sequence: The unicode sequence without leading zeros.
         :return: The EmojiInfo object if available
         """
-        main_db = cls.get_main_dict()
+        main_db = cls._get_main_dict()
         upper_cased = [element.upper() for element in sequence]
         combined = "_".join(upper_cased)
         if combined in main_db:
             return EmojiInfo.parse_obj(main_db[combined])
         return None
+
+    @classmethod
+    def get_categories(cls) -> list[str]:
+        """
+        Returns a list of all emoji main categories
+
+        :return: A list of all known emoji categories
+        """
+        main_dict = cls._get_main_dict()
+        categories = set(
+            [element["category"] for element in main_dict.values()])
+        return sorted(list(categories))
+
+    @classmethod
+    def get_sub_categories(cls, category: str) -> list[str]:
+        """
+        Returns a list of all emoji sub categories of given category
+
+        :param category: The category's name
+        :return: A list of subcategories in this category
+        """
+        main_dict = cls._get_main_dict()
+        filtered_list = [element['subcategory'] for element in
+                         main_dict.values() if
+                         element['category'] == category]
+        return sorted(list(set(filtered_list)))
+
+    @classmethod
+    def get_emojis_in_category(cls, category: str, subcategory: str | None) -> \
+            list[EmojiInfo]:
+        """
+        Returns all emojis in the defined category and subcategory
+
+        :param category: The main category's name as obtained by
+            :meth:`get_categories`.
+        :param subcategory: The name of the subcategory. If no subcategory is
+            provided all emojis in the category will be returned.
+        :return: A list of all emojis in given category and subcategory
+        """
+        main_dict = cls._get_main_dict()
+        if subcategory is not None:
+            filtered_list = [EmojiInfo.parse_obj(element) for element in
+                             main_dict.values() if
+                             element['category'] == category and
+                             element['subcategory'] == subcategory]
+        else:
+            filtered_list = [EmojiInfo.parse_obj(element) for element in
+                             main_dict.values() if
+                             element['category'] == category]
+        return sorted(filtered_list, key=lambda element: element.name)
+
+    @classmethod
+    def find_emojis_by_name(cls, name_mask: str, md: bool = False):
+        """
+        Returns all emojis which match the defined search pattern
+
+        :param name_mask: The name mask to search for, e.g *sun*
+        :param md: Defines if the GitHub markdown db name shall be used instead
+            of the full unicode name list.
+        :return: A list of all matching Emojis
+        """
+        main_dict = cls._get_main_dict()
+        if md:
+            return [EmojiInfo.parse_obj(element) for element in
+                    main_dict.values() if
+                    fnmatch(element.get('markdownName', ""), name_mask)]
+        else:
+            return [EmojiInfo.parse_obj(element) for element in
+                    main_dict.values() if
+                    fnmatch(element['name'], name_mask)]
+
+    @classmethod
+    def __getitem__(cls, key: str) -> EmojiInfo | None:
+        """
+        Returns the emoji details for a specific Emoji by it's name.
+
+        :param key: Either the full qualified name as defined in the unicode
+            database or its GitHub markdown name surrounded by colons, eg
+            "deer" or ":deer:"
+        :return: The Emoji description
+        """
+        sequence = cls.get_sequence_for_name(key)
+        if len(sequence) > 0:
+            return cls.get_details(sequence)
+        raise KeyError("Emoji not found")
 
 
 def get_emoji_sequence(identifier: EmojiIdentifierTypes) -> list[str]:
@@ -305,7 +364,7 @@ def get_emoji_sequence(identifier: EmojiIdentifierTypes) -> list[str]:
         like 🦌 a unicode sequence as list of strings.
     :return: The unicode sequence, e.g. ["1f98c"] for a deer
     """
-    return EmojiDb.get_sequence(identifier=identifier)
+    return EmojiDb.get_character_sequence(identifier=identifier)
 
 
 def get_emoji_sequence_valid(sequence: list[str]) -> bool:
@@ -342,5 +401,16 @@ def get_emoji_details(identifier: EmojiIdentifierTypes) -> EmojiInfo | None:
     :return: The Emoji info object if available providing all information
         about the emoji stored in our db.
     """
-    sequence = EmojiDb.get_sequence(identifier)
-    return EmojiDb.get_emoji_details(sequence)
+    return EmojiDb.get_details(EmojiDb.get_character_sequence(identifier))
+
+
+def find_emojis_by_name(name_mask: str, md: bool = False):
+    """
+    Returns all emojis which match the defined search pattern
+
+    :param name_mask: The name mask to search for, e.g *sun*
+    :param md: Defines if the GitHub markdown db name shall be used instead
+        of the full unicode name list.
+    :return: A list of all matching Emojis
+    """
+    return EmojiDb.find_emojis_by_name(name_mask=name_mask, md=md)

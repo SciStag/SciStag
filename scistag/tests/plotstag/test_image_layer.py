@@ -3,7 +3,7 @@ Tess the image layer o a plot
 """
 import pytest
 
-from scistag.emojistag import get_emoji
+from scistag.emojistag import render_emoji
 from scistag.plotstag import Figure, Plot
 from scistag.common import get_test_image, TestDataNames
 from . import vl
@@ -109,7 +109,7 @@ def test_transparent_image():
     Tests plotting an alpha-transparent image
     """
     vl.test.begin("Plotting transparent images")
-    stag_emoji = get_emoji(":deer:", size=505)
+    stag_emoji = render_emoji(":deer:", size=505)
     image = Figure().add_plot().add_image(stag_emoji, size_ratio=1.0).render()
     vl.test.assert_image("stag_plot_alpha_transparent",
                     image, 'db94e195188cc3efafd84606aa7fe39a')

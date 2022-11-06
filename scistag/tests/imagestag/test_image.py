@@ -17,7 +17,7 @@ import pytest
 
 from . import vl
 from ...common.test_data import TestConstants
-from ...emojistag import get_emoji
+from ...emojistag import render_emoji
 from ...plotstag import Figure
 from . import skip_imagestag
 
@@ -149,7 +149,7 @@ def test_encoding(stag_image_data, tmp_path):
     """
 
     # in memory encoding
-    stag = get_emoji("deer", height=128)
+    stag = render_emoji("deer", height=128)
     # automatic background filling when converting from RGBA to RGB
     decoded_jpg = Image(stag.encode("jpg"))
     assert decoded_jpg.get_pixels_rgb().mean() == pytest.approx(228, 0.005)

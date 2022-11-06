@@ -77,7 +77,7 @@ class EmojiRenderer:
         svg_renderer_available = svg.SvgRenderer.available() and quality >= \
                                  MINIMUM_SVG_RENDERING_QUALITY
 
-        sequence = EmojiDb.get_sequence(identifier)
+        sequence = EmojiDb.get_character_sequence(identifier)
         # compute size
         if size is None:
             if width is not None:
@@ -104,10 +104,10 @@ class EmojiRenderer:
         very_small = size[0] <= 68 and size[1] <= 64
         if svg_renderer_available and ((not is_default_size and not very_small)
                                        or quality >= ENFORCE_SVG_QUALITY):
-            svg_data = EmojiDb.get_emoji_svg(sequence=sequence)
+            svg_data = EmojiDb.get_svg(sequence=sequence)
         png_data = None
         if not svg_data:
-            png_data = EmojiDb.get_emoji_png(sequence)
+            png_data = EmojiDb.get_png(sequence)
         if svg_data is not None:
             image = svg.SvgRenderer.render(svg_data, size[0], size[1],
                                            bg_color=bg_color)
@@ -126,12 +126,12 @@ class EmojiRenderer:
         return None
 
 
-def get_emoji(identifier: str | list[str],
-              size: int | None | Size2DTypes = None,
-              width: float = None,
-              height: float = None,
-              bg_color: ColorTypes | None = None,
-              quality: int = 90) -> Image | None:
+def render_emoji(identifier: str | list[str],
+                 size: int | None | Size2DTypes = None,
+                 width: float = None,
+                 height: float = None,
+                 bg_color: ColorTypes | None = None,
+                 quality: int = 90) -> Image | None:
     """
     Tries to read an emoji and render it to a transparent image
 

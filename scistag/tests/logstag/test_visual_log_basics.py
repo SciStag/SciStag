@@ -6,7 +6,7 @@ import pytest
 
 from . import vl
 from ...common.test_data import TestConstants
-from ...emojistag import get_emoji
+from ...emojistag import render_emoji
 from ...imagestag import Colors
 from ...logstag.vislog import VisualLog
 from ...plotstag import Figure, MPLock
@@ -60,7 +60,7 @@ def test_image():
     """
     Tests image logging
     """
-    image_data = get_emoji(":deer:")
+    image_data = render_emoji(":deer:")
     image_data.convert("rgb", bg_fill=Colors.WHITE)
     # logging images
     vl.test.assert_image("stag",
@@ -136,7 +136,7 @@ def test_figure():
     Tests asserting figures
     """
     figure = Figure(cols=1)
-    image_data = get_emoji(":deer:")
+    image_data = render_emoji(":deer:")
     figure.add_plot().add_image(image_data, size_ratio=1.0)
     vl.test.assert_val('figure_test', figure,
                        hash_val='b2927d2e8972b8a912e1155983f872be')
