@@ -47,7 +47,8 @@ def test_repo_validity():
                       "*/imagestag/image.py", "*/slidestag/widget.py",
                       "*/data/scistag_essentials.zip",
                       "*/data/scistag_vector_emojis_0_0_2.zip",
-                      "*/file_source.py", "*/visual_log.py"
+                      "*/file_source.py", "*/visual_log.py",
+                      "*/visual_log_builder.py"
                       ]
 
     too_large_files = \

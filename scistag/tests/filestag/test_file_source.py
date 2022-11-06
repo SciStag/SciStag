@@ -199,7 +199,7 @@ def test_statistics():
     test_source = FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
                                          fetch_file_list=True)
     statistics = str(test_source)
-    vl.assert_val("essential_archive_statistics", statistics,
+    vl.test.assert_val("essential_archive_statistics", statistics,
                   hash_val="c77545b7f74133cd85ce3fcadf448016")
     list = test_source.get_file_list()
     assert len(list) == 3706

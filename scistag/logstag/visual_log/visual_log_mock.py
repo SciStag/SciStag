@@ -65,16 +65,60 @@ class VisualLogMock:
                 print("")
         return self
 
-    def log(self, *args, **_) -> "VisualLogMock":
+    def log_text(self, *args, **_) -> "VisualLogMock":
         """
         Logs text to stdout
 
-        :param args: Positional arguments
-        :param kwargs: Keyword arguments
+        :param args: The elements to log. Will be separated by space.
         """
         args = [str(element) for element in args]
         if self.log_to_stdout:
             print(" ".join(args))
+        return self
+
+    def info(self, *args, **_) -> "VisualLogMock":
+        """
+        Logs an info text
+
+        :param args: The elements to log. Will be separated by space.
+        """
+        self.log_text("[INFO]    ", *args)
+        return self
+
+    def debug(self, *args, **_) -> "VisualLogMock":
+        """
+        Logs an info text
+
+        :param args: The elements to log. Will be separated by space.
+        """
+        self.log_text("[DEBUG]   ", *args)
+        return self
+
+    def warning(self, *args, **_) -> "VisualLogMock":
+        """
+        Logs an info text
+
+        :param args: The elements to log. Will be separated by space.
+        """
+        self.log_text("[WARNING] ", *args)
+        return self
+
+    def error(self, *args, **_) -> "VisualLogMock":
+        """
+        Logs an info text
+
+        :param args: The elements to log. Will be separated by space.
+        """
+        self.log_text("[ERROR]   ", *args)
+        return self
+
+    def critical(self, *args, **_) -> "VisualLogMock":
+        """
+        Logs a critical error
+
+        :param args: The elements to log. Will be separated by space.
+        """
+        self.log_text("[CRITICAL]", *args)
         return self
 
     def text(self, text: str, *args, **kwargs):
@@ -85,7 +129,7 @@ class VisualLogMock:
         :param text: The text to be logged
         :return: self
         """
-        return self.log(text)
+        return self.log_text(text)
 
     def line_break(self):
         """
@@ -97,7 +141,8 @@ class VisualLogMock:
         """
         Inserts a page break
         """
-        self.text("\n_________________________________________________________________________________\n")
+        self.text(
+            "\n_________________________________________________________________________________\n")
 
     def finalize(self, *_, **__):
         """

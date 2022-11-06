@@ -9,11 +9,12 @@ from ..config import ensure_config
 ensure_config()
 skip_imagestag = ConfigStag.get("testConfig.ImageStag.skip", False)
 
-vl = VisualTestLogSciStag(test_filename=__file__)
+test_log = VisualTestLogSciStag(test_filename=__file__)
+vl = test_log.default_builder
 
 
 def teardown_module(_):
     """
     Finalize the test
     """
-    vl.finalize()
+    test_log.finalize()

@@ -66,6 +66,7 @@ if TYPE_CHECKING:
     from .visual_log_renderer_html import VisualLogHtmlRenderer
     from .widgets.log_widget import LogWidget
     from .widgets.log_button import LogButton
+    from .visual_log_builder import VisualLogBuilder
 
 HTML = "html"
 "Html output"
@@ -337,6 +338,22 @@ class VisualLog:
             self.run_server(host_name="127.0.0.1",
                             builder=auto_reload, auto_reload=True,
                             auto_reload_stag_level=2)
+        from .visual_log_builder import VisualLogBuilder
+        self.default_builder: VisualLogBuilder = VisualLogBuilder(self)
+        """
+        The default builder. It let's you easily add content the log without
+        the need of any callbacks.
+        
+        ..  code-block: python
+        
+            log = VisualLog()
+            vl = log.default_builder
+            vl.title("Hello world")
+            
+            # or for the especially lazy ones
+            with VisualLog() as vl:
+                v.title("Hello world') 
+        """
 
     def load_old_logs(self) -> bool:
         """
@@ -535,7 +552,7 @@ class VisualLog:
                                           self.refresh_time_s * 1000),
                                       reload_url="index")
         self.add_static_file('liveView.html',
-                             rendered_lv)
+                             rendered_lv.encode("utf-8"))
 
     def write_html(self, html_code: str):
         """
@@ -582,7 +599,7 @@ class VisualLog:
         if console and len(self._consoles):
             self._add_to_console(txt_code)
         if md and MD in self._logs:
-            self.md(txt_code)
+            self.write_md(txt_code)
         if TXT not in self._logs:
             return
         self._logs[TXT].append((txt_code + "\n").encode("utf-8"))
@@ -1352,10 +1369,24 @@ class VisualLog:
     @property
     def is_simple(self) -> bool:
         """
-        Returns if this builder is a minimalistic logger with limited functionality.
+        Returns if this builder is a minimalistic logger with limited
+        functionality.
 
         See :meth:`setup_mocks`
 
         :return: True if it is a mock
         """
         return False
+
+    def __enter__(self) -> "VisualLogBuilder":
+        """
+        Returns the default builder
+
+        ..  code-block:
+
+            with VisualLog() as vl:
+                vl.title("Hello world")
+
+        :return: The builder object
+        """
+        return self.default_builder

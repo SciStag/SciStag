@@ -199,7 +199,7 @@ def test_hsv(stag_image_data):
     """
     Tests the HSV support of an image
     """
-    vl.test("HSV conversion tests")
+    vl.test.begin("HSV conversion tests")
     vl.sub_test("Trying to split an HSV image into it's 3 channels")
     image = Image(stag_image_data)
     org_image = image.copy()
@@ -211,7 +211,7 @@ def test_hsv(stag_image_data):
     for plot, band, band_name in zip(fig, bands, band_names):
         plot.set_title(band_name)
         plot.add_image(band, size_ratio=0.5)
-    vl.assert_figure("HSV", fig, hash_val="35775728f2ad636805f668a06559722a")
+    vl.test.assert_figure("HSV", fig, hash_val="35775728f2ad636805f668a06559722a")
 
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
