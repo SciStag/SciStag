@@ -8,7 +8,7 @@ from . import vl
 from ...common.test_data import TestConstants
 from ...emojistag import get_emoji
 from ...imagestag import Colors
-from ...logstag import VisualLog
+from ...logstag.vislog import VisualLog
 from ...plotstag import Figure, MPLock
 
 
@@ -226,7 +226,7 @@ def test_dataframe():
     vl.log.use_pretty_html_table = False
     vl.df(df, "A simple dataframe w/o pretty html")
     vl.log.use_pretty_html_table = True
-    vl.test.assert_cp_diff(hash_val="977c2398088db1beb5d798c65fc73bb4")
+    vl.test.assert_cp_diff(hash_val="cdc3b666bc3d8a22556fd9b9bbd713f9")
 
     # testing data frame assertion
     with mock.patch('builtins.print'):

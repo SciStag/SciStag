@@ -19,12 +19,13 @@ from importlib import reload
 from typing import Union, TYPE_CHECKING
 
 from scistag.filestag import FileStag
-from scistag.logstag import VisualLog
+from scistag.logstag.vislog import VisualLog
 
 if TYPE_CHECKING:
     from scistag.common.cache import Cache
 
-ERROR_TEXT = "Yikes! An error occurred 🙍 - Please fix the bug 🐛 above and save the file to continue"
+ERROR_TEXT = "Yikes! An error occurred 🙍 - Please fix the bug 🐛 above and " \
+             "save the file to continue"
 "Error text to be shown when the module stopped working"
 HEALTHY_AGAIN_TEXT = "Yay - the module is healthy again, let's rock on! 🤘👨"
 "Text to be shown when healthy again"
@@ -118,7 +119,7 @@ class VisualLogAutoReloader:
     @classmethod
     def start(cls,
               log: VisualLog,
-              host_name: str = "127.0.0.1",
+              host_name: str | None = "127.0.0.1",
               port: int | tuple[int, int] = 8010,
               public_ips: str | list[str] | None = None,
               url_prefix: str = "",
@@ -136,6 +137,9 @@ class VisualLogAutoReloader:
         :param host_name: The host name at which the log shall be hosted.
 
             Localhost by default.
+
+            If None is passed no server will be started and no interaction
+            is possible except via the console.
         :param port: The port ot listen at or a port range to select the
             first port within. 8010 by default. 0 for a random port.
         :param public_ips: If you run the service on a virtual machine in

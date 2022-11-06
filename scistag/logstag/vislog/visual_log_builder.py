@@ -24,12 +24,12 @@ from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Image, Canvas, PixelFormat, Size2D
 from scistag.logstag import LogLevel
 
-from scistag.logstag.visual_log.visual_log import VisualLog, MD, TXT, HTML, \
+from scistag.logstag.vislog.visual_log import VisualLog, MD, TXT, HTML, \
     TABLE_PIPE
 from scistag.plotstag import Figure, Plot, MPHelper
 
 if TYPE_CHECKING:
-    from scistag.logstag.visual_log.pyplot_log_context import PyPlotLogContext
+    from scistag.logstag.vislog.pyplot_log_context import PyPlotLogContext
 
 
 class VisualLogBuilder:
@@ -47,25 +47,44 @@ class VisualLogBuilder:
         """
         self.log: "VisualLog" = log
         "The main logging target"
-        self.logs = self.log._logs
         self.forward_targets: dict[str, VisualLogBuilder] = {}
         "List of logs to which all rendering commands shall be forwarded"
-        self.name_counter = Counter()
-        "Counter for file names to prevent writing to the same file twice"
-        self.title_counter = Counter()
-        "Counter for titles to numerate the if appearing twice"
-        self._total_update_counter = 0
-        "The total number of updates to this log"
-        self._update_counter = 0
-        # The amount of updates since the last statistics update
-        self._last_statistic_update = time.time()
-        "THe last time the _update rate was computed as time stamp"
-        self._update_rate: float = 0
-        # The last computed updated rate in updates per second
         from .visual_log_test_helper import VisualLogTestHelper
         self.test = VisualLogTestHelper(self)
         from .visual_image_logger import VisualImageLogger
         self.image = VisualImageLogger(self)
+
+    def build_body(self):
+        """
+        Is called when the body of the log shall be build or rebuild.
+
+        This is usually the function you want to override to implement your
+        own page builder.
+        """
+        pass
+
+    def build(self):
+        """
+        Builds the whole page including header, footers and other sugar.
+
+        Only overwrite this if you really want to do a more complex
+        customization.
+        """
+        self.build_header()
+        self.build_body()
+        self.build_footer()
+
+    def build_header(self):
+        """
+        Called to build the page's header and before the body
+        """
+        pass
+
+    def build_footer(self):
+        """
+        Called to build the page's footer and after the body
+        """
+        pass
 
     @property
     def max_fig_size(self) -> Size2D:
@@ -78,10 +97,7 @@ class VisualLogBuilder:
         """
         Clears the whole log (excluding headers and footers)
         """
-        self.name_counter = Counter()
-        self.title_counter = Counter()
-        for key in self.logs.keys():
-            self.logs[key].clear()
+        self.log.clear()
 
     def embed(self, log: VisualLog):
         """
@@ -89,9 +105,7 @@ class VisualLogBuilder:
 
         :param log: The source log
         """
-        for cur_format in self.log.log_formats:
-            if cur_format in log.log_formats:
-                self.logs[cur_format].append(log.get_body(cur_format))
+        self.log.embed(log)
 
     def table(self, data: list[list[any]], index=False, header=False):
         """
@@ -225,7 +239,7 @@ class VisualLogBuilder:
 
     def sub_x3(self, text: str):
         """
-        Adds a sub title to the log
+        Adds a subtitle to the log
 
         :param text: The text to add to the log
         :return:
@@ -234,7 +248,7 @@ class VisualLogBuilder:
 
     def sub_x4(self, text: str):
         """
-        Adds a sub title to the log
+        Adds a subtitle to the log
 
         :param text: The text to add to the log
         :return:
@@ -375,12 +389,7 @@ class VisualLogBuilder:
         self._add_html(
             f'<p class="logtext">{self._html_linebreaks(escaped_text)}</p>'
             f'<br>\n')
-        if MD in self.logs and len(self.logs[MD]) > 0:
-            last_md_log: str = self.logs[MD][-1].decode("utf-8")
-            if last_md_log.endswith("```\n"):
-                self._add_md(f"{text}\n```")
-        else:
-            self._add_md(f"```\n{text}\n```")
+        self._add_md(f"```\n{text}\n```")
         self._add_txt(text)
         self.clip_logs()
 
@@ -452,28 +461,17 @@ class VisualLogBuilder:
             elements.append(postfix)
         self.log_text("".join(elements))
 
-    def get_statistics(self) -> dict:
-        """
-        Returns statistics about the log
-
-        :return: A dictionary with statistics about the log such as
-            - totalUpdateCount - How often was the log updated?
-            - updatesPerSecond - How often was the log updated per second
-            - upTime - How long is the log being updated?
-        """
-        return {"totalUpdateCount": self._total_update_counter,
-                "updatesPerSecond": self._update_rate,
-                "upTime": time.time() - self.log.start_time}
-
     def log_statistics(self):
         """
         Adds statistics about the VisualLog as table to the log
         """
-        self.table([["Updates", f"{self._total_update_counter} total updates"],
+        statistics = self.log.get_statistics()
+        self.table([["Updates", f"{statistics.update_counter} "
+                                f"total updates"],
                     ["Effective lps",
-                     f"{self._update_rate:0.2f} updates per second"],
+                     f"{statistics.update_rate:0.2f} updates per second"],
                     ["Uptime",
-                     f"{time.time() - self.log.start_time:0.2f} seconds"]],
+                     f"{statistics.uptime:0.2f} seconds"]],
                    index=True)
 
     def df(self, df: pd.DataFrame, name: str | None = None, index: bool = True):
@@ -568,7 +566,7 @@ class VisualLogBuilder:
                 figure = plt.figure(figsize=(8,4))
                 plt.imshow(some_image_matrix)
         """
-        from scistag.logstag.visual_log.pyplot_log_context import \
+        from scistag.logstag.vislog.pyplot_log_context import \
             PyPlotLogContext
         log_context = PyPlotLogContext(self)
         return log_context
@@ -672,3 +670,13 @@ class VisualLogBuilder:
         :return: The path or combined path
         """
         return self.log.get_temp_path(relative)
+
+    def reserve_unique_name(self, name: str):
+        """
+        Reserves a unique name within the log, e.g. to store an object to
+        a unique file.
+
+        :param name: The desired name
+        :return: The effective name with which the data shall be stored
+        """
+        self.log.reserve_unique_name(name)

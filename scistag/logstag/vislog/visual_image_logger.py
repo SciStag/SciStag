@@ -89,10 +89,7 @@ class VisualImageLogger:
                                              max_width=max_width,
                                              html_linebreak=html_linebreak)
                 return
-        self.builder.name_counter[name] += 1
-        filename = name
-        if self.builder.name_counter[name] > 1:
-            filename += f"__{self.builder.name_counter[name]}"
+        filename = self.builder.reserve_unique_name(name)
         if isinstance(source, Canvas):
             source = source.to_image()
         file_location = ""

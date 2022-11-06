@@ -6,10 +6,10 @@ changeable text in a VisualLiveLog.
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from scistag.logstag.visual_log.widgets.log_widget import LogWidget
+from scistag.logstag.vislog.widgets.log_widget import LogWidget
 
 if TYPE_CHECKING:
-    from scistag.logstag import VisualLiveLog
+    from scistag.logstag.vislog import VisualLiveLog
 
 
 class LogText(LogWidget):

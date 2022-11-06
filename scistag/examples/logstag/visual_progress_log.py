@@ -2,7 +2,7 @@ import matplotlib
 import time
 import cv2
 
-from scistag.logstag import VisualLiveLog
+from scistag.logstag.vislog import VisualLiveLog
 from scistag.logstag.console_stag import Console
 from scistag.mediastag.camera_cv2 import CameraCv2
 

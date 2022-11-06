@@ -7,8 +7,8 @@ from __future__ import annotations
 import os
 
 from scistag.filestag import FileStag, FilePath
-from scistag.logstag.visual_log.visual_log import MAIN_LOG
-from scistag.logstag.visual_log.visual_log_renderer import VisualLogRenderer
+from scistag.logstag.vislog.visual_log import MAIN_LOG
+from scistag.logstag.vislog.visual_log_renderer import VisualLogRenderer
 
 
 class VisualLogHtmlRenderer(VisualLogRenderer):

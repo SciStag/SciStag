@@ -3,35 +3,31 @@ Helper functions to export images of rendering methods for manual verification
 """
 from __future__ import annotations
 
-import base64
-import hashlib
-import html
-import inspect
-import io
-import json
+import builtins
 import os
 import shutil
 import time
 from collections import Counter
-from typing import Any, Optional, TYPE_CHECKING, Callable, Union
+from typing import TYPE_CHECKING, Callable, Union, Type
 
-import filetype
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
-import scistag.logstag.visual_log.widgets.log_button
-from scistag.common import StagLock, Component, Cache
+from scistag.common import StagLock, Cache
 from scistag.filestag import FileStag, FilePath
-from scistag.imagestag import Image, Canvas, Size2D, Size2DTypes, \
-    InterpolationMethod
-from scistag.plotstag import Figure, Plot, MPHelper
-from scistag.webstag import web_fetch
-from scistag.logstag import LogLevel
-from scistag.logstag.console_stag import Console
-from scistag.logstag.visual_log.sub_log import SubLog, SubLogLock
-from scistag.logstag.visual_log.visual_log_service import VisualLogService
-from ...webstag.web_helper import WebHelper
+from scistag.imagestag import Size2D, Size2DTypes
+from scistag.logstag.vislog.visual_log_service import VisualLogService
+from scistag.webstag.web_helper import WebHelper
+from ..console_stag import Console
+from .sub_log import SubLog, SubLogLock
+
+if TYPE_CHECKING:
+    from scistag.webstag.server import WebStagServer
+    from scistag.webstag.server import WebStagService
+    from .visual_log_renderer import VisualLogRenderer
+    from .visual_log_renderer_html import VisualLogHtmlRenderer
+    from .widgets.log_widget import LogWidget
+    from .widgets.log_button import LogButton
+    from .visual_log_builder import VisualLogBuilder
+    from .visual_log_statistics import VisualLogStatistics
+    from scistag.logstag.vislog.log_event import LogEvent
 
 # Error messages
 TABLE_PIPE = "|"
@@ -57,17 +53,7 @@ _CONTINUOUS_REQUIRED_BG_THREAD = "To update the log via this method " \
 LOG_EVENT_CACHE_NAME = "__logEvents"
 "Name of the cache entry in which the log events are stored"
 
-if TYPE_CHECKING:
-    from scistag.webstag.server import WebStagServer
-    from scistag.webstag.server import WebStagService
-    from scistag.logstag.visual_log.pyplot_log_context import \
-        PyPlotLogContext
-    from .visual_log_renderer import VisualLogRenderer
-    from .visual_log_renderer_html import VisualLogHtmlRenderer
-    from .widgets.log_widget import LogWidget
-    from .widgets.log_button import LogButton
-    from .visual_log_builder import VisualLogBuilder
-
+# Definition of output types
 HTML = "html"
 "Html output"
 CONSOLE = "console"
@@ -80,19 +66,20 @@ MD = "md"
 MAIN_LOG = "mainLog"
 "The name of the main log"
 
-if TYPE_CHECKING:
-    from scistag.imagestag.pixel_format import PixelFormat
-    from scistag.logstag.visual_log.log_event import LogEvent
-
-BuilderCallback = Callable[["VisualLog"], None]
+BuilderCallback = Callable[["VisualLogBuilder"], None]
 """
 Type definition for a function which can be passed to VisualLog's initializer
 to be called once or continuously to update the log.
 """
 
-BuilderTypes = Union[BuilderCallback]
+BuilderTypes = Union[
+    BuilderCallback, "VisualLogBuilder", Type["VisualLogBuilder"]]
 """
-The supported builder callback types
+The supported builder callback types.
+ 
+Either a function which can be called, a VisualLogBuilder object provided by
+the user or a class of a VisualLogBuilder ancestor class of which we shall
+created an instance.
 """
 
 
@@ -149,7 +136,8 @@ class VisualLog:
             before starting (take care!)
         :param log_to_disk: Defines if the logger shall write it's results
             to disk. True by default.
-        :param log_to_stdout: Defines if the system shall automatically log to stdout via print as well
+        :param log_to_stdout: Defines if the system shall automatically log to
+            stdout via print as well
         :param embed_images: Defines if images shall be directly embedded into
             the HTML log instead of being stored as separate files.
 
@@ -209,8 +197,8 @@ class VisualLog:
         self.target_dir = os.path.abspath(target_dir)
         "The directory in which the logs shall be stored"
         # setup the cache
-        do_auto_reload = isinstance(auto_reload, bool) and auto_reload \
-                         or auto_reload is not None
+        do_auto_reload = (isinstance(auto_reload, bool) and auto_reload
+                          or auto_reload is not None)
         self._setup_cache(do_auto_reload, cache_version, cache_dir, cache_name)
         self.ref_dir = FilePath.norm_path(
             self.target_dir + "/ref" if ref_dir is None else ref_dir)
@@ -269,8 +257,10 @@ class VisualLog:
         "The text table format to use in tabulate"
         self.md_table_format = "github"
         "The markdown table format to use"
-        self.embed_images = embed_images if embed_images is not None else \
-            not MD in formats_out
+        self.embed_images = (embed_images if embed_images is not None else
+                             MD not in formats_out)
+        if isinstance(image_format, tuple):  # unpack tuple if required
+            image_format, image_quality = image_format
         "If defined images will be embedded directly into the HTML code"
         self.image_format = image_format
         "The default image type to use for storage"
@@ -338,6 +328,18 @@ class VisualLog:
             self.run_server(host_name="127.0.0.1",
                             builder=auto_reload, auto_reload=True,
                             auto_reload_stag_level=2)
+        self.name_counter = Counter()
+        "Counter for file names to prevent writing to the same file twice"
+        self.title_counter = Counter()
+        "Counter for titles to numerate the if appearing twice"
+        self._total_update_counter = 0
+        "The total number of updates to this log"
+        self._update_counter = 0
+        # The amount of updates since the last statistics update
+        self._last_statistic_update = time.time()
+        "THe last time the _update rate was computed as time stamp"
+        self._update_rate: float = 0
+        # The last computed updated rate in updates per second
         from .visual_log_builder import VisualLogBuilder
         self.default_builder: VisualLogBuilder = VisualLogBuilder(self)
         """
@@ -946,9 +948,11 @@ class VisualLog:
         :param kwargs: Additional parameters which shall be passed to the
             WebStagServer upon creation.
         """
+        if builder is not None:
+            builder = self.prepare_builder(builder)
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
-            from scistag.logstag.visual_log.visual_log_autoreloader import \
+            from scistag.logstag.vislog.visual_log_autoreloader import \
                 VisualLogAutoReloader
             if continuous:
                 raise NotImplementedError(
@@ -1081,9 +1085,11 @@ class VisualLog:
         :return: False if overwrite=False was passed and a log
             could successfully be loaded, so that no run was required.
         """
+        if builder is not None:
+            builder = self.prepare_builder(builder)
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
-            from scistag.logstag.visual_log.visual_log_autoreloader import \
+            from scistag.logstag.vislog.visual_log_autoreloader import \
                 VisualLogAutoReloader
             if continuous:
                 raise NotImplementedError(
@@ -1093,7 +1099,7 @@ class VisualLog:
             VisualLogAutoReloader.start(log=self,
                                         host_name=None,
                                         _stack_level=2)
-            return
+            return True
         if continuous is None:
             continuous = False
         if builder is None:
@@ -1125,8 +1131,29 @@ class VisualLog:
         :param builder: The builder to be called from rebuild the log
         """
         if builder is not None:
-            builder(self)
+            if getattr(builder, "build", None) is not None:
+                builder.build()
+            else:
+                builder(self.default_builder)
         self.write_to_disk()
+
+    def prepare_builder(self, builder: BuilderTypes):
+        """
+        Prepapres the builder to be used for this log
+
+        :param builder: The build helper, either a function which fills the
+            log or an ancestor of VisualLogBuilder implementing at least the
+            build_body method to do the same.
+        :return: The prepared build object
+        """
+        if isinstance(builder, type):
+            builder: Type[VisualLogBuilder] | VisualLogBuilder
+            builder = builder(log=self)
+            from .visual_log_builder import VisualLogBuilder
+            if not isinstance(builder, VisualLogBuilder):
+                raise ValueError("No valid VisualLogBuilder base "
+                                 "class provided")
+        return builder
 
     def kill_server(self) -> bool:
         """
@@ -1206,8 +1233,8 @@ class VisualLog:
         :param cur_time: The current system time (in seconds)
         """
         # update once per second if fps is high, otherwise once all x seconds
-        update_frequency = (1.0 if self._update_rate == 0.0
-                                   or self._update_rate > 20 else 5.0)
+        update_frequency = (1.0 if (self._update_rate == 0.0 or
+                                    self._update_rate > 20) else 5.0)
         if cur_time - self._last_statistic_update > update_frequency:
             time_diff = cur_time - self._last_statistic_update
             self._update_rate = self._update_counter / time_diff
@@ -1262,7 +1289,6 @@ class VisualLog:
         """
         Handles all queued events and clears the event queue
         """
-        event_list = []
         with self._page_lock:
             event_list = self._events
             self._events = []
@@ -1305,7 +1331,7 @@ class VisualLog:
     def add_button(self,
                    name: str,
                    caption: str,
-                   on_click: Callable | None = None) -> "LogButton":
+                   on_click: Union[Callable, None] = None) -> "LogButton":
         """
         Adds a button to the log which can be clicked and raise a click event.
 
@@ -1314,7 +1340,7 @@ class VisualLog:
         :param on_click: The function to be called when the button is clicked
         :return: The button widget
         """
-        from scistag.logstag.visual_log.widgets.log_button import LogButton
+        from scistag.logstag.vislog.widgets.log_button import LogButton
         new_button = LogButton(self, name, caption=caption, on_click=on_click)
         new_button.write()
         return new_button
@@ -1333,6 +1359,41 @@ class VisualLog:
         """
         return self._invalid
 
+    def get_statistics(self) -> "VisualLogStatistics":
+        """
+        Returns statistics about the log
+
+        :return: A dictionary with statistics about the log such as
+            - totalUpdateCount - How often was the log updated?
+            - updatesPerSecond - How often was the log updated per second
+            - upTime - How long is the log being updated?
+        """
+
+        from scistag.logstag.vislog.visual_log_statistics import \
+            VisualLogStatistics
+        return VisualLogStatistics(update_counter=self._total_update_counter,
+                                   update_rate=self._update_rate,
+                                   uptime=time.time() - self.start_time)
+
+    def embed(self, log_data: VisualLog):
+        """
+        Embeds another VisualLog's content into this one
+
+        :param log_data: The source log
+        """
+        for cur_format in self.log_formats:
+            if cur_format in log_data.log_formats:
+                self._logs[cur_format].append(log_data.get_body(cur_format))
+
+    def clear(self):
+        """
+        Clears the whole log (excluding headers and footers)
+        """
+        self.name_counter = Counter()
+        self.title_counter = Counter()
+        for key in self._logs.keys():
+            self._logs[key].clear()
+
     @classmethod
     def is_main(cls) -> bool:
         """
@@ -1343,7 +1404,7 @@ class VisualLog:
 
         :return: True if the calling method is in the main module.
         """
-        from scistag.logstag.visual_log.visual_log_autoreloader import \
+        from scistag.logstag.vislog.visual_log_autoreloader import \
             VisualLogAutoReloader
         return VisualLogAutoReloader.is_main(2)
 
@@ -1358,7 +1419,7 @@ class VisualLog:
         ..  code-block:python
 
             try:
-                from scistag.logstag import VisualLog, VisualLogBuilder
+                from scistag.logstag.vislog import VisualLog, VisualLogBuilder
                 VisualLog.setup_mocks()
             except ModuleNotFoundError:
                 from visual_log_mock import VisualLog, VisualLogBuilder
@@ -1378,6 +1439,20 @@ class VisualLog:
         """
         return False
 
+    def reserve_unique_name(self, name: str):
+        """
+        Reserves a unique name within the log, e.g. to store an object to
+        a unique file.
+
+        :param name: The desired name
+        :return: The effective name with which the data shall be stored
+        """
+        self.name_counter[name] += 1
+        result = name
+        if self.name_counter[name] > 1:
+            result += f"_{self.name_counter[name]}"
+        return result
+
     def __enter__(self) -> "VisualLogBuilder":
         """
         Returns the default builder
@@ -1390,3 +1465,6 @@ class VisualLog:
         :return: The builder object
         """
         return self.default_builder
+
+
+__all__ = ["VisualLog", "VisualLogStatistics"]

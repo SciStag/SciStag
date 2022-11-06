@@ -7,8 +7,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from scistag.logstag import VisualLog
-    from scistag.logstag.visual_log.log_event import LogEvent
+    from scistag.logstag.vislog import VisualLog
+    from scistag.logstag.vislog.log_event import LogEvent
 
 
 class LogWidget:
