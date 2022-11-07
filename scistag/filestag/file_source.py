@@ -147,7 +147,7 @@ class FileSource:
     """
 
     # noinspection PyUnusedLocal
-    def __init__(self, search_mask: str = "*.*",
+    def __init__(self, search_mask: str = "*",
                  search_path: str = "",
                  recursive: bool = True,
                  filter_callback: FilterCallback | None = None,
@@ -242,7 +242,7 @@ class FileSource:
         self.max_web_cache_age = max_web_cache_age
 
     @staticmethod
-    def from_source(source: str | bytes, search_mask: str = "*.*",
+    def from_source(source: str | bytes, search_mask: str = "*",
                     search_path: str = "",
                     recursive: bool = True,
                     filter_callback: FilterCallback | None = None,

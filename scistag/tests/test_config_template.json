@@ -44,9 +44,7 @@
     },
     "azure": {
       "skip": false,
-      "storage": {
-        "testSourceConnectionString": "azure://DefaultEndpointsProtocol=https;AccountName=.../containerName"
-      }
+      "skipLong": false
     }
   }
 }

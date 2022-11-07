@@ -69,9 +69,9 @@ def test_image():
                          hash_val='4e5e428357fcf315f25b148747d633db',
                          scaling=0.5)
     vl.test.checkpoint()
-    vl.log.log_images = False
+    vl.target_log.log_images = False
     vl.image(image_data, alt_text="an image which shouldn't get logged")
-    vl.log.log_images = True
+    vl.target_log.log_images = True
     vl.test.assert_cp_diff("d41d8cd98f00b204e9800998ecf8427e")
     # insert image via canvas
     vl.image(source=image_data.to_canvas(), name="stag_canvas")
@@ -147,9 +147,9 @@ def test_figure():
     vl.test.assert_figure('test directly logging plot', plot,
                           hash_val='b2927d2e8972b8a912e1155983f872be')
 
-    vl.log.log_images = False
+    vl.target_log.log_images = False
     vl.figure(plot, "not_plotted_figure")
-    vl.log.log_images = True
+    vl.target_log.log_images = True
 
     vl.sub_test("Logging figures created with matplotlib using add_matplot")
     np.random.seed(42)
@@ -223,9 +223,9 @@ def test_dataframe():
     vl.test.checkpoint()
     vl.test.assert_cp_diff(hash_val="d41d8cd98f00b204e9800998ecf8427e")
     vl.sub_test("HTML table printed w/o pretty html")
-    vl.log.use_pretty_html_table = False
+    vl.target_log.use_pretty_html_table = False
     vl.df(df, "A simple dataframe w/o pretty html")
-    vl.log.use_pretty_html_table = True
+    vl.target_log.use_pretty_html_table = True
     vl.test.assert_cp_diff(hash_val="cdc3b666bc3d8a22556fd9b9bbd713f9")
 
     # testing data frame assertion
@@ -244,15 +244,15 @@ def test_dataframe():
         vl.test.assert_df("test_dataframe", df,
                           hash_val="914de108cea30eb542f1fb57dcb18afc")
     vl.sub_test("Log table without tabulate")
-    vl.log.use_tabulate = False
+    vl.target_log.use_tabulate = False
     vl.df(df, "DataFrame w/o tabulate")
     vl.sub_test("Log table without HTML")
     vl.markdown_html = False
     vl.df(df, "DataFrame w/o tabulate")
     vl.markdown_html = True
-    vl.log.use_tabulate = True
+    vl.target_log.use_tabulate = True
     vl.df(df, "DataFrame w/o tabulate")
-    vl.log.use_tabulate = True
+    vl.target_log.use_tabulate = True
 
 
 def test_np_assert():

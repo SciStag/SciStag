@@ -134,7 +134,7 @@ class VisualLogTestHelper:
             df.to_csv(output)
             result_hash_val = hashlib.md5(output.getvalue()).hexdigest()
             if result_hash_val != hash_val:
-                self.builder.log.write_to_disk()
+                self.builder.target_log.write_to_disk()
                 raise AssertionError("Hash mismatch - "
                                      f"Found: {result_hash_val} - "
                                      f"Assumed: {hash_val}")
@@ -187,7 +187,7 @@ class VisualLogTestHelper:
                                           "matrices")
             result_hash_val = hashlib.md5(data.tobytes()).hexdigest()
             if result_hash_val != hash_val:
-                self.builder.log.write_to_disk()
+                self.builder.target_log.write_to_disk()
                 raise AssertionError("Hash mismatch - "
                                      f"Found: {result_hash_val} - "
                                      f"Assumed: {hash_val}")
@@ -243,7 +243,7 @@ class VisualLogTestHelper:
             return
             # dict or list
         if isinstance(data, (list, dict, str)):
-            self.builder.log_text(
+            self.builder.log(
                 str(data))  # no beautiful logging supported yet
             import json
             data = json.dumps(data).encode("utf-8")
@@ -260,8 +260,8 @@ class VisualLogTestHelper:
         :param data: The data to store
         """
         hashed_name = self.builder.get_hashed_filename(name)
-        FilePath.make_dirs(self.builder.log.ref_dir, exist_ok=True)
-        hash_fn = self.builder.log.ref_dir + "/" + hashed_name + ".dmp"
+        FilePath.make_dirs(self.builder.target_log.ref_dir, exist_ok=True)
+        hash_fn = self.builder.target_log.ref_dir + "/" + hashed_name + ".dmp"
         FileStag.save(hash_fn, data)
 
     def load_ref(self, name: str) -> bytes | None:
@@ -272,7 +272,7 @@ class VisualLogTestHelper:
         :return: The data. None if no reference could be found
         """
         hashed_name = self.builder.get_hashed_filename(name)
-        hash_fn = self.builder.log.ref_dir + "/" + hashed_name + ".dmp"
+        hash_fn = self.builder.target_log.ref_dir + "/" + hashed_name + ".dmp"
         if FileStag.exists(hash_fn):
             return FileStag.load(hash_fn)
         return None
@@ -285,15 +285,15 @@ class VisualLogTestHelper:
         :param assumed: The assumed value
         """
         if value != assumed:
-            self.builder.log_text(
+            self.builder.log(
                 f"⚠️Hash validation failed!\nValue: "
                 f"{value}\nAssumed: {assumed}")
-            self.builder.log.write_to_disk()
+            self.builder.target_log.write_to_disk()
             raise AssertionError("Hash mismatch - "
                                  f"Found: {value} - "
                                  f"Assumed: {assumed}")
         else:
-            self.builder.log_text(f"{assumed} ✔")
+            self.builder.log(f"{assumed} ✔")
 
     def checkpoint(self):
         """
@@ -301,7 +301,7 @@ class VisualLogTestHelper:
         """
         self.checkpoint_backups.append(
             [len(b"".join(value)) for key, value in
-             self.builder.log._logs.items()])
+             self.builder.target_log._logs.items()])
 
     def assert_cp_diff(self, hash_val: str):
         """
@@ -317,7 +317,7 @@ class VisualLogTestHelper:
         difference = b''
         index = 0
         keys = []
-        for key, value in self.builder.log._logs.items():
+        for key, value in self.builder.target_log._logs.items():
             length = lengths[index]
             data = b"".join(value)
             index += 1
@@ -325,7 +325,7 @@ class VisualLogTestHelper:
                 continue
             difference = difference + data[length:]
             keys.append(key)
-        assert sorted(list(keys)) == sorted(list(self.builder.log.log_formats))
+        assert sorted(list(keys)) == sorted(list(self.builder.target_log.log_formats))
         result_hash_val = hashlib.md5(difference).hexdigest()
         self.hash_check_log(result_hash_val, hash_val)
 

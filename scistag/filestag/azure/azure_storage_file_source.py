@@ -5,6 +5,8 @@ files stored in an Azure Blob Storage
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from collections.abc import Iterable
+from scistag.filestag.azure.azure_blob_path import \
+    AzureBlobPath
 from scistag.filestag.file_source import FileSource, FileSourceIterator, \
     FileListEntry
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
@@ -48,18 +50,20 @@ class AzureStorageFileSource(FileSource):
         if not source.startswith(AZURE_PROTOCOL_HEADER):
             raise ValueError(
                 "source has be in the form azure://DefaultEndpoints...")
-        source, container, search_path = self.split_azure_url(source)
-        assert len(container)
+
+        self.blob_path = AzureBlobPath.from_string(source)
+        assert len(self.blob_path.container_name)
         self.service_client: "BlobServiceClient" = \
-            self.service_from_connection_string(source)
+            self.service_from_connection_string(
+                self.blob_path.get_connection_string())
         "Connector to the Azure storage"
         self.container_client: "ContainerClient" = \
-            self.service_client.get_container_client(container)
+            self.service_client.get_container_client(
+                self.blob_path.container_name)
         "Connector to a specific container"
-        self.connection_string = source
-        "The connection string"
-        self.container_name = container
+        self.container_name = self.blob_path.container_name
         "The container's name"
+        search_path = self.blob_path.blob_name
         self.prefix = search_path + "/" if len(search_path) else ""
         "The prefix (base folder) if specified"
         self.tag_filter_expression = tag_filter if tag_filter is not None and \
@@ -96,35 +100,7 @@ class AzureStorageFileSource(FileSource):
         return BlobServiceClient.from_connection_string(connection_string)
 
     def _get_source_identifier(self) -> str:
-        return f"{self.connection_string}|{self.container_name}"
-
-    @classmethod
-    def split_azure_url(cls, url: str) -> tuple[str, str, str] | None:
-        """
-        Splits an Azure url of the foamt ``azure://CONNECTION_STRING_INCLUDING_KEY/container_name`` into its
-        components.
-
-        :param url: The URL
-        :return: ConnectionString, ContainerName, SearchPath. If the container
-            name or the search path are not provided, empty strings will be
-            returned.
-        """
-        if not url.startswith(AZURE_PROTOCOL_HEADER):
-            return None
-        url = url[len(AZURE_PROTOCOL_HEADER):]
-        container_name_token = "core.windows.net/"
-        if container_name_token in url:
-            index = url.index(container_name_token) + len(
-                container_name_token) - 1
-            connection_string, container = url[0:index], url[index + 1:]
-            search_path = ""
-            if "/" in container:
-                index = container.index("/")
-                container, search_path = container[0:index], container[
-                                                             index + 1:]
-                search_path = search_path.rstrip("/")
-            return connection_string, container, search_path
-        return url, "", ""
+        return f"{self.blob_path}|{self.container_name}"
 
     def _read_file_int(self, filename: str) -> bytes | None:
         from azure.core.exceptions import ResourceNotFoundError
@@ -214,3 +190,23 @@ class AzureStorageFileSource(FileSource):
         self.service_client = None
         self.container_client = None
         super().close()
+
+    def create_sas_url(self, blob_name, start_time_min=-15,
+                       end_time_days: float = 365.0) -> str:
+        """
+        Creates an SAS url pointing to a specific blob so it can be shared
+        and downloaded by others.
+
+        :param blob_name: The name of the blob
+        :param start_time_min: The start time from when on this URL is
+            valid. By default 15 minutes in the past.
+        :param end_time_days: The time in days - as floating point value thus
+            also half days are valid - until when the link is valid.
+
+            One year by default.
+        :return: The https url pointing to the blob which can be shared as
+            download link.
+        """
+        return \
+            self.blob_path.create_sas_url(blob_name, start_time_min,
+                                          end_time_days)

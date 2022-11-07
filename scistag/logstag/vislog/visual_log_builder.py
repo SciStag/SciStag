@@ -45,7 +45,7 @@ class VisualLogBuilder:
         """
         :param log: The log to which the content shall be added.
         """
-        self.log: "VisualLog" = log
+        self.target_log: "VisualLog" = log
         "The main logging target"
         self.forward_targets: dict[str, VisualLogBuilder] = {}
         "List of logs to which all rendering commands shall be forwarded"
@@ -91,13 +91,13 @@ class VisualLogBuilder:
         """
         The maximum figure size in pixels
         """
-        return self.log.max_fig_size
+        return self.target_log.max_fig_size
 
     def clear(self):
         """
         Clears the whole log (excluding headers and footers)
         """
-        self.log.clear()
+        self.target_log.clear()
 
     def embed(self, log: VisualLog):
         """
@@ -105,7 +105,7 @@ class VisualLogBuilder:
 
         :param log: The source log
         """
-        self.log.embed(log)
+        self.target_log.embed(log)
 
     def table(self, data: list[list[any]], index=False, header=False):
         """
@@ -341,7 +341,7 @@ class VisualLogBuilder:
         for line in lines:
             if line.startswith(TABLE_PIPE):
                 if len(common_block) > 0:
-                    self.log_text(common_block, level=level)
+                    self.log(common_block, level=level)
                     common_block = ""
                 if cur_table is None:
                     cur_table = []
@@ -357,11 +357,11 @@ class VisualLogBuilder:
                     cur_table = None
                 common_block += line + "\n"
         if len(common_block) > 0:
-            self.log_text(common_block, level=level)
+            self.log(common_block, level=level)
 
-    def log_text(self, *args: Any, level: LogLevel | str = LogLevel.INFO,
-                 detect_objects: bool = False,
-                 space: str = " "):
+    def log(self, *args: Any, level: LogLevel | str = LogLevel.INFO,
+            detect_objects: bool = False,
+            space: str = " "):
         """
         Adds a log text to the log
 
@@ -384,7 +384,7 @@ class VisualLogBuilder:
         if not isinstance(text, str):
             text = str(text)
         for element in self.forward_targets.values():
-            element.log_text(text, level=level)
+            element.log(text, level=level)
         escaped_text = self._encode_html(text)
         self._add_html(
             f'<p class="logtext">{self._html_linebreaks(escaped_text)}</p>'
@@ -400,7 +400,7 @@ class VisualLogBuilder:
         :param args: The elements to log. Will be separated by space.
         :param kwargs: Keyword arguments
         """
-        self.log_text("[INFO]    ", *args, **kwargs)
+        self.log("[INFO]    ", *args, **kwargs)
         return self
 
     def debug(self, *args, **kwargs) -> VisualLogBuilder:
@@ -410,7 +410,7 @@ class VisualLogBuilder:
         :param args: The elements to log. Will be separated by space.
         :param kwargs: Keyword arguments
         """
-        self.log_text("[DEBUG]   ", *args, **kwargs)
+        self.log("[DEBUG]   ", *args, **kwargs)
         return self
 
     def warning(self, *args, **kwargs) -> VisualLogBuilder:
@@ -420,7 +420,7 @@ class VisualLogBuilder:
         :param args: The elements to log. Will be separated by space.
         :param kwargs: Keyword arguments
         """
-        self.log_text("[WARNING] ", *args, **kwargs)
+        self.log("[WARNING] ", *args, **kwargs)
         return self
 
     def error(self, *args, **kwargs) -> VisualLogBuilder:
@@ -430,7 +430,7 @@ class VisualLogBuilder:
         :param args: The elements to log. Will be separated by space.
         :param kwargs: Keyword arguments
         """
-        self.log_text("[ERROR]   ", *args, **kwargs)
+        self.log("[ERROR]   ", *args, **kwargs)
         return self
 
     def critical(self, *args, **kwargs) -> VisualLogBuilder:
@@ -440,7 +440,7 @@ class VisualLogBuilder:
         :param args: The elements to log. Will be separated by space.
         :param kwargs: Keyword arguments
         """
-        self.log_text("[CRITICAL]", *args, **kwargs)
+        self.log("[CRITICAL]", *args, **kwargs)
         return self
 
     def log_timestamp(self, prefix: str = "", postfix: str = ""):
@@ -459,13 +459,13 @@ class VisualLogBuilder:
             elements.insert(0, prefix)
         if len(postfix) > 0:
             elements.append(postfix)
-        self.log_text("".join(elements))
+        self.log("".join(elements))
 
     def log_statistics(self):
         """
         Adds statistics about the VisualLog as table to the log
         """
-        statistics = self.log.get_statistics()
+        statistics = self.target_log.get_statistics()
         self.table([["Updates", f"{statistics.update_counter} "
                                 f"total updates"],
                     ["Effective lps",
@@ -486,38 +486,38 @@ class VisualLogBuilder:
             name = "dataframe"
         for element in self.forward_targets.values():
             element.df(name=name, df=df, index=index)
-        if self.log.use_pretty_html_table:
+        if self.target_log.use_pretty_html_table:
             try:
                 import pretty_html_table
                 html_code = \
                     pretty_html_table.build_table(df,
-                                                  self.log.html_table_style,
+                                                  self.target_log.html_table_style,
                                                   index=index)
             except ModuleNotFoundError:  # pragma: no-cover
                 html_code = df.to_html(index=index)
         else:
             html_code = df.to_html(index=index)
         self._add_html(html_code + "\n")
-        if self.log.use_tabulate:
+        if self.target_log.use_tabulate:
             try:
                 import tabulate
                 md_table = df.to_markdown(index=index,
-                                          tablefmt=self.log.md_table_format)
+                                          tablefmt=self.target_log.md_table_format)
                 self._add_md(md_table)
                 self._add_txt(
                     df.to_markdown(index=index,
-                                   tablefmt=self.log.txt_table_format) + "\n")
+                                   tablefmt=self.target_log.txt_table_format) + "\n")
                 return
             except ModuleNotFoundError:  # pragma: no-cover
                 pass
         else:
             string_table = df.to_string(index=index) + "\n"
-            if self.log.markdown_html:
+            if self.target_log.markdown_html:
                 self._add_md(html_code)
             else:
                 self._add_md(string_table)
             self._add_txt(string_table)
-        self.log.clip_logs()
+        self.target_log.clip_logs()
 
     def figure(self, figure: plt.Figure | plt.Axes | Figure | Plot,
                name: str | None = None,
@@ -535,15 +535,15 @@ class VisualLogBuilder:
         """
         if name is None:
             name = "figure"
-        if not self.log.log_images and _out_image_data is None:
+        if not self.target_log.log_images and _out_image_data is None:
             return
         if isinstance(figure, (Figure, Plot)):
             image = figure.render()
             self.image(image, name, alt_text=alt_text)
             if _out_image_data is not None:
                 _out_image_data.write(
-                    image.encode(filetype=self.log.image_format,
-                                 quality=self.log.image_quality))
+                    image.encode(filetype=self.target_log.image_format,
+                                 quality=self.target_log.image_quality))
             return
         if not isinstance(figure, plt.Figure):
             figure = figure.figure
@@ -584,7 +584,7 @@ class VisualLogBuilder:
         from scistag.common.dict_helper import dict_to_bullet_list
         dict_tree = dict_to_bullet_list(dict_or_list, level=0, bold=True)
         self.md(dict_tree, exclude_targets={'txt'})
-        if self.log.txt_export:
+        if self.target_log.txt_export:
             dict_tree_txt = dict_to_bullet_list(dict_or_list, level=0,
                                                 bold=False)
             self._add_txt(dict_tree_txt)
@@ -630,7 +630,7 @@ class VisualLogBuilder:
         :param html_code: The html code
         :return: True if txt logging is enabled
         """
-        self.log.write_html(html_code)
+        self.target_log.write_html(html_code)
 
     def _add_md(self, md_code: str, no_break: bool = False):
         """
@@ -640,7 +640,7 @@ class VisualLogBuilder:
         :param no_break: If defined no line break will be added
         :return: True if txt logging is enabled
         """
-        self.log.write_md(md_code, no_break=no_break)
+        self.target_log.write_md(md_code, no_break=no_break)
 
     def _add_txt(self, txt_code: str, console: bool = True, md: bool = False):
         """
@@ -652,13 +652,13 @@ class VisualLogBuilder:
         :param md: Defines if the text shall be added to markdown as well
         :return: True if txt logging is enabled
         """
-        return self.log.write_txt(txt_code, console, md)
+        return self.target_log.write_txt(txt_code, console, md)
 
     def clip_logs(self):
         """
         Clips the logging files (e.g. if they are limited in length)
         """
-        self.log.clip_logs()
+        self.target_log.clip_logs()
 
     def get_temp_path(self, relative: str | None = None) -> str:
         """
@@ -669,7 +669,7 @@ class VisualLogBuilder:
             gets concatenated.
         :return: The path or combined path
         """
-        return self.log.get_temp_path(relative)
+        return self.target_log.get_temp_path(relative)
 
     def reserve_unique_name(self, name: str):
         """
@@ -679,4 +679,4 @@ class VisualLogBuilder:
         :param name: The desired name
         :return: The effective name with which the data shall be stored
         """
-        self.log.reserve_unique_name(name)
+        self.target_log.reserve_unique_name(name)

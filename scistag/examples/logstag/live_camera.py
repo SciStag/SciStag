@@ -39,8 +39,8 @@ class LiveCameraDemo(VisualLogBuilder):
         if self.last_image is not None:
             vl.image(self.last_image, "LiveView")
         else:
-            vl.log_text("Did not receive any image yet :(")
-        vl.log_text("")
+            vl.log("Did not receive any image yet :(")
+        vl.log("")
         vl.log_statistics()
 
 

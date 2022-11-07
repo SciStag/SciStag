@@ -27,7 +27,7 @@ class VisualImageLogger:
         """
         :param log_builder: The log builder object we are logging with
         """
-        self.log: "VisualLog" = log_builder.log
+        self.log: "VisualLog" = log_builder.target_log
         "The log we are logging to"
         self.builder: "VisualLogBuilder" = log_builder
         "The log builder we are using to write data"

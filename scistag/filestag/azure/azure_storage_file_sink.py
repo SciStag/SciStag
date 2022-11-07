@@ -1,5 +1,5 @@
 """
-Implements the class :class:`FileSinkAzureStorage` which helps storing files
+Implements the class :class:`AzureStorageFileSink` which helps storing files
 in an Azure Storage.
 """
 
@@ -7,7 +7,9 @@ from __future__ import annotations
 
 from typing import Union, TYPE_CHECKING
 
+import scistag.tests
 from scistag.filestag import FileSink, FileStorageOptions
+from scistag.filestag.azure.azure_blob_path import AzureBlobPath
 from scistag.filestag.azure.azure_storage_file_source import \
     AzureStorageFileSource
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
@@ -29,6 +31,7 @@ class AzureStorageFileSink(FileSink):
                  create_container=True,
                  recreate_container: bool = False,
                  sub_folder: str | None = None,
+                 delete_timeout_s=60.0,
                  **params):
         """
         :param target: A FileStag conform Azure Storage URL of the form
@@ -48,22 +51,24 @@ class AzureStorageFileSink(FileSink):
         :param sub_folder: If provided all uploaded files will be stored in
             this "virtual" sub folder instead of the container's root,
             e.g. "images/".
+        :param delete_timeout_s: The timeout in seconds to wait until a
+            container can be created again after it has been deleted.
         :param params: Additional initializer parameters. See :class:`FileSink`.
         """
         super().__init__(target=target, **params)
+        self.blob_path: AzureBlobPath | None
         if sub_folder is None:
             sub_folder = ""
         if target is not None:
+            self.blob_path = AzureBlobPath.from_string(target)
             if not target.startswith(AZURE_PROTOCOL_HEADER):
                 raise ValueError(
                     "Target has to be in the form azure://DefaultEndPoints...")
-            conn_str, _container, mask = AzureStorageFileSource.split_azure_url(
-                target)
-            if len(_container):
-                container = _container
-            if mask:
-                sub_folder = mask
-            service = conn_str
+            if len(self.blob_path.container_name):
+                container = self.blob_path.container_name
+            if self.blob_path.blob_name is not None:
+                sub_folder = self.blob_path.blob_name
+            service = self.blob_path.get_connection_string()
         if len(sub_folder) > 0 and not sub_folder.endswith("/"):
             sub_folder += "/"
         if service is not None and isinstance(service, str):
@@ -82,7 +87,8 @@ class AzureStorageFileSink(FileSink):
                 self.setup_container(service=service,
                                      container_name=container,
                                      create=create_container,
-                                     recreate_container=recreate_container)
+                                     recreate_container=recreate_container,
+                                     delete_timeout_s=delete_timeout_s)
             if container is None:
                 raise ValueError("Could not access container")
         self.service = service
@@ -123,18 +129,18 @@ class AzureStorageFileSink(FileSink):
             True by default.
         :return: Defines if the file could be uploaded successfully.
         """
-        if filename.startswith(AZURE_PROTOCOL_HEADER):
-            con_str, container, search_path = \
-                AzureStorageFileSource.split_azure_url(filename)
-            if len(container) == 0:
+        if filename.startswith(AZURE_PROTOCOL_HEADER) or filename.startswith(
+                "DefaultEndpoints"):
+            blob_path = AzureBlobPath(filename)
+            if len(blob_path.container_name) == 0:
                 raise ValueError("No container name provided")
-            if len(search_path) == 0:
+            if len(blob_path.blob_name) == 0:
                 raise ValueError("No filename provided")
             service = AzureStorageFileSource.service_from_connection_string(
-                con_str)
+                blob_path.get_connection_string())
             container = cls.setup_container(service, container_name=container,
                                             create=create_container)
-            filename = search_path
+            filename = blob_path.blob_name
         if data is None:
             raise ValueError("No data provided")
         if service is not None and isinstance(service, str):
@@ -169,6 +175,7 @@ class AzureStorageFileSink(FileSink):
                         container_name: str,
                         create: bool = True,
                         reuse_existing: bool = True,
+                        delete_timeout_s: float = 60.0,
                         recreate_container: bool = False) -> \
             Union["ContainerClient", None]:
         """
@@ -184,6 +191,8 @@ class AzureStorageFileSink(FileSink):
             existing one but will return None instead. This way cou can
             react, by for example trying an alternative name such as
             results_0000, results_0001 etc.
+        :param delete_timeout_s: The timeout in seconds to wait until a
+            container can be created again after it has been deleted.
         :param recreate_container: Defines if we shall delete the old container
             and all it's contents to create a "fresh"
         :return: The container client if we could access or create the
@@ -210,9 +219,8 @@ class AzureStorageFileSink(FileSink):
                 service.delete_container(container_name)
                 import time
                 start_time = time.time()
-                delete_timeout = 60.0
                 sleep_time = 0.25
-                while time.time() - start_time < delete_timeout:
+                while time.time() - start_time < delete_timeout_s:
                     try:
                         container_client = service.create_container(
                             container_name)
@@ -220,3 +228,23 @@ class AzureStorageFileSink(FileSink):
                     except ResourceExistsError as E:
                         time.sleep(sleep_time)
         return container_client
+
+    def create_sas_url(self, blob_name, start_time_min=-15,
+                       end_time_days: float = 365.0) -> str:
+        """
+        Creates an SAS url pointing to a specific blob so it can be shared
+        and downloaded by others.
+
+        :param blob_name: The name of the blob
+        :param start_time_min: The start time from when on this URL is
+            valid. By default 15 minutes in the past.
+        :param end_time_days: The time in days - as floating point value thus
+            also half days are valid - until when the link is valid.
+
+            One year by default.
+        :return: The https url pointing to the blob which can be shared as
+            download link.
+        """
+        return \
+            self.blob_path.create_sas_url(blob_name, start_time_min,
+                                          end_time_days)
