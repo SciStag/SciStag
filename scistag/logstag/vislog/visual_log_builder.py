@@ -51,8 +51,23 @@ class VisualLogBuilder:
         "List of logs to which all rendering commands shall be forwarded"
         from .visual_log_test_helper import VisualLogTestHelper
         self.test = VisualLogTestHelper(self)
+        """
+        Helper class for adding regression tests to the log.
+        """
         from .visual_image_logger import VisualImageLogger
         self.image = VisualImageLogger(self)
+        """
+        Helper object for adding images to the log
+        
+        Can also be called directly to add a simple image to the log.
+        """
+        from .visual_table_logger import VisualLogTableLogger
+        self.table = VisualLogTableLogger(self)
+        """
+        Helper class for adding tables to the log.
+        
+        Can also be called directly to add a simple table to the log.
+        """
 
     def build_body(self):
         """
@@ -107,48 +122,6 @@ class VisualLogBuilder:
         """
         self.target_log.embed(log)
 
-    def table(self, data: list[list[any]], index=False, header=False):
-        """
-        Adds a table to the log.
-
-        :param data: The table data. A list of rows including a list of
-            columns.
-
-            Each row has to provide the same count of columns.
-
-            At the moment only string content is supported.
-        :param index: Defines if the table has an index column
-        :param header: Defines if the table has a header
-        """
-        code = '<table class="log_table">\n'
-        for row_index, row in enumerate(data):
-            tabs = "\t"
-            code += f"{tabs}<tr>\n"
-            for col_index, col in enumerate(row):
-                code += f"\t{tabs}<td>\n{tabs}\t"
-                assert isinstance(col, str)  # more types to be supported soon
-                if index and col == 0:
-                    code += "<b>"
-                major_cell = (row_index == 0 and header or
-                              col_index == 0 and index)
-                if major_cell:
-                    code += f"<b>{col}</b>"
-                else:
-                    code += col
-                if index and col == 0:
-                    code += "</b>"
-                code += f"\n{tabs}</td>\n"
-                tabs = tabs[0:-1]
-            code += f"{tabs}</tr>\n"
-        code += "</table>\n"
-        self._add_html(code)
-        for row in data:
-            row_text = "| "
-            for index, col in enumerate(row):
-                row_text += col + " | "
-            self._add_txt(row_text, md=True)
-        return self
-
     def evaluate(self, code: str, log_code: bool = True) -> Any:
         """
         Runs a piece of code and returns it's output
@@ -197,6 +170,30 @@ class VisualLogBuilder:
                 self._add_md(f"{text}\\")
             self._add_txt(text)
         self.clip_logs()
+
+    def link(self, text: str, link: str) -> VisualLogBuilder:
+        """
+        Adds a hyperlink to the log
+
+        :param text: The text to add to the log
+        :param link: The link target
+        :return: Self
+        """
+        if not isinstance(text, str):
+            text = str(text)
+        for element in self.forward_targets.values():
+            element.text(text)
+        lines = html.escape(text)
+        lines = lines.split("\n")
+        for index, text in enumerate(lines):
+            self._add_html(f'<a href="{link}">{text}</a><br>\n')
+            if index == len(lines) - 1:
+                self._add_md(f"[{text}]({link})")
+            else:
+                self._add_md(f"{text}\\")
+            self._add_txt(text)
+        self.clip_logs()
+        return self
 
     def line_break(self):
         """

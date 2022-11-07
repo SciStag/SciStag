@@ -1467,4 +1467,4 @@ class VisualLog:
         return self.default_builder
 
 
-__all__ = ["VisualLog", "VisualLogStatistics"]
+__all__ = ["VisualLog", "VisualLogStatistics", "HTML", "MD", "TXT"]
