@@ -131,18 +131,20 @@ class VisualLogMock:
         """
         return self.log_text(text)
 
-    def line_break(self):
+    def br(self):
         """
         Inserts a simple line break
         """
         self.text("")
+        return self
 
     def page_break(self):
         """
         Inserts a page break
         """
         self.text(
-            "\n_________________________________________________________________________________\n")
+            f"\n{'_' * 40}\n")
+        return self
 
     def finalize(self, *_, **__):
         """

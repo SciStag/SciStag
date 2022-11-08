@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import time
 from collections import Counter
-from typing import Optional, Any, TYPE_CHECKING
+from typing import Optional, Any, TYPE_CHECKING, Union
 import io
 
 import base64
@@ -28,8 +28,17 @@ from scistag.logstag.vislog.visual_log import VisualLog, MD, TXT, HTML, \
     TABLE_PIPE
 from scistag.plotstag import Figure, Plot, MPHelper
 
+MAX_NP_ARRAY_SIZE = 100
+
 if TYPE_CHECKING:
     from scistag.logstag.vislog.pyplot_log_context import PyPlotLogContext
+
+LogableContent = Union[str, float, int, bool, np.ndarray,
+                       pd.DataFrame, pd.Series, list, dict, Image, Figure]
+"""
+Definition of all types which can be logged via `add` or provided as content
+for tables, lists and divs.
+"""
 
 
 class VisualLogBuilder:
@@ -140,21 +149,61 @@ class VisualLogBuilder:
                 self.code(code)
         return result
 
-    def title(self, text: str):
+    def add(self, content: LogableContent) -> VisualLogBuilder:
+        """
+        Adds the provided content to the log.
+
+        Supports a large variety of types. All supported types can also
+        easily be embedded into tables and divs via the provided add_row
+        and add_col methods.
+
+        :param content: The data to be logged
+        :return: The builder
+        """
+        # image
+        if isinstance(content, Image):
+            self.image(content)
+            return self
+        # figure
+        if isinstance(content, Figure):
+            self.figure(content)
+            return self
+        # pandas content frame
+        if isinstance(content, (pd.DataFrame, pd.Series)):
+            self.df(content)
+            return self
+        # numpy array
+        if isinstance(content, np.ndarray):
+            self.np(content)
+            return self
+        if isinstance(content, str):
+            self.text(content)
+            return self
+            # dict or list
+        if isinstance(content, (list, dict)):
+            self.log_dict(content)
+            return self
+        self.log(str(content))
+        if content is None or not isinstance(content, bytes):
+            raise NotImplementedError("Data type not supported")
+        return self
+
+    def title(self, text: str) -> VisualLogBuilder:
         """
         Adds a title to the log
 
         :param text: The title's text
-        :return:
+        :return: The builder
         """
         self.sub(text, level=1)
+        return self
 
-    def text(self, text: str):
+    def text(self, text: str) -> VisualLogBuilder:
         """
         Adds a text to the log
 
         :param text: The text to add to the log
-        :return:
+        :return: The builder
         """
         if not isinstance(text, str):
             text = str(text)
@@ -170,6 +219,7 @@ class VisualLogBuilder:
                 self._add_md(f"{text}\\")
             self._add_txt(text)
         self.clip_logs()
+        return self
 
     def link(self, text: str, link: str) -> VisualLogBuilder:
         """
@@ -177,7 +227,7 @@ class VisualLogBuilder:
 
         :param text: The text to add to the log
         :param link: The link target
-        :return: Self
+        :return: The builder
         """
         if not isinstance(text, str):
             text = str(text)
@@ -195,29 +245,35 @@ class VisualLogBuilder:
         self.clip_logs()
         return self
 
-    def line_break(self):
+    def br(self) -> VisualLogBuilder:
         """
         Inserts a simple line break
+
+        :return: The builder
         """
         self._add_html("<br>")
         self._add_txt(" ", md=True)
+        return self
 
-    def page_break(self):
+    def page_break(self) -> VisualLogBuilder:
         """
         Inserts a page break
+
+        :return: The builder
         """
         self._add_html('<div style="break-after:page"></div>')
         self._add_txt(
             f"\n{'_' * 40}\n",
             md=True)
+        return self
 
-    def sub(self, text: str, level: int = 2):
+    def sub(self, text: str, level: int = 2) -> VisualLogBuilder:
         """
         Adds a sub title to the log
 
         :param text: The text to add to the log
         :param level: The title level (0..5)
-        :return: Self
+        :return: The builder
         """
         assert 0 <= level <= 5
         for element in self.forward_targets.values():
@@ -234,34 +290,38 @@ class VisualLogBuilder:
         self.clip_logs()
         return self
 
-    def sub_x3(self, text: str):
+    def sub_x3(self, text: str) -> VisualLogBuilder:
         """
         Adds a subtitle to the log
 
         :param text: The text to add to the log
-        :return:
+        :return: The builder
         """
         self.sub(text, level=3)
+        return self
 
-    def sub_x4(self, text: str):
+    def sub_x4(self, text: str) -> VisualLogBuilder:
         """
         Adds a subtitle to the log
 
         :param text: The text to add to the log
-        :return:
+        :return: The builder
         """
         self.sub(text, level=4)
+        return self
 
-    def sub_test(self, text: str):
+    def sub_test(self, text: str) -> VisualLogBuilder:
         """
         Adds a subtest section to the log
 
         :param text: The text to add to the log
-        :return:
+        :return: The builder
         """
         self.sub(text, level=4)
+        return self
 
-    def md(self, text: str, exclude_targets: set[str] | None = None):
+    def md(self, text: str, exclude_targets: set[str] | None = None) \
+            -> VisualLogBuilder:
         """
         Adds a markdown section.
 
@@ -269,6 +329,7 @@ class VisualLogBuilder:
 
         :param text: The text to parse
         :param exclude_targets: Defines the target to exclude
+        :return: The builder
         """
         if exclude_targets is None:
             exclude_targets = set()
@@ -283,8 +344,9 @@ class VisualLogBuilder:
         if TXT not in exclude_targets:
             self._add_txt(text)
         self.clip_logs()
+        return self
 
-    def html(self, code: str):
+    def html(self, code: str) -> VisualLogBuilder:
         """
         Adds a html section. (only to targets supporting html)
 
@@ -295,11 +357,14 @@ class VisualLogBuilder:
         self._add_md(code)
         self._add_html(code + "\n")
         self.clip_logs()
+        return self
 
-    def code(self, code: str):
+    def code(self, code: str) -> VisualLogBuilder:
         """
         Adds code to the log
+
         :param code: The code to execute
+        :return: The builder
         """
         for element in self.forward_targets.values():
             element.code(code)
@@ -311,6 +376,7 @@ class VisualLogBuilder:
         self._add_md(f"```\n{code}\n```")
         self._add_txt(code)
         self.clip_logs()
+        return self
 
     @staticmethod
     def _encode_html(text: str) -> str:
@@ -515,6 +581,23 @@ class VisualLogBuilder:
                 self._add_md(string_table)
             self._add_txt(string_table)
         self.target_log.clip_logs()
+
+    def np(self, data: np.ndarray, digits=2):
+        """
+        Adds a numpy matrix or vector to the log
+
+        :param data: The data frame
+        :param digits: The number of digits with which the numbers shall be
+            formatted.
+        """
+        if len(data.shape) >= 3:
+            raise ValueError("Too many dimensions")
+        if (data.shape[0] > MAX_NP_ARRAY_SIZE or
+                data.shape[1] > MAX_NP_ARRAY_SIZE):
+            raise ValueError("Data too large")
+        data = [[f"{round(element, digits)}" for element in row] for row in
+                data]
+        self.table(data)
 
     def figure(self, figure: plt.Figure | plt.Axes | Figure | Plot,
                name: str | None = None,

@@ -4,43 +4,25 @@ data in a log.
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Callable
+
+import numpy as np
+from pandas import DataFrame, Series
+from scistag.logstag.vislog.visual_log_element_context import \
+    VisualLogElementContext
+
+from scistag.imagestag import Image
+from scistag.plotstag import Figure
 
 if TYPE_CHECKING:
     from .visual_log_builder import VisualLogBuilder
 
-
-class VisualLogTableWriteContext:
-    """
-    Defines a context which helps to dynamically build a table inside a log
-    """
-
-    def __init__(self, builder: "VisualLogBuilder", closing_code: {}):
-        """
-        :param builder: The builder object with which we write to the log
-        """
-        self.builder = builder
-        self.closing_code: dict = closing_code
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        from . import VisualLog
-        log: VisualLog = self.builder.target_log
-        for key, value in self.closing_code.items():
-            if key in log.log_formats:
-                from scistag.logstag.vislog.visual_log import HTML, MD, TXT
-                if key == HTML:
-                    log.write_html(value)
-                elif key == MD:
-                    log.write_md(value)
-                elif key == TXT:
-                    log.write_txt(value)
-        log.clip_logs()
+ColumnContent = Union[str, int, float, Callable, Image, Figure,
+                      np.ndarray, DataFrame, Series, dict, list]
+"Defines the types for potential content of a column"
 
 
-class VisualLogTableContext(VisualLogTableWriteContext):
+class VisualLogTableContext(VisualLogElementContext):
     """
     Automatically adds the beginning and ending of a table to the log
     """
@@ -58,7 +40,8 @@ class VisualLogTableContext(VisualLogTableWriteContext):
     def __enter__(self) -> VisualLogTableContext:
         return self
 
-    def add_row(self) -> "VisualLogRowContext":
+    def add_row(self, content: list[ColumnContent] | None = None) \
+            -> "VisualLogRowContext":
         """
         Adds a new row context to the table.
 
@@ -68,12 +51,14 @@ class VisualLogTableContext(VisualLogTableWriteContext):
                 with row.add_col():
                     vl.image(...)
 
+            table.add_row([1, 2, 3])
+
         :return: The row context object
         """
         return VisualLogRowContext(self.builder)
 
 
-class VisualLogRowContext(VisualLogTableWriteContext):
+class VisualLogRowContext(VisualLogElementContext):
     """
     Automatically adds the beginning and ending of a row to the log
     """
@@ -91,29 +76,36 @@ class VisualLogRowContext(VisualLogTableWriteContext):
     def __enter__(self) -> VisualLogRowContext:
         return self
 
-    def add_col(self, text: str | None = None, md: bool = False) -> Union[
-        "VisualLogColumnContext", None]:
+    def add_col(self,
+                content: ColumnContent | None = None,
+                md: bool = False) -> \
+            Union["VisualLogColumnContext", None]:
         """
         Adds a new column to the row
 
-        :param text: The text to be logged. If text is provided non context
+        :param content: The text to be logged or the function to be called
+            inside the column's context. If data is provided no context
             will be created.
         :param md: Defines if the text is markdown formatted
         :return: The column context to be entered via `with row.add_col():...`
         """
-        if text is not None:
+        if content is not None:
             self.builder.target_log.write_html(f"<td>")
-            if md:
-                self.builder.md(text)
+            if isinstance(content, Callable):
+                content()
             else:
-                self.builder.text(text)
+                if md:
+                    content = str(content)
+                    self.builder.md(content)
+                else:
+                    self.builder.add(content)
             self.builder.target_log.write_html("</td>")
             return None
 
         return VisualLogColumnContext(self.builder)
 
 
-class VisualLogColumnContext(VisualLogTableWriteContext):
+class VisualLogColumnContext(VisualLogElementContext):
     """
     Automatically adds the beginning and ending of a column to the log
     """

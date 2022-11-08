@@ -200,7 +200,7 @@ def test_statistics():
                                          fetch_file_list=True)
     statistics = str(test_source)
     vl.test.assert_val("essential_archive_statistics", statistics,
-                  hash_val="c77545b7f74133cd85ce3fcadf448016")
+                       hash_val="dcc44322ca043dff16eb57ce972e10b7")
     list = test_source.get_file_list()
     assert len(list) == 3706
     # statistics twice

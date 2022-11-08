@@ -15,4 +15,4 @@ def test_basics_logging_methods():
             for index in range(3):
                 with row.add_col():
                     vl.log("Test")
-    vl.test.assert_cp_diff(hash_val="cf8404ee4e19c115d4fb342a188de7a9")
+    vl.test.assert_cp_diff(hash_val="c65297e443337509638d95c9d0e83450")
