@@ -5,11 +5,11 @@ interaction button to a log.
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Union
 
-from scistag.logstag.vislog.widgets.log_widget import LogWidget
+from scistag.vislog.widgets.log_widget import LogWidget
 
 if TYPE_CHECKING:
-    from scistag.logstag.vislog.visual_log import VisualLog
-    from scistag.logstag.vislog.log_event import LogEvent
+    from scistag.vislog.visual_log import VisualLog
+    from scistag.vislog.log_event import LogEvent
 
 CLICK_EVENT_TYPE = "click"
 "Defines an event which is risen by a button click"

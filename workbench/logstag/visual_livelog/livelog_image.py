@@ -10,7 +10,7 @@ from scistag.imagestag import Image
 from scistag.logstag.visual_livelog import LogWidget
 
 if TYPE_CHECKING:
-    from scistag.logstag.vislog import VisualLiveLog
+    from scistag.vislog import VisualLiveLog
 
 
 class LogImage(LogWidget):

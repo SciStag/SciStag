@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from scistag.logstag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import VisualLogBuilder
 
 
 class PyPlotLogContext:

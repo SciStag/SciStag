@@ -13,9 +13,9 @@ from typing import TYPE_CHECKING, Callable, Union, Type
 from scistag.common import StagLock, Cache
 from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Size2D, Size2DTypes
-from scistag.logstag.vislog.visual_log_service import VisualLogService
+from scistag.vislog.visual_log_service import VisualLogService
 from scistag.webstag.web_helper import WebHelper
-from ..console_stag import Console
+from scistag.logstag.console_stag import Console
 from .sub_log import SubLog, SubLogLock
 
 if TYPE_CHECKING:
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from .widgets.log_button import LogButton
     from .visual_log_builder import VisualLogBuilder
     from .visual_log_statistics import VisualLogStatistics
-    from scistag.logstag.vislog.log_event import LogEvent
+    from scistag.vislog.log_event import LogEvent
 
 # Error messages
 TABLE_PIPE = "|"
@@ -323,11 +323,6 @@ class VisualLog:
             self._events = self.cache.get(LOG_EVENT_CACHE_NAME, default=[])
         self._invalid = False
         "Defines if this log was invalidated via :meth:`invalidate`"
-        # execute auto-reloader if provided
-        if not isinstance(auto_reload, bool) and auto_reload is not None:
-            self.run_server(host_name="127.0.0.1",
-                            builder=auto_reload, auto_reload=True,
-                            auto_reload_stag_level=2)
         self.name_counter = Counter()
         "Counter for file names to prevent writing to the same file twice"
         self.title_counter = Counter()
@@ -356,6 +351,16 @@ class VisualLog:
             with VisualLog() as vl:
                 v.title("Hello world') 
         """
+        self.testing = False
+        """
+        Defines if the log is run in test mode and e.g. shall not spawn a
+        real http server
+        """
+        # execute auto-reloader if provided
+        if not isinstance(auto_reload, bool) and auto_reload is not None:
+            self.run_server(host_name="127.0.0.1",
+                            builder=auto_reload, auto_reload=True,
+                            auto_reload_stag_level=2)
 
     def load_old_logs(self) -> bool:
         """
@@ -485,7 +490,7 @@ class VisualLog:
             if not isinstance(max_fig_size, Size2D):
                 max_fig_size = Size2D(max_fig_size)
         else:
-            max_fig_size = self._log_stag[0].max_fig_size
+            max_fig_size = Size2D(self._log_stag[0].max_fig_size)
 
         self._log_stag.append(SubLog(logs=new_logs, target=target,
                                      max_fig_size=max_fig_size.to_int_tuple()))
@@ -937,7 +942,7 @@ class VisualLog:
             in the call of this function such as
 
             - mt - As multithreading is required to use this feature
-            - continous - which is is currently not supported yet.
+            - continuous - which is not supported yet.
             - ...
         :param auto_reload_stag_level: Defines which module shall be observed
             and reloaded upon modifications.
@@ -948,11 +953,12 @@ class VisualLog:
         :param kwargs: Additional parameters which shall be passed to the
             WebStagServer upon creation.
         """
+        test = self.testing or test
         if builder is not None:
             builder = self.prepare_builder(builder)
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
-            from scistag.logstag.vislog.visual_log_autoreloader import \
+            from scistag.vislog.visual_log_autoreloader import \
                 VisualLogAutoReloader
             if continuous:
                 raise NotImplementedError(
@@ -1002,7 +1008,7 @@ class VisualLog:
             if element == "auto":
                 public_ips[index] = WebHelper.get_public_ip()
         # show URLs if desired
-        if show_urls:
+        if show_urls and not test:
             print("\nVisualLog web service started\n")
             print("Connect at:")
             for cur_ip in public_ips:
@@ -1020,6 +1026,7 @@ class VisualLog:
                     self._run_builder(builder)
                     self.handle_event_list()
                     self.write_to_disk()
+        mt = mt and not test
         server.start(mt=mt, test=test)
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
@@ -1089,7 +1096,7 @@ class VisualLog:
             builder = self.prepare_builder(builder)
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
-            from scistag.logstag.vislog.visual_log_autoreloader import \
+            from scistag.vislog.visual_log_autoreloader import \
                 VisualLogAutoReloader
             if continuous:
                 raise NotImplementedError(
@@ -1340,7 +1347,7 @@ class VisualLog:
         :param on_click: The function to be called when the button is clicked
         :return: The button widget
         """
-        from scistag.logstag.vislog.widgets.log_button import LogButton
+        from scistag.vislog.widgets.log_button import LogButton
         new_button = LogButton(self, name, caption=caption, on_click=on_click)
         new_button.write()
         return new_button
@@ -1369,7 +1376,7 @@ class VisualLog:
             - upTime - How long is the log being updated?
         """
 
-        from scistag.logstag.vislog.visual_log_statistics import \
+        from scistag.vislog.visual_log_statistics import \
             VisualLogStatistics
         return VisualLogStatistics(update_counter=self._total_update_counter,
                                    update_rate=self._update_rate,
@@ -1404,7 +1411,7 @@ class VisualLog:
 
         :return: True if the calling method is in the main module.
         """
-        from scistag.logstag.vislog.visual_log_autoreloader import \
+        from scistag.vislog.visual_log_autoreloader import \
             VisualLogAutoReloader
         return VisualLogAutoReloader.is_main(2)
 
@@ -1419,7 +1426,7 @@ class VisualLog:
         ..  code-block:python
 
             try:
-                from scistag.logstag.vislog import VisualLog, VisualLogBuilder
+                from scistag.vislog import VisualLog, VisualLogBuilder
                 VisualLog.setup_mocks()
             except ModuleNotFoundError:
                 from visual_log_mock import VisualLog, VisualLogBuilder
@@ -1465,6 +1472,9 @@ class VisualLog:
         :return: The builder object
         """
         return self.default_builder
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.flush()
 
 
 __all__ = ["VisualLog", "VisualLogStatistics", "HTML", "MD", "TXT"]

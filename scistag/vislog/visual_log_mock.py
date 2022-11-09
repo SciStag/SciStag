@@ -21,7 +21,7 @@ class VisualLogMock:
     ..  code-block:python
 
         try:
-            from scistag.logstag.vislog import VisualLog, VisualLogBuilder
+            from scistag.vislog import VisualLog, VisualLogBuilder
             VisualLog.setup_mocks()
         except ModuleNotFoundError:
             from visual_log_mock import VisualLog, VisualLogBuilder
@@ -178,7 +178,3 @@ class VisualLogMock:
         :return: True if it is a mock
         """
         return True
-
-
-VisualLog = VisualLogMock
-VisualLogBuilder = VisualLogMock

@@ -6,7 +6,7 @@ contexts.
 
 from __future__ import annotations
 
-from scistag.logstag.vislog import VisualLogBuilder
+from scistag.vislog import VisualLogBuilder
 
 
 class VisualLogElementContext:
@@ -42,7 +42,7 @@ class VisualLogElementContext:
         log: VisualLog = self.builder.target_log
         for key, value in self.closing_code.items():
             if key in log.log_formats:
-                from scistag.logstag.vislog.visual_log import HTML, MD, TXT
+                from scistag.vislog.visual_log import HTML, MD, TXT
                 if key == HTML:
                     log.write_html(value)
                 elif key == MD:

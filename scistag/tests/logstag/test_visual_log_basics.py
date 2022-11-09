@@ -1,14 +1,13 @@
 import shutil
-from unittest import mock
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 
 from . import vl
-from ...common.test_data import TestConstants
 from ...emojistag import render_emoji
-from ...imagestag import Colors
-from ...logstag.vislog import VisualLog
+from ...logstag.console_stag import Console
+from ...vislog import VisualLog
 from ...plotstag import Figure, MPLock
 
 
@@ -41,6 +40,7 @@ def test_basics_logging_methods():
     vl.test.begin("Just a piece of text")
     vl.code("How about a little bit of source code?")
     vl.test.assert_cp_diff(hash_val="4effb382e6beccb1e0641600787684b3")
+    assert not vl.target_log.is_simple
 
 
 def test_errors():
@@ -54,62 +54,6 @@ def test_errors():
     _ = VisualLog(target_dir="./logs/other",
                   title="Just a test",
                   clear_target_dir=True)
-
-
-def test_image():
-    """
-    Tests image logging
-    """
-    image_data = render_emoji(":deer:")
-    image_data.convert("rgb", bg_fill=Colors.WHITE)
-    # logging images
-    vl.test.assert_image("stag",
-                         source=image_data,
-                         alt_text="An image of a stag - just because we can",
-                         hash_val='4e5e428357fcf315f25b148747d633db',
-                         scaling=0.5)
-    vl.test.checkpoint()
-    vl.target_log.log_images = False
-    vl.image(image_data, alt_text="an image which shouldn't get logged")
-    vl.target_log.log_images = True
-    vl.test.assert_cp_diff("d41d8cd98f00b204e9800998ecf8427e")
-    # insert image via canvas
-    vl.image(source=image_data.to_canvas(), name="stag_canvas")
-    # insert image via pixel data
-    vl.image(source=image_data.get_pixels(), name="stag_canvas_2")
-    # test using general assert
-    vl.test.assert_val("assert_stag", image_data,
-                       hash_val='4e5e428357fcf315f25b148747d633db')
-    with pytest.raises(AssertionError):
-        vl.test.assert_val("assert_stag", image_data,
-                           hash_val='4e5e428357fcf315f25b148747d633da')
-    vl.test.checkpoint()
-    vl.log_txt_images = False
-    vl.sub_test("An image from the web scaled to 50%")
-    vl.image(TestConstants.STAG_URL, "anotherStag_1", scaling=0.5,
-             download=False)
-    vl.test.assert_cp_diff(hash_val="c9aa5a4232351b81ec4b8607126c0dd0")
-    vl.test.checkpoint()
-    vl.sub_test("An image from the web scaled to 50% w/ downloading")
-    vl.image(TestConstants.STAG_URL, "anotherStag_2", scaling=0.5,
-             download=True)
-    vl.test.checkpoint()
-    vl.sub_test("An image from the web scaled to 100%")
-    vl.image(TestConstants.STAG_URL, "anotherStag_3", scaling=1.0)
-    vl.log_txt_images = True
-    vl.test.assert_cp_diff(hash_val="a37201edd6c4c71f056f0a559ad6824b")
-    # add image from bytes stream
-    vl.sub_test("Logging an image provided as byte stream")
-    vl.test.checkpoint()
-    vl.image(image_data.encode(), alt_text="image from byte stream")
-    # insert image from web (as url)
-    vl.image(TestConstants.STAG_URL, alt_text="Image link from URL",
-             download=False,
-             scaling=0.5)
-    # insert image from web (inserted)
-    vl.image(TestConstants.STAG_URL, alt_text="Image download from URL",
-             download=True,
-             scaling=0.5)
 
 
 def test_dict():
@@ -205,97 +149,78 @@ def test_text():
                            hash_val="0956d2fbd5d5c29844a4d21ed2f76e0a")
 
 
-def test_dataframe():
+@patch('builtins.print')
+def test_different_setups(_):
     """
-    Tests dataframe logging
+    Tests different constructor settings
     """
-    vl.test.begin("Pandas DataFrame logging")
-    # logging data frames
-    import pandas as pd
-    d = {'one': pd.Series([10, 20, 30, 40],
-                          index=['a', 'b', 'c', 'd']),
-         'two': pd.Series([10, 20, 30, 40],
-                          index=['a', 'b', 'c', 'd'])}
-    df = pd.DataFrame(d)
-    vl.test.checkpoint()
-    vl.sub_test("Logging a simple Pandas DataFrame")
-    vl.df(df, "A simple dataframe")
-    vl.test.checkpoint()
-    vl.test.assert_cp_diff(hash_val="d41d8cd98f00b204e9800998ecf8427e")
-    vl.sub_test("HTML table printed w/o pretty html")
-    vl.target_log.use_pretty_html_table = False
-    vl.df(df, "A simple dataframe w/o pretty html")
-    vl.target_log.use_pretty_html_table = True
-    vl.test.assert_cp_diff(hash_val="cdc3b666bc3d8a22556fd9b9bbd713f9")
+    log: VisualLog = VisualLog(max_fig_size=(128, 128), log_to_disk=False,
+                               image_format=("jpg", 80),
+                               continuous_write=True)
+    assert not log.log_to_disk
+    assert log.max_fig_size == (128, 128)
+    assert log.image_format == "jpg" and log.image_quality == 80
+    log.terminate()
+    assert log._shall_terminate
+    log.set_log_limit(5)
+    assert log._log_limit == 5
+    assert log._log_stag[-1].log_limit == 5
+    for content_count in range(7):
+        log.default_builder.log("Test")
+    assert len(log._logs['html']) < 6
 
-    # testing data frame assertion
-    with mock.patch('builtins.print'):
-        vl.test.assert_df("test_dataframe", df, dump=True)
-    vl.test.assert_df("test_dataframe", df)
-    with pytest.raises(AssertionError):
-        vl.test.assert_df("test_dataframe_no_data", df)
-    vl.test.assert_val("test_dataframe", df)
-    vl.test.assert_df("test_dataframe", df,
-                      hash_val="914de108cea30eb542f1fb57dcb18afc")
-    with pytest.raises(AssertionError):
-        df.loc['a', 'one'] = 'NewValue'
-        vl.test.assert_df("test_dataframe", df)
-    with pytest.raises(AssertionError):
-        vl.test.assert_df("test_dataframe", df,
-                          hash_val="914de108cea30eb542f1fb57dcb18afc")
-    vl.sub_test("Log table without tabulate")
-    vl.target_log.use_tabulate = False
-    vl.df(df, "DataFrame w/o tabulate")
-    vl.sub_test("Log table without HTML")
-    vl.markdown_html = False
-    vl.df(df, "DataFrame w/o tabulate")
-    vl.markdown_html = True
-    vl.target_log.use_tabulate = True
-    vl.df(df, "DataFrame w/o tabulate")
-    vl.target_log.use_tabulate = True
+    log: VisualLog = VisualLog(max_fig_size=(128, 128), log_to_disk=False,
+                               image_format=("jpg", 80),
+                               continuous_write=True)
+    a_console = Console()
+    log.add_console(a_console)
+    log.default_builder.log("Console text")
+    log.write_to_disk()
+    log.flush()  # just another name for write_to_disk as of now
+    assert log.get_page("wdwdd") == b""
+    assert b"Console text" in log.get_body("html")
+    assert log.get_body("wdwdd") == b""
+    log.render(formats=None)  # enforce fetch
+    log.write_to_disk(formats=None, render=False)
+
+    # log without html
+    no_html_log = VisualLog(formats_out={"txt"})
+    no_html_log.write_html("shouldnt be logged")
+    vl = no_html_log.default_builder
+    vl.log("should be logged")
+    with no_html_log as vl:
+        vl.log("text")
 
 
-def test_np_assert():
+def test_static_file():
+    log: VisualLog = VisualLog(max_fig_size=(128, 128), log_to_disk=False,
+                               image_format=("jpg", 80))
+    log.add_static_file("testFile.bin", "bHello world")
+    assert log.get_file("testFile.bin") == "bHello world"
+
+
+@patch('builtins.print')
+def test_sub_logs(_):
+    log: VisualLog = VisualLog(max_fig_size=(128, 128), log_to_disk=False,
+                               image_format=("jpg", 80))
+    log.default_builder.log("MainLog")
+    log.begin_sub_log("SubLogA")
+    log.default_builder.log("SubLogA")
+    log.end_sub_log()
+    log.begin_sub_log("SubLogB", max_fig_size=(128, 128))
+    log.default_builder.log("SubLogB")
+    log.end_sub_log()
+    assert b"SubLogA" in log.sub_log_data["SubLogA"]["html"]
+    assert b"SubLogB" in log.sub_log_data["SubLogB"]["html"]
+
+
+def test_runner():
     """
-    Tests numpy assertion
+    Tests running and looping functionality
+    :return:
     """
-    # testing numpy assertion
-    np_array = np.ones((4, 4), dtype=float)
-    with mock.patch('builtins.print'):
-        vl.test.assert_np("test_np_array", np_array, dump=True)
-    with pytest.raises(AssertionError):
-        vl.test.assert_np("test_np_array_no_data", np_array)
-    vl.test.assert_np("test_np_array", np_array, variance_abs=0.01)
-    vl.test.assert_val("test_np_array", np_array)
-    np_array[0][1] = 0.9999
-    vl.test.assert_np("test_np_array", np_array, variance_abs=0.01)
-    with pytest.raises(AssertionError):
-        vl.test.assert_np("test_np_array", np_array, variance_abs=0.00001)
-    with pytest.raises(AssertionError):
-        np_array[0][1] = 0.9999
-        vl.test.assert_np("test_np_array", np_array)
-
-    with pytest.raises(NotImplementedError):
-        vl.test.assert_np("test_np_array", np_array, hash_val="123")
-
-    vl.test.assert_np("test_np_array", np_array, rounded=2,
-                      hash_val="99140a9b8e68954a484e0de3c6861fc6")
-    np_array[0][1] = 0.99
-    vl.test.assert_np("test_np_array", np_array, rounded=2,
-                      hash_val="99140a9b8e68954a484e0de3c6861fc6")
-    np_array[0][1] = 0.98
-    with pytest.raises(AssertionError):
-        vl.test.assert_np("test_np_array", np_array, rounded=2,
-                          hash_val="99140a9b8e68954a484e0de3c6861fc6")
-
-
-def test_general_assertion():
-    """
-    Tests basic type assertion
-    """
-    with pytest.raises(NotImplementedError):
-        vl.test.assert_val("abool", True)
-
-    # logging images and figures:
-    # Note: excessive amounts of tests for logging figures and images can
-    # be found in the tests for plotstag
+    log: VisualLog = VisualLog(max_fig_size=(128, 128), log_to_disk=False,
+                               image_format=("jpg", 80))
+    assert log.invalid == False
+    log.invalidate()
+    assert log.invalid

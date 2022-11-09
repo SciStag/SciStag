@@ -3,7 +3,7 @@ A demo which shows how to host a log via http and how to update it's content
 continuously using a callback.
 """
 
-from scistag.logstag.vislog import VisualLog, VisualLogBuilder
+from scistag.vislog import VisualLog, VisualLogBuilder
 
 
 class LiveCameraDemo(VisualLogBuilder):

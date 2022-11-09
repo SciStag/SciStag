@@ -1,7 +1,7 @@
 import hashlib
 import os
 
-from scistag.logstag.vislog.visual_log import VisualLog
+from scistag.vislog.visual_log import VisualLog
 
 
 class VisualTestLog(VisualLog):

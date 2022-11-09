@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from scistag.logstag.vislog.visual_log import VisualLog
+    from scistag.vislog.visual_log import VisualLog
 
 
 @dataclass

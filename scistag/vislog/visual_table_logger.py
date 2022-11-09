@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Union, Callable
 
 import numpy as np
 from pandas import DataFrame, Series
-from scistag.logstag.vislog.visual_log_element_context import \
+from scistag.vislog.visual_log_element_context import \
     VisualLogElementContext
 
 from scistag.imagestag import Image

@@ -5,10 +5,10 @@ or activity indicator to a VisualLiveLog.
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from scistag.logstag.vislog.widgets.log_widget import LogWidget
+from scistag.vislog.widgets.log_widget import LogWidget
 
 if TYPE_CHECKING:
-    from scistag.logstag.vislog import VisualLiveLog
+    from scistag.vislog import VisualLiveLog
 
 
 class LogProgress(LogWidget):

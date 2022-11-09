@@ -7,7 +7,7 @@ dumps for dataframes and numpy arrays.
 import hashlib
 
 from scistag.common import ConfigStag
-from scistag.logstag.vislog import VisualTestLog
+from scistag.vislog import VisualTestLog
 from scistag.tests.config import ensure_config
 
 ensure_config()

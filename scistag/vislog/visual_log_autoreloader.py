@@ -18,8 +18,9 @@ import time
 from importlib import reload
 from typing import Union, TYPE_CHECKING
 
+from scistag.common import StagLock
 from scistag.filestag import FileStag
-from scistag.logstag.vislog import VisualLog
+from scistag.vislog import VisualLog
 
 if TYPE_CHECKING:
     from scistag.common.cache import Cache
@@ -32,6 +33,10 @@ HEALTHY_AGAIN_TEXT = "Yay - the module is healthy again, let's rock on! 🤘👨
 
 
 class VisualLogAutoReloader:
+    _access_lock = StagLock()
+    """
+    Multithreading access lock
+    """
     main_log: VisualLog | None = None
     """
     The main log which is staying alive during the restart sessions and is
@@ -55,6 +60,18 @@ class VisualLogAutoReloader:
     "The name of the module we need to reimport"
     was_sick: bool = False
     "Flag if the last time there was an error which stopped the reloading"
+    testing: bool = False
+    "Defines if the server shall be started in test_mode"
+    _test_client = None
+    "The server test client (if started in testing mode)"
+    _shall_terminate = False
+    """
+    Defines if the auto-reloader shall terminate and quit its infinite loop
+    """
+    reload_count = 0
+    "The count how often the modules were reloaded since start"
+    error_count = 0
+    "The count of often the file count not be reloaded due to errors"
 
     @classmethod
     def setup(cls, refresh_time_s: float = 0.1, **params):
@@ -184,23 +201,74 @@ class VisualLogAutoReloader:
         cls.update_content()
         mt = server_params.pop("mt", True)
         if host_name is not None:
+            cls.main_log.testing = cls.testing
             cls.main_log.run_server(host_name=host_name,
                                     port=port,
                                     public_ips=public_ips,
                                     url_prefix=url_prefix,
                                     mt=mt,
                                     **server_params)
+            with cls._access_lock:
+                if cls.testing:  # return test client when in testing mode
+                    cls._test_client = \
+                        cls.main_log.server.get_handle().test_client()
+                else:
+                    cls._test_client = None
         try:
             print(f"Auto-reloading enabled for module {cls.imp_module}")
             while True:
+                with cls._access_lock:
+                    sht = cls._shall_terminate
+                    if sht:
+                        break
                 time.sleep(check_time_s)
-                cls.run_loop()
+                cls._run_loop()
+            with cls._access_lock:
+                cls._shall_terminate = False
         except KeyboardInterrupt:
             if cls.main_log.server.server_thread is not None:
                 cls.main_log.kill_server()
+            return False
+        return True
 
     @classmethod
-    def run_loop(cls):
+    def terminate(cls):
+        """
+        Informs the auto-reloader that it shall quit its autoreload loop
+        """
+        with cls._access_lock:
+            cls._shall_terminate = True
+
+    @classmethod
+    def reset(cls):
+        """
+        Resets the auto-reloader to it's base settings to provide a clean
+        setup for testing it.
+        """
+        with cls._access_lock:
+            cls._cache_backup = None
+            cls._embedded_log = None
+            del cls.main_log
+            cls.main_log = None
+            cls.content = None
+            cls.was_sick = False
+            cls.imp_module = None
+            cls._test_client = None
+            cls._initial_filename = ""
+            cls.reload_count = 0
+            cls.error_count = 0
+
+    @classmethod
+    def get_test_client(cls):
+        """
+        Returns the Flask/FastAPI test client if started in test mode
+        :return: The test client
+        """
+        with cls._access_lock:
+            return cls._test_client
+
+    @classmethod
+    def _run_loop(cls):
         """
         Handles the main loop which verifies if any element was modified
         and reloads all modified modules if required.
@@ -221,6 +289,8 @@ class VisualLogAutoReloader:
             cls._reloading = True
             cls._cache_backup = cls._embedded_log.cache
             loop_start_time = time.time()
+            with cls._access_lock:
+                cls.reload_count += 1
             reload(cls.imp_module)
             rl_time = time.time() - loop_start_time
             VisualLogAutoReloader.update_content()
@@ -231,6 +301,8 @@ class VisualLogAutoReloader:
             else:
                 print(f"... reloaded module in {rl_time:0.3f}s")
         except Exception as e:
+            with cls._access_lock:
+                cls.error_count += 1
             cls.was_sick = True
             print("\u001b[31m", end="")
             import traceback

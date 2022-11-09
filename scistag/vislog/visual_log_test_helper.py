@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 
 from scistag.imagestag import Image, Canvas
 from scistag.plotstag import Figure, Plot
-from ...filestag import FileStag, FilePath
+from scistag.filestag import FileStag, FilePath
 
 if TYPE_CHECKING:
     from .visual_log_builder import VisualLogBuilder
@@ -325,7 +325,8 @@ class VisualLogTestHelper:
                 continue
             difference = difference + data[length:]
             keys.append(key)
-        assert sorted(list(keys)) == sorted(list(self.builder.target_log.log_formats))
+        assert sorted(list(keys)) == sorted(
+            list(self.builder.target_log.log_formats))
         result_hash_val = hashlib.md5(difference).hexdigest()
         self.hash_check_log(result_hash_val, hash_val)
 

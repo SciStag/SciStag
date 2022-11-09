@@ -9,7 +9,7 @@ import os
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from scistag.logstag.vislog import VisualLog
+    from scistag.vislog import VisualLog
 
 
 class VisualLogService:
@@ -37,7 +37,7 @@ class VisualLogService:
         event_name = params.pop("name", "")
         event_type = params.pop("type", "")
         if len(event_name):
-            from scistag.logstag.vislog.log_event import LogEvent
+            from scistag.vislog.log_event import LogEvent
             self.log.add_event(LogEvent(name=event_name,
                                         event_type=event_type))
             return "OK"

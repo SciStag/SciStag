@@ -24,14 +24,14 @@ from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Image, Canvas, PixelFormat, Size2D
 from scistag.logstag import LogLevel
 
-from scistag.logstag.vislog.visual_log import VisualLog, MD, TXT, HTML, \
+from scistag.vislog.visual_log import VisualLog, MD, TXT, HTML, \
     TABLE_PIPE
 from scistag.plotstag import Figure, Plot, MPHelper
 
 MAX_NP_ARRAY_SIZE = 100
 
 if TYPE_CHECKING:
-    from scistag.logstag.vislog.pyplot_log_context import PyPlotLogContext
+    from scistag.vislog.pyplot_log_context import PyPlotLogContext
 
 LogableContent = Union[str, float, int, bool, np.ndarray,
                        pd.DataFrame, pd.Series, list, dict, Image, Figure]
@@ -646,7 +646,7 @@ class VisualLogBuilder:
                 figure = plt.figure(figsize=(8,4))
                 plt.imshow(some_image_matrix)
         """
-        from scistag.logstag.vislog.pyplot_log_context import \
+        from scistag.vislog.pyplot_log_context import \
             PyPlotLogContext
         log_context = PyPlotLogContext(self)
         return log_context
