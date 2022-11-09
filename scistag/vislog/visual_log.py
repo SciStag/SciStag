@@ -1431,11 +1431,11 @@ class VisualLog:
             except ModuleNotFoundError:
                 from visual_log_mock import VisualLog, VisualLogBuilder
         """
-        from .visual_log_mock import VisualLogMock
-        VisualLogMock.setup_mocks(target_dir)
+        from .visual_log_mock import VisualMicroLock
+        VisualMicroLock.setup_micro_lock(target_dir)
 
     @property
-    def is_simple(self) -> bool:
+    def is_micro(self) -> bool:
         """
         Returns if this builder is a minimalistic logger with limited
         functionality.

@@ -40,7 +40,7 @@ def test_basics_logging_methods():
     vl.test.begin("Just a piece of text")
     vl.code("How about a little bit of source code?")
     vl.test.assert_cp_diff(hash_val="4effb382e6beccb1e0641600787684b3")
-    assert not vl.target_log.is_simple
+    assert not vl.target_log.is_micro
 
 
 def test_errors():
@@ -120,7 +120,7 @@ def test_figure():
         data = np.random.random_sample((16, 16, 3))
         axes = plt.imshow(data)
         vl.test.assert_figure("random figure using MPLock", axes,
-                              hash_val="324a86b9b24b1fe1ff1d770cbc31e8e5")
+                              hash_val="20ee5e3e393ec5099ec10273a838c263")
 
 
 def test_eval():

@@ -2,6 +2,7 @@
 Tests the Azure storage file sink
 """
 import hashlib
+import os
 import time
 
 import pytest
@@ -10,6 +11,7 @@ from scistag.common import ConfigStag
 from scistag.filestag import FileSink, FileSource
 from scistag.filestag.azure import AzureStorageFileSink
 from scistag.webstag import web_fetch
+from scistag.tests import RELEASE_TEST
 
 sink_target_connection_string = \
     "azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;" \
@@ -22,7 +24,7 @@ Test storage
 skip_tests = ConfigStag.get("testConfig.azure.skip", False)
 "Defines if the Azure tests shall be skipped"
 
-skip_long_tests = ConfigStag.get("testConfig.azure.skipLong", False)
+skip_long_tests = ConfigStag.get("testConfig.azure.skipLong", not RELEASE_TEST)
 "Defines if the long running Azure tests shall be skipped"
 
 

@@ -34,6 +34,7 @@ jobs:
         if: steps.cache-deps.outputs.cache-hit != 'true'
       - run: |
           export TEST_RELEASE=1
+          export SCISTAG_FULL_TEST=1
           poetry run coverage run -m pytest ./scistag/tests
           poetry run coverage lcov -i
         env:

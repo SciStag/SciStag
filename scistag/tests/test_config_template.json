@@ -40,11 +40,10 @@
     },
     "WebStag":
     {
-      "skip": true
+      "skip": false
     },
     "azure": {
-      "skip": false,
-      "skipLong": false
+      "skip": false
     }
   }
 }

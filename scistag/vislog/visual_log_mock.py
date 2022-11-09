@@ -1,16 +1,23 @@
 """
-Implements VisualLogMock - a replacement for a VisualLogBuilder object for
-platforms which are not capable of loading of the full SciStag library
-such as MicroPython.
+Implements VisualMicroLock - a replacement for the VisualLogBuilder logging
+interface of the SciStag package for platforms which are not capable of loading
+of the full library such as MicroPython .
 
 Tries to wrap all commands as far as reasonable to basic outputs to stdout,
 e.g. .log, .text, .title etc.
+
+This file is part of the SciStag Python package and licensed under the terms
+of the MIT License.
+
+Copyright (C) 2022 Michael Ikemann
+
+For more details see https://github.com/scistag/scistag
 """
 
 
-class VisualLogMock:
+class VisualMicroLock:
     """
-    VisualLogMock is a replacement for the VisualLogBuilder class
+    VisualMicroLock is a replacement for the VisualLogBuilder class
     of the SciStag Python package to easily port an application using
     VirtualLog for logging to platforms which are not capable of
     loading of the full SciStag library such as MicroPython.
@@ -49,23 +56,32 @@ class VisualLogMock:
         self.log_to_stdout = log_to_std_out
         "Defines if the simple output shall be directed to stdout"
 
-    def image(self, *_, **__) -> "VisualLogMock":
-        return self
+    def image(self, *_, **__) -> "VisualMicroLock":
+        raise NotImplementedError("Not supported yet")
 
-    def figure(self, *_, **__) -> "VisualLogMock":
-        return self
+    def figure(self, *_, **__) -> "VisualMicroLock":
+        raise NotImplementedError("Not supported yet")
 
-    def table(self, data, *_, **__) -> "VisualLogMock":
+    def table(self, data, *_, **__) -> "VisualMicroLock":
+        """
+        Adds a table to the log.
+
+        :param data: A list of rows of which each row contains the same
+            count of columns. The content has to be convertible to a string.
+        :param _:
+        :param __:
+        :return:
+        """
         for row in data:
             print("| ", end="")
             for index, col in enumerate(row):
                 if self.log_to_stdout:
-                    print(col, end=" | ")
+                    print(str(col), end=" | ")
             if self.log_to_stdout:
                 print("")
         return self
 
-    def log_text(self, *args, **_) -> "VisualLogMock":
+    def log_text(self, *args, **_) -> "VisualMicroLock":
         """
         Logs text to stdout
 
@@ -76,7 +92,7 @@ class VisualLogMock:
             print(" ".join(args))
         return self
 
-    def info(self, *args, **_) -> "VisualLogMock":
+    def info(self, *args, **_) -> "VisualMicroLock":
         """
         Logs an info text
 
@@ -85,7 +101,7 @@ class VisualLogMock:
         self.log_text("[INFO]    ", *args)
         return self
 
-    def debug(self, *args, **_) -> "VisualLogMock":
+    def debug(self, *args, **_) -> "VisualMicroLock":
         """
         Logs an info text
 
@@ -94,7 +110,7 @@ class VisualLogMock:
         self.log_text("[DEBUG]   ", *args)
         return self
 
-    def warning(self, *args, **_) -> "VisualLogMock":
+    def warning(self, *args, **_) -> "VisualMicroLock":
         """
         Logs an info text
 
@@ -103,7 +119,7 @@ class VisualLogMock:
         self.log_text("[WARNING] ", *args)
         return self
 
-    def error(self, *args, **_) -> "VisualLogMock":
+    def error(self, *args, **_) -> "VisualMicroLock":
         """
         Logs an info text
 
@@ -112,7 +128,7 @@ class VisualLogMock:
         self.log_text("[ERROR]   ", *args)
         return self
 
-    def critical(self, *args, **_) -> "VisualLogMock":
+    def critical(self, *args, **_) -> "VisualMicroLock":
         """
         Logs a critical error
 
@@ -152,14 +168,14 @@ class VisualLogMock:
         """
 
     @staticmethod
-    def setup_mocks(target_path: str = "./"):
+    def setup_micro_lock(target_path: str = "./"):
         """
-        Stores the VisualLogMock class in the defined directory so it can
+        Stores the VisualMicroLock class in the defined directory so it can
         easily be imported. Call this once in a new project.
 
         :param target_path: The path at which the Python files shall be stored.
         """
-        out_name = f"{target_path}/visual_log_mock.py"
+        out_name = f"{target_path}/visual_micro_lock.py"
         with open(__file__, "r") as src_file:
             content = src_file.read()
         import os
@@ -171,10 +187,11 @@ class VisualLogMock:
             mock_file.write(content)
 
     @property
-    def is_simple(self) -> bool:
+    def is_micro(self) -> bool:
         """
-        Returns if this builder is a log with limited functionality.
+        Returns if this builder is a log with limited functionality for
+        MicroPython.
 
-        :return: True if it is a mock
+        :return: True if it is a minimalistic lock
         """
         return True
