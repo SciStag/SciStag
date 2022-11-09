@@ -41,7 +41,7 @@ class VisualLogTableContext(VisualLogElementContext):
         return self
 
     def add_row(self, content: list[ColumnContent] | None = None) \
-            -> "VisualLogRowContext":
+            -> Union["VisualLogRowContext", None]:
         """
         Adds a new row context to the table.
 
@@ -55,6 +55,16 @@ class VisualLogTableContext(VisualLogElementContext):
 
         :return: The row context object
         """
+        if content is not None:
+            self.builder.html("<tr>")
+            if not isinstance(content, list):
+                content = list[content]
+            for element in content:
+                self.builder.html("<td>")
+                self.builder.add(element)
+                self.builder.html("</td>")
+            self.builder.html("</tr>")
+            return None
         return VisualLogRowContext(self.builder)
 
 

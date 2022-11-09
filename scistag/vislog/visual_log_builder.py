@@ -176,7 +176,7 @@ class VisualLogBuilder:
         if isinstance(content, np.ndarray):
             self.np(content)
             return self
-        if isinstance(content, str):
+        if isinstance(content, (str, int, float)):
             self.text(content)
             return self
             # dict or list
@@ -331,6 +331,15 @@ class VisualLogBuilder:
         :param exclude_targets: Defines the target to exclude
         :return: The builder
         """
+        lines = text.split("\n")
+        # use equal trim when triple quotation marks were used
+        if len(lines) > 1 and len(lines[0]) <= 1:
+            trimmed = lines[1].lstrip(" \t")
+            trim_dist = len(lines[1]) - len(trimmed)
+            for index, line in enumerate(lines):
+                if len(line) > trim_dist:
+                    lines[index] = line[trim_dist:]
+            text = "\n".join(lines)
         if exclude_targets is None:
             exclude_targets = set()
         for element in self.forward_targets.values():
@@ -344,6 +353,16 @@ class VisualLogBuilder:
         if TXT not in exclude_targets:
             self._add_txt(text)
         self.clip_logs()
+        return self
+
+    def hr(self) -> VisualLogBuilder:
+        """
+        Adds a horizontal rule to the document
+
+        :return: The builder
+        """
+        self._add_html("<hr>")
+        self._add_txt("---", md=True)
         return self
 
     def html(self, code: str) -> VisualLogBuilder:
