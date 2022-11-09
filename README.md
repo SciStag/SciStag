@@ -21,7 +21,7 @@ Build Status
 [![PyPi Version](https://img.shields.io/pypi/v/SciStag.svg)](https://pypi.python.org/pypi/SciStag)
 [![Documentation Status](https://readthedocs.org/projects/scistag/badge/?version=latest)](https://scistag.readthedocs.io/en/latest/?badge=latest)
 [![Coverage](https://coveralls.io/repos/github/SciStag/SciStag/badge.svg?branch=main)](https://coveralls.io/github/SciStag/SciStag)
-[![Pylint](https://raw.githubusercontent.com/SciStag/SciStag/v0.0.2/docs/source/generated/pylint.svg)](https://coveralls.io/github/SciStag/SciStag)
+[![Pylint](https://raw.githubusercontent.com/SciStag/SciStag/v0.0.3/docs/source/generated/pylint.svg)](https://coveralls.io/github/SciStag/SciStag)
 
 [![Ubuntu Unittests Status](https://github.com/scistag/scistag/workflows/Ubuntu%20Unittests/badge.svg)](https://github.com/scistag/scistag/actions?query=workflow%3A%22Ubuntu+Unittests%22)
 
@@ -31,21 +31,22 @@ Build Status
 
 ---
 
-This project is still under heavy development and in a very early stage - feel free to experiment with the modules and
-examples which are already provided.
+This project is still under heavy development and in a very early stage - 
+feel free to experiment with the modules and  examples which are already 
+provided.
 
-The goal of **SciStag** is to bundle the strengths of the many small, awesome Python technologies from OpenCV via Flask
-to Pandas and enable users to combine these libraries and build awesome data driven solutions with a minimum amount of
+The goal of **SciStag** is to bundle the strengths of the many small, awesome 
+Python technologies from OpenCV via Flask to Pandas and enable users to combine 
+these libraries and build awesome data driven solutions with a minimum amount of
 code.
 
 SciStag currently consists of the following so called **stags**:
 
-## SlideStag
+## VisLog - (short for VisualLogStag)
 
-- Building interactive presentations in Python using the tools you love with a minimum of code.
-- SlideStag4Flask lets you host your interactive presentation as a browser application
-- SlideStag4Flutter lets you interact with your solution from an iPad (and from Android device soon too)
-- SlideStag4Kivy lets you integrate your solution into or host it via [Kivy](https://github.com/kivy/kivy).
+* Allows the dynamic creation of documentation in HTML, Markdown and text format
+and the fast data evaluation through its built-in in-place reload of Python
+modules.
 
 ## ImageStag
 
@@ -66,17 +67,13 @@ SciStag currently consists of the following so called **stags**:
 
 ## WebStag
 
-* Helpful tools for accessing and processing web data
+* Helpful tools for accessing, processing web data and the easy provision
+of Python components as local microservices.
 
-## FileStag (planned)
+## FileStag
 
-* Tools for handling local file and archive data.
-
-## CloudStag (planned)
-
-* Even easier access to cloud services of Azure, AWS & Co.
-
-... more details and examples to come ;-). Estimated official release: Summer 2023.
+* Tools for handling for large amount of files in a data engineering process 
+such as easy scanning and handling data in an Azure Storage.
 
 ---
 
