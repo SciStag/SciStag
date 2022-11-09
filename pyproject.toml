@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "scistag"
-version = "0.0.2"
+version = "0.0.3"
 description = "A stack of helpful libraries & applications for the rapid development of data driven solutions."
 authors = ["Michael Ikemann"]
 license = "MIT"

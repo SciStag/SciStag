@@ -52,7 +52,7 @@ class FilePath:
         return os.path.exists(path)
 
     @staticmethod
-    def base_name(path: str) -> str:
+    def basename(path: str) -> str:
         """
         Returns the path's base name (e.g the filename)
 

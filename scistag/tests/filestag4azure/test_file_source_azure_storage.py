@@ -1,11 +1,14 @@
+from __future__ import annotations
 import pytest
 
 import scistag.tests
 from scistag.common import ConfigStag
 from scistag.filestag import FileSource
+from scistag.filestag.azure.azure_blob_path import AzureBlobPath
 from scistag.filestag.azure.azure_storage_file_source import \
     AzureStorageFileSource
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
+from scistag.webstag import web_fetch
 
 ROBOTO_FONT_SIZE_WITHOUT_MD = 2043356
 "The size of the fonts assumed on the server without the README"
@@ -16,14 +19,15 @@ ROBOTO_FONT_SIZE = 2054916
 ROBOTO_FONT_COUNT = 13
 "The number of fonts assumed on the server"
 
-key = ConfigStag.get("testConfig.azure.storage.testSourceConnectionKey", "")
-
 connection_string = \
-    f"azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;AccountKey={key};EndpointSuffix=core.windows.net/testsource"
+    "azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;" \
+    "AccountKey={{env.AZ_TEST_SOURCE_KEY}};EndpointSuffix=" \
+    "core.windows.net/testsource"
+"""
+Test storage
+"""
 
-skip_tests = ConfigStag.get("testConfig.azure.skip",
-                            key is None or
-                            len(key) == 0)
+skip_tests = ConfigStag.get("testConfig.azure.skip", False)
 "Defines if the Azure tests shall be skipped"
 
 
@@ -141,30 +145,56 @@ def test_conn_string():
     conn_string = \
         "DefaultEndpointsProtocol=https;AccountName=123;AccountKey=456;EndpointSuffix=core.windows.net"
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}"
-    elements = AzureStorageFileSource.split_azure_url(full_url)
+    elements = AzureBlobPath.split_azure_url(full_url)
     assert elements[0] == conn_string and elements[1] == "" and elements[
         2] == ""
     # connection string and container name
     container = "testData"
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}"
-    elements = AzureStorageFileSource.split_azure_url(full_url)
+    elements = AzureBlobPath.split_azure_url(full_url)
     assert elements[0] == conn_string and elements[1] == container and elements[
         2] == ""
     # connection string and container name and unnecessary slash
     container = "testData"
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/"
-    elements = AzureStorageFileSource.split_azure_url(full_url)
+    elements = AzureBlobPath.split_azure_url(full_url)
     assert elements[0] == conn_string and elements[1] == container and elements[
         2] == ""
     prefix = "subPath"
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/{prefix}"
-    elements = AzureStorageFileSource.split_azure_url(full_url)
+    elements = AzureBlobPath.split_azure_url(full_url)
     assert elements[0] == conn_string and elements[1] == container and elements[
         2] == prefix
     # prefix and unnecessary slash
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/{prefix}/"
-    elements = AzureStorageFileSource.split_azure_url(full_url)
+    elements = AzureBlobPath.split_azure_url(full_url)
     assert elements[0] == conn_string and elements[1] == container and elements[
         2] == prefix
-    elements = AzureStorageFileSource.split_azure_url(conn_string)
-    assert elements is None
+    # verify connection string parsing
+    path = AzureBlobPath.from_string(conn_string)
+    assert path.account_name == "123"
+    assert path.account_key == "456"
+    assert path.default_endpoints_protocol == "https"
+    assert path.endpoint_suffix == "core.windows.net"
+
+
+def test_sas():
+    """
+    Tests the creation and usage of SAS tokens
+    """
+
+    azure_source: AzureStorageFileSource | None = FileSource.from_source(
+        connection_string + "/fonts",
+        fetch_file_list=True)
+    assert len(azure_source._file_list) == TOTAL_FONT_COUNT
+    assert azure_source.exists("fonts/Roboto/Roboto-Black.ttf")
+    test_file = "fonts/Roboto/Roboto-Black.ttf"
+    sas = azure_source.create_sas_url(test_file, end_time_days=1.0)
+    assert len(sas)
+    # read via sas url
+    rest_data = web_fetch(sas, max_cache_age=0)
+    # read via azure package
+    blob_data = azure_source.read_file(test_file)
+    # compare
+    assert len(blob_data) == len(rest_data)
+    assert blob_data == rest_data

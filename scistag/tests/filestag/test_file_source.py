@@ -28,7 +28,7 @@ def test_scan():
     source = FileSource.from_source(base_dir, recursive=True,
                                     fetch_file_list=True)
     assert len(source._file_list) >= 50
-    assert len(source._file_list) < 300
+    assert len(source._file_list) < 400
 
 
 def test_iteration():
@@ -199,8 +199,8 @@ def test_statistics():
     test_source = FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
                                          fetch_file_list=True)
     statistics = str(test_source)
-    vl.assert_val("essential_archive_statistics", statistics,
-                  hash_val="c77545b7f74133cd85ce3fcadf448016")
+    vl.test.assert_val("essential_archive_statistics", statistics,
+                       hash_val="dcc44322ca043dff16eb57ce972e10b7")
     list = test_source.get_file_list()
     assert len(list) == 3706
     # statistics twice

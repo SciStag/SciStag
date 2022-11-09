@@ -25,25 +25,25 @@ def test_plotting_methods():
     """
     Tests plotting plots and figures with title
     """
-    vl.test("Examples for plotting figures and plots with a title")
+    vl.test.begin("Examples for plotting figures and plots with a title")
     vl.sub_test("A plot with a title")
     figure = Figure()
     figure.add_plot().add_image(stag, size_ratio=1.0).set_title("A stag")
-    vl.assert_image("stag_plot", figure.render(),
+    vl.test.assert_image("stag_plot", figure.render(),
                     '6aea6c57d9580f0eed58ac84f7cbee3c')
     vl.sub_test("Example for a figure and plot with title")
     figure = Figure(cols=2, rows=2)
     figure.set_title("A group of four stags")
     for index, element in enumerate(figure):
         element.add_image(stag, size_ratio=0.5).set_title(f"Stag #{index + 1}")
-    vl.assert_image("stag_plot",
+    vl.test.assert_image("stag_plot",
                     figure.render(), '106f8b276e25ec759d412e8a170406f1')
     vl.sub_test("Example for a figure with a title")
     figure = Figure(cols=2, rows=2)
     figure.set_title("A group of four stags")
     for element in figure:
         element.add_image(stag, size_ratio=0.5)
-    vl.assert_image("stag_plot",
+    vl.test.assert_image("stag_plot",
                     figure.render(), 'a20f515c79365a45461941bcb7e2ee7c')
     pixels = stag.get_pixels_rgb()
 

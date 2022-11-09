@@ -40,13 +40,10 @@
     },
     "WebStag":
     {
-      "skip": true
+      "skip": false
     },
     "azure": {
-      "skip": false,
-      "storage": {
-        "testSourceConnectionString": "azure://DefaultEndpointsProtocol=https;AccountName=.../containerName"
-      }
+      "skip": false
     }
   }
 }

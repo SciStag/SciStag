@@ -54,7 +54,7 @@ class FileSink:
             from .zip_file_sink import ZipFileSink
             return ZipFileSink(target=target, **params)
         if target.startswith(AZURE_PROTOCOL_HEADER):
-            from .azure_storage_file_sink import AzureStorageFileSink
+            from .azure.azure_storage_file_sink import AzureStorageFileSink
             return AzureStorageFileSink(target=target, **params)
         raise ValueError("Unsupported target type")
 

@@ -10,7 +10,8 @@ from ...common import ConfigStag
 ensure_config()
 skip_plotstag = ConfigStag.get("testConfig.PlotStag.skip", False)
 
-vl = VisualTestLogSciStag(test_filename=__file__, )
+test_log = VisualTestLogSciStag(test_filename=__file__, )
+vl = test_log.default_builder
 vl.continuous_write = True
 
 
@@ -18,4 +19,4 @@ def teardown_module(_):
     """
     Finalize the test
     """
-    vl.finalize()
+    test_log.finalize()

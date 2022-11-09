@@ -23,4 +23,4 @@ __all__ = ["Bounding2D", "Color", "ColorTypes", "Colors",
            "PIL", "PIL_AVAILABLE",
            "Canvas", "Font", "HTextAlignment", "VTextAlignment",
            "Size2D", "Size2DTypes", "Pos2D", "Pos2DTypes",
-           "Anchor2D", "Anchor2DTypes"]
+           "Anchor2D", "Anchor2DTypes", "PixelFormat"]

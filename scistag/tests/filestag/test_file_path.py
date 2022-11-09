@@ -12,7 +12,7 @@ def test_filepath_basics():
     # Test directory name extraction
     assert FilePath.dirname("/home/user/file.txt") == "/home/user"
     # Test basename
-    assert FilePath.base_name("/home/user/file.txt") == "file.txt"
+    assert FilePath.basename("/home/user/file.txt") == "file.txt"
     # Test absolute path name resolving
     assert FilePath.absolute("/home/user/../file.txt") == "/home/file.txt"
     # Test relative absolute path

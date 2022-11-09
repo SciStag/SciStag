@@ -7,6 +7,7 @@ cd $SCRIPT_DIR
 echo "Testing wheel installation and unit tests..."
 poetry env remove --all
 poetry env use python3.9
+poetry lock
 poetry install --sync
-poetry run pytest --pyargs scistag.tests
+source ./run_test.sh
 cd $CUR_DIR

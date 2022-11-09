@@ -17,7 +17,7 @@ import pytest
 
 from . import vl
 from ...common.test_data import TestConstants
-from ...emojistag import get_emoji
+from ...emojistag import render_emoji
 from ...plotstag import Figure
 from . import skip_imagestag
 
@@ -149,7 +149,7 @@ def test_encoding(stag_image_data, tmp_path):
     """
 
     # in memory encoding
-    stag = get_emoji("deer", height=128)
+    stag = render_emoji("deer", height=128)
     # automatic background filling when converting from RGBA to RGB
     decoded_jpg = Image(stag.encode("jpg"))
     assert decoded_jpg.get_pixels_rgb().mean() == pytest.approx(228, 0.005)
@@ -199,7 +199,7 @@ def test_hsv(stag_image_data):
     """
     Tests the HSV support of an image
     """
-    vl.test("HSV conversion tests")
+    vl.test.begin("HSV conversion tests")
     vl.sub_test("Trying to split an HSV image into it's 3 channels")
     image = Image(stag_image_data)
     org_image = image.copy()
@@ -211,7 +211,7 @@ def test_hsv(stag_image_data):
     for plot, band, band_name in zip(fig, bands, band_names):
         plot.set_title(band_name)
         plot.add_image(band, size_ratio=0.5)
-    vl.assert_figure("HSV", fig, hash_val="35775728f2ad636805f668a06559722a")
+    vl.test.assert_figure("HSV", fig, hash_val="35775728f2ad636805f668a06559722a")
 
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")

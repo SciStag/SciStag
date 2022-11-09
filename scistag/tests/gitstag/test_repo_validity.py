@@ -14,7 +14,7 @@ REPO_SIZE_LIMIT = 2000000
 "The maximum repo limit of non-ignored files in byte"
 REPO_DIR_COUNT_LIMIT = 260
 "The maximum number of directories in the repo"
-REPO_FILE_COUNT_LIMIT = 410
+REPO_FILE_COUNT_LIMIT = 430
 "The maximum number of files in the repo"
 REPO_HARD_FILE_SIZE_LIMIT = 300000
 "Maximum hard file size limit"
@@ -47,7 +47,8 @@ def test_repo_validity():
                       "*/imagestag/image.py", "*/slidestag/widget.py",
                       "*/data/scistag_essentials.zip",
                       "*/data/scistag_vector_emojis_0_0_2.zip",
-                      "*/file_source.py", "*/visual_log.py"
+                      "*/file_source.py", "*/visual_log.py",
+                      "*/visual_log_builder.py"
                       ]
 
     too_large_files = \
