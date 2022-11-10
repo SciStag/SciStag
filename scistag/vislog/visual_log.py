@@ -841,7 +841,7 @@ class VisualLog:
                    public_ips: str | list[str] | None = None,
                    builder: BuilderTypes | None = None,
                    continuous: bool | None = None,
-                   wait: bool = True,
+                   wait: bool = False,
                    auto_clear: bool | None = None,
                    overwrite: bool | None = None,
                    mt: bool = True,

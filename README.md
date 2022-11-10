@@ -21,7 +21,7 @@ Build Status
 [![PyPi Version](https://img.shields.io/pypi/v/SciStag.svg)](https://pypi.python.org/pypi/SciStag)
 [![Documentation Status](https://readthedocs.org/projects/scistag/badge/?version=latest)](https://scistag.readthedocs.io/en/latest/?badge=latest)
 [![Coverage](https://coveralls.io/repos/github/SciStag/SciStag/badge.svg?branch=main)](https://coveralls.io/github/SciStag/SciStag)
-[![Pylint](https://raw.githubusercontent.com/SciStag/SciStag/v0.0.2/docs/source/generated/pylint.svg)](https://coveralls.io/github/SciStag/SciStag)
+[![Pylint](https://raw.githubusercontent.com/SciStag/SciStag/v0.0.3/docs/source/generated/pylint.svg)](https://coveralls.io/github/SciStag/SciStag)
 
 [![Ubuntu Unittests Status](https://github.com/scistag/scistag/workflows/Ubuntu%20Unittests/badge.svg)](https://github.com/scistag/scistag/actions?query=workflow%3A%22Ubuntu+Unittests%22)
 
@@ -31,52 +31,47 @@ Build Status
 
 ---
 
-This project is still under heavy development and in a very early stage - feel free to experiment with the modules and
-examples which are already provided.
+This project is still under heavy development and in a very early stage -
+feel free to experiment with the modules and examples which are already
+provided.
 
-The goal of **SciStag** is to bundle the strengths of the many small, awesome Python technologies from OpenCV via Flask
-to Pandas and enable users to combine these libraries and build awesome data driven solutions with a minimum amount of
+The goal of **SciStag** is to bundle the strengths of the many small, awesome
+Python technologies from OpenCV via Flask to Pandas and enable users to combine
+these libraries and build awesome data driven solutions with a minimum amount of
 code.
 
 SciStag currently consists of the following so called **stags**:
 
-## SlideStag
-
-- Building interactive presentations in Python using the tools you love with a minimum of code.
-- SlideStag4Flask lets you host your interactive presentation as a browser application
-- SlideStag4Flutter lets you interact with your solution from an iPad (and from Android device soon too)
-- SlideStag4Kivy lets you integrate your solution into or host it via [Kivy](https://github.com/kivy/kivy).
-
-## ImageStag
-
-- Image analysis and modification made easy by combining the strengths of PILLOW, OpenCV and SKImage.
-
-## MediaStag
-
-- Easy integration of streaming media data such as videos into your solution.
-
-## DataStag
-
-- Low-latency inter-container and -process exchange of image and other binary data for Computer Vision and other data
-  intensive microservice architectures.
-
-## RemoteStag
-
-- Remote and asynchronous task execution - such as a neural network inference
-
-## WebStag
-
-* Helpful tools for accessing and processing web data
-
-## FileStag (planned)
-
-* Tools for handling local file and archive data.
-
-## CloudStag (planned)
-
-* Even easier access to cloud services of Azure, AWS & Co.
-
-... more details and examples to come ;-). Estimated official release: Summer 2023.
+<table>
+<tr><td><b>VisualLog</b></td>
+<td>Allows the dynamic creation of documentation in HTML, Markdown and text format
+and the fast data evaluation through its built-in in-place reload of Python
+modules so you can quickly and efficiently dive into and browse through your 
+data, evaluate different parameters quickly etc.
+</td></tr>
+<tr><td><b>ImageStag</b></td>
+<td>Image analysis and modification made easy by combining the strengths of PILLOW, OpenCV and SKImage.
+</td>
+</tr>
+<tr><td><b>MediaStag</b></td>
+<td>Easy integration of streaming media data such as videos into your solution.</td>
+</tr>
+<tr><td><b>DataStag</b></td>
+<td>Low-latency inter-container and -process exchange of image and other binary data for Computer Vision and other data
+  intensive microservice architectures.</td></tr>
+<tr><td><b>RemoteStag</b></td>
+<td>Remote and asynchronous task execution - such as a neural network inference</td>
+</tr>
+<tr><td><b>WebStag</b></td>
+<td>Helpful tools for accessing, processing web data and the easy provision
+of Python components as local microservices.</td></tr>
+<tr><td><b>FileStag</b>
+</td>
+<td>
+Tools for handling for large amount of files in a data engineering process 
+such as easy scanning and handling data in an Azure Storage.
+</td></tr>
+</table>
 
 ---
 
@@ -84,13 +79,29 @@ SciStag currently consists of the following so called **stags**:
 
 SciStag comes completely bundled with all required standard components.
 
-`pip install scistag[full]` or when using poetry `poetry add scistag[full]` and you are ready to go! :)
+`pip install scistag[full]` or when using poetry `poetry add scistag[full]` and
+you are ready to go! :)
 
-### Optional components
+If you do not want to install advanced components such as Kivy you are also fine
+with a more light-weighted
 
-* ImageStag (and other components using ImageStag) support the rendering of HTML and websites via
-  [imgkit](https://pypi.org/project/imgkit/). If you do not use any of our pre-built Docker images please follow the
-  instructions on https://pypi.org/project/imgkit/ for your operating system if you want to make use of HTML rendering.
+`pip install scistag[logstag,flask]`
+
+## Getting started
+
+You can already find several cool
+demos [here](https://github.com/SciStag/SciStag/tree/main/scistag/examples) on
+GitHub.
+
+The most advanced and central component of SciStag is currently definitely **
+VisualLog** which
+lets you create log data and documentation very efficiently with a Jupyter-like
+feeling but without loosing all the awesome code editing features of your
+IDEs such as Visual Studio Code or PyCharm.
+
+You can find the demos for **VisualLog** in the [
+vislog](https://github.com/SciStag/SciStag/tree/main/scistag/examples/vislog)
+examples folder.
 
 ## License
 
@@ -102,27 +113,40 @@ Released under the terms of the **MIT License**.
 
 The SciStag module on PyPi is bundled with the following data:
 
-* The [Roboto](https://fonts.google.com/specimen/Roboto) font - licensed and distributed under the terms of
-  the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-* The [Roboto Flex](https://github.com/googlefonts/roboto-flex) font - licensed under
+* The [Roboto](https://fonts.google.com/specimen/Roboto) font - licensed and
+  distributed under the terms of
+  the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+  .
+* The [Roboto Flex](https://github.com/googlefonts/roboto-flex) font - licensed
+  under
   the [SIL Open Font License 1.1](http://scripts.sil.org/cms/scripts/page.php?item_id=OFL_web)
 * The [JetBrains Mono](https://www.jetbrains.com/lp/mono/) font - licensed under
-  the [SIL Open Font License 1.1](http://scripts.sil.org/cms/scripts/page.php?item_id=OFL_web).
-* [Iconic font](https://github.com/Templarian/MaterialDesign-Webfont) by the Material Design Icons community covered
+  the [SIL Open Font License 1.1](http://scripts.sil.org/cms/scripts/page.php?item_id=OFL_web)
+  .
+* [Iconic font](https://github.com/Templarian/MaterialDesign-Webfont) by the
+  Material Design Icons community covered
   by [SIL Open Font License 1.1](http://scripts.sil.org/cms/scripts/page.php?item_id=OFL_web)
-* Emojis and country flags from the [Noto Emoji](https://github.com/googlefonts/noto-emoji) project. Tools and most
-  image resources are under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
+* Emojis and country flags from
+  the [Noto Emoji](https://github.com/googlefonts/noto-emoji) project. Tools and
+  most
+  image resources are under
+  the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0)
+  .
     * Flag images under the public domain or otherwise exempt from copyright.
-* The emoji unicode character name mappings and details are based upon the unicode data files, Copyright © 1991-2022
-  Unicode, Inc, licensed under the terms of the [UNICODE, INC. LICENSE AGREEMENT](https://www.unicode.org/license.txt)
+* The emoji unicode character name mappings and details are based upon the
+  unicode data files, Copyright © 1991-2022
+  Unicode, Inc, licensed under the terms of
+  the [UNICODE, INC. LICENSE AGREEMENT](https://www.unicode.org/license.txt)
 
 ### Third-party source code
 
-* Contains portions of code from [imkgit](https://github.com/jarrekk/imgkit), Copyright (C) 2016 Cory Dolphin, Olin
+* Contains portions of code from [imkgit](https://github.com/jarrekk/imgkit),
+  Copyright (C) 2016 Cory Dolphin, Olin
   College, released under the terms of the **MIT License**.
 
 ## Contributors
 
-SciStag is developed by Michael Ikemann / [@Alyxion](https://github.com/Alyxion). - Feel free to reach out to me
+SciStag is developed by Michael Ikemann / [@Alyxion](https://github.com/Alyxion)
+. - Feel free to reach out to me
 via [LinkedIn](https://www.linkedin.com/in/michael-ikemann/).
 

@@ -39,7 +39,8 @@ def test_basics_logging_methods():
     vl.test.checkpoint()
     vl.test.begin("Just a piece of text")
     vl.code("How about a little bit of source code?")
-    vl.test.assert_cp_diff(hash_val="4effb382e6beccb1e0641600787684b3")
+    vl.hr()
+    vl.test.assert_cp_diff(hash_val="42767b028be7e63e9ea362c03010d742")
     assert not vl.target_log.is_micro
 
 
