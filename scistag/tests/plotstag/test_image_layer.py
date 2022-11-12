@@ -109,7 +109,7 @@ def test_transparent_image():
     Tests plotting an alpha-transparent image
     """
     vl.test.begin("Plotting transparent images")
-    stag_emoji = render_emoji(":deer:", size=505)
+    stag_emoji = render_emoji(":deer:")
     image = Figure().add_plot().add_image(stag_emoji, size_ratio=1.0).render()
     vl.test.assert_image("stag_plot_alpha_transparent",
-                    image, 'db94e195188cc3efafd84606aa7fe39a')
+                    image, '9e35dbf69b9cb5f31e78379704339400')

@@ -17,9 +17,6 @@ class FilePath:
 
     SEP = os.path.sep
     "The OS specific path separator"
-    WINDOWS = ("CYGWIN" in platform.system().upper() or
-               "WINDOWS" in platform.system().upper())
-    "Defines if we are running on Windows"
 
     @staticmethod
     def dirname(filename: str, slash: bool = True) -> str:

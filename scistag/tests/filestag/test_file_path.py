@@ -3,6 +3,7 @@ Defines the tests for the FilePath class
 """
 import os.path
 
+from scistag.common import WINDOWS
 from scistag.filestag import FilePath
 
 
@@ -14,7 +15,7 @@ def test_filepath_basics():
     # Test basename
     assert FilePath.basename("/home/user/file.txt") == "file.txt"
     # Test absolute path name resolving
-    if FilePath.WINDOWS:
+    if WINDOWS:
         assert FilePath.absolute("C:/temp/../file.txt") == "C:/file.txt"
     else:
         assert FilePath.absolute("/home/user/../file.txt") == "/home/file.txt"
@@ -24,7 +25,7 @@ def test_filepath_basics():
     assert FilePath.absolute_comb("test.txt",
                                   "/home/data/../") == "/home/test.txt"
     # Test relative absolute path to calling file
-    if not FilePath.WINDOWS:
+    if not WINDOWS:
         script_dir = FilePath.dirname(__file__)
         assert FilePath.absolute_comb(
             "__index__.py") == script_dir + "/" + "__index__.py"

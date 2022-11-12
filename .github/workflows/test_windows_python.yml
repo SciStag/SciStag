@@ -10,16 +10,17 @@ jobs:
     environment: tests
     steps:
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+          cache: 'poetry'
       - uses: snok/install-poetry@v1
         with:
           version: 1.2.2
           virtualenvs-create: true
           virtualenvs-in-project: true
       - run: C:/Users/runneradmin/.local/bin/poetry install -E "full" --with dev --no-interaction --no-root
-      - run: C:/Users/runneradmin/.local/bin/poetry run python -m scistag.addons install emojis.svg
+      # - run: C:/Users/runneradmin/.local/bin/poetry run python -m scistag.addons install emojis.svg
       - run: C:/Users/runneradmin/.local/bin/poetry run coverage run -m pytest ./scistag/tests
         env:
           AZ_TEST_SOURCE_KEY: "${{ secrets.AZ_TEST_SOURCE_KEY }}"
