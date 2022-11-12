@@ -57,8 +57,8 @@ class Notebook:
 
         :param filename: The target filename
         """
-        with open(filename, "w", encoding="utf-8") as nb_file:
-            nb_file.write(json.dumps(self.notebook, indent=1))
+        with open(filename, "w", encoding="utf-8", newline='\n') as nb_file:
+            json.dump(self.notebook, nb_file, indent=1)
 
     def parse(self):
         """

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import inspect
 import os.path
+import platform
 
 
 class FilePath:
@@ -14,20 +15,32 @@ class FilePath:
     extension of  a file.
     """
 
+    SEP = os.path.sep
+    "The OS specific path separator"
+    WINDOWS = ("CYGWIN" in platform.system().upper() or
+               "WINDOWS" in platform.system().upper())
+    "Defines if we are running on Windows"
+
     @staticmethod
-    def dirname(filename: str) -> str:
+    def dirname(filename: str, slash: bool = True) -> str:
         """
         Returns the directory name of a file
 
         As of now just a wrapper of os.path.dirname().
 
         :param filename: The file's name
+        :param slash: If passed it will normalize the path to Unix style using slashes only
+            which is supported by Windows and Linux in most cases.
+            True by default.
         :return: The directory the file is within
         """
-        return os.path.dirname(filename)
+        res = os.path.dirname(filename)
+        if slash:
+            res = res.replace("\\", "/")
+        return res
 
     @staticmethod
-    def norm_path(path: str) -> str:
+    def norm_path(path: str, slash: bool = True) -> str:
         """
         Normalizes a path, e.g. integrates relative path definitions such as ..
         and . into the path.
@@ -35,9 +48,15 @@ class FilePath:
         As of now just a wrapper of os.path.normpath().
 
         :param path: The path, e.g. /home/user/data/../documents
+        :param slash: If passed it will normalize the path to Unix style using slashes only
+            which is supported by Windows and Linux in most cases.
+            True by default.
         :return: The "cleaned" path, e.g. The path, e.g. /home/user/documents
         """
-        return os.path.normpath(path)
+        res = os.path.normpath(path)
+        if slash:
+            res = res.replace("\\", "/")
+        return res
 
     @staticmethod
     def exists(path: str) -> bool:
@@ -96,7 +115,7 @@ class FilePath:
         :param path: The relative path e.g. "./../data"
         :return: The absolute path, e.g. "/home/user/scripts/data"
         """
-        return os.path.abspath(path)
+        return os.path.abspath(path).replace("\\", "/")
 
     @classmethod
     def absolute_comb(cls, rel_path: str, absolute_path: str | None = None):

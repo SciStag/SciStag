@@ -33,13 +33,14 @@ def test_load():
     config_path = os.path.dirname(__file__) + "/dummy_config.json"
     ConfigStag.load_config_file(config_path, "testImport")
     assert ConfigStag.get("testImport.tests.connections.testConnection") == "connection://123"
-    os.environ["SC_testImport_tests_connections_testConnection"] = "connection://otherConnection"
-    ConfigStag.load_config_file(config_path, "testImport", environment="SC_testImport_")
-    assert ConfigStag.get("testImport.tests.connections.testConnection") == "connection://otherConnection"
-    os.environ["SC_testImport_tests_connections_testConnection"] = "connection://otherConnectionX"
-    os.environ["SC_testImport_value"] = "branchlessValue"
-    ConfigStag.load_config_file(config_path + "x123", "testImport", environment="SC_testImport_", required=False)
-    assert ConfigStag.get("testImport.tests.connections.testConnection") == "connection://otherConnectionX"
+    os.environ["SC_TEST_TESTCONNECTION"] = "connection://otherConnection"
+    ConfigStag.load_config_file(config_path, "testImport", environment="SC_TEST_")
+    assert ConfigStag.get("testImport.testconnection") == "connection://otherConnection"
+    os.environ["SC_TEST_CONNECTIONS_TESTCONNECTION"] = "connection://otherConnectionX"
+    os.environ["SC_TEST_VALUE"] = "branchlessValue"
+    ConfigStag.load_config_file(config_path + "x123", "testImport", environment="SC_TEST_", required=False)
+    assert ConfigStag.get("testImport.connections.testconnection") == "connection://otherConnectionX"
+    assert ConfigStag.get("testImport.value") == "branchlessValue"
     ConfigStag.load_config_file(config_path + "x123", "", environment="SC_testImport_", required=False)
     with pytest.raises(FileNotFoundError):
         ConfigStag.load_config_file(config_path + "x123", "testImport", environment="SC_testImport_", required=True)

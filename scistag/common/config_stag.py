@@ -100,7 +100,7 @@ class ConfigStag:
         for item, value in os.environ.items():
             if item.startswith(environment):
                 name_rest = item[len(environment):]
-                name_rest = name_rest.replace("_", ".")
+                name_rest = name_rest.replace("_", ".").lower()
                 if len(base_branch) > 1:
                     cls.set(base_branch + "." + name_rest, value)
                 else:
