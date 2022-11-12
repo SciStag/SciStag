@@ -30,5 +30,5 @@ def test_filepath_basics():
             "__index__.py") == script_dir + "/" + "__index__.py"
         # caller's path
         assert FilePath.script_path() == script_dir
-    # caller's script name
-    assert FilePath.script_filename() == __file__
+        # caller's script name
+        assert FilePath.script_filename() == __file__
