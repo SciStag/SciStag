@@ -24,10 +24,11 @@ def test_filepath_basics():
     assert FilePath.absolute_comb("test.txt",
                                   "/home/data/../") == "/home/test.txt"
     # Test relative absolute path to calling file
-    script_dir = FilePath.dirname(__file__)
-    assert FilePath.absolute_comb(
-        "__index__.py") == script_dir + "/" + "__index__.py"
-    # caller's path
-    assert FilePath.script_path() == script_dir
+    if not FilePath.WINDOWS:
+        script_dir = FilePath.dirname(__file__)
+        assert FilePath.absolute_comb(
+            "__index__.py") == script_dir + "/" + "__index__.py"
+        # caller's path
+        assert FilePath.script_path() == script_dir
     # caller's script name
     assert FilePath.script_filename() == __file__

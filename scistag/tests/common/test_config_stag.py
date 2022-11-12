@@ -44,14 +44,14 @@ def test_load():
     ConfigStag.load_config_file(config_path + "x123", "", environment="SC_testImport_", required=False)
     with pytest.raises(FileNotFoundError):
         ConfigStag.load_config_file(config_path + "x123", "testImport", environment="SC_testImport_", required=True)
-    os.environ["DB_Name"] = "mydb://url"
-    ConfigStag.map_environment("DB_Name", "tests.db.name")
+    os.environ["DB_NAME"] = "mydb://url"
+    ConfigStag.map_environment("DB_NAME", "tests.db.name")
     assert ConfigStag.get("tests.db.name") == "mydb://url"
     ConfigStag.map_environment("DB_Name_Does_Not_Exist", "tests.db.name")
     assert ConfigStag.get("tests.db.name") == "mydb://url"
     ConfigStag.load_config_file(config_path, "", required=False)
-    os.environ["SC_TestValue"] = "justATest"
-    ConfigStag.map_environment("SC_TestValue", "testValue")
+    os.environ["SC_TESTVALUE"] = "justATest"
+    ConfigStag.map_environment("SC_TESTVALUE", "testValue")
     assert ConfigStag.get("testValue") == "justATest"
     ConfigStag.get("invalidBranch.value")
     assert ConfigStag.get("invalidBranch.value", "default") == "default"
