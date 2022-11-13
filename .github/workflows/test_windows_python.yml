@@ -1,13 +1,12 @@
-name: Ubuntu Unittests
+name: Windows Unittests
 
 on:
   push:
-  #    branches: [master]
   pull_request:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     environment: tests
     steps:
       - uses: actions/checkout@v2
@@ -17,18 +16,12 @@ jobs:
           poetry-version: 1.2.2
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: '3.10'
           cache: 'poetry'
       - run: poetry install -E "full" --with dev --no-interaction --no-root
-      - run: |
-          poetry run coverage run -m pytest ./scistag/tests
-          poetry run coverage lcov -i
+      - run: poetry run python -m scistag.addons install emojis.svg
+      - run: poetry run coverage run -m pytest ./scistag/tests
         env:
           AZ_TEST_SOURCE_KEY: "${{ secrets.AZ_TEST_SOURCE_KEY }}"
           TEST_RELEASE: 1
           SCISTAG_FULL_TEST: 1
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: coverage.lcov

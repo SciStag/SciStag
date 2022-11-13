@@ -9,6 +9,9 @@ from scistag.imagestag.canvas import Canvas
 
 from . import vl, skip_imagestag
 
+skip_imagestag_fonts = skip_imagestag
+"Defines if font tests shall be skipped"
+
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
 def test_canvas():
@@ -46,7 +49,7 @@ def test_rect():
     vl.test.assert_image("rect", canvas, '103f9fc339e7d6db708aa78ab50fcbaf')
 
 
-@pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
+@pytest.mark.skipif(skip_imagestag_fonts, reason="ImageStag tests disabled")
 def test_image_in_image():
     """
     Tests the basic text rendering functionality
@@ -55,11 +58,13 @@ def test_image_in_image():
     sub_canvas = Canvas(size=(200, 200), default_color=Colors.WHITE)
     sub_canvas.text((50, 50), "Hello world!")
     canvas.draw_image(sub_canvas.to_image(), pos=(50, 50))
-    vl.test.assert_image("draw_image", canvas, "38f6657b49642b8f21b418bae81cd85c")
+    vl.test.assert_image("draw_image", canvas,
+                         '5945764a21be07673d3b1c5f52dfc741')
     canvas = Canvas(size=(300, 256), default_color=Colors.BLACK)
     canvas.add_offset_shift((50, 50))
     canvas.draw_image(sub_canvas.to_image(), pos=(0, 0))
-    vl.test.assert_image("draw_image", canvas, "38f6657b49642b8f21b418bae81cd85c")
+    vl.test.assert_image("draw_image", canvas,
+                         '5945764a21be07673d3b1c5f52dfc741')
 
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")

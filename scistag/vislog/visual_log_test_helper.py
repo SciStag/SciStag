@@ -131,7 +131,7 @@ class VisualLogTestHelper:
         """
         if hash_val is not None:
             output = io.BytesIO()
-            df.to_csv(output)
+            df.to_csv(output, lineterminator="\n")
             result_hash_val = hashlib.md5(output.getvalue()).hexdigest()
             if result_hash_val != hash_val:
                 self.builder.target_log.write_to_disk()
@@ -180,12 +180,13 @@ class VisualLogTestHelper:
             platform dependent (slight) data discrepancies.
         """
         if rounded is not None:
-            data = (data * (10 ** rounded)).astype(int)
+            data = (data * (10 ** rounded)).astype(np.int64)
         if hash_val is not None:
             if data.dtype == float:
                 raise NotImplementedError("Hashing not supported for float"
                                           "matrices")
-            result_hash_val = hashlib.md5(data.tobytes()).hexdigest()
+            bytes_val = data.tobytes()
+            result_hash_val = hashlib.md5(bytes_val).hexdigest()
             if result_hash_val != hash_val:
                 self.builder.target_log.write_to_disk()
                 raise AssertionError("Hash mismatch - "
