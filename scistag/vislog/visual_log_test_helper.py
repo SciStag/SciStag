@@ -288,21 +288,22 @@ class VisualLogTestHelper:
         if value != assumed:
             self.builder.log(
                 f"⚠️Hash validation failed!\nValue: "
-                f"{value}\nAssumed: {assumed}")
+                f"{value}\nAssumed: {assumed}",
+                level="error")
             self.builder.target_log.write_to_disk()
             raise AssertionError("Hash mismatch - "
-                                 f"Found: {value} - "
+                                 f"Found: {value}\n"
                                  f"Assumed: {assumed}")
         else:
             self.builder.log(f"{assumed} ✔")
 
-    def checkpoint(self):
+    def checkpoint(self, checkpoint_name: str):
         """
         Creates a checkpoint of the current data
         """
-        self.checkpoint_backups.append(
+        self.checkpoint_backups.append({"name": checkpoint_name, "lengths":
             [len(b"".join(value)) for key, value in
-             self.builder.target_log._logs.items()])
+             self.builder.target_log._logs.items()]})
 
     def assert_cp_diff(self, hash_val: str):
         """
@@ -314,7 +315,8 @@ class VisualLogTestHelper:
             the different manually and copy & paste the hash value once
             the result was verified.
         """
-        lengths = self.checkpoint_backups.pop()
+        last_checkpoint = self.checkpoint_backups.pop()
+        lengths = last_checkpoint["lengths"]
         difference = b''
         index = 0
         keys = []
@@ -337,5 +339,5 @@ class VisualLogTestHelper:
         :param text: The name to log
         :return: The log builder
         """
-        self.builder.sub(text, level=1)
+        self.builder.sub(text, level=3)
         return self.builder

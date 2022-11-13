@@ -1,6 +1,7 @@
 """
-Defines the class :class:`VisualLogTableLogger` which helps storing tabular
-data in a log.
+Defines the class :class:`VisualLogTableLogger` and
+:class:`VisualLogTableContext` which help to easily store tabular data in a
+log.
 """
 
 from __future__ import annotations
@@ -33,8 +34,10 @@ class VisualLogTableContext(VisualLogElementContext):
         """
         log = builder.target_log
         log.write_html(f'<table class="log_table">')
-        log.write_txt("\n", md=True)
-        closing_code = {"html": "</table><br>", "md": "\n", "txt": "\n"}
+        log.write_txt("\n", md=False)
+        log.write_md("<table>")
+        closing_code = {"html": "</table><br>", "md": "</table><br>",
+                        "txt": "\n"}
         super().__init__(builder, closing_code)
 
     def __enter__(self) -> VisualLogTableContext:
@@ -79,8 +82,9 @@ class VisualLogRowContext(VisualLogElementContext):
         """
         log = builder.target_log
         log.write_html(f'<tr>\n')
-        log.write_txt("| ", md=True)
-        closing_code = {"html": "</tr>", "md": "\n", "txt": "\n"}
+        log.write_txt("| ", md=False)
+        log.write_md("<tr>\n", no_break=True)
+        closing_code = {"html": "</tr>", "md": "</tr>", "txt": "\n"}
         super().__init__(builder, closing_code)
 
     def __enter__(self) -> VisualLogRowContext:
@@ -126,8 +130,9 @@ class VisualLogColumnContext(VisualLogElementContext):
         """
         log = builder.target_log
         log.write_html(f'<td>\n')
-        log.write_txt("| ", md=True)
-        closing_code = {"html": "</td>", "md": " |\n", "txt": " |\n"}
+        log.write_txt("| ", md=False)
+        log.write_md(f'<td>', no_break=True)
+        closing_code = {"html": "</td>", "md": "</td>", "txt": " |\n"}
         super().__init__(builder, closing_code)
 
     def __enter__(self) -> VisualLogColumnContext:
@@ -203,5 +208,12 @@ class VisualLogTableLogger:
             row_text = "| "
             for index, col in enumerate(row):
                 row_text += col + " | "
-            self.log.write_txt(row_text, md=True)
+            self.log.write_txt(row_text, md=False)
+        for row_index, row in enumerate(data):
+            row_text = "| "
+            for index, col in enumerate(row):
+                row_text += col + " | "
+            self.log.write_md(row_text)
+            if row_index == 0:
+                self.log.write_md("|" + "---|" * len(row))
         return self

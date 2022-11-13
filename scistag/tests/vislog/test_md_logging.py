@@ -10,7 +10,7 @@ def test_markdown():
     Tests the basic markdown functionality
     """
     vl.test.begin("Testing markdown logging")
-    vl.test.checkpoint()
+    vl.test.checkpoint("log.markdown.basic")
     vl.md("**Single line markdown**")
     vl.md("""
     

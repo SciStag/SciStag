@@ -4,6 +4,7 @@ Tests the numpy logging functions
 
 from unittest import mock
 
+import numpy
 import numpy as np
 import pytest
 
@@ -42,3 +43,20 @@ def test_np_assert():
     with pytest.raises(AssertionError):
         vl.test.assert_np("test_np_array", np_array, rounded=2,
                           hash_val="99140a9b8e68954a484e0de3c6861fc6")
+
+
+def test_np_logging():
+    """
+    Tests the basic logging of numpy arrays and vectors
+    """
+    vl.test.begin("Numpy single line vector")
+    vl.test.checkpoint("numpy.basics")
+    vl.np(numpy.array([1, 2, 3, 4, 5]))
+    vl.test.begin("Numpy single row matrix")
+    vl.np(numpy.array([[1, 2, 3, 4, 5]]))
+    vl.test.begin("Numpy single column matrix")
+    vl.np(numpy.array([[1], [2], [3], [4], [5]]))
+    vl.test.begin("Numpy matrix")
+    vl.np(np.identity(3), max_digits=4)
+    vl.br()
+    vl.test.assert_cp_diff('64abf164fb088767fa2e139d8ee34560')

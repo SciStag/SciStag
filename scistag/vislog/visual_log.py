@@ -108,8 +108,8 @@ class VisualLog:
                  ref_dir: str | None = None,
                  tmp_dir: str | None = None,
                  clear_target_dir: bool = False,
-                 log_to_disk=True,
-                 log_to_stdout=True,
+                 log_to_disk=False,
+                 log_to_stdout=False,
                  embed_images: bool | None = None,
                  continuous_write=False,
                  refresh_time_s=0.5,
@@ -135,9 +135,9 @@ class VisualLog:
         :param clear_target_dir: Defines if the target dir shall be deleted
             before starting (take care!)
         :param log_to_disk: Defines if the logger shall write it's results
-            to disk. True by default.
+            to disk. False by default.
         :param log_to_stdout: Defines if the system shall automatically log to
-            stdout via print as well
+            stdout via print as well. False by default.
         :param embed_images: Defines if images shall be directly embedded into
             the HTML log instead of being stored as separate files.
 
@@ -1477,4 +1477,5 @@ class VisualLog:
         self.flush()
 
 
-__all__ = ["VisualLog", "VisualLogStatistics", "HTML", "MD", "TXT"]
+__all__ = ["VisualLog", "VisualLogStatistics", "HTML", "MD", "TXT",
+           "TABLE_PIPE"]

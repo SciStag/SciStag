@@ -49,7 +49,7 @@ class Font:
                 PIL.ImageFont.truetype(source,
                                        size,
                                        index=index,
-                                       layout_engine=PIL.ImageFont.LAYOUT_BASIC)
+                                       layout_engine=PIL.ImageFont.Layout.BASIC)
         else:
             self._font_handle = None
             raise NotImplementedError(

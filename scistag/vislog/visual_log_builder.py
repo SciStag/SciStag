@@ -56,8 +56,6 @@ class VisualLogBuilder:
         """
         self.target_log: "VisualLog" = log
         "The main logging target"
-        self.forward_targets: dict[str, VisualLogBuilder] = {}
-        "List of logs to which all rendering commands shall be forwarded"
         from .visual_log_test_helper import VisualLogTestHelper
         self.test = VisualLogTestHelper(self)
         """
@@ -77,6 +75,13 @@ class VisualLogBuilder:
         
         Can also be called directly to add a simple table to the log.
         """
+        from .visual_time_logger import VisualLogTimeLogger
+        self.time = VisualLogTimeLogger(self)
+        """
+        Helper class for time measuring and logging times to the log
+        """
+        from .visual_log_basic_logger import VisualLogBasicLogger
+        self.log = VisualLogBasicLogger(self)
 
     def build_body(self):
         """
@@ -207,17 +212,15 @@ class VisualLogBuilder:
         """
         if not isinstance(text, str):
             text = str(text)
-        for element in self.forward_targets.values():
-            element.text(text)
         lines = html.escape(text)
         lines = lines.split("\n")
         for index, text in enumerate(lines):
-            self._add_html(f'{text}<br>\n')
+            self.add_html(f'{text}<br>\n')
             if index == len(lines) - 1:
-                self._add_md(f"{text}")
+                self.add_md(f"{text}\n")
             else:
-                self._add_md(f"{text}\\")
-            self._add_txt(text)
+                self.add_md(f"{text}\\")
+            self.add_txt(text)
         self.clip_logs()
         return self
 
@@ -231,17 +234,15 @@ class VisualLogBuilder:
         """
         if not isinstance(text, str):
             text = str(text)
-        for element in self.forward_targets.values():
-            element.text(text)
         lines = html.escape(text)
         lines = lines.split("\n")
         for index, text in enumerate(lines):
-            self._add_html(f'<a href="{link}">{text}</a><br>\n')
+            self.add_html(f'<a href="{link}">{text}</a><br>\n')
             if index == len(lines) - 1:
-                self._add_md(f"[{text}]({link})")
+                self.add_md(f"[{text}]({link})")
             else:
-                self._add_md(f"{text}\\")
-            self._add_txt(text)
+                self.add_md(f"{text}\\")
+            self.add_txt(text)
         self.clip_logs()
         return self
 
@@ -251,8 +252,8 @@ class VisualLogBuilder:
 
         :return: The builder
         """
-        self._add_html("<br>")
-        self._add_txt(" ", md=True)
+        self.add_html("<br>")
+        self.add_txt(" ", md=True)
         return self
 
     def page_break(self) -> VisualLogBuilder:
@@ -261,8 +262,8 @@ class VisualLogBuilder:
 
         :return: The builder
         """
-        self._add_html('<div style="break-after:page"></div>')
-        self._add_txt(
+        self.add_html('<div style="break-after:page"></div>')
+        self.add_txt(
             f"\n{'_' * 40}\n",
             md=True)
         return self
@@ -276,17 +277,15 @@ class VisualLogBuilder:
         :return: The builder
         """
         assert 0 <= level <= 5
-        for element in self.forward_targets.values():
-            element.sub(text)
         md_level = "#" * level
         escaped_lines = html.escape(text)
         for cur_row in escaped_lines.split("\n"):
-            self._add_html(f'<h{level}>{cur_row}</h{level}>\n')
-        self._add_md(f"{md_level} {text}")
-        if self._add_txt(text) and level <= 4:
+            self.add_html(f'<h{level}>{cur_row}</h{level}>\n')
+        self.add_md(f"{md_level} {text}")
+        if self.add_txt(text) and level <= 4:
             character = "=" if level < 2 else "-"
-            self._add_txt(character * len(text))
-        self._add_txt("")
+            self.add_txt(character * len(text))
+        self.add_txt("")
         self.clip_logs()
         return self
 
@@ -342,16 +341,14 @@ class VisualLogBuilder:
             text = "\n".join(lines)
         if exclude_targets is None:
             exclude_targets = set()
-        for element in self.forward_targets.values():
-            element.md(text)
         import markdown
         parsed = markdown.markdown(text)
         if MD not in exclude_targets:
-            self._add_md(text + "\n")
+            self.add_md(text + "\n")
         if HTML not in exclude_targets:
-            self._add_html(parsed + "\n")
+            self.add_html(parsed + "\n")
         if TXT not in exclude_targets:
-            self._add_txt(text)
+            self.add_txt(text)
         self.clip_logs()
         return self
 
@@ -361,8 +358,8 @@ class VisualLogBuilder:
 
         :return: The builder
         """
-        self._add_html("<hr>")
-        self._add_txt("---", md=True)
+        self.add_html("<hr>")
+        self.add_txt("---", md=True)
         return self
 
     def html(self, code: str) -> VisualLogBuilder:
@@ -371,10 +368,8 @@ class VisualLogBuilder:
 
         :param code: The html code to parse
         """
-        for element in self.forward_targets.values():
-            element.html(code)
-        self._add_md(code)
-        self._add_html(code + "\n")
+        self.add_md(code)
+        self.add_html(code + "\n")
         self.clip_logs()
         return self
 
@@ -385,20 +380,18 @@ class VisualLogBuilder:
         :param code: The code to execute
         :return: The builder
         """
-        for element in self.forward_targets.values():
-            element.code(code)
         escaped_code = html.escape(code).replace("\n", "<br>")
-        self._add_html(f'Code<br><table class="source_code"\n>'
-                       f'<tr><td style="padding: 5px;" align="left">\n'
-                       f'<code>{escaped_code}</code>\n'
-                       f'</td></tr></table><br><br>\n')
-        self._add_md(f"```\n{code}\n```")
-        self._add_txt(code)
+        self.add_html(f'Code<br><table class="source_code"\n>'
+                      f'<tr><td style="padding: 5px;" align="left">\n'
+                      f'<code>{escaped_code}</code>\n'
+                      f'</td></tr></table><br><br>\n')
+        self.add_md(f"```\n{code}\n```")
+        self.add_txt(code)
         self.clip_logs()
         return self
 
     @staticmethod
-    def _encode_html(text: str) -> str:
+    def encode_html(text: str) -> str:
         """
         Escaped text to html compatible text
 
@@ -408,140 +401,6 @@ class VisualLogBuilder:
         escaped = html.escape(text)
         res = escaped.encode('ascii', 'xmlcharrefreplace')
         return res.decode("utf-8")
-
-    def _log_advanced(self, text, level: LogLevel):
-        """
-        Detects tables and other objects in a log and pretty prints the tables
-        while keeping the other log data intact
-
-        :param text: The log text
-        :param level: The log level
-        """
-        lines = text.split("\n")
-        common_block = ""
-        cur_table = None
-        for line in lines:
-            if line.startswith(TABLE_PIPE):
-                if len(common_block) > 0:
-                    self.log(common_block, level=level)
-                    common_block = ""
-                if cur_table is None:
-                    cur_table = []
-                elements = [element.lstrip(" ").rstrip(" ") for element in
-                            line.split("|")]
-                if len(elements) > 2:
-                    elements = elements[1:-1]
-                cur_table.append(elements)
-            else:
-                # when back to normal mode visualize current in-progress element
-                if cur_table is not None:
-                    self.table(cur_table)
-                    cur_table = None
-                common_block += line + "\n"
-        if len(common_block) > 0:
-            self.log(common_block, level=level)
-
-    def log(self, *args: Any, level: LogLevel | str = LogLevel.INFO,
-            detect_objects: bool = False,
-            space: str = " "):
-        """
-        Adds a log text to the log
-
-        :param args: The text arguments to add to the log
-        :param level: The importance / category of the log entry
-        :param detect_objects: Defines if special objects such as tables shall
-            be detected and printed beautiful
-        :param space: The character or text to be used for spaces
-        :return:
-        """
-        if isinstance(level, str):
-            level = LogLevel(level)
-        elements = [str(element) for element in args]
-        text = space.join(elements)
-        if detect_objects and TABLE_PIPE in text:
-            self._log_advanced(text, level)
-            return
-        if text is None:
-            text = "None"
-        if not isinstance(text, str):
-            text = str(text)
-        for element in self.forward_targets.values():
-            element.log(text, level=level)
-        escaped_text = self._encode_html(text)
-        self._add_html(
-            f'<p class="logtext">{self._html_linebreaks(escaped_text)}</p>'
-            f'<br>\n')
-        self._add_md(f"```\n{text}\n```")
-        self._add_txt(text)
-        self.clip_logs()
-
-    def info(self, *args, **kwargs) -> VisualLogBuilder:
-        """
-        Logs an info text
-
-        :param args: The elements to log. Will be separated by space.
-        :param kwargs: Keyword arguments
-        """
-        self.log("[INFO]    ", *args, **kwargs)
-        return self
-
-    def debug(self, *args, **kwargs) -> VisualLogBuilder:
-        """
-        Logs an info text
-
-        :param args: The elements to log. Will be separated by space.
-        :param kwargs: Keyword arguments
-        """
-        self.log("[DEBUG]   ", *args, **kwargs)
-        return self
-
-    def warning(self, *args, **kwargs) -> VisualLogBuilder:
-        """
-        Logs an info text
-
-        :param args: The elements to log. Will be separated by space.
-        :param kwargs: Keyword arguments
-        """
-        self.log("[WARNING] ", *args, **kwargs)
-        return self
-
-    def error(self, *args, **kwargs) -> VisualLogBuilder:
-        """
-        Logs an info text
-
-        :param args: The elements to log. Will be separated by space.
-        :param kwargs: Keyword arguments
-        """
-        self.log("[ERROR]   ", *args, **kwargs)
-        return self
-
-    def critical(self, *args, **kwargs) -> VisualLogBuilder:
-        """
-        Logs a critical error
-
-        :param args: The elements to log. Will be separated by space.
-        :param kwargs: Keyword arguments
-        """
-        self.log("[CRITICAL]", *args, **kwargs)
-        return self
-
-    def log_timestamp(self, prefix: str = "", postfix: str = ""):
-        """
-        Logs a timestamp to the log
-
-        :param prefix: The text before the timestamp
-        :param postfix: The text after the timestamp
-        :return:
-        """
-        from datetime import datetime
-        dt_object = datetime.now()
-        cur_time = f"{str(dt_object.date())} {str(dt_object.time())}"
-        elements = [cur_time]
-        if len(prefix) > 0:
-            elements.insert(0, prefix)
-        if len(postfix) > 0:
-            elements.append(postfix)
-        self.log("".join(elements))
 
     def log_statistics(self):
         """
@@ -566,56 +425,61 @@ class VisualLogBuilder:
         """
         if name is None:
             name = "dataframe"
-        for element in self.forward_targets.values():
-            element.df(name=name, df=df, index=index)
         if self.target_log.use_pretty_html_table:
             try:
                 import pretty_html_table
                 html_code = \
-                    pretty_html_table.build_table(df,
-                                                  self.target_log.html_table_style,
-                                                  index=index)
+                    pretty_html_table. \
+                        build_table(df,
+                                    self.target_log.html_table_style,
+                                    index=index)
             except ModuleNotFoundError:  # pragma: no-cover
                 html_code = df.to_html(index=index)
         else:
             html_code = df.to_html(index=index)
-        self._add_html(html_code + "\n")
+        self.add_html(html_code + "\n")
         if self.target_log.use_tabulate:
             try:
                 import tabulate
-                md_table = df.to_markdown(index=index,
-                                          tablefmt=self.target_log.md_table_format)
-                self._add_md(md_table)
-                self._add_txt(
+                md_table = \
                     df.to_markdown(index=index,
-                                   tablefmt=self.target_log.txt_table_format) + "\n")
+                                   tablefmt=self.target_log.md_table_format)
+                self.add_md(md_table)
+                self.add_txt(
+                    df.to_markdown(index=index,
+                                   tablefmt=self.target_log.txt_table_format) +
+                    "\n")
                 return
             except ModuleNotFoundError:  # pragma: no-cover
                 pass
         else:
             string_table = df.to_string(index=index) + "\n"
             if self.target_log.markdown_html:
-                self._add_md(html_code)
+                self.add_md(html_code)
             else:
-                self._add_md(string_table)
-            self._add_txt(string_table)
+                self.add_md(string_table)
+            self.add_txt(string_table)
         self.target_log.clip_logs()
 
-    def np(self, data: np.ndarray, digits=2):
+    def np(self, data: np.ndarray, max_digits=2):
         """
         Adds a numpy matrix or vector to the log
 
         :param data: The data frame
-        :param digits: The number of digits with which the numbers shall be
+        :param max_digits: The number of digits with which the numbers shall be
             formatted.
         """
         if len(data.shape) >= 3:
             raise ValueError("Too many dimensions")
-        if (data.shape[0] > MAX_NP_ARRAY_SIZE or
-                data.shape[1] > MAX_NP_ARRAY_SIZE):
-            raise ValueError("Data too large")
-        data = [[f"{round(element, digits)}" for element in row] for row in
-                data]
+        if len(data.shape) == 1:
+            data = [[f"{round(element, max_digits)}" for element in data]]
+        else:
+            if (data.shape[0] > MAX_NP_ARRAY_SIZE or
+                    data.shape[1] > MAX_NP_ARRAY_SIZE):
+                raise ValueError("Data too large")
+            data = [[f"{round(element, max_digits)}" for element in row] for row
+                    in
+                    data]
         self.table(data)
 
     def figure(self, figure: plt.Figure | plt.Axes | Figure | Plot,
@@ -651,7 +515,10 @@ class VisualLogBuilder:
             _out_image_data.write(image_data)
         self.image(image_data, name, alt_text=alt_text)
 
-    def pyplot(self) -> "PyPlotLogContext":
+    def pyplot(self,
+               assertion_name: str | None = None,
+               assertion_hash: str | None = None
+               ) -> "PyPlotLogContext":
         """
         Opens a matplotlib context to add a figure directly to the plot.
 
@@ -659,15 +526,24 @@ class VisualLogBuilder:
         can safely plot using this function and matplotlib from multiple
         threads at once.
 
+        :param assertion_name: If the figure shall be asserted, it's unique
+            identifier.
+        :param assertion_hash: If the figure shall be asserted via hash the
+            hash value of its image's pixels.
+
         ..  code-block:
 
             with vl.pyplot() as plt:
                 figure = plt.figure(figsize=(8,4))
                 plt.imshow(some_image_matrix)
+
+
         """
         from scistag.vislog.pyplot_log_context import \
             PyPlotLogContext
-        log_context = PyPlotLogContext(self)
+        log_context = PyPlotLogContext(self,
+                                       assertion_name=assertion_name,
+                                       assertion_hash=assertion_hash)
         return log_context
 
     def log_dict(self, dict_or_list: dict | list):
@@ -686,7 +562,7 @@ class VisualLogBuilder:
         if self.target_log.txt_export:
             dict_tree_txt = dict_to_bullet_list(dict_or_list, level=0,
                                                 bold=False)
-            self._add_txt(dict_tree_txt)
+            self.add_txt(dict_tree_txt)
 
     def log_list(self, list_data: list):
         """
@@ -713,7 +589,7 @@ class VisualLogBuilder:
         return hashed_name
 
     @staticmethod
-    def _html_linebreaks(text: str) -> str:
+    def html_linebreaks(text: str) -> str:
         """
         Replaces linebreaks through html linebreaks
 
@@ -722,18 +598,24 @@ class VisualLogBuilder:
         """
         return text.replace("\n\r", "\n").replace("\n", "<br>")
 
-    def _add_html(self, html_code: str):
+    def add_html(self, html_code: str):
         """
-        The HTML code to add
+        Adds html code directly of the HTML section of this log.
+
+        Do not use this for logging to multiple output formats. For that
+        case use :meth:`html`.
 
         :param html_code: The html code
         :return: True if txt logging is enabled
         """
         self.target_log.write_html(html_code)
 
-    def _add_md(self, md_code: str, no_break: bool = False):
+    def add_md(self, md_code: str, no_break: bool = False):
         """
-        The markdown code to add
+        Adds markdown code directly of the markdown section of this log.
+
+        Do not use this for logging to multiple output formats. For that
+        case use :meth:`md`.
 
         :param md_code: The markdown code
         :param no_break: If defined no line break will be added
@@ -741,9 +623,12 @@ class VisualLogBuilder:
         """
         self.target_log.write_md(md_code, no_break=no_break)
 
-    def _add_txt(self, txt_code: str, console: bool = True, md: bool = False):
+    def add_txt(self, txt_code: str, console: bool = True, md: bool = False):
         """
-        Adds text code to the txt / console log
+        Adds html code directly of the text and console section of this log.
+
+        Do not use this for logging to multiple output formats. For that
+        case use :meth:`txt`.
 
         :param txt_code: The text to add
         :param console: Defines if the text shall also be added ot the
@@ -770,7 +655,7 @@ class VisualLogBuilder:
         """
         return self.target_log.get_temp_path(relative)
 
-    def reserve_unique_name(self, name: str):
+    def reserve_unique_name(self, name: str) -> str:
         """
         Reserves a unique name within the log, e.g. to store an object to
         a unique file.
@@ -778,4 +663,13 @@ class VisualLogBuilder:
         :param name: The desired name
         :return: The effective name with which the data shall be stored
         """
-        self.target_log.reserve_unique_name(name)
+        return self.target_log.reserve_unique_name(name)
+
+    def flush(self) -> VisualLogBuilder:
+        """
+        Finalizes the pages so they can be dumped and/or read
+
+        :return: The builder
+        """
+        self.target_log.flush()
+        return self

@@ -1,4 +1,5 @@
 import shutil
+from logging import ERROR
 from unittest.mock import patch
 
 import numpy as np
@@ -6,6 +7,7 @@ import pytest
 
 from . import vl
 from ...emojistag import render_emoji
+from ...logstag import LogLevel
 from ...logstag.console_stag import Console
 from ...vislog import VisualLog
 from ...plotstag import Figure, MPLock
@@ -26,21 +28,21 @@ def test_basics_logging_methods():
     assert vl.test.load_ref("example_ref") == b"1234"
     vl.sub_test("Titles and sub titles")
     # test title
-    vl.test.checkpoint()
+    vl.test.checkpoint("log.title")
     vl.title("Title")
     vl.test.assert_cp_diff(hash_val="86f74d4efab7c70690f1e86e9efec8dc")
     # test sub titles
-    vl.test.checkpoint()
+    vl.test.checkpoint("log.subtitle")
     vl.sub("A sub title")
     vl.sub_x3("Sub sub title")
     vl.sub_x4("Sub sub sub title")
     vl.test.assert_cp_diff(hash_val="e69598020011731a12ae74e4d1a259e0")
     vl.sub_test("Text and code")
-    vl.test.checkpoint()
+    vl.test.checkpoint("log.code")
     vl.test.begin("Just a piece of text")
     vl.code("How about a little bit of source code?")
     vl.hr()
-    vl.test.assert_cp_diff(hash_val="42767b028be7e63e9ea362c03010d742")
+    vl.test.assert_cp_diff(hash_val='f98803dc5b4000303ac0e223e354872d')
     assert not vl.target_log.is_micro
 
 
@@ -225,3 +227,49 @@ def test_runner():
     assert log.invalid == False
     log.invalidate()
     assert log.invalid
+
+
+def test_statistics():
+    """
+    Tests the logging of statistics
+    :return:
+    """
+    log: VisualLog = VisualLog(max_fig_size=(128, 128), log_to_disk=False,
+                               image_format=("jpg", 80))
+    log.default_builder.log_statistics()
+    body = log.render().get_body("html")
+    assert b"total updates" in body
+
+
+def test_simple_logging():
+    """
+    Tests the simple logging via info, critical etc.
+    """
+    log: VisualLog = VisualLog()
+    cl = log.default_builder
+    cl.test.begin("Basic logging methods")
+    cl.log.info("Info text")
+    cl.log.debug("Just a dev")
+    cl.log.warning("Warning text")
+    cl.log.error("Error text")
+    cl.log.critical("Uh oh")
+    cl.log("Direct logging")
+    cl.log("This is an error", level=LogLevel.ERROR)
+    cl.log("This is also an error", level="error")
+    cl.log(None)
+    vl.embed(log.render())
+
+
+def test_adv_logging():
+    """
+    Tests the advanced logging methods which embed known patterns from
+    a serial source
+    """
+    vl.test.begin("Advanced logging w/ tables")
+    vl.log("|ColA|Colb|ColC|\n|1|2|3|", detect_objects=True)
+    vl.br()
+    vl.log("With text before\n|ColA|Colb|ColC|\n|1|2|3|\nWith follow up text",
+           detect_objects=True)
+    vl.br()
+    vl.log("|ColA|Colb|ColC|\n|1|2|3|\nWith follow up text",
+           detect_objects=True)

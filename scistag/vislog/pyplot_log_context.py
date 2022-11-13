@@ -20,16 +20,43 @@ class PyPlotLogContext:
     Is created via VisualLogBuilder.pyplot, see :meth:`VisualLogBuilder.pyplot`
     """
 
-    def __init__(self, target_log: "VisualLogBuilder"):
+    def __init__(self, target_log: "VisualLogBuilder",
+                 assertion_name: str | None = None,
+                 assertion_hash: str | None = None):
+        """
+        :param target_log: Defines the target into which we shall log
+        :param assertion_name: If the figure shall be asserted, it's unique
+            identifier.
+        :param assertion_hash: If the figure shall be asserted via hash the
+            hash value of its image's pixels.
+        """
         from scistag.plotstag import MPLock
         self.target_log = target_log
+        "The log into which we shall write when the figure is finished"
         self.mp_lock = MPLock()
+        """
+        The pyplot thread access lock so only one thread can use pyplot as at 
+        time
+        """
         self.plt_handle = None
+        "The plot handle to the matplotlib.pyplot library"
+        self.assertion_name = assertion_name
+        "If the figure shall be asserted, it's unique identifier"
+        self.assertion_hash = assertion_hash
+        """
+        If the figure shall be asserted via hash the hash value of its image's 
+        pixels.
+        """
 
     def __enter__(self):
         self.plt_handle = self.mp_lock.__enter__()
         return self.plt_handle
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.target_log.figure(self.plt_handle.gcf())
+        if self.assertion_name is None:  # basic logging?
+            self.target_log.figure(self.plt_handle.gcf())
+        else:  # logging with assert
+            self.target_log.test.assert_figure(self.assertion_name,
+                                               self.plt_handle.gcf(),
+                                               hash_val=self.assertion_hash)
         self.mp_lock.__exit__(exc_type, exc_val, exc_tb)
