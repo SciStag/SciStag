@@ -23,7 +23,7 @@ scistag.tests.ensure_config()
 
 
 @pytest.mark.skipif(
-    not bool(ConfigStag.get("testConfig.testGitIntegrity", False)),
+    not bool(ConfigStag.get("testConfig.testGitIntegrity", True)),
     reason="Git integrity check disabled")
 def test_repo_validity():
     """
