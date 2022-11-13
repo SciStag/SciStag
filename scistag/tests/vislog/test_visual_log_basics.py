@@ -1,5 +1,7 @@
+import os.path
 import shutil
 from logging import ERROR
+from unittest import mock
 from unittest.mock import patch
 
 import numpy as np
@@ -7,6 +9,7 @@ import pytest
 
 from . import vl
 from ...emojistag import render_emoji
+from ...filestag import FilePath, FileStag
 from ...logstag import LogLevel
 from ...logstag.console_stag import Console
 from ...vislog import VisualLog
@@ -20,6 +23,9 @@ def test_basics_logging_methods():
     vl.md("* Just a list\n"
           "* of bullet\n"
           "* points")
+    vl.md("* Just a list\n"
+          "* of bullet\n"
+          "* points", exclude_targets={"html", "md"})
     temp_path = vl.get_temp_path()
     assert len(temp_path)
     assert vl.get_temp_path("sub_path") == temp_path + "/sub_path"
@@ -42,8 +48,18 @@ def test_basics_logging_methods():
     vl.test.begin("Just a piece of text")
     vl.code("How about a little bit of source code?")
     vl.hr()
-    vl.test.assert_cp_diff(hash_val='f98803dc5b4000303ac0e223e354872d')
+    vl.page_break()
+    vl.test.assert_cp_diff(hash_val='deb09ddaa3e0f23720a6536af11da0c9')
     assert not vl.target_log.is_micro
+    vl.test.checkpoint("log.link")
+    vl.link("SciStag", "https://github.com/scistag/scistag")
+    vl.add("Test text")
+    vl.add(123)
+    vl.add(123.456)
+    vl.add([123, 456])
+    vl.add({"someProp": "someVal"})
+    vl.test.assert_cp_diff(hash_val='1041304ae2e7d328eca4e0f06f4ba8a6')
+    assert vl.max_fig_size.width > 100
 
 
 def test_errors():
@@ -213,8 +229,14 @@ def test_sub_logs(_):
     log.begin_sub_log("SubLogB", max_fig_size=(128, 128))
     log.default_builder.log("SubLogB")
     log.end_sub_log()
+    log.finalize()
     assert b"SubLogA" in log.sub_log_data["SubLogA"]["html"]
     assert b"SubLogB" in log.sub_log_data["SubLogB"]["html"]
+    with pytest.raises(AssertionError):
+        log.end_sub_log()
+    with pytest.raises(AssertionError):
+        for x in range(101):
+            log.begin_sub_log("tooManyRecursions")
 
 
 def test_runner():
@@ -273,3 +295,47 @@ def test_adv_logging():
     vl.br()
     vl.log("|ColA|Colb|ColC|\n|1|2|3|\nWith follow up text",
            detect_objects=True)
+
+
+def test_clear_log():
+    """
+    Tests writing logs to disk and clearing the log directory
+    """
+    bp = os.path.dirname(__file__)
+    try:
+        shutil.rmtree(f"{bp}/clogs")
+    except FileNotFoundError:
+        pass
+    log = VisualLog(log_to_disk=True, target_dir=f"{bp}/clogs",
+                    clear_target_dir=True, formats_out={"html", "md"})
+    log.default_builder.log("Something")
+    log.write_to_disk()
+    data = log.get_file("index.md")
+    assert log.get_file("../../evil/index.md") is None
+    assert len(data) >= 5
+    assert FilePath.exists(f"{bp}/clogs")
+    new_log = VisualLog(log_to_disk=True, target_dir=f"{bp}/clogs",
+                        clear_target_dir=True, formats_out={"html", "md"})
+    new_log.write_to_disk()
+    data = FileStag.load(f"{bp}/clogs/index.md")
+    assert len(data) <= 5
+
+
+def test_printing():
+    """
+    Tests continuous printing and writing to disk
+    """
+    console = Console()
+    console.progressive = True
+    bp = os.path.dirname(__file__)
+    log = VisualLog(log_to_disk=True, target_dir=f"{bp}/dlogs",
+                    formats_out={"html", "md", "txt"},
+                    continuous_write=True,
+                    log_to_stdout=True)
+    log.add_console(console)
+    with mock.patch('builtins.print') as printer:
+        log.write_html("<br>")
+        log.write_txt("txt")
+        log.write_md("md")
+        assert printer.called
+    log.render()

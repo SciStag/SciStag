@@ -48,13 +48,16 @@ class VisualMicroLock:
         self.sub_x4 = self.text
         "Replacement for :meth:`VisualLogBuilder.sub_x4`"
         self.sub_test = self.text
-        "Replacement for :meth:`VisualLogBuilder.sbu_test`"
+        "Replacement for :meth:`VisualLogBuilder.sub_test`"
         self.md = self.text
         "Replacement for :meth:`VisualLogBuilder.md`"
         self.html = self.text
         "Replacement for :meth:`VisualLogBuilder.html`"
         self.log_to_stdout = log_to_std_out
         "Defines if the simple output shall be directed to stdout"
+        self.print_method = lambda text, end=None: print(text, end=end)
+        "Defines the print method to be used"
+        self.log = MicroLogHelper(self)
 
     def image(self, *_, **__) -> "VisualMicroLock":
         raise NotImplementedError("Not supported yet")
@@ -73,68 +76,12 @@ class VisualMicroLock:
         :return:
         """
         for row in data:
-            print("| ", end="")
+            self.print_method("| ", end="")
             for index, col in enumerate(row):
                 if self.log_to_stdout:
-                    print(str(col), end=" | ")
+                    self.print_method(str(col), end=" | ")
             if self.log_to_stdout:
-                print("")
-        return self
-
-    def log_text(self, *args, **_) -> "VisualMicroLock":
-        """
-        Logs text to stdout
-
-        :param args: The elements to log. Will be separated by space.
-        """
-        args = [str(element) for element in args]
-        if self.log_to_stdout:
-            print(" ".join(args))
-        return self
-
-    def info(self, *args, **_) -> "VisualMicroLock":
-        """
-        Logs an info text
-
-        :param args: The elements to log. Will be separated by space.
-        """
-        self.log_text("[INFO]    ", *args)
-        return self
-
-    def debug(self, *args, **_) -> "VisualMicroLock":
-        """
-        Logs an info text
-
-        :param args: The elements to log. Will be separated by space.
-        """
-        self.log_text("[DEBUG]   ", *args)
-        return self
-
-    def warning(self, *args, **_) -> "VisualMicroLock":
-        """
-        Logs an info text
-
-        :param args: The elements to log. Will be separated by space.
-        """
-        self.log_text("[WARNING] ", *args)
-        return self
-
-    def error(self, *args, **_) -> "VisualMicroLock":
-        """
-        Logs an info text
-
-        :param args: The elements to log. Will be separated by space.
-        """
-        self.log_text("[ERROR]   ", *args)
-        return self
-
-    def critical(self, *args, **_) -> "VisualMicroLock":
-        """
-        Logs a critical error
-
-        :param args: The elements to log. Will be separated by space.
-        """
-        self.log_text("[CRITICAL]", *args)
+                self.print_method("")
         return self
 
     def text(self, text: str, *args, **kwargs):
@@ -145,7 +92,7 @@ class VisualMicroLock:
         :param text: The text to be logged
         :return: self
         """
-        return self.log_text(text)
+        return self.print_method(text)
 
     def br(self):
         """
@@ -175,7 +122,7 @@ class VisualMicroLock:
 
         :param target_path: The path at which the Python files shall be stored.
         """
-        out_name = f"{target_path}/visual_micro_lock.py"
+        out_name = f"{target_path}/visual_micro_log.py"
         with open(__file__, "r") as src_file:
             content = src_file.read()
         import os
@@ -195,3 +142,73 @@ class VisualMicroLock:
         :return: True if it is a minimalistic lock
         """
         return True
+
+
+class MicroLogHelper:
+    """
+    Helper class handling all common text logs such as info, debug etc.
+    """
+
+    def __init__(self, tar: "VisualMicroLock"):
+        """
+        :param tar: The logging target
+        """
+        self.target = tar
+        "The target log"
+        self.log = self.__call__
+
+    def __call__(self, *args, **_) -> "VisualMicroLock":
+        """
+        Logs text to stdout
+
+        :param args: The elements to log. Will be separated by space.
+        """
+        args = [str(element) for element in args]
+        if self.target.log_to_stdout:
+            self.target.print_method(" ".join(args))
+        return self.target
+
+    def info(self, *args, **_) -> "VisualMicroLock":
+        """
+        Logs an info text
+
+        :param args: The elements to log. Will be separated by space.
+        """
+        self.log("[INFO]    ", *args)
+        return self.target
+
+    def debug(self, *args, **_) -> "VisualMicroLock":
+        """
+        Logs an info text
+
+        :param args: The elements to log. Will be separated by space.
+        """
+        self.log("[DEBUG]   ", *args)
+        return self.target
+
+    def warning(self, *args, **_) -> "VisualMicroLock":
+        """
+        Logs an info text
+
+        :param args: The elements to log. Will be separated by space.
+        """
+        self.log("[WARNING] ", *args)
+        return self.target
+
+    def error(self, *args, **_) -> "VisualMicroLock":
+        """
+        Logs an info text
+
+        :param args: The elements to log. Will be separated by space.
+        """
+        self.log("[ERROR]   ", *args)
+        return self.target
+
+    def critical(self, *args, **_) -> "VisualMicroLock":
+        """
+        Logs a critical error
+
+        :param args: The elements to log. Will be separated by space.
+        """
+        self.log("[CRITICAL]", *args)
+        return self.target

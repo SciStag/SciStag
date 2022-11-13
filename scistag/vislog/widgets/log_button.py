@@ -36,18 +36,19 @@ class LogButton(LogWidget):
         super().__init__(name=name, log=log)
         self.caption = caption
         "The buttons caption"
-        self.on_click: Union[Callable, None] = on_click
+        from scistag.vislog.log_event import LogEvent
+        self.on_click: Union[Callable[[LogEvent], None], None] = on_click
 
     def write(self):
         html = \
             f"""
             <input class="greenButton" type="button" value="{self.caption}" onclick="fetch('triggerEvent?name={self.name}&type={CLICK_EVENT_TYPE}')" />
             """
-        self.log.html(html)
+        self.log.default_builder.html(html)
 
     def handle_event(self, event: "LogEvent"):
         if event.event_type == CLICK_EVENT_TYPE:
             if self.on_click is not None:
-                self.on_click()
+                self.on_click(event)
             return
         super().handle_event(event)

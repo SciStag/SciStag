@@ -60,3 +60,12 @@ def test_np_logging():
     vl.np(np.identity(3), max_digits=4)
     vl.br()
     vl.test.assert_cp_diff('64abf164fb088767fa2e139d8ee34560')
+    vl.test.checkpoint("numpy.add")
+    vl.add(np.identity(3))
+    vl.test.assert_cp_diff('a0f35967366d2e7877761ffb6dbeb6ed')
+
+    with pytest.raises(ValueError):
+        vl.np(np.zeros((128, 128)))
+
+    with pytest.raises(ValueError):
+        vl.np(np.zeros((20, 20, 20)))

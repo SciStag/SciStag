@@ -179,8 +179,7 @@ class VisualLog:
         """
         try:
             if clear_target_dir and log_to_disk:
-                if clear_target_dir and log_to_disk:
-                    shutil.rmtree(target_dir)
+                shutil.rmtree(target_dir)
         except FileNotFoundError:
             pass
         if formats_out is None:
@@ -197,7 +196,7 @@ class VisualLog:
         self.target_dir = os.path.abspath(target_dir)
         "The directory in which the logs shall be stored"
         # setup the cache
-        do_auto_reload = (isinstance(auto_reload, bool) and auto_reload
+        do_auto_reload = ((isinstance(auto_reload, bool) and auto_reload)
                           or auto_reload is not None)
         self._setup_cache(do_auto_reload, cache_version, cache_dir, cache_name)
         self.ref_dir = FilePath.norm_path(
@@ -222,6 +221,8 @@ class VisualLog:
         else:
             max_fig_size = Size2D(1024, 1024)
         "Defines the preview's width and height"
+        self.default_stat_update_frequency = 1.0
+        "The update frequency of the stats in seconds"
         self.log_formats = formats_out
         "Defines if text shall be logged"
         self.log_formats.add(CONSOLE)
@@ -369,7 +370,7 @@ class VisualLog:
 
         :return: True if the logs could be loaded
         """
-        raise NotImplementedError("Not implemented yet")  # TODO Implement
+        return False
 
     def terminate(self):
         """
@@ -503,7 +504,7 @@ class VisualLog:
         current target and stores the content in sub_log_data[target] which
         can then be used to customize def get_body()
         """
-        if len(self._log_stag) == 0:
+        if len(self._log_stag) == 1:
             raise AssertionError("Tried to decrease log stag without remaining "
                                  "elements")
         top_target = self._log_stag[-1].target
@@ -990,7 +991,7 @@ class VisualLog:
                 if auto_clear is not None and auto_clear:
                     raise ValueError(_ONLY_AUTO_CLEAR_ON_CONTINUOUS)
             else:
-                if not mt or test:
+                if not mt:
                     raise ValueError(_CONTINUOUS_REQUIRED_BG_THREAD)
                 if overwrite is not None and not overwrite:
                     raise ValueError(_CONTINUOUS_REQUIRES_OVERWRITE)
@@ -1008,7 +1009,7 @@ class VisualLog:
             if element == "auto":
                 public_ips[index] = WebHelper.get_public_ip()
         # show URLs if desired
-        if show_urls and not test:
+        if show_urls:
             print("\nVisualLog web service started\n")
             print("Connect at:")
             for cur_ip in public_ips:
@@ -1041,7 +1042,7 @@ class VisualLog:
                 self.sleep()
 
     def run(self,
-            builder: BuilderCallback,
+            builder: BuilderTypes,
             continuous: bool | None = None,
             auto_clear: bool | None = None,
             overwrite: bool | None = None,
@@ -1215,7 +1216,7 @@ class VisualLog:
                 cur_time = time.time()
             # try to keep the frequency but never build up debt:
             next_update = max(next_update + self.refresh_time_s, cur_time)
-            self._update_statistics(cur_time)
+            self.update_statistics(cur_time)
 
     @property
     def server(self) -> "WebStagServer":
@@ -1233,22 +1234,26 @@ class VisualLog:
         """
         return self._cache
 
-    def _update_statistics(self, cur_time: float):
+    def update_statistics(self, cur_time: float):
         """
         Updates the statistics if necessary
 
         :param cur_time: The current system time (in seconds)
         """
         # update once per second if fps is high, otherwise once all x seconds
-        update_frequency = (1.0 if (self._update_rate == 0.0 or
-                                    self._update_rate > 20) else 5.0)
+        update_frequency = (self.default_stat_update_frequency
+                            if (self._update_rate == 0.0 or
+                                self._update_rate > 20) else 5.0)
         if cur_time - self._last_statistic_update > update_frequency:
             time_diff = cur_time - self._last_statistic_update
             self._update_rate = self._update_counter / time_diff
             self._last_statistic_update = cur_time
             self._update_counter = 0
 
-    def _setup_cache(self, auto_reload, cache_version, cache_dir, cache_name):
+    def _setup_cache(self, auto_reload: bool,
+                     cache_version: str,
+                     cache_dir: str,
+                     cache_name: str):
         """
         Configures the data cache
 
@@ -1281,7 +1286,7 @@ class VisualLog:
                             ) if auto_reload_cache is None \
             else auto_reload_cache
 
-    def add_event(self, event):
+    def add_event(self, event: "LogEvent"):
         """
         Adds an event to the event queue which will be handled before and
         after the next re-build (or loop turn in case of a continuous log).
@@ -1416,7 +1421,7 @@ class VisualLog:
         return VisualLogAutoReloader.is_main(2)
 
     @staticmethod
-    def setup_mocks(target_dir: str = "./"):
+    def setup_micro_log(target_dir: str = "./"):
         """
         Creates a set of files in the defined directory which contain
         replacements for the essential logging classes such as VisualLog,
@@ -1431,7 +1436,7 @@ class VisualLog:
             except ModuleNotFoundError:
                 from visual_log_mock import VisualLog, VisualLogBuilder
         """
-        from .visual_log_mock import VisualMicroLock
+        from .visual_micro_log import VisualMicroLock
         VisualMicroLock.setup_micro_lock(target_dir)
 
     @property

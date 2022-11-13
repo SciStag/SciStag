@@ -64,3 +64,5 @@ def test_image():
     vl.image(TestConstants.STAG_URL, alt_text="Image download from URL",
              download=True,
              scaling=0.5)
+    vl.test.begin("image.logviaadd")
+    vl.add(image_data)
