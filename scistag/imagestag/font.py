@@ -45,9 +45,11 @@ class Font:
         if isinstance(source, bytes):
             source = BytesIO(source)
         if framework == ImsFramework.PIL:
-            self._font_handle = PIL.ImageFont.truetype(source,
-                                                       size,
-                                                       index=index)
+            self._font_handle = \
+                PIL.ImageFont.truetype(source,
+                                       size,
+                                       index=index,
+                                       layout_engine=PIL.ImageFont.LAYOUT_BASIC)
         else:
             self._font_handle = None
             raise NotImplementedError(

@@ -11,21 +11,14 @@ jobs:
     environment: tests
     steps:
       - uses: actions/checkout@v2
+      - name: Poetry Installer
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: 1.2.2
       - uses: actions/setup-python@v4
         with:
           python-version: 3.9
           cache: 'poetry'
-      - name: cache poetry install
-        uses: actions/cache@v2
-        with:
-          path: ~/.local
-          key: poetry-1.2.2-0
-      - uses: snok/install-poetry@v1
-        with:
-          version: 1.2.2
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-      - run: poetry install -E "full" --with dev --no-interaction --no-root
       - run: |
           poetry run coverage run -m pytest ./scistag/tests
           poetry run coverage lcov -i

@@ -209,9 +209,8 @@ def test_hsv(stag_image_data):
     bands = [org_image, *bands]
     band_names = ["Original"] + image.pixel_format.get_full_band_names()
     for plot, band, band_name in zip(fig, bands, band_names):
-        plot.set_title(band_name)
         plot.add_image(band, size_ratio=0.5)
-    vl.test.assert_figure("HSV", fig, hash_val="35775728f2ad636805f668a06559722a")
+    vl.test.assert_figure("HSV", fig, hash_val="d14022d9f1d948479a81aad7577b7be0")
 
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
