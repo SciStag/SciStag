@@ -8,10 +8,8 @@ from scistag.plotstag import Figure, Plot, MPLock
 from .test_image_layer import stag
 from . import vl
 from . import skip_plotstag
-from ...common import WINDOWS
 
 skip_plotstag_fonts = skip_plotstag
-# skip_plotstag_fonts = WINDOWS or skip_plotstag
 "Defines if font tests shall be skipped"
 
 

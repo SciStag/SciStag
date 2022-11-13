@@ -1,7 +1,6 @@
 """
 Defines the tests for the FilePath class
 """
-import os.path
 
 from scistag.common import WINDOWS
 from scistag.filestag import FilePath

@@ -1,19 +1,12 @@
 import pytest
 
-from scistag.common import WINDOWS
 from . import vl
 from scistag.imagestag import Canvas, Colors, HTextAlignment, VTextAlignment
 from ...imagestag.anchor2d import Anchor2D
 from . import skip_imagestag
 
-# skip_imagestag_fonts = WINDOWS or skip_imagestag
 skip_imagestag_fonts = skip_imagestag
 "Defines if font tests shall be skipped"
-
-
-# Note text rendering has a minimal visual variance depending on the driver
-# being used. Such tests should get some marginal tolerance to e.g. ignore
-# marginal differences such as edge smoothing
 
 
 @pytest.mark.skipif(skip_imagestag_fonts, reason="ImageStag tests disabled")

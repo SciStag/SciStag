@@ -8,11 +8,10 @@ from scistag.imagestag import Colors, Color
 from scistag.imagestag.canvas import Canvas
 
 from . import vl, skip_imagestag
-from ...common import WINDOWS
 
 skip_imagestag_fonts = skip_imagestag
-# skip_imagestag_fonts = WINDOWS or skip_imagestag
 "Defines if font tests shall be skipped"
+
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
 def test_canvas():

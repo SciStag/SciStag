@@ -19,11 +19,14 @@ Build Status
 ------------
 
 [![PyPi Version](https://img.shields.io/pypi/v/SciStag.svg)](https://pypi.python.org/pypi/SciStag)
+![](https://shields.io/badge/Python-3.9%20%7C%203.10-blue)
 [![Documentation Status](https://readthedocs.org/projects/scistag/badge/?version=latest)](https://scistag.readthedocs.io/en/latest/?badge=latest)
 [![Coverage](https://coveralls.io/repos/github/SciStag/SciStag/badge.svg?branch=main)](https://coveralls.io/github/SciStag/SciStag)
 [![Pylint](https://raw.githubusercontent.com/SciStag/SciStag/v0.0.2/docs/source/generated/pylint.svg)](https://coveralls.io/github/SciStag/SciStag)
 
 [![Ubuntu Unittests Status](https://github.com/scistag/scistag/workflows/Ubuntu%20Unittests/badge.svg)](https://github.com/scistag/scistag/actions?query=workflow%3A%22Ubuntu+Unittests%22)
+[![Windows Unittests Status](https://github.com/scistag/scistag/workflows/Windows%20Unittests/badge.svg)](https://github.com/scistag/scistag/actions?query=workflow%3A%22Windows+Unittests%22)
+
 
 * SciStag is available on pypi: https://pypi.python.org/pypi/SciStag
 * The source is hosted on GitHub: https://github.com/SciStag/SciStag
