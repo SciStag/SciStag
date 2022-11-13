@@ -30,7 +30,7 @@ class DiskCache:
     """
 
     def __init__(self,
-                 version: int = 1,
+                 version: str = "1",
                  cache_dir: str | None = None):
         """
         :param version: The cache version. 1 by default.
@@ -42,7 +42,7 @@ class DiskCache:
         if cache_dir is None:
             os.path.abspath("./.stscache")
         self.cache_dir = cache_dir
-        self._version = version
+        self._version: str = version
         """
         The cache version.
 

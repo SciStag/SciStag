@@ -66,7 +66,7 @@ class Cache:
     between application restarts.
     """
 
-    def __init__(self, version: int = 1, cache_dir: str = None):
+    def __init__(self, version: str = "1", cache_dir: str = None):
         """
         :param version: The cache version. 1 by default.
 

@@ -22,7 +22,7 @@ def test_image():
                          alt_text="An image of a stag - just because we can",
                          hash_val='4e5e428357fcf315f25b148747d633db',
                          scaling=0.5)
-    vl.test.checkpoint()
+    vl.test.checkpoint("image.log.disabled")
     vl.target_log.log_images = False
     vl.image(image_data, alt_text="an image which shouldn't get logged")
     vl.target_log.log_images = True
@@ -37,24 +37,24 @@ def test_image():
     with pytest.raises(AssertionError):
         vl.test.assert_val("assert_stag", image_data,
                            hash_val='4e5e428357fcf315f25b148747d633da')
-    vl.test.checkpoint()
+    vl.test.checkpoint("image.log.scaled.nodownload")
     vl.log_txt_images = False
     vl.sub_test("An image from the web scaled to 50%")
     vl.image(TestConstants.STAG_URL, "anotherStag_1", scaling=0.5,
              download=False)
     vl.test.assert_cp_diff(hash_val="c9aa5a4232351b81ec4b8607126c0dd0")
-    vl.test.checkpoint()
+    vl.test.checkpoint("image.log.scaled.downloaded")
     vl.sub_test("An image from the web scaled to 50% w/ downloading")
     vl.image(TestConstants.STAG_URL, "anotherStag_2", scaling=0.5,
              download=True)
-    vl.test.checkpoint()
+    vl.test.checkpoint("image.log.originalSize")
     vl.sub_test("An image from the web scaled to 100%")
     vl.image(TestConstants.STAG_URL, "anotherStag_3", scaling=1.0)
     vl.log_txt_images = True
     vl.test.assert_cp_diff(hash_val="a37201edd6c4c71f056f0a559ad6824b")
     # add image from bytes stream
     vl.sub_test("Logging an image provided as byte stream")
-    vl.test.checkpoint()
+    vl.test.checkpoint("image.log.bytestream")
     vl.image(image_data.encode(), alt_text="image from byte stream")
     # insert image from web (as url)
     vl.image(TestConstants.STAG_URL, alt_text="Image link from URL",
@@ -64,3 +64,5 @@ def test_image():
     vl.image(TestConstants.STAG_URL, alt_text="Image download from URL",
              download=True,
              scaling=0.5)
+    vl.test.begin("image.logviaadd")
+    vl.add(image_data)

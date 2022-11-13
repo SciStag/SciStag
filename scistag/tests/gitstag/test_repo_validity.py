@@ -14,7 +14,7 @@ REPO_SIZE_LIMIT = 2000000
 "The maximum repo limit of non-ignored files in byte"
 REPO_DIR_COUNT_LIMIT = 260
 "The maximum number of directories in the repo"
-REPO_FILE_COUNT_LIMIT = 430
+REPO_FILE_COUNT_LIMIT = 480
 "The maximum number of files in the repo"
 REPO_HARD_FILE_SIZE_LIMIT = 300000
 "Maximum hard file size limit"
@@ -23,7 +23,7 @@ scistag.tests.ensure_config()
 
 
 @pytest.mark.skipif(
-    not bool(ConfigStag.get("testConfig.testGitIntegrity", False)),
+    not bool(ConfigStag.get("testConfig.testGitIntegrity", True)),
     reason="Git integrity check disabled")
 def test_repo_validity():
     """

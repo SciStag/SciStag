@@ -34,6 +34,7 @@ def test_plotting_methods():
     figure.add_plot().add_image(stag, size_ratio=1.0).set_title("A stag")
     vl.test.assert_image("stag_plot", figure.render(),
                          '6aea6c57d9580f0eed58ac84f7cbee3c')
+    vl.add(figure)
     vl.sub_test("Example for a figure and plot with title")
     figure = Figure(cols=2, rows=2)
     figure.set_title("A group of four stags")

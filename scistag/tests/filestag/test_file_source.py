@@ -28,7 +28,7 @@ def test_scan():
     source = FileSource.from_source(base_dir, recursive=True,
                                     fetch_file_list=True)
     assert len(source._file_list) >= 50
-    assert len(source._file_list) < 450
+    assert len(source._file_list) < 500
 
 
 def test_iteration():
