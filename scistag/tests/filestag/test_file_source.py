@@ -10,7 +10,7 @@ import shutil
 import pytest
 from pydantic import SecretStr
 
-from scistag.filestag import FileSource, FileStag
+from scistag.filestag import FileSource, FileStag, FilePath
 
 from . import vl
 from ...common import ESSENTIAL_DATA_ARCHIVE_NAME
@@ -174,7 +174,7 @@ def test_source_disk():
     with pytest.raises(FileNotFoundError):
         source.read_file("someNoneExistingFile.txt")
     abs_path = source.get_absolute("__index__.py")
-    assert abs_path == os.path.abspath(
+    assert abs_path == FilePath.absolute(
         os.path.dirname(__file__) + "/../__index__.py")
 
 
