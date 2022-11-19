@@ -16,16 +16,6 @@ class SessionHandler:
         self.session_lock = RLock()  # The session access lock
         self.sessions = {}  # The session dictionary
 
-    @staticmethod
-    def _create_session(session_id: str) -> Session:
-        """
-        Session creation function
-
-        :param session_id: The session's id
-        """
-        new_session = Session({Session.SESSION_ID: session_id})
-        return new_session
-
     def get_session(self, session_id: str) -> Session | None:
         """
         Returns a session by id.
@@ -57,7 +47,7 @@ class SessionHandler:
                     return session
         return None
 
-    def register_session(self, session):
+    def register_session(self, session: "Session"):
         """
         Registers a new session
 

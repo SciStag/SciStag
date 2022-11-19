@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
+
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from scistag.slidestag.slide_application import SlideApp
@@ -9,20 +11,27 @@ import re
 from scistag.datastag.data_stag_connection import DataStagConnection
 
 
+class SessionConfig(BaseModel):
+    """
+    The base class of a session configuration
+    """
+
+    session_id: str
+    "Defines the session's ID"
+    app: Union["SlideApp", None] = None
+    "Defines the application class to be used"
+
+
 class Session:
     """
     Represents a single user data session
     """
 
-    SESSION_ID = "sessionId"
-    REMOTE_SESSION = "remoteSession"
-    PERMISSIONS = "permissions"
-
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: SessionConfig) -> None:
         """
         Initializer
 
-        :param config: The configuration dictionary. Has to at least contain the sessionId
+        :param config: The session configuration dictionary.
         """
         self.lock = RLock()
         "Multithread access lock"
@@ -31,11 +40,8 @@ class Session:
         Set to true when the app is going to be destroyed and should not be used
         anymore
         """
-        self.app: SlideApp | None = config.get("app", None)
-        if "app" in config:
-            del config["app"]
-        assert Session.SESSION_ID in config
-        self.session_id = config['sessionId']
+        self.app: SlideApp | None = config.app
+        self.session_id = config.session_id
         "The unique session identifier"
         self.guest_id = None
         "Access id for guest access"
@@ -56,9 +62,10 @@ class Session:
         "Local database connection"
         self.default_user_data_timeout = 5.0
 
-    def update_config(self) -> dict:
+    def update_config(self) -> SessionConfig:
         """
         Returns the current configuration
+
         :return: The configuration
         """
         return self._config
