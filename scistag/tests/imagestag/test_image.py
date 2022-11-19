@@ -9,17 +9,17 @@ import IPython.display
 import numpy as np
 import pandas as pd
 
-import scistag.imagestag.definitions
-from scistag.imagestag import Image, ImsFramework, Colors, PixelFormat, \
-    opencv_available
-from .image_tests_common import stag_image_data
+from scistag.imagestag import Image, ImsFramework, Colors, PixelFormat
 import pytest
 
+from scistag.common.test_data import TestConstants
+from scistag.emojistag import render_emoji
+from scistag.plotstag import Figure
+
 from . import vl
-from ...common.test_data import TestConstants
-from ...emojistag import render_emoji
-from ...plotstag import Figure
 from . import skip_imagestag
+
+from .image_tests_common import stag_image_data
 
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
@@ -210,7 +210,8 @@ def test_hsv(stag_image_data):
     band_names = ["Original"] + image.pixel_format.get_full_band_names()
     for plot, band, band_name in zip(fig, bands, band_names):
         plot.add_image(band, size_ratio=0.5)
-    vl.test.assert_figure("HSV", fig, hash_val="d14022d9f1d948479a81aad7577b7be0")
+    vl.test.assert_figure("HSV", fig,
+                          hash_val="d14022d9f1d948479a81aad7577b7be0")
 
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")

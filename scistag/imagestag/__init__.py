@@ -4,7 +4,7 @@ analysis methods by combining the
 strengths of the well known libraries PILLOW, OpenCV and scikit-image.
 """
 
-from .definitions import ImsFramework, PIL, PIL_AVAILABLE, cv, opencv_available
+from .definitions import ImsFramework, PIL, PIL_AVAILABLE, get_opencv
 from .bounding import Bounding2D, Bounding2DTypes
 from .pos2d import Pos2D, Pos2DTypes
 from .size2d import Size2D, Size2DTypes
@@ -19,7 +19,7 @@ from .anchor2d import Anchor2D, Anchor2DTypes
 
 __all__ = ["Bounding2D", "Color", "ColorTypes", "Colors",
            "ImsFramework", "Image", "ImageFilter",
-           "cv", "opencv_available",
+           "get_opencv",
            "PIL", "PIL_AVAILABLE",
            "Canvas", "Font", "HTextAlignment", "VTextAlignment",
            "Size2D", "Size2DTypes", "Pos2D", "Pos2DTypes",

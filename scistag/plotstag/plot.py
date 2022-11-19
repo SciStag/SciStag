@@ -4,22 +4,20 @@ Implements the :class:`Plot` class which visualizes a single plot within a
 """
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Union
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from scistag.imagestag.bounding import Bounding2D
 from scistag.imagestag.size2d import Size2DTypes
 from scistag.imagestag.font import Font, VTextAlignment
 from scistag.imagestag.font_registry import FontRegistry
-from scistag.plotstag.layers.image_layer import ImageLayer
+from scistag.imagestag import Size2D, Pos2D, Canvas, Colors, Image, Color
+from scistag.plotstag.plot_layer import PlotLayer
 
 if TYPE_CHECKING:
     from scistag.plotstag.figure import Figure
-
-from scistag.imagestag import Size2D, Pos2D, Canvas, Colors, Image, Color
-from scistag.plotstag.plot_layer import PlotLayer
+    import matplotlib.pyplot as plt
 
 
 class Plot:
@@ -286,7 +284,7 @@ class Plot:
                                   bg_fill=bg_fill))
         return self
 
-    def add_matplot(self, figure: plt.Figure | None = None,
+    def add_matplot(self, figure: Union["plt.Figure", None] = None,
                     size_ratio: float | None = None,
                     **params):
         """

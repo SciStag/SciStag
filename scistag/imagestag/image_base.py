@@ -12,7 +12,6 @@ import numpy as np
 
 from scistag.imagestag.pixel_format import PixelFormat
 from scistag.imagestag.definitions import ImsFramework
-from scistag.imagestag import opencv_available, cv
 
 if TYPE_CHECKING:
     from .image import Image
@@ -137,14 +136,20 @@ class ImageBase:
         if len(pixels.shape) == 2:  # grayscale?
             return pixels
         if input_format in [PixelFormat.BGR, PixelFormat.BGRA]:
-            if opencv_available():
+            from scistag.imagestag import get_opencv
+            cv = get_opencv()
+            if cv is not None:
+                from scistag.imagestag import cv
                 if input_format == PixelFormat.BGR:
                     return cv.cvtColor(pixels, cv.COLOR_BGR2GRAY)
                 if input_format == PixelFormat.BGRA:
                     return cv.cvtColor(pixels, cv.COLOR_BGRA2GRAY)
             blue, green, red = pixels[:, :, 0], pixels[:, :, 1], pixels[:, :, 2]
         else:
-            if opencv_available():
+            from scistag.imagestag import get_opencv
+            cv = get_opencv()
+            if cv is not None:
+                from scistag.imagestag import get_opencv
                 if input_format == PixelFormat.RGB:
                     return cv.cvtColor(pixels, cv.COLOR_RGB2GRAY)
                 if input_format == PixelFormat.RGBA:

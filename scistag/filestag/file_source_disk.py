@@ -6,7 +6,9 @@ from __future__ import annotations
 import glob
 import os
 
-from scistag.filestag.file_source import FileSource, FileListEntry
+from scistag.filestag import FilePath
+from scistag.filestag.file_source import FileSource, FileListEntry, \
+    FileSourcePathOptions
 
 
 class FileSourceDisk(FileSource):
@@ -27,7 +29,7 @@ class FileSourceDisk(FileSource):
         super().__init__(**params)
         assert len(path) > 0
         self.search_path = os.path.normpath(path)
-        self.handle_fetch_file_list()
+        self._create_file_list_int()
 
     def _get_source_identifier(self) -> str:
         return f"{self.search_path}|"
@@ -56,6 +58,11 @@ class FileSourceDisk(FileSource):
                                                  self.search_path + "/" +
                                                  cur_element))
                                for cur_element in elements])
+
+    def get_absolute(self, filename: str,
+                     options: FileSourcePathOptions | None = None) -> \
+            str | None:
+        return FilePath.absolute(self.search_path + "/" + filename)
 
     def close(self):
         super().close()

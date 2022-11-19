@@ -1012,7 +1012,11 @@ class VisualLog:
         if show_urls:
             print("\nVisualLog web service started\n")
             print("Connect at:")
+            if "localhost" not in public_ips and "127.0.0.1" not in public_ips:
+                public_ips.append("127.0.0.1")
             for cur_ip in public_ips:
+                if cur_ip == "0.0.0.0":
+                    continue
                 print(
                     f"* http://{cur_ip}:{port}{url_prefix} for the static log")
                 print(

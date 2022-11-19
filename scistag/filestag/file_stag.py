@@ -4,6 +4,8 @@ import json
 import os
 from typing import Union
 
+from pydantic import SecretStr
+
 from scistag.webstag import web_fetch
 
 HTTPS_PROTOCOL_URL_HEADER = "https://"
@@ -21,7 +23,7 @@ from the web
 FILE_PATH_PROTOCOL_URL_HEADER = "file://"
 "Definition for the beginning of a local file url"
 
-FileSourceTypes = Union[str]
+FileSourceTypes = Union[str, SecretStr]
 """
 The file source path.
 
@@ -30,7 +32,7 @@ of a file or any other protocol supported by FileStag such as
 zip://zipFilename/fileNameInZip.
 """
 
-FileTargetTypes = Union[str]
+FileTargetTypes = Union[str, SecretStr]
 """
 The file target path.
 
@@ -57,9 +59,25 @@ class FileStag:
             See :class:`FileNameType`
         :return: True if it is a normal, local file
         """
+        if isinstance(filename, SecretStr):
+            filename = filename.get_secret_value()
         if "://" in filename:
             return False
         return True
+
+    @staticmethod
+    def resolve_name(path: str | SecretStr) -> str:
+        """
+        Tries to simplify the file name or path
+
+        :param path: The original filename or path
+        :return: The simplified name
+        """
+        if isinstance(path, SecretStr):
+            path = path.get_secret_value()
+        if path.startswith(FILE_PATH_PROTOCOL_URL_HEADER):
+            path = path[len(FILE_PATH_PROTOCOL_URL_HEADER):]
+        return path
 
     @classmethod
     def load(cls,
@@ -75,10 +93,9 @@ class FileStag:
             as ``timeout_s`` or ``max_cache_age`` for files from the web.
         :return: The data if the file could be found
         """
+        source = cls.resolve_name(source)
         from .shared_archive import SharedArchive
         from scistag.filestag import ZIP_SOURCE_PROTOCOL
-        if source.startswith(FILE_PATH_PROTOCOL_URL_HEADER):
-            source = source[len(FILE_PATH_PROTOCOL_URL_HEADER):]
         if source.startswith(ZIP_SOURCE_PROTOCOL):
             return SharedArchive.load_file(source)
         if source.startswith(HTTP_PROTOCOL_URL_HEADER) or source.startswith(
@@ -102,15 +119,14 @@ class FileStag:
             type of storage, such as timeout_s for file's stored via network.
         :return: True on success
         """
-        if target.startswith(FILE_PATH_PROTOCOL_URL_HEADER):
-            target = target[len(FILE_PATH_PROTOCOL_URL_HEADER):]
+        target = cls.resolve_name(target)
         if not cls.is_simple(target):
             raise NotImplementedError("At the moment only local file storage"
                                       "is supported")
         try:
             with open(target, "wb") as output_file:
                 output_file.write(data)
-        except:
+        except (FileNotFoundError, IOError):
             return False
         return True
 
@@ -128,8 +144,7 @@ class FileStag:
             type of storage, such as timeout_s for file's stored via network.
         :return: True on success
         """
-        if target.startswith(FILE_PATH_PROTOCOL_URL_HEADER):
-            target = target[len(FILE_PATH_PROTOCOL_URL_HEADER):]
+        target = cls.resolve_name(target)
         if not cls.is_simple(target):
             raise NotImplementedError("At the moment only local file deletion"
                                       "is supported")
@@ -153,6 +168,7 @@ class FileStag:
             e.g. timeout_s for a timeout from file's from the web.
         :return: The file's content
         """
+        source = cls.resolve_name(source)
         data = cls.load(source, **params)
         if data is None:
             return None
@@ -174,6 +190,7 @@ class FileStag:
             type of storage, such as timeout_s for file's stored via network.
         :return: True on success
         """
+        target = cls.resolve_name(target)
         encoded_text = text.encode(encoding=encoding)
         return cls.save(target, data=encoded_text, **params)
 
@@ -191,6 +208,7 @@ class FileStag:
             e.g. timeout_s for a timeout from file's from the web.
         :return: The file's content
         """
+        source = cls.resolve_name(source)
         data = cls.load(source, **params)
         if data is None:
             return None
@@ -215,13 +233,15 @@ class FileStag:
             type of storage, such as timeout_s for file's stored via network.
         :return: True on success
         """
+        target = cls.resolve_name(target)
         text = json.dumps(data) if indent is None else json.dumps(data,
                                                                   indent=indent)
         encoded_text = text.encode(encoding=encoding)
         return cls.save(target, data=encoded_text, **params)
 
     @classmethod
-    def copy(cls, source: str, target: str, create_dir: bool = False,
+    def copy(cls, source: FileSourceTypes, target: FileTargetTypes,
+             create_dir: bool = False,
              **params) -> bool:
         """
         Copies a file from given source to given target location
@@ -234,12 +254,15 @@ class FileStag:
             max_cache_age etc.
         :return: True on success
         """
-        dirname = os.path.dirname(target)
-        if not os.path.exists(dirname):
-            if create_dir:
-                os.makedirs(dirname, exist_ok=True)
-            else:
-                return False
+        source = cls.resolve_name(source)
+        target = cls.resolve_name(target)
+        if cls.is_simple(target):
+            dirname = os.path.dirname(target)
+            if not os.path.exists(dirname):
+                if create_dir:
+                    os.makedirs(dirname, exist_ok=True)
+                else:
+                    return False
         data = cls.load(source, **params)
         if data is None:
             return False
@@ -256,10 +279,9 @@ class FileStag:
         :param params: Advanced parameters, protocol dependent
         :return: True if the file exists
         """
+        filename = cls.resolve_name(filename)
         from .shared_archive import SharedArchive
         from scistag.filestag import ZIP_SOURCE_PROTOCOL
-        if filename.startswith(FILE_PATH_PROTOCOL_URL_HEADER):
-            filename = filename[len(FILE_PATH_PROTOCOL_URL_HEADER):]
         if filename.startswith(ZIP_SOURCE_PROTOCOL):
             return SharedArchive.exists_at_source(filename)
         if filename.startswith(HTTP_PROTOCOL_URL_HEADER) or filename.startswith(

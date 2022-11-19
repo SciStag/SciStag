@@ -1,6 +1,11 @@
 from __future__ import annotations
-import pandas as pd
+
+from typing import TYPE_CHECKING
+
 from scistag.imagestag import ImsFramework, Image
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 class PandasRenderer:
@@ -8,7 +13,7 @@ class PandasRenderer:
     Helper class to convert a Pandas dataframe to an image
     """
 
-    def __init__(self, df: pd.DataFrame, framework=ImsFramework.PIL,
+    def __init__(self, df: "pd.DataFrame", framework=ImsFramework.PIL,
                  show_index: bool = False,
                  width: str | None = None, style='blue_light',
                  font_size="medium",

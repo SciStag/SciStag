@@ -11,9 +11,12 @@ import hashlib
 import os
 from typing import Any
 
-from scistag.common import StagLock
-from scistag.filestag import FileStag, Bundle
 from scistag.common.cache import Cache
+
+from scistag.filestag import FileStag
+
+DEFAULT_CACHE_DIR = "./.stscache"
+"The default caching directory if none is passed"
 
 BUNDLE_EXTENSION = ".stbun"
 "File extension for a SciStag bundle"
@@ -40,24 +43,23 @@ class DiskCache:
         :param cache_dir: The directory in which the data shall be cached
         """
         if cache_dir is None:
-            os.path.abspath("./.stscache")
+            cache_dir = os.path.abspath(DEFAULT_CACHE_DIR)
         self.cache_dir = cache_dir
-        self._version: str = version
+        self._version: str | int = version
         """
         The cache version.
 
         It is stored along all cache values stored on disk and only elements
         sharing the same version will be accepted. 
         """
+        from scistag.common import StagLock
         self._access_lock = StagLock()
-        self.valid = cache_dir is not None
-        """
-        Defines if the cache is valid
-        """
+        "Multithread access lock"
         self.dir_created = False
+        "Defines if the caching dir was already created"
 
     @property
-    def version(self) -> int:
+    def version(self) -> str:
         """
         Returns the cache version
         """
@@ -81,9 +83,6 @@ class DiskCache:
         :param name: The name of the data
         :return: The encoded name
         """
-        if not self.valid:
-            raise AssertionError(
-                "Disk cache not configured. Please provide a valid cache_dir.")
         encoded_name = f"{self.cache_dir}/{self.encode_name(name)}"
         return encoded_name
 
@@ -97,7 +96,7 @@ class DiskCache:
 
     def set(self, key: str,
             value: Any,
-            params: dict,
+            params: dict | None = None,
             version: int | str = 1,
             hash_params: bool = False
             ):
@@ -113,6 +112,7 @@ class DiskCache:
         :param hash_params: Defines the parameters shall be hashed to
             detect modifications.
         """
+        from scistag.filestag import FileStag, Bundle
         key, eff_version = Cache.get_key_and_version(key,
                                                      self._version,
                                                      version)
@@ -151,6 +151,7 @@ class DiskCache:
             be found
         :return: Either the cache data or the default value as fallback
         """
+        from scistag.filestag import FileStag, Bundle
         with self._access_lock:
             key, eff_version = Cache.get_key_and_version(key,
                                                          self._version,
@@ -191,8 +192,6 @@ class DiskCache:
             return False
 
     def __contains__(self, key):
-        if not self.valid:
-            return False
         with self._access_lock:
             key, eff_version = Cache.get_key_and_version(key, self._version)
             cache_name = self.get_cache_name(key)

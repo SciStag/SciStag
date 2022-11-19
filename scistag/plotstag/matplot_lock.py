@@ -1,12 +1,6 @@
 from __future__ import annotations
 
-import io
-import matplotlib
-
 from scistag.common import StagLock
-import matplotlib.pyplot as plt
-
-from scistag.imagestag import Image
 
 
 class MPLock:
@@ -41,11 +35,13 @@ class MPLock:
 
     def __enter__(self):
         self.access_lock.acquire()
+        import matplotlib.pyplot as plt
         self.plt = plt
         if self.backend is not None:
             plt.switch_backend(self.backend)
         return self.plt
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        import matplotlib.pyplot as plt
         plt.close('all')
         self.access_lock.release()

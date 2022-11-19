@@ -16,12 +16,12 @@ def test_mem_zip():
     with MemoryZip() as mz:
         for element in fs:
             total_size += len(element.data)
-            mz.writestr(element.name, element.data)
+            mz.writestr(element.filename, element.data)
     extracted = MemoryZip(source=mz.to_bytes())
     name_list = extracted.namelist()
     ext_total_size = 0
     for element in fs:
-        assert element.name in name_list
-        info = extracted.NameToInfo[element.name]
+        assert element.filename in name_list
+        info = extracted.NameToInfo[element.filename]
         ext_total_size += info.file_size
     assert ext_total_size == total_size

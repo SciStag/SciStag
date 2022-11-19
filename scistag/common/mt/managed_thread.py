@@ -38,7 +38,7 @@ class ManagedThread(Thread):
         Starts the thread
         """
         with self._mt_access_lock:
-            if not self in self._managed_threads:
+            if self not in self._managed_threads:
                 self._managed_threads.append(self)
         super().start()
 
@@ -62,10 +62,13 @@ class ManagedThread(Thread):
         """
         Executes run_loop until :meth:`terminate` is called from another thread.
         """
-        if self.terminate_event.isSet():
-            return
-        while not self.terminate_event.isSet():
-            self.run_loop()
+        try:
+            if self.terminate_event.isSet():
+                return
+            while not self.terminate_event.isSet():
+                self.run_loop()
+        except KeyboardInterrupt:
+            pass
         self.unregister_thread()
 
     def unregister_thread(self):

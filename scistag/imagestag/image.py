@@ -16,7 +16,7 @@ from .bounding import Bounding2DTypes, Bounding2D
 from .interpolation import InterpolationMethod
 from .pixel_format import PixelFormat
 from .size2d import Size2D, Size2DTypes
-from .definitions import ImsFramework, opencv_available, cv
+from .definitions import ImsFramework, get_opencv
 from .image_base import ImageBase
 from ..filestag import FileStag
 
@@ -304,7 +304,8 @@ class Image(ImageBase):
                 self._pil_handle.resize(size,
                                         resample=resample_method)
         else:
-            if opencv_available():
+            cv = get_opencv()
+            if cv is not None:
                 self.__dict__["_pixel_data"] = \
                     cv.resize(self._pixel_data, dsize=size,
                               interpolation=resample_method_cv)

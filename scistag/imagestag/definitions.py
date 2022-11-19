@@ -3,7 +3,12 @@ Defines the common definitions required by all major components of the ImageStag
 module.
 """
 
+from __future__ import annotations
 import enum
+import importlib
+from multiprocessing import RLock
+from types import ModuleType
+from typing import Any
 
 try:
     import PIL
@@ -22,21 +27,29 @@ class OpenCVHandler:
     "Defines if OpenCV is available"
 
 
-try:
-    import cv2 as cv
-
-    OpenCVHandler.available = True
-except ModuleNotFoundError:
-    cv = None
+_cv = None
+_cv_available = None
+_cv_access_lock = RLock()
 
 
-def opencv_available() -> bool:
+def get_opencv() -> ModuleType | None:
     """
-    Returns if OpenCV is available
+    Returns the OpenCV module handle if available
 
-    :return: The current state
+    :return: The module handle, None otherwise
     """
-    return OpenCVHandler.available
+    global _cv_available, _cv
+    if not OpenCVHandler.available:
+        return None
+    with _cv_access_lock:
+        if _cv_available is None:
+            try:
+                _cv = importlib.import_module("cv2")
+                _cv_available = True
+            except ModuleNotFoundError:
+                _cv_available = False
+                pass
+        return _cv
 
 
 class ImsFramework(enum.Enum):
@@ -59,4 +72,4 @@ class ImsFramework(enum.Enum):
     """
 
 
-__all__ = ["ImsFramework", "opencv_available", "PIL_AVAILABLE", "cv", "PIL"]
+__all__ = ["ImsFramework", "get_opencv", "PIL_AVAILABLE", "PIL"]
