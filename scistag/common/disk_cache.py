@@ -11,8 +11,6 @@ import hashlib
 import os
 from typing import Any
 
-from scistag.common import StagLock
-from scistag.filestag import FileStag, Bundle
 from scistag.common.cache import Cache
 
 BUNDLE_EXTENSION = ".stbun"
@@ -42,13 +40,14 @@ class DiskCache:
         if cache_dir is None:
             os.path.abspath("./.stscache")
         self.cache_dir = cache_dir
-        self._version: str = version
+        self._version: str | int = version
         """
         The cache version.
 
         It is stored along all cache values stored on disk and only elements
         sharing the same version will be accepted. 
         """
+        from scistag.common import StagLock
         self._access_lock = StagLock()
         self.valid = cache_dir is not None
         """
@@ -57,7 +56,7 @@ class DiskCache:
         self.dir_created = False
 
     @property
-    def version(self) -> int:
+    def version(self) -> str:
         """
         Returns the cache version
         """
@@ -113,6 +112,7 @@ class DiskCache:
         :param hash_params: Defines the parameters shall be hashed to
             detect modifications.
         """
+        from scistag.filestag import FileStag, Bundle
         key, eff_version = Cache.get_key_and_version(key,
                                                      self._version,
                                                      version)
@@ -151,6 +151,7 @@ class DiskCache:
             be found
         :return: Either the cache data or the default value as fallback
         """
+        from scistag.filestag import FileStag, Bundle
         with self._access_lock:
             key, eff_version = Cache.get_key_and_version(key,
                                                          self._version,

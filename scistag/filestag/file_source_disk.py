@@ -27,7 +27,7 @@ class FileSourceDisk(FileSource):
         super().__init__(**params)
         assert len(path) > 0
         self.search_path = os.path.normpath(path)
-        self.handle_fetch_file_list()
+        self._create_file_list_int()
 
     def _get_source_identifier(self) -> str:
         return f"{self.search_path}|"

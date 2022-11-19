@@ -496,3 +496,17 @@ class Cache:
                 return key in self._disk_cache
             return (key in self._mem_cache and
                     self._mem_cache_versions[key] == eff_version)
+
+
+_global_cache = Cache()
+"Shared, singleton global cache"
+
+
+def get_global_cache() -> Cache:
+    """
+    Returns the shared global cache class. When storing data categorize it
+    w/ a main module and sub module to track memory usage of the shared cache.
+
+    :return: The global cache
+    """
+    return _global_cache

@@ -76,16 +76,8 @@ class AzureStorageFileSource(FileSource):
         "The maximum count of file names to fetch in one batch"
         if self.max_file_count != -1:
             self.results_per_page = self.max_file_count
-        if params.get("fetch_file_list", False):
-            loaded = False
-            if self._file_list_name is not None:
-                loaded = self.load_file_list(self._file_list_name,
-                                             version=self._file_list_version)
-            if not loaded:
-                self.handle_fetch_file_list()
-            if self._file_list_name is not None:
-                self.save_file_list(self._file_list_name,
-                                    version=self._file_list_version)
+        if params.get("fetch_file_list", True):
+            self._create_file_list_int()
 
     @staticmethod
     def service_from_connection_string(

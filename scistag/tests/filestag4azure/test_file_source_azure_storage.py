@@ -82,7 +82,7 @@ def test_basics():
     """
     azure_source = FileSource.from_source(connection_string + "/fonts/Roboto")
     assert azure_source.read_file("notExistingFile.txt") is None
-    assert azure_source.exists("scistag_essentials.zip")
+    assert azure_source.exists("fonts/Roboto/LICENSE.txt")
     assert not azure_source.exists("WhatEver.zip")
     azure_source.close()
     azure_source.close()

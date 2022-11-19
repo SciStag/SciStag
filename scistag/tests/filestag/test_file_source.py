@@ -5,10 +5,12 @@ With the :class:`FileSource` class you can iterate through directories, archives
 file by file with a minimum of code.
 """
 import os.path
+import shutil
 
 import pytest
+from pydantic import SecretStr
 
-from scistag.filestag import FileSource
+from scistag.filestag import FileSource, FileStag
 
 from . import vl
 from ...common import ESSENTIAL_DATA_ARCHIVE_NAME
@@ -84,7 +86,7 @@ def test_sharing():
                                         search_mask="*.py")
         cur_set = set()
         for element in source:
-            cur_set.add(element.name)
+            cur_set.add(element.filename)
         assert len(cur_set) > 0
         assert len(prior_set.intersection(cur_set)) == 0
         prior_set = prior_set.union(cur_set)
@@ -98,7 +100,7 @@ def test_sharing():
                                         search_mask="*.py")
         cur_set = set()
         for element in source:
-            cur_set.add(element.name)
+            cur_set.add(element.filename)
         assert len(cur_set) > 0
         assert len(comp_set.intersection(cur_set)) == 0
         comp_set = comp_set.union(cur_set)
@@ -140,7 +142,7 @@ def test_filtering():
     name_list = []
     with ren_source as source:
         for element in source:
-            name_list.append(element.name)
+            name_list.append(element.filename)
     assert name_list[0].startswith("renamed_")
     # test max_file_count using a file list
     new_list = FileSource.from_source(base_dir, fetch_file_list=True,
@@ -209,3 +211,33 @@ def test_statistics():
     test_source = FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
                                          fetch_file_list=False)
     assert test_source.get_statistics() is None
+
+
+def test_file_list():
+    """
+    Tests the file list functionality
+    """
+    test_dir = os.path.dirname(__file__) + "/temp/dummy_dir/"
+    try:
+        shutil.rmtree(test_dir)
+    except FileNotFoundError:
+        pass
+    os.makedirs(test_dir, exist_ok=True)
+    FileStag.save(test_dir + "a.bin", data=b"123")
+    FileStag.save(test_dir + "b.bin", data=b"123")
+    FileStag.save(test_dir + "c.bin", data=b"123")
+    fl_name = os.path.dirname(__file__) + "/temp/tflist.fin"
+    FileStag.delete(fl_name)
+    secret_path = SecretStr(test_dir)  # test usage of SecretStr
+    file_source = FileSource.from_source(secret_path,
+                                         fetch_file_list=True,
+                                         file_list_name=(fl_name, 1))
+    assert len(file_source.get_file_list()) == 3
+    assert len(file_source) == 3
+    assert "a.bin" in file_source
+    FileStag.save(test_dir + "d.bin", data=b"123")
+    file_source = FileSource.from_source(test_dir,
+                                         fetch_file_list=True,
+                                         file_list_name=(fl_name, 1))
+    assert len(file_source.get_file_list()) == 3
+    assert "d.bin" not in file_source

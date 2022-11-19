@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from scistag.common.data_cache import DataCache
+from scistag.common import get_global_cache
 from scistag.imagestag import Canvas, Image, Size2D, Colors, PixelFormat, Color
 from scistag.plotstag.plot_layer import PlotLayer, ValueRange1D
 from scistag.shapestag.checkerboard import Checkerboard
@@ -106,9 +106,9 @@ class ImageLayer(PlotLayer):
         if self._scaled_image.pixel_format == PixelFormat.RGBA and \
                 self.bg_fill is not None:
             if self.bg_fill == CHECKERBOARD_BACKGROUND:
-                cache = DataCache.global_cache
+                cache = get_global_cache()
                 cb: Image = cache.cache("plotstag.ImageLayer.backgroundGrid",
-                                        builder=self.generate_checkerboard)
+                                        generator=self.generate_checkerboard)
                 canvas.pattern(cb, ((0, 0),
                                     (self._scaled_image.width,
                                      self._scaled_image.height)))

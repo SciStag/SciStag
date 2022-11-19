@@ -16,7 +16,7 @@ from fnmatch import fnmatch
 from typing import Callable, Union, Any
 
 import pandas as pd
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 from scistag.filestag.bundle import Bundle
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
@@ -36,7 +36,7 @@ class FileSourceElement:
         """
         self.data = data
         "Holds the file's data"
-        self.name = name
+        self.filename = name
         "The file's name. Usually relative to it's search path"
 
 
@@ -152,7 +152,7 @@ class FileSource:
                  recursive: bool = True,
                  filter_callback: FilterCallback | None = None,
                  index_filter: tuple[int, int] | None = None,
-                 fetch_file_list: bool = False,
+                 fetch_file_list: bool = True,
                  max_file_count: int = -1,
                  file_list_name: str | tuple[str, int] | None = None,
                  max_web_cache_age: float = 0.0,
@@ -242,14 +242,15 @@ class FileSource:
         self.max_web_cache_age = max_web_cache_age
 
     @staticmethod
-    def from_source(source: str | bytes, search_mask: str = "*",
+    def from_source(source: str | bytes | SecretStr,
+                    search_mask: str = "*",
                     search_path: str = "",
                     recursive: bool = True,
                     filter_callback: FilterCallback | None = None,
                     sorting_callback: \
                             Callable[[FileListEntry], Any] | None = None,
                     index_filter: tuple[int, int] | None = None,
-                    fetch_file_list: bool = False,
+                    fetch_file_list: bool = True,
                     max_file_count: int = -1,
                     file_list_name: str | tuple[str, int] | None = None,
                     max_web_cache_age: float = 0.0,
@@ -268,6 +269,9 @@ class FileSource:
                 Will iterate to an Azure Blob Storage.
             * A bytes object: Detects the source type and opens it. At the
                 moment only zip archive data ia supported.
+
+            For more secure handling of connection strings with key you can
+            also pass a SecretStr.
         :param search_mask: The file name filter mask
         :param search_path: The search path, e.g. directory name or relative
             path to the zip root, storage root etc.
@@ -297,15 +301,15 @@ class FileSource:
             data parallel into one or multiple  FileSinks which are (at least in
              most cases) multi-thread safe.
         :param fetch_file_list: If set to true the FileSource will try to
-            iterate all filenames in advance.
+            iterate all filenames in advance. True by default.
 
             This is recommended especially if you are using sources where it's
             not guaranteed that the file names will always be provided in the
             same order and you intend to share a task among multiple threads to
             guarantee a consistent behavior.
-        :param file_list_name: If provided the the file list will be stored in
-            given file so that the files do not need to be iterated over and
-            over again each run (which can save a lot of time).
+        :param file_list_name: If provided the file list be cached in the
+            file name passed. This makes working with large directories or
+            cloud storages much faster.
 
             You can either pass a string, just containing the file name or a
             tuple of (filename, version) so you can enforce replacing the list
@@ -332,6 +336,8 @@ class FileSource:
                   "max_file_count": max_file_count,
                   "sorting_callback": sorting_callback,
                   "dont_load": dont_load}
+        if isinstance(source, SecretStr):
+            source = source.get_secret_value()
         if isinstance(source, bytes):
             from scistag.filestag.file_source_zip import FileSourceZip
             return FileSourceZip(source=source, **params)
@@ -419,10 +425,10 @@ class FileSource:
             return False
         df: pd.DataFrame = data['data']
         key_list = df.columns.to_list()
-        self._file_list = [
+        self.update_file_list([
             FileListEntry.parse_obj(dict(zip(key_list, cur_element))) for
             cur_element in df.itertuples(index=False, name=None)
-        ]
+        ], may_sort=False)
         return True
 
     def save_file_list(self, target: str, version: int = -1):
@@ -537,6 +543,24 @@ class FileSource:
         if not self.is_closed:
             self.close()
 
+    def __len__(self) -> int:
+        """
+        Returns the count of files of the file source (if fetch_file_list is
+        True)
+
+        :return: The count of elements
+        """
+        return len(self._file_list) if self._file_list is not None else 0
+
+    def __contains__(self, item):
+        """
+        Returns true if the file with given name exists
+
+        :param item: The name of the file
+        :return: True if the file exists
+        """
+        return item in self.file_set
+
     @abstractmethod
     def _read_file_int(self, filename: str) -> bytes | None:
         """
@@ -598,16 +622,17 @@ class FileSource:
             return filename in self.file_set
         raise NotImplementedError("Missing implementation for exists method")
 
-    def update_file_list(self, new_list: list[FileListEntry]):
+    def update_file_list(self, new_list: list[FileListEntry], may_sort=True):
         """
         Call this function if you want to manually update the file list.
 
         Updates the internal search index and other helper variables.
 
         :param new_list: The new list
+        :param may_sort: Defines if the list may be sorted
         """
         self._file_list = new_list
-        if self.sorting_callback is not None:  # apply sorting
+        if self.sorting_callback is not None and may_sort:  # apply sorting
             self._file_list = sorted(self._file_list, key=self.sorting_callback)
         self.file_set = set([element.filename for element in new_list])
         self._statistics = None
@@ -710,6 +735,23 @@ class FileSource:
             before already
         """
         pass
+
+    def _create_file_list_int(self):
+        """
+        Creates the file list by either scanning the source directory or
+        loading a cache file list from disk.
+
+        If caching is enabled the new list is stored to disk.
+        """
+        loaded = False
+        if self._file_list_name is not None:
+            loaded = self.load_file_list(self._file_list_name,
+                                         version=self._file_list_version)
+        if not loaded:
+            self.handle_fetch_file_list()
+        if not loaded and self._file_list_name is not None:
+            self.save_file_list(self._file_list_name,
+                                version=self._file_list_version)
 
     def handle_file_list_filter(self, filename: str) -> bool:
         """
