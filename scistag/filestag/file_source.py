@@ -19,7 +19,8 @@ from pydantic import BaseModel, SecretStr
 from scistag.filestag.bundle import Bundle
 from scistag.filestag.file_source_iterator import FileSourceIterator, \
     FileIterationData, FilterCallback
-from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
+from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
+    AZURE_DEFAULT_ENDPOINTS_HEADER
 from scistag.filestag.file_stag import FileStag
 
 CACHE_VERSION = "cache_version"
@@ -295,7 +296,8 @@ class FileSource:
         if isinstance(source, bytes):
             from scistag.filestag.file_source_zip import FileSourceZip
             return FileSourceZip(source=source, **params)
-        if source.startswith(AZURE_PROTOCOL_HEADER):
+        if source.startswith(AZURE_PROTOCOL_HEADER) or \
+                source.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
             from scistag.filestag.azure.azure_storage_file_source import \
                 AzureStorageFileSource
             return AzureStorageFileSource(source=source, **params)

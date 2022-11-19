@@ -29,7 +29,7 @@ def test_scan():
 
     source = FileSource.from_source(base_dir, recursive=True,
                                     fetch_file_list=True)
-    assert len(source._file_list) >= 400
+    assert len(source._file_list) >= 150
     assert len(source._file_list) < 550
 
 
@@ -173,6 +173,9 @@ def test_source_disk():
     assert not source.exists("NotExisting.py")
     with pytest.raises(FileNotFoundError):
         source.read_file("someNoneExistingFile.txt")
+    abs_path = source.get_absolute("__index__.py")
+    assert abs_path == os.path.abspath(
+        os.path.dirname(__file__) + "/../__index__.py")
 
 
 def test_basic_functions():

@@ -7,9 +7,11 @@ from typing import TYPE_CHECKING
 from collections.abc import Iterable
 from scistag.filestag.azure.azure_blob_path import \
     AzureBlobPath
-from scistag.filestag.file_source import FileSource, FileListEntry
+from scistag.filestag.file_source import FileSource, FileListEntry, \
+    FileSourcePathOptions
 from scistag.filestag.file_source_iterator import FileSourceIterator
-from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
+from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
+    AZURE_DEFAULT_ENDPOINTS_HEADER
 
 if TYPE_CHECKING:
     from azure.storage.blob import BlobServiceClient, ContainerClient
@@ -47,7 +49,8 @@ class AzureStorageFileSource(FileSource):
         self.timeout: int = int(params.pop("timeout", 30))
         "The connection timeout in seconds"
         super().__init__(**params)
-        if not source.startswith(AZURE_PROTOCOL_HEADER):
+        if not (source.startswith(AZURE_PROTOCOL_HEADER) or
+                source.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER)):
             raise ValueError(
                 "source has be in the form azure://DefaultEndpoints...")
 
@@ -206,3 +209,8 @@ class AzureStorageFileSource(FileSource):
         return \
             self.blob_path.create_sas_url(blob_name, start_time_min,
                                           end_time_days)
+
+    def get_absolute(self, filename: str,
+                     options: FileSourcePathOptions | None = None) -> \
+            str | None:
+        return self.create_sas_url(filename)

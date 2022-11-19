@@ -75,6 +75,27 @@ def test_prefix():
     assert data_size == ROBOTO_FONT_SIZE_WITHOUT_MD
 
 
+def test_no_recursion():
+    """
+    Tests that recursion can be suppressed
+    """
+    fs = FileSource.from_source(connection_string + "/data",
+                                recursive=True)
+    assert len(fs) == 4
+    fs = FileSource.from_source(connection_string + "/data",
+                                recursive=False)
+    assert len(fs) == 0
+
+
+def test_default_endpoint():
+    """
+    Tests that recursion can be suppressed
+    """
+    wo_azure = connection_string.lstrip("azure://") + "/fonts"
+    fs = FileSource.from_source(wo_azure, recursive=True)
+    assert len(fs) == 20
+
+
 @pytest.mark.skipif(skip_tests, reason="Azure tests disabled or not configured")
 def test_basics():
     """
@@ -203,3 +224,6 @@ def test_sas():
     # compare
     assert len(blob_data) == len(rest_data)
     assert blob_data == rest_data
+    sas_data = web_fetch(
+        azure_source.get_absolute("fonts/Roboto/Roboto-Black.ttf"))
+    assert sas_data == blob_data
