@@ -86,6 +86,11 @@ def test_basics():
     assert not azure_source.exists("WhatEver.zip")
     azure_source.close()
     azure_source.close()
+    # don't list files, invalid files should not be provided though
+    azure_source = FileSource.from_source(connection_string + "/fonts/Roboto",
+                                          fetch_file_list=False)
+    assert not azure_source.exists("LICENSE.md")
+    azure_source.close()
 
 
 @pytest.mark.skipif(skip_tests, reason="Azure tests disabled or not configured")

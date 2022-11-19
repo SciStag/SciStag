@@ -11,18 +11,21 @@ from __future__ import annotations
 import os
 from abc import abstractmethod
 from collections import Counter
-from dataclasses import dataclass
 from fnmatch import fnmatch
-from typing import Callable, Union, Any
+from typing import Callable, Any, TYPE_CHECKING
 
-import pandas as pd
 from pydantic import BaseModel, SecretStr
 
 from scistag.filestag.bundle import Bundle
+from scistag.filestag.file_source_iterator import FileSourceIterator, \
+    FileIterationData, FilterCallback
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
 from scistag.filestag.file_stag import FileStag
 
 CACHE_VERSION = "cache_version"
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 class FileSourceElement:
@@ -38,6 +41,24 @@ class FileSourceElement:
         "Holds the file's data"
         self.filename = name
         "The file's name. Usually relative to it's search path"
+
+
+class FileSourcePathOptions:
+    """
+    Defines the options for accessing a files full path
+    """
+
+    def __init__(self, for_file_stag=False):
+        """
+        :param for_file_stag: Defines if also return values are valid which
+            can just be used internally, such as azure:// for Azure resources
+            or zip:// for content in zip files. False by default.
+        """
+        self.for_file_stag = for_file_stag
+        """
+        Defines if also FileStag-only compatible return paths are allowed
+        which can just be used within SciStag via e.g. :meth:`FileStag.load`.
+        """
 
 
 class FileListEntry(BaseModel):
@@ -70,73 +91,6 @@ class FileListModel(BaseModel):
 
 
 FileList = list[FileListEntry]
-
-
-class FileSourceIterator:
-    """
-    Iterator providing the data from a file source
-    """
-
-    def __init__(self, source: "FileSource"):
-        """
-        :param source: The file source to provide the data for
-        """
-        self.source = source
-        "The FileSource which created this iterator"
-        self.processing_data = {}
-        """
-        Additional, user defined parameters you can store here to make them
-        accessible to your callback for example
-        """
-        self.file_index = 0
-        "The index of all found files (including skipped ones)"
-        self.processed_file_count = 0
-        "The index of all really processed files"
-        self.current_file_size = 0
-        """
-        The size of the file which is currently being handled. Not available
-        for all file sources. (0 in that case)
-        """
-
-    def __next__(self) -> FileSourceElement | None:
-        """
-        Requests the next data from the file source
-
-        :return: The data object
-        """
-        result = self.source.handle_next(self)
-        if result is None:
-            raise StopIteration
-        return result
-
-
-@dataclass
-class FileIterationData:
-    """
-    Provides the data to filter single file entries
-    """
-    file_source: "FileSource"
-    "The :class:`FileSource` object for which the decision is made"
-    file_index: int
-    "The file's index"
-    filename: str
-    "The file's name"
-    file_size: int
-    "The file's size"
-
-
-FilterCallback = Callable[[FileIterationData], Union[bool, str]]
-"""
-Shall verify if a function shall be handled or ignored.
-
-Parameters:
-* The file iteration data describing the current file to handle. 
-    See :class:`FileIterationData`.
-
-Return:
-* True if the file shall be processed, False if not. Alternatively a string 
-    if the file shall be processed but renamed.
-"""
 
 
 class FileSource:
@@ -195,7 +149,7 @@ class FileSource:
         will execute all filters in advance to provide you the final file_list 
         and will disable these variable afterwards.
         """
-        self.file_set = None
+        self._file_set = None
         """
         A set containing all known files. Only valid if file_list is available 
         too
@@ -386,6 +340,7 @@ class FileSource:
         :return: The file list
         """
         file_list = [entry.dict() for entry in self._file_list]
+        import pandas as pd
         return pd.DataFrame(file_list)
 
     def encode_file_list(self, version: int = -1) -> bytes:
@@ -423,7 +378,7 @@ class FileSource:
         assert isinstance(data, dict) and data.get("version") == 1
         if version != -1 and data.get(CACHE_VERSION, -1) != version:
             return False
-        df: pd.DataFrame = data['data']
+        df: "pd.DataFrame" = data['data']
         key_list = df.columns.to_list()
         self.update_file_list([
             FileListEntry.parse_obj(dict(zip(key_list, cur_element))) for
@@ -462,6 +417,25 @@ class FileSource:
         else:
             lst = new_list
         self.update_file_list(lst)
+
+    def get_absolute(self, filename: str,
+                     options: FileSourcePathOptions | None = None) -> \
+            str | None:
+        """
+        Returns the full path to the resource if possible, e.g. the absolute
+        path to a file on disk in case of an FileSourceDisk element.
+
+        :param filename: The name of the file of which the full path shall be
+            retrieved.
+        :param options: The sharing options such as expiration date in case
+            of cloud shares.
+        :return: The absolute path to the file from which it can be downloaded
+            via http or accessed on the disk.
+        """
+        _ = filename
+        __ = options
+        ___ = self
+        return None
 
     def get_statistics(self) -> dict | None:
         """
@@ -559,7 +533,7 @@ class FileSource:
         :param item: The name of the file
         :return: True if the file exists
         """
-        return item in self.file_set
+        return item in self._file_set
 
     @abstractmethod
     def _read_file_int(self, filename: str) -> bytes | None:
@@ -618,8 +592,8 @@ class FileSource:
         :param filename: The file to look for
         :return: True if the file exists
         """
-        if self.file_set is not None:
-            return filename in self.file_set
+        if self._file_set is not None:
+            return filename in self._file_set
         raise NotImplementedError("Missing implementation for exists method")
 
     def update_file_list(self, new_list: list[FileListEntry], may_sort=True):
@@ -634,7 +608,7 @@ class FileSource:
         self._file_list = new_list
         if self.sorting_callback is not None and may_sort:  # apply sorting
             self._file_list = sorted(self._file_list, key=self.sorting_callback)
-        self.file_set = set([element.filename for element in new_list])
+        self._file_set = set([element.filename for element in new_list])
         self._statistics = None
 
     def reduce_file_list(self) -> list[FileListEntry] | None:

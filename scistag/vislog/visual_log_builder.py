@@ -5,24 +5,16 @@ adding data in a VisualLog.
 
 from __future__ import annotations
 
-import time
-from collections import Counter
 from typing import Optional, Any, TYPE_CHECKING, Union
 import io
 
-import base64
 import html
 
 import hashlib
 
 import numpy as np
-import pandas as pd
-from filetype import filetype
-from matplotlib import pyplot as plt
 
-from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Image, Canvas, PixelFormat, Size2D
-from scistag.logstag import LogLevel
 
 from scistag.vislog.visual_log import VisualLog, MD, TXT, HTML, \
     TABLE_PIPE
@@ -32,9 +24,11 @@ MAX_NP_ARRAY_SIZE = 100
 
 if TYPE_CHECKING:
     from scistag.vislog.pyplot_log_context import PyPlotLogContext
+    from matplotlib import pyplot as plt
+    import pandas as pd
 
 LogableContent = Union[str, float, int, bool, np.ndarray,
-                       pd.DataFrame, pd.Series, list, dict, Image, Figure]
+                       "pd.DataFrame", "pd.Series", list, dict, Image, Figure]
 """
 Definition of all types which can be logged via `add` or provided as content
 for tables, lists and divs.
@@ -174,6 +168,7 @@ class VisualLogBuilder:
             self.figure(content)
             return self
         # pandas content frame
+        import pandas as pd
         if isinstance(content, (pd.DataFrame, pd.Series)):
             self.df(content)
             return self
@@ -415,7 +410,8 @@ class VisualLogBuilder:
                      f"{statistics.uptime:0.2f} seconds"]],
                    index=True)
 
-    def df(self, df: pd.DataFrame, name: str | None = None, index: bool = True):
+    def df(self, df: "pd.DataFrame", name: str | None = None,
+           index: bool = True):
         """
         Adds a dataframe to the log
 
@@ -482,7 +478,7 @@ class VisualLogBuilder:
                     data]
         self.table(data)
 
-    def figure(self, figure: plt.Figure | plt.Axes | Figure | Plot,
+    def figure(self, figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
                name: str | None = None,
                alt_text: str | None = None,
                _out_image_data: io.IOBase | None = None):
@@ -508,6 +504,7 @@ class VisualLogBuilder:
                     image.encode(filetype=self.target_log.image_format,
                                  quality=self.target_log.image_quality))
             return
+        import matplotlib.pyplot as plt
         if not isinstance(figure, plt.Figure):
             figure = figure.figure
         image_data = MPHelper.figure_to_png(figure, transparent=False)

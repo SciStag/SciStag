@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 from collections.abc import Iterable
 from scistag.filestag.azure.azure_blob_path import \
     AzureBlobPath
-from scistag.filestag.file_source import FileSource, FileSourceIterator, \
-    FileListEntry
+from scistag.filestag.file_source import FileSource, FileListEntry
+from scistag.filestag.file_source_iterator import FileSourceIterator
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
 
 if TYPE_CHECKING:
@@ -96,6 +96,8 @@ class AzureStorageFileSource(FileSource):
 
     def _read_file_int(self, filename: str) -> bytes | None:
         from azure.core.exceptions import ResourceNotFoundError
+        if not self.handle_file_list_filter(filename):
+            return None
         try:
             return self.container_client.download_blob(filename).readall()
         except ResourceNotFoundError:
@@ -104,6 +106,8 @@ class AzureStorageFileSource(FileSource):
     def exists(self, filename: str) -> bool:
         if self._file_list is not None:
             return super().exists(filename)
+        if not self.handle_file_list_filter(filename):
+            return False
         blob_client = self.container_client.get_blob_client(filename)
         return blob_client.exists()
 
@@ -151,7 +155,7 @@ class AzureStorageFileSource(FileSource):
             timeout=self.timeout)
 
     def handle_file_list_filter(self, filename: str) -> bool:
-        if self.tag_filter_expression is not None and len(self.prefix):
+        if len(self.prefix) > 0:
             if not filename.startswith(self.prefix):
                 return False
         return super().handle_file_list_filter(filename)

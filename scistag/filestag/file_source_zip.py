@@ -11,8 +11,8 @@ from threading import RLock
 import zipfile
 
 from scistag.filestag import FileStag
-from scistag.filestag.file_source import FileSource, FileSourceIterator, \
-    FileListEntry
+from scistag.filestag.file_source import FileSource, FileListEntry
+from scistag.filestag.file_source_iterator import FileSourceIterator
 
 
 class FileSourceZip(FileSource):

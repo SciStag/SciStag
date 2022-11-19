@@ -1,6 +1,4 @@
 import matplotlib
-import time
-import cv2
 
 from scistag.vislog import VisualLog
 from scistag.logstag.console_stag import Console

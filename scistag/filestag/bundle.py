@@ -11,6 +11,7 @@ from typing import Any, Callable, Literal, Optional
 
 from pydantic import BaseModel
 
+from scistag.common.classes import ClassHelper
 from scistag.common.mt.stag_lock import StagLock
 from scistag.filestag.memory_zip import MemoryZip
 
@@ -126,7 +127,7 @@ class Bundle:
     "Configuration access lock"
     _base_types_registered = False
     "Defines if the base types were registered"
-    _bundlers: dict[type, BundleToBytesCallback] = {}
+    _bundlers: dict[str, BundleToBytesCallback] = {}
     """
     Registered functions to convert an of type key to it's bytes representation
     """
@@ -259,16 +260,15 @@ class Bundle:
         :param options: Advanced bundling options
         :return: The data type to be stored in the bundle and the bytes string
         """
-        el_type = type(element)
+        el_type = ClassHelper.get_full_class_name(element)
         bundler = None
         with cls._access_lock:
             if el_type in cls._bundlers:
                 bundler = cls._bundlers[el_type]
+
             if bundler is None:
-                for cur_type, cur_bundler in cls._bundlers.items():
-                    if isinstance(element, cur_type):
-                        bundler = cur_bundler
-                        break
+                if el_type in cls._bundlers:
+                    bundler = cls._bundlers[el_type]
             if bundler is None:
                 raise NotImplementedError(
                     f"No bundler found for data type {str(el_type)}")
@@ -294,11 +294,12 @@ class Bundle:
         return unpacker(data, options)
 
     @classmethod
-    def register_bundler(cls, data_type: type, callback: BundleToBytesCallback):
+    def register_bundler(cls, data_type: str,
+                         callback: BundleToBytesCallback):
         """
         Registers a new bundling helper function
 
-        :param data_type: The data type to look out for
+        :param data_type: The data type as unique string to look out for
         :param callback: The function be called to bundle the data
         """
         with cls._access_lock:
@@ -334,19 +335,20 @@ def _register_base_types():
     Registers the base types which can be bundled
     """
     # bytes packing and unpacking
-    Bundle.register_bundler(bytes, lambda data, options: ("bytes", data))
+    Bundle.register_bundler("bytes", lambda data, options: ("bytes", data))
     Bundle.register_unpacker("bytes", lambda data, options: data)
     from .bundlers.numpy_bundler import NumpyBundler
     from .bundlers.dataframe_bundler import DataFrameBundler, DataSeriesBundler
-    import numpy as np
-    import pandas as pd
     # Numpy array
-    Bundle.register_bundler(np.ndarray, NumpyBundler.bundle)
-    Bundle.register_unpacker(NumpyBundler.__name__, NumpyBundler.unpack)
+    Bundle.register_bundler(NumpyBundler.NP_CLASS_NAME, NumpyBundler.bundle)
+    Bundle.register_unpacker(NumpyBundler.NP_CLASS_NAME, NumpyBundler.unpack)
     # Pandas DataFrame
-    Bundle.register_bundler(pd.DataFrame, DataFrameBundler.bundle)
-    Bundle.register_unpacker(DataFrameBundler.__name__, DataFrameBundler.unpack)
+    Bundle.register_bundler(DataFrameBundler.DF_CLASS_NAME,
+                            DataFrameBundler.bundle)
+    Bundle.register_unpacker(DataFrameBundler.DF_CLASS_NAME,
+                             DataFrameBundler.unpack)
     # Pandas Series
-    Bundle.register_bundler(pd.Series, DataSeriesBundler.bundle)
-    Bundle.register_unpacker(DataSeriesBundler.__name__,
+    Bundle.register_bundler(DataSeriesBundler.SERIES_CLASS_NAME,
+                            DataSeriesBundler.bundle)
+    Bundle.register_unpacker(DataSeriesBundler.SERIES_CLASS_NAME,
                              DataSeriesBundler.unpack)

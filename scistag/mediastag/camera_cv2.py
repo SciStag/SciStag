@@ -26,8 +26,9 @@ class CameraCv2(VideoSourceCamera):
         self.handle: cv.VideoCapture | None = None
 
     def handle_initialize_camera(self):
-        from scistag.imagestag import cv, opencv_available
-        if not opencv_available():
+        from scistag.imagestag import get_opencv
+        cv = get_opencv()
+        if cv is None:
             raise NotImplementedError(
                 "OpenCV not installed. See optional packages.")
         if isinstance(self.source, str):

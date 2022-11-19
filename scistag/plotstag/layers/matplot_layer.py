@@ -2,7 +2,6 @@
 Helper class for adding a matplotlib log as layer into a PlotStag plot
 """
 from __future__ import annotations
-import matplotlib.pyplot as plt
 
 from scistag.plotstag.plot import Plot
 from scistag.plotstag.matplot_lock import MPLock
@@ -34,6 +33,7 @@ class MPLayerLock(MPLock):
 
     def __enter__(self):
         res = super().__enter__()
+        import matplotlib.pyplot as plt
         self.figure = plt.figure(**self.params)
         return res
 
