@@ -265,10 +265,13 @@ class DataStagConnection:
             float, StagDataReturnTypes):
         """
         Returns the object if it was modified since timestamp
+
         :param name: The element's name
         :param timestamp: The previous timestamp
-        :return: The timestamp or counter, the data on success, otherwise the
-            old timestamp, None
+        :return: Returns the new value if the data was modified.
+
+            * On success: The timestamp or counter, the data on success
+            * On failure: The old timestamp, None
         """
         new_ts = self.get(name + self._TIMESTAMP_IDENTIFIER, default=0.0)
         if timestamp != new_ts:
@@ -279,6 +282,7 @@ class DataStagConnection:
             default: StagDataReturnTypes = None) -> StagDataReturnTypes:
         """
         Tries to read an element from the database
+
         :param name: The element's name
         :param default: The default return value if the element does nto exist
         :return: The element
@@ -293,11 +297,13 @@ class DataStagConnection:
     def get_ex(self, name: str, default: StagDataReturnTypes = None,
                version_counter=-1) -> (int, StagDataReturnTypes):
         """
-        Tries to read an element from the database. Allows to add a version check so only data will be returned if
-        it changed since the last get_ex.
+        Tries to read an element from the database. Allows to add a version
+        check so only data will be returned if it changed since the last get_ex.
+
         :param name: The element's name
         :param default: The default return value if the element does not exist
-        :param version_counter: If set then a value will only be returned if the element's update counter does not match
+        :param version_counter: If set then a value will only be returned if
+        the element's update counter does not match
         :return: The element's version, The element
         """
         if self.local:
@@ -333,7 +339,7 @@ class DataStagConnection:
 
     def exists(self, name: str) -> bool:
         """
-        Verifies if given element exists
+        Verifies if given element exists in the database.
 
         :param name: The element's name
         :return: True if the element exists
@@ -347,7 +353,8 @@ class DataStagConnection:
 
     def delete(self, name: str) -> bool:
         """
-        Deletes an element
+        Deletes an element by its name
+
         :param name: The element's name.
         :return: True on success
         """
@@ -361,7 +368,7 @@ class DataStagConnection:
     def delete_multiple(self, search_masks: list[str],
                         recursive: bool = False) -> int:
         """
-        Deletes a set of elements
+        Deletes a set of elements using a search mask
 
         :param search_masks: The element's names or search masks. May not point
             directly to the root directory
@@ -476,6 +483,11 @@ class DataStagConnection:
         else:
             response = requests.post(f"{self.target_url}/run", json=command)
             json_data = response.json()
+        if json_data is not None and isinstance(json_data, list):
+            # return the single results as a list
+            result = [ele for ele in json_data if
+                      ele is not None and 'data' in ele]
+            return result
         return json_data['data'] if json_data is not None else None
 
     @classmethod
