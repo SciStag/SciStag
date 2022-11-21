@@ -1,4 +1,4 @@
-from scistag.tests.datastag4flask.shared_test_client import test_client, test_remote_connection
+from scistag.tests.datastag.datastag4flask.shared_test_client import test_client, test_remote_connection
 
 
 def test_find_get_values(test_remote_connection):

@@ -2,7 +2,7 @@ import pytest
 import time
 
 try:
-    from scistag.tests.datastag.vt_common import vault_connections
+    from scistag.tests.datastag.local.vt_common import vault_connections
 except ModuleNotFoundError:
     pass
 

@@ -5,7 +5,7 @@ Provides Flask access for tess
 from unittest import mock
 import pytest
 from flask import Flask
-from scistag.datastag4flask.data_stag_blueprint import data_stag_service
+from scistag.datastag.flask.data_stag_blueprint import data_stag_service
 from scistag.datastag.data_stag_connection import DataStagConnection
 
 

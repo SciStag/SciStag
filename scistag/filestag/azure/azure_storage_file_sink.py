@@ -60,13 +60,13 @@ class AzureStorageFileSink(FileSink):
         if sub_folder is None:
             sub_folder = ""
         if target is not None:
-            self.blob_path = AzureBlobPath.from_string(target)
             if not target.startswith(AZURE_PROTOCOL_HEADER):
                 raise ValueError(
                     "Target has to be in the form azure://DefaultEndPoints...")
-            if len(self.blob_path.container_name):
+            self.blob_path = AzureBlobPath.from_string(target)
+            if len(self.blob_path.container_name) > 0:
                 container = self.blob_path.container_name
-            if self.blob_path.blob_name is not None:
+            if len(self.blob_path.blob_name) > 0:
                 sub_folder = self.blob_path.blob_name
             service = self.blob_path.get_connection_string()
         if len(sub_folder) > 0 and not sub_folder.endswith("/"):
@@ -74,13 +74,18 @@ class AzureStorageFileSink(FileSink):
         if service is not None and isinstance(service, str):
             from azure.storage.blob import BlobServiceClient
             # setup from connection string if provided
-            if service.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
-                service = BlobServiceClient.from_connection_string(service)
+            if service.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER) or \
+                    service.startswith(AZURE_PROTOCOL_HEADER):
+                connection_string = AzureBlobPath.from_string(
+                    service).get_connection_string()
+                service = BlobServiceClient.from_connection_string(
+                    connection_string)
             else:
                 raise ValueError("Connection string has the wrong format")
         if service is None:
             raise ValueError("No service client or url provided")
-        if container is None:
+        if container is None or not isinstance(container, str) or len(
+                container) == 0:
             raise ValueError("No container client or url provided")
         if isinstance(container, str):
             container = \
@@ -92,14 +97,18 @@ class AzureStorageFileSink(FileSink):
             if container is None:
                 raise ValueError("Could not access container")
         self.service = service
+        "The Azure service client (providing access to containers)"
         self.container = container
+        "The Azure container client (providing access to one container)"
+        self.sub_folder = sub_folder
+        "The folder in which all files uploaded shall be stored"
 
     def _store_int(self,
                    filename: str,
                    data: bytes,
                    overwrite: bool,
                    options: FileStorageOptions | None = None) -> bool:
-        return self.upload_file(filename=filename,
+        return self.upload_file(filename=self.sub_folder + filename,
                                 data=data,
                                 container=self.container,
                                 overwrite=overwrite)
@@ -131,36 +140,43 @@ class AzureStorageFileSink(FileSink):
         """
         if filename.startswith(AZURE_PROTOCOL_HEADER) or filename.startswith(
                 "DefaultEndpoints"):
-            blob_path = AzureBlobPath(filename)
+            blob_path = AzureBlobPath.from_string(filename)
             if len(blob_path.container_name) == 0:
                 raise ValueError("No container name provided")
             if len(blob_path.blob_name) == 0:
                 raise ValueError("No filename provided")
             service = AzureStorageFileSource.service_from_connection_string(
                 blob_path.get_connection_string())
-            container = cls.setup_container(service, container_name=container,
-                                            create=create_container)
+            container = \
+                cls.setup_container(service,
+                                    container_name=blob_path.container_name,
+                                    create=create_container)
             filename = blob_path.blob_name
         if data is None:
             raise ValueError("No data provided")
         if service is not None and isinstance(service, str):
             # setup from connection string if provided
             from azure.storage.blob import BlobServiceClient
-            if service.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
-                service = BlobServiceClient.from_connection_string(service)
+            if service.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER) or \
+                    service.startswith(AZURE_PROTOCOL_HEADER):
+                blob_path = AzureBlobPath.from_string(service)
+                if container is None or not isinstance(container, str):
+                    raise ValueError("Container needs to be a string if the "
+                                     "service is defined explicitly")
+                service = BlobServiceClient.from_connection_string(
+                    blob_path.get_connection_string())
+                container = cls.setup_container(service,
+                                                container_name=container,
+                                                create=create_container)
+                if container is None:
+                    raise ValueError("Container not found")
+            else:
+                raise ValueError("Invalid connection string")
         if service is None:
             from azure.storage.blob import ContainerClient
             if container is None or not isinstance(container, ContainerClient):
                 raise ValueError(
                     "No service client, valid container nor url provided")
-        if container is None:
-            raise ValueError("No container client or url provided")
-        if isinstance(container, str):
-            container = cls.setup_container(service,
-                                            container_name=container,
-                                            create=create_container)
-            if container is None:
-                raise ValueError("Could not access container")
         from azure.core.exceptions import ClientAuthenticationError, \
             ResourceExistsError
         try:
@@ -203,11 +219,11 @@ class AzureStorageFileSink(FileSink):
         container_client = None
         try:
             if not create:
-                try:
-                    return service.get_container_client(
-                        container_name)
-                except ResourceNotFoundError:
+                container_client = service.get_container_client(
+                    container_name)
+                if not container_client.exists():
                     return None
+                return container_client
             container_client = service.create_container(container_name)
         except ResourceExistsError:
             if not recreate_container:
@@ -246,5 +262,6 @@ class AzureStorageFileSink(FileSink):
             download link.
         """
         return \
-            self.blob_path.create_sas_url(blob_name, start_time_min,
+            self.blob_path.create_sas_url(self.sub_folder + blob_name,
+                                          start_time_min,
                                           end_time_days)
