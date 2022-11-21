@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import os
+import shutil
+import time
 from typing import Any
 
 from scistag.common.cache import Cache
@@ -94,11 +96,19 @@ class DiskCache:
             if not self.dir_created:
                 os.makedirs(self.cache_dir, exist_ok=True)
 
+    def clear(self):
+        """
+        Clears the disk cache completely
+        """
+        with self._access_lock:
+            try:
+                shutil.rmtree(self.cache_dir)
+            except FileNotFoundError:
+                pass
+
     def set(self, key: str,
             value: Any,
-            params: dict | None = None,
-            version: int | str = 1,
-            hash_params: bool = False
+            version: int | str = 1
             ):
         """
         Persists a single value in the cache
@@ -107,20 +117,13 @@ class DiskCache:
             key and version separated by an @ sign, e.g. "database@1"
         :param value: The element's value
         :param version: The cache version for this entry.
-        :param params: The creation parameters which were passed into
-            the loading function and should match upon a cache fetch try.
-        :param hash_params: Defines the parameters shall be hashed to
-            detect modifications.
         """
         from scistag.filestag import FileStag, Bundle
         key, eff_version = Cache.get_key_and_version(key,
                                                      self._version,
                                                      version)
-        if params is None or not hash_params:
-            params = {}
         with self._access_lock:
-            params = dict(params)
-            params["__version"] = eff_version
+            params = {"__version": eff_version}
             with self._access_lock:
                 self._ensure_cache_dir()
                 cache_name = self.get_cache_name(key)
@@ -132,21 +135,15 @@ class DiskCache:
 
     def get(self,
             key,
-            params: dict = None,
             version: int | str = 1,
-            hash_params: bool = False,
             default=None) -> Any | None:
         """
         Tries to read an element from the disk cache.
 
         :param key: The name of the object to load from cache or a combination
             of key and version separated by an @ sign, e.g. "database@1"
-        :param params: The creation parameters which were passed into
-            the loading function and still should match.
         :param version: The assumed version of this element we are searching
             for. If the version does not match the old entry is ignored.
-        :param hash_params: Defines the parameters shall be hashed to
-            detect modifications.
         :param default: The default value to return if no cache entry could
             be found
         :return: Either the cache data or the default value as fallback
@@ -157,9 +154,7 @@ class DiskCache:
                                                          self._version,
                                                          version)
             cache_name = self.get_cache_name(key)
-            if params is None or not hash_params:
-                params = {}
-            params = dict(params)
+            params = {}
             with self._access_lock:
                 params["__version"] = eff_version
                 stored_params = {}

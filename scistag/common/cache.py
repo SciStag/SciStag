@@ -66,7 +66,7 @@ class Cache:
     between application restarts.
     """
 
-    def __init__(self, version: str | int = "1", cache_dir: str = None):
+    def __init__(self, version: str | int = 1, cache_dir: str = None):
         """
         :param version: The cache version. 1 by default.
 
@@ -87,8 +87,6 @@ class Cache:
         """
         self._mem_cache_versions = {}
         "Version numbers for the elements stored in the memory cache"
-        self._mem_cache_params = {}
-        "Parameters for the elements stored in the memory cache"
         from scistag.common.disk_cache import DiskCache
         self._disk_cache = DiskCache(version=version,
                                      cache_dir=cache_dir)
@@ -133,11 +131,11 @@ class Cache:
         """
 
     @property
-    def version(self) -> int:
+    def version(self) -> str:
         """
         Returns the cache version
         """
-        return self._version
+        return str(self._version)
 
     @classmethod
     def get_app_session_id(cls) -> int:
@@ -232,35 +230,20 @@ class Cache:
         version = kwargs.pop("version", None)
         if hash_val is not None:
             version = str(version) if version else "0"
-            from scistag.filestag import Bundle
-            hash_data = Bundle.bundle(hash_val, compression=0)
-            version += "." + hashlib.md5(hash_data).hexdigest()
+            version += "#" + hash_val
         arg_list = list(args)
-        param_list = []
-        # build effective argument and keyword argument lists
-        params = {}
-        if len(kwargs):  # store key words in params
-            for ele_key, item in kwargs.items():
-                params[ele_key] = item
-        func_params = dict(params)
-        for index, element in enumerate(param_list):
-            params[f"_arg{index + len(param_list)}"] = element
-            arg_list.append(element)
-        if len(args) > 0:  # attach arguments to parameter set if provided
-            for index, element in enumerate(args):
-                params[f"_arg{index + len(param_list)}"] = element
         # try to fetch from cache
         with self._access_lock:
-            old_value = self.get(key, version=version, params=params)
+            old_value = self.get(key, version=version)
             if old_value is not None:  # cached? fine
                 return old_value
-        new_data = generator(*arg_list, **func_params)
+        new_data = generator(*arg_list, **kwargs)
         # update cache otherwise
         with self._access_lock:
-            self.set(key, new_data, params, version=version)
+            self.set(key, new_data, version=version)
             return new_data
 
-    def set(self, key: str, value, params: dict | None = None, version=None):
+    def set(self, key: str, value, version=None):
         """
         Adds an item to the cache or updates it.
 
@@ -271,8 +254,6 @@ class Cache:
 
         :param key: The item's name
         :param value: The value to assign
-        :param params: The parameters associated with the creation of value
-            and to be stored (and verified) in combination with the version.
         :param version: The version of the cache element. By default 0 for
             memory cache elements and 1 for disk cache elements.
         """
@@ -282,28 +263,22 @@ class Cache:
                                                         self._version,
                                                         minor=version)
             assert len(key) > 0
-            if params is None:
-                params = {}
             if not key[0].isalpha() and not key.startswith(
                     "./") and not key.startswith("_"):
                 raise ValueError("Keys has to start with a character")
             if "/" in key:
-                self._disk_cache.set(org_key, value, params=params,
-                                     version=version)
+                self._disk_cache.set(org_key, value, version=version)
                 return
             # flag of volatile if added during loading process
             if key not in self._mem_cache and self._is_loading:
                 self._volatile_cache_entries.add(key)
             self._mem_cache[key] = value
             self._mem_cache_versions[key] = eff_version
-            self._mem_cache_params[key] = params
 
     def get(self,
             key: str,
             default=None,
-            version=None,
-            params: dict | None = None,
-            hash_params=False):
+            version=None):
         """
         Returns a value from the cache.
 
@@ -314,10 +289,6 @@ class Cache:
 
             By default 0 for memory cache elements and 1 for disk cache
             elements.
-        :param params: The parameters which were passed into the function
-            and still need t match.
-        :param hash_params: Defines the parameters shall be hashed to
-            detect modifications.
         :param default: The value to return by default if no cache element
             could be found.
         :return: The item's value.
@@ -325,25 +296,31 @@ class Cache:
         Returns default if no value can be found.
         """
         with self._access_lock:
-            if params is None:
-                params = {}
             org_key = key
             key, eff_version = self.get_key_and_version(key, self._version,
                                                         minor=version)
             if "/" in key:
                 data = self._disk_cache.get(org_key,
-                                            params=params,
-                                            hash_params=hash_params,
                                             version=version)
                 if data is None:
                     return default
                 return data
             if (key in self._mem_cache and
-                    self._mem_cache_versions[key] == eff_version and
-                    (not hash_params or self._mem_cache_params[key] == params)):
+                    self._mem_cache_versions[key] == eff_version):
                 return self._mem_cache[key]
             else:
                 return default
+
+    def clear(self):
+        """
+        Clears the disk cache completely
+
+        """
+        with self._access_lock:
+            self._mem_cache = {}
+            self._mem_cache_versions = {}
+        if self._disk_cache is not None:
+            self._disk_cache.clear()
 
     def load(self):
         """
@@ -377,7 +354,6 @@ class Cache:
                     "loaded flag of component not correctly set to False. "
                     "Did you forget to call super().handle_unload()?")
             for element in self._volatile_cache_entries:
-                element: str
                 if element.startswith("."):  # clear volatile members
                     member_name = element[1:]
                     if member_name in self.__dict__:
@@ -477,11 +453,11 @@ class Cache:
             key, eff_version = self.get_key_and_version(key, self._version)
             if "/" in key:
                 self._disk_cache.delete(key)
+                return
             if key not in self._mem_cache:
                 raise KeyError(f"The value {key} is not defined in the cache")
             del self._mem_cache[key]
             del self._mem_cache_versions[key]
-            del self._mem_cache_params[key]
 
     def __contains__(self, key) -> bool:
         """

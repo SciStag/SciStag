@@ -4,6 +4,7 @@ scistag/tests/logstag/refdata
 cert/
 logs/
 doc_out
+.stscache/
 livelog/
 __pycache__/
 *.py[cod]

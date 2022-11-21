@@ -16,10 +16,8 @@ def test_loading_time():
     end_time = time.time()
     time_diff = end_time - start_time
     assert time_diff < 0.05
-    print(time_diff)
     start_time = time.time()
     importlib.import_module("scistag.vislog")
     end_time = time.time()
     time_diff = end_time - start_time
     assert time_diff < 0.05
-    print(time_diff)
