@@ -5,7 +5,7 @@ from typing import Callable, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from scistag.filestag import FileSource
-    from scistag.filestag.file_source import FileSourceElement
+    from scistag.filestag.file_source import FileSourceElement, FileListEntry
 
 
 class FileSourceIterator:
@@ -55,10 +55,7 @@ class FileIterationData:
     "The :class:`FileSource` object for which the decision is made"
     file_index: int
     "The file's index"
-    filename: str
-    "The file's name"
-    file_size: int
-    "The file's size"
+    element: "FileListEntry"
 
 
 FilterCallback = Callable[[FileIterationData], Union[bool, str]]

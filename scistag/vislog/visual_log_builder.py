@@ -12,6 +12,7 @@ import html
 
 import hashlib
 
+import filetype
 import numpy as np
 
 from scistag.imagestag import Image, Canvas, PixelFormat, Size2D
@@ -156,9 +157,30 @@ class VisualLogBuilder:
         easily be embedded into tables and divs via the provided add_row
         and add_col methods.
 
-        :param content: The data to be logged
+        :param content: The data to be logged.
+
+            Currently supported types are
+            * bytes:
+                * png, jpg, bmp or gif byte strings
+            * Image(s) - see :class:`Image
+            * Figure(s) - :class:`Figure`
+            * Pandas DataFrame(s) and Series
+            * Nunpy Arrays
+            * Common Python types such as dicts and dists, strings, floats and
+                ints.
         :return: The builder
         """
+        if isinstance(content, bytes):
+            try:
+                ft = filetype.guess(content)
+            except TypeError:
+                raise ValueError(f"Data type could not be detected")
+            from scistag.imagestag.image import SUPPORTED_IMAGE_FILETYPES
+            if ft.extension in SUPPORTED_IMAGE_FILETYPES:
+                self.image(content)
+                return
+            else:
+                raise ValueError(f"Data of filetype {ft} not supported")
         # image
         if isinstance(content, Image):
             self.image(content)

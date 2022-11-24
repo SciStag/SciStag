@@ -36,31 +36,50 @@ class Color:
     "Cached, rounded int tuple"
 
     def __init__(self,
-                 value: ColorTypes | float | None = None,
-                 green=1.0,
-                 blue=1.0,
-                 alpha=1.0,
-                 red: float | None = None):
+                 value: ColorTypes | float | int | None = None,
+                 green: float | int = 1.0,
+                 blue: float | int = 1.0,
+                 alpha: float | int = 1.0,
+                 red: float | int | None = None):
         """
-        Initializer
-
-        :param value: Red (0.0 .. 1.0), a tuple of 3 or 4 floats or integers
-            defining the color or a hex code,
-            beginning with a # and with either 6 or 8 digits
-            (#RRGGBB or #RRGGBBAA).
-
-            Float values are assumed to be in range 0.0 to 1.0.
-        :param red: The red color component (0.0 .. 1.0)
-        :param green: The green color component (0.0 .. 1.0)
-        :param blue: The blue color component (0.0 .. 1.0)
-        :param alpha: The alpha value (opacity of the color) (0.0 .. 1.0).
-            Not supported by all drawing functions.
-            0 .. 1.0. Int value in range 0 .. 255
-
         Usage:
 
-        ``Color(red=1.0, green=0.0, blue=0.5) == Color(1.0, 0.0, 0.5) ==
-         Color((1.0, 0.0, 0.5)) == Color((255, 0, 127))``
+        ..  code-block: python
+
+            red = Color(255,0,0)  # red
+            red = Color(1.0,0,0)  # red as well
+            red = Color((1.0,0.0,0.0))  # guess what
+            red = Color((255,0,0))  # guess what
+            red = Color("#FF0000")  # guess what
+            transparent_blue = Color("#0000FFAA")
+            transparent_blue = Color(0.0, 0.0 ,0.0, 0.5)
+
+            Important: When passing the color components as single values
+            the data type of the red component decides whether green, red
+            and alpha need to be converted from int to float or not, so if
+            red (or value) are an int then green and blue will also
+            be converted and are assumed to be integer as well.
+
+            Alpha though (which is regularly not passed) is tested separately
+            and can always be a float, so something like
+            Color(255, 0, 255, 0.5) is valid.
+
+        :param value: One of
+            * The red color component (0.0 .. 1.0) or from (0 .. 255)
+            * a tuple of 3 or 4 floats or integers (0 .. 1.0 or 0 .. 255)
+            * A string defining the color or a hex code,
+              beginning with a # and with either 6 or 8 digits
+              (#RRGGBB or #RRGGBBAA).
+
+            Float values are assumed to be in range 0.0 to 1.0.
+        :param red: The red color component (0.0 .. 1.0 or 0 .. 255)
+        :param green: The green color component (0.0 .. 1.0 or 0 .. 255)
+        :param blue: The blue color component (0.0 .. 1.0 or 0 .. 255)
+        :param alpha: The alpha value (opacity of the color) (0.0 .. 1.0 or
+            0 .. 255).
+
+            Alpha is not supported by all drawing functions.
+            0 .. 1.0. Int value in range 0 .. 255
         """
         if red is not None:
             value = red
@@ -110,6 +129,11 @@ class Color:
             self.g = green
             self.b = blue
             self.a = alpha
+        elif isinstance(value, int):
+            self.r = value / 255.0
+            self.g = green / 255.0
+            self.b = blue / 255.0
+            self.a = alpha / 255.0 if isinstance(alpha, int) else alpha
         else:
             raise TypeError("Invalid data type")
         self._rgba = (self.r, self.g, self.b, self.a)

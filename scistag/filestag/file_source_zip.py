@@ -13,6 +13,7 @@ import zipfile
 from scistag.filestag import FileStag
 from scistag.filestag.file_source import FileSource, FileListEntry
 from scistag.filestag.file_source_iterator import FileSourceIterator
+from datetime import datetime
 
 
 class FileSourceZip(FileSource):
@@ -83,8 +84,8 @@ class FileSourceZip(FileSource):
                 return super().exists(filename)
             return filename in self.zip_archive.namelist()
 
-    def handle_get_next_filename(self, iterator: FileSourceIterator) -> \
-            tuple[str, int] | None:
+    def handle_get_next_entry(self, iterator: FileSourceIterator) -> \
+            FileListEntry | None:
         with self.access_lock:
             if self._file_list is None:
                 while True:
@@ -92,26 +93,35 @@ class FileSourceZip(FileSource):
                         return None
                     index = iterator.file_index
                     iterator.file_index += 1
-                    if not self.handle_file_list_filter(
-                            self.zip_archive.filelist[index].filename):
+                    cur_entry = self.zip_archive.filelist[index]
+                    new_entry = FileListEntry(
+                        filename=cur_entry.filename,
+                        file_size=cur_entry.file_size,
+                        modified=datetime(*cur_entry.date_time),
+                        created=datetime(*cur_entry.date_time)
+                    )
+                    if not self.handle_file_list_filter(new_entry):
                         continue
-                    return self.zip_archive.filelist[index].filename, \
-                           self.zip_archive.filelist[index].file_size
+                    return new_entry
+
             else:
-                return super().handle_get_next_filename(iterator)
+                return super().handle_get_next_entry(iterator)
 
     def handle_fetch_file_list(self, force: bool = False):
         with self.access_lock:
             if self._file_list is not None and not force:
                 return
-            cleaned_list = [element for element in self.zip_archive.filelist if
-                            self.handle_file_list_filter(element.filename)]
+            full_list = [FileListEntry(filename=element.filename,
+                                       file_size=element.file_size,
+                                       modified=datetime(*element.date_time),
+                                       created=datetime(*element.date_time))
+                         for element
+                         in self.zip_archive.filelist]
+            cleaned_list = [element for element in full_list if
+                            self.handle_file_list_filter(element)]
             elements = sorted(cleaned_list,
                               key=lambda element: element.filename)
-            self.update_file_list(
-                [FileListEntry(filename=element.filename,
-                               file_size=element.file_size) for element in
-                 elements])
+            self.update_file_list(elements)
 
     def close(self):
         with self.access_lock:

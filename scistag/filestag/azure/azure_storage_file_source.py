@@ -99,7 +99,8 @@ class AzureStorageFileSource(FileSource):
 
     def _read_file_int(self, filename: str) -> bytes | None:
         from azure.core.exceptions import ResourceNotFoundError
-        if not self.handle_file_list_filter(filename):
+        entry = FileListEntry(filename=filename)
+        if not self.handle_file_list_filter(entry):
             return None
         try:
             return self.container_client.download_blob(filename).readall()
@@ -109,15 +110,29 @@ class AzureStorageFileSource(FileSource):
     def exists(self, filename: str) -> bool:
         if self._file_list is not None:
             return super().exists(filename)
-        if not self.handle_file_list_filter(filename):
+        entry = FileListEntry(filename=filename)
+        if not self.handle_file_list_filter(entry):
             return False
         blob_client = self.container_client.get_blob_client(filename)
         return blob_client.exists()
 
-    def handle_get_next_filename(self, iterator: FileSourceIterator) -> \
-            tuple[str, int] | None:
+    @staticmethod
+    def _file_list_entry_from_blob(element) -> FileListEntry:
+        """
+        Creates a file list entry from a blob storage entry
+
+        :param element: The blob storage entry
+        :return: The file list entry containing the extracted properties
+        """
+        return FileListEntry(filename=element.name,
+                             file_size=element.size,
+                             modified=element.last_modified,
+                             created=element.creation_time)
+
+    def handle_get_next_entry(self, iterator: FileSourceIterator) -> \
+            FileListEntry | None:
         if self._file_list is not None:
-            return super().handle_get_next_filename(iterator)
+            return super().handle_get_next_entry(iterator)
         while True:
             if iterator.file_index == 0:
                 iterator.processing_data[
@@ -126,17 +141,16 @@ class AzureStorageFileSource(FileSource):
             try:
                 next_element = next(iterator.processing_data['blobIter'])
                 if self.tag_filter_expression is not None:
-                    filename: str = next_element["name"]
-                    file_size: int = 0
+                    new_element = FileListEntry(filename=next_element["name"])
                 else:
-                    filename: str = next_element.name
-                    file_size: int = next_element.size
+                    new_element = self._file_list_entry_from_blob(
+                        next_element)
             except StopIteration:
                 iterator.processing_data['blobIter'] = None
                 return None
-            if not self.handle_file_list_filter(filename):
+            if not self.handle_file_list_filter(new_element):
                 continue
-            return filename, file_size
+            return new_element
 
     def setup_blob_iterator(self) -> Iterable:
         """
@@ -157,11 +171,11 @@ class AzureStorageFileSource(FileSource):
             results_per_page=self.results_per_page,
             timeout=self.timeout)
 
-    def handle_file_list_filter(self, filename: str) -> bool:
+    def handle_file_list_filter(self, entry: FileListEntry) -> bool:
         if len(self.prefix) > 0:
-            if not filename.startswith(self.prefix):
+            if not entry.filename.startswith(self.prefix):
                 return False
-        return super().handle_file_list_filter(filename)
+        return super().handle_file_list_filter(entry)
 
     def handle_fetch_file_list(self, force: bool = False):
         if self._file_list is not None and not force:
@@ -169,19 +183,19 @@ class AzureStorageFileSource(FileSource):
         from scistag.common.iter_helper import limit_iter
         blob_iterator = self.setup_blob_iterator()
         if self.tag_filter_expression is not None:
-            cleaned_list = [(element['name'], 0)
+            cleaned_list = [FileListEntry(filename=element.name)
                             for element in
                             limit_iter(blob_iterator, self.max_file_count)
-                            if self.handle_file_list_filter(element['name'])]
+                            if self.handle_file_list_filter(
+                    FileListEntry(filename=element['name']))]
         else:
-            cleaned_list = [(element.name, element.size)
-                            for element in
-                            limit_iter(blob_iterator, self.max_file_count) if
-                            self.handle_file_list_filter(element.name)]
-        elements = sorted(cleaned_list, key=lambda element: element[0])
-        self.update_file_list(
-            [FileListEntry(filename=element[0], file_size=element[1]) for
-             element in elements])
+            elements = [self._file_list_entry_from_blob(element)
+                        for element in
+                        limit_iter(blob_iterator, self.max_file_count)]
+            cleaned_list = [element for element in elements
+                            if self.handle_file_list_filter(element)]
+        elements = sorted(cleaned_list, key=lambda element: element.filename)
+        self.update_file_list(elements)
 
     def close(self):
         if self.is_closed:

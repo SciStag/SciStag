@@ -136,7 +136,7 @@ def test_filtering():
                                         search_mask="*.py",
                                         filter_callback=lambda
                                             x: "renamed_" + os.path.basename(
-                                            x.filename))
+                                            x.element.filename))
     ren_source.reduce_file_list()
     assert ren_source.output_filename_list[0].startswith("renamed_")
     name_list = []

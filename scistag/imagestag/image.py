@@ -504,25 +504,29 @@ class Image(ImageBase):
         return (int(round(org_size.width * scaling)),
                 int(round(org_size.height * scaling)))
 
-    def convert(self, target_format: PixelFormat | str,
+    def convert(self, pixel_format: PixelFormat | str,
                 bg_fill: Union["Color", None] = None) -> Image:
         """
-        Converts the image's format
+        Converts the image's pixel format to another one for example from
+        RGB to gray, from RGB to HSV etc.
 
-        :param target_format: The target format
+        Note that this function may also change the image's framework,
+        depending on the target pixel format chosen.
+
+        :param pixel_format: The new pixel format
         :param bg_fill: For alpha-transparent images only: The color of the
             background of the new non-transparent image.
         :return: Self
         """
-        target_format = PixelFormat(target_format)
+        pixel_format = PixelFormat(pixel_format)
         original = self._pil_handle
         if original is None:  # ensure a handle is available
             original = self.to_pil()
-        pil_format = target_format.to_pil()
+        pil_format = pixel_format.to_pil()
         if pil_format is None:
             raise NotImplementedError("The conversion to this format is "
                                       "currently not supported")
-        if target_format == PixelFormat.RGB and original.mode == "RGBA":
+        if pixel_format == PixelFormat.RGB and original.mode == "RGBA":
             new_image = Image(pixel_format=PixelFormat.RGB,
                               size=self.get_size(),
                               bg_color=bg_fill)
@@ -531,8 +535,9 @@ class Image(ImageBase):
             self.__dict__['_pil_handle'] = pil_handle
         else:
             self.__dict__['_pil_handle'] = original.convert(pil_format)
+        framework = self.framework
         self.__dict__['framework'] = ImsFramework.PIL
-        self.__dict__['pixel_format'] = target_format
+        self.__dict__['pixel_format'] = pixel_format
         self.__dict__['_pixel_data'] = None
         return self
 
@@ -567,13 +572,19 @@ class Image(ImageBase):
 
     def copy(self) -> Image:
         """
-        Creates a copy of this image.
+        Creates a copy of this image using the data representation of the
+        current image, so a PIL based image will create a new PIL based image
+        and a RAW image will create a RAW image copy.
 
-        By default a PILLOW based image will be created
-
-        :return: A copy of this image
+        :return: The copy of this image
         """
-        return Image(self.to_pil().copy())
+        if self._pil_handle is not None:
+            return Image(self.to_pil().copy())
+        else:
+            import copy
+            return Image(copy.deepcopy(self._pixel_data),
+                         pixel_format=self.pixel_format,
+                         framework=self.framework)
 
     def get_handle(self) -> np.ndarray | PIL.Image.Image:
         """

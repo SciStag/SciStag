@@ -36,13 +36,14 @@ class VisualLogBasicLogger:
                             LogLevel.CRITICAL: "purple"}
         "Colors for the single log levels"
 
-    def _log_advanced(self, text, level: LogLevel):
+    def _log_advanced(self, text, level: LogLevel) -> VisualLogBuilder:
         """
         Detects tables and other objects in a log and pretty prints the tables
         while keeping the other log data intact
 
         :param text: The log text
         :param level: The log level
+        :return: The log builder
         """
         lines = text.split("\n")
         common_block = ""
@@ -78,11 +79,12 @@ class VisualLogBasicLogger:
         flush_table()
         if len(common_block) > 0:
             self.log(common_block, level=level)
+        return self.builder
 
     def __call__(self, *args: Any, level: LogLevel | str | None = None,
                  detect_objects: bool = False,
                  no_break: bool = False,
-                 space: str = " "):
+                 space: str = " ") -> VisualLogBuilder:
         """
         Adds a log text to the log
 
@@ -94,7 +96,7 @@ class VisualLogBasicLogger:
         :param no_break: If set linebreaks will be avoided, e.g. a cell inside
             a table.
         :param space: The character or text to be used for spaces
-        :return:
+        :return: The builder
         """
         if level is not None and isinstance(level, str):
             level = LogLevel(level)
@@ -106,7 +108,7 @@ class VisualLogBasicLogger:
         from scistag.vislog.visual_log import TABLE_PIPE
         if detect_objects and TABLE_PIPE in text:
             self._log_advanced(text, level)
-            return
+            return self.builder
         md_text = text
         if level is not None and level in self.level_tag:
             md_text = f"<b>{self.level_tag[level]}</b>: {text}"
@@ -143,6 +145,7 @@ class VisualLogBasicLogger:
                 self.builder.add_md(f"{md_lines}\n")
         self.builder.add_txt(text)
         self.builder.clip_logs()
+        return self.builder
 
     def info(self, *args, **kwargs) -> VisualLogBuilder:
         """
