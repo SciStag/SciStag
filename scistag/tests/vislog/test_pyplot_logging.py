@@ -4,14 +4,17 @@ Tests the logging of figures via pyplot
 import numpy as np
 
 from . import vl
+from sys import platform
 
 
 def test_pyplot_logging():
     """
     Test the pyplot logging methods
     """
+    hash_val = "4973de155aa77f2bd17c8f19a160166a" if platform == "darwin" else "62d17ca65c9cf6e97e5ba5d3575976da"
+    # note minimal visualization differences between M1 Mac ons AMD64
     with vl.pyplot(assertion_name="testplot",
-                   assertion_hash="62d17ca65c9cf6e97e5ba5d3575976da") as plt:
+                   assertion_hash=hash_val) as plt:
         t = np.arange(0., 5., 0.2)
         plt.plot(t, t, 'r--', t, t ** 2, 'bs', t, t ** 3, 'g^')
     with vl.pyplot() as plt:

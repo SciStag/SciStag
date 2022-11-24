@@ -1,6 +1,7 @@
 import os.path
 import shutil
 from logging import ERROR
+from sys import platform
 from unittest import mock
 from unittest.mock import patch
 
@@ -131,6 +132,8 @@ def test_figure():
         plt.imshow(data)
         vl.figure(figure, "random figure using MPLock")
 
+    hash_val = '324a86b9b24b1fe1ff1d770cbc31e8e5' if platform == "darwin" else "20ee5e3e393ec5099ec10273a838c263"
+    # note minimal visualization differences between M1 Mac ons AMD64
     vl.sub_test("Logging axes created with matplotlib using MPLock()")
     with MPLock() as plt:
         figure = plt.figure(figsize=(4, 4))
@@ -139,7 +142,7 @@ def test_figure():
         data = np.random.random_sample((16, 16, 3))
         axes = plt.imshow(data)
         vl.test.assert_figure("random figure using MPLock", axes,
-                              hash_val="20ee5e3e393ec5099ec10273a838c263")
+                              hash_val=hash_val)
 
 
 def test_eval():

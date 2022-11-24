@@ -5,6 +5,11 @@ import os
 
 from scistag.imagestag import Image, Color, ColorTypes
 
+CAIRO_MAC_PORTS_PATH = "/opt/local/lib"
+"Path where Cairo can be found if installed via Mac Ports"
+CAIRO_BREW_PATH = "/opt/homebrew/lib"
+"Path where Cairo can be found if installed via Brew"
+
 
 def _show_cairo_msg():
     """
@@ -14,11 +19,12 @@ def _show_cairo_msg():
     print(
         '\nCairoSVG graphics rendering not available, high-quality rendering '
         'disabled.\n\n'
-        'Install Cairo on Linux, in Docker containers, OS X or in Windows '
+        'Install Cairo on Linux, in Docker containers or in Windows '
         'Subsystem for Linux (WSL)\n'
         'via "pip install scistag[svg]" or "pip install cairosvg" for the '
         'module and the\n'
         'required library via "sudo apt-get install cairosvg"\n\n'
+        'On OS X you can install Cairo via `sudo port install cairo ` or `brew install cairo libxml2 libffi`\n\n'
         'Call scistag.imagestag.SvgRenderer.set_verbose(true) to suppress this '
         'message\n'
         "See help(scistag.imagestag.SvgRenderer) for further details")
@@ -83,20 +89,28 @@ class SvgRenderer:
         with cls._access_lock:
             if cls._initialized:
                 return
-            try:
-                import cairosvg
-                cls._cairo_available = True
-                cls._svg_to_png = cairosvg.svg2png
-            except (OSError, ModuleNotFoundError):
-                cls._cairo_available = False
-                if not cls._verbose:
-                    _show_cairo_msg()
+            old_dir = os.getcwd()
+            search_paths = [".", CAIRO_MAC_PORTS_PATH, CAIRO_BREW_PATH]
+            for path in search_paths:
+                if os.path.exists(path):
+                    os.chdir(path)
+                try:
+                    import cairosvg
+                    cls._cairo_available = True
+                    cls._svg_to_png = cairosvg.svg2png
+                    break
+                except (OSError, ModuleNotFoundError):
+                    cls._cairo_available = False
+            if not cls._cairo_available and not cls._verbose:
+                _show_cairo_msg()
+            os.chdir(old_dir)
             cls._initialized = True
 
     @classmethod
     def available(cls) -> bool:
         """
         Returns if SVG rendering is available
+
         :return: True if it is
         """
         with cls._access_lock:

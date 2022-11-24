@@ -29,7 +29,7 @@ def test_scan():
 
     source = FileSource.from_source(base_dir, recursive=True,
                                     fetch_file_list=True)
-    assert len(source._file_list) >= 150
+    assert len(source._file_list) >= 90
     assert len(source._file_list) < 550
 
 
