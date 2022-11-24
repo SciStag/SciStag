@@ -48,3 +48,6 @@ def test_color_basics():
     assert Color((255, 255, 255, 255)) == Colors.WHITE
     assert Color((255, 255, 255)) == Colors.WHITE
     assert Color((255, 0, 255, 255)) == Colors.FUCHSIA
+    # test passing colors as rgb int
+    assert Color(255, 255, 255) == Color((255, 255, 255))
+    assert Color(255, 255, 255, 127 / 255) == Color(255, 255, 255, 127)

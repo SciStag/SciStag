@@ -8,11 +8,13 @@ archives in cloud storages.
 
 from __future__ import annotations
 
+import io
 import os
 from abc import abstractmethod
 from collections import Counter
 from datetime import datetime
 from fnmatch import fnmatch
+from hashlib import md5
 from typing import Callable, Any, TYPE_CHECKING, Union
 
 from pydantic import BaseModel, SecretStr
@@ -69,11 +71,11 @@ class FileListEntry(BaseModel):
     """
     filename: str
     "The file's name"
-    file_size: Union[int, None]
+    file_size: int = 0
     "The file's size in bytes"
-    created: Union[datetime, None]
+    created: datetime = datetime.now()
     "The element's creation time"
-    modified: Union[datetime, None]
+    modified: datetime = datetime.now()
     "The element's last modification time"
 
 
@@ -299,7 +301,7 @@ class FileSource:
         if isinstance(source, SecretStr):
             source = source.get_secret_value()
         if isinstance(source, bytes):
-            from scistag.filestag.file_source_zip import FileSourceZip
+            from scistag.filestag.sources.file_source_zip import FileSourceZip
             return FileSourceZip(source=source, **params)
         if source.startswith(AZURE_PROTOCOL_HEADER) or \
                 source.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
@@ -308,12 +310,53 @@ class FileSource:
             return AzureStorageFileSource(source=source, **params)
         if not (source.endswith("/") or source.endswith(
                 "\\")) and source.endswith(".zip"):
-            from scistag.filestag.file_source_zip import FileSourceZip
+            from scistag.filestag.sources.file_source_zip import FileSourceZip
             return FileSourceZip(source=source, **params)
         if source.__contains__("://"):
             raise NotImplementedError("Unknown protocol for FileSource")
-        from scistag.filestag.file_source_disk import FileSourceDisk
+        from scistag.filestag.sources.file_source_disk import FileSourceDisk
         return FileSourceDisk(path=source, **params)
+
+    def refresh(self):
+        """
+        Refreshes the file list
+        """
+        if self._file_list is not None:
+            del self._file_list
+        self._file_list = None
+        if self._file_set is not None:
+            del self._file_set
+        self._file_set = None
+        self._create_file_list_int(no_cache=True)
+
+    def get_hash(self, max_content_size: int = 0):
+        """
+        Creates a hash of the current file list to detect potential
+        modifications of the files. By default this hash is created using
+        the file sizes and file time stamps. If desired the hash can
+        also be created using the file's content.
+
+        :param max_content_size: The maximum size of a file to compute up to
+            which it's hash is directly computed from its content.
+        :return: The MD5 hash
+        """
+        stream = io.BytesIO()
+        for cur_file in self.get_file_list():
+            stream.write(
+                cur_file.filename.__hash__().to_bytes(8, "little", signed=True))
+            stream.write(cur_file.file_size.to_bytes(8, "little", signed=True))
+            stream.write(
+                cur_file.created.__hash__().to_bytes(8, "little", signed=True))
+            stream.write(
+                cur_file.modified.__hash__().to_bytes(8, "little", signed=True))
+            if max_content_size > 0 and cur_file.file_size <= max_content_size:
+                stream.write(
+                    md5(self.read_file(cur_file.filename)).hexdigest().encode(
+                        "utf-8"))
+        return md5(stream.getvalue()).hexdigest()
+
+    def __hash__(self):
+        return self.get_hash(max_content_size=0)
 
     @abstractmethod
     def _get_source_identifier(self) -> str:
@@ -719,15 +762,18 @@ class FileSource:
         """
         pass
 
-    def _create_file_list_int(self):
+    def _create_file_list_int(self, no_cache: bool = False):
         """
         Creates the file list by either scanning the source directory or
         loading a cache file list from disk.
 
         If caching is enabled the new list is stored to disk.
+
+        :param no_cache: If defined the file list may not be loaded form disk,
+            e.g. when this function is called from :meth:`refresh`.
         """
         loaded = False
-        if self._file_list_name is not None:
+        if self._file_list_name is not None and not no_cache:
             loaded = self.load_file_list(self._file_list_name,
                                          version=self._file_list_version)
         if not loaded:

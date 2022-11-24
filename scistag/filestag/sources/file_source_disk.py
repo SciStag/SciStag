@@ -5,6 +5,7 @@ Implements the :class:`FileSourceDisk` class which allows iterating files from a
 from __future__ import annotations
 import glob
 import os
+from datetime import datetime
 
 from scistag.filestag import FilePath
 from scistag.filestag.file_source import FileSource, FileListEntry, \
@@ -54,7 +55,16 @@ class FileSourceDisk(FileSource):
         full_list = [FileListEntry(filename=cur_element,
                                    file_size=os.path.getsize(
                                        self.search_path + "/" +
-                                       cur_element))
+                                       cur_element),
+                                   createed=datetime.fromtimestamp(
+                                       os.path.getctime(
+                                           self.search_path + "/" +
+                                           cur_element)),
+                                   modified=datetime.fromtimestamp(
+                                       os.path.getmtime(
+                                           self.search_path + "/" +
+                                           cur_element))
+                                   )
                      for cur_element in name_list]
         full_list = [element for element in full_list if
                      self.handle_file_list_filter(element)]

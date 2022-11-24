@@ -6,6 +6,7 @@ file by file with a minimum of code.
 """
 import os.path
 import shutil
+import time
 
 import pytest
 from pydantic import SecretStr
@@ -25,11 +26,11 @@ def test_scan():
     source = FileSource.from_source(base_dir, recursive=False,
                                     fetch_file_list=True)
     assert len(source._file_list) >= 1
-    assert len(source._file_list) < 10
+    assert len(source._file_list) < 20
 
     source = FileSource.from_source(base_dir, recursive=True,
                                     fetch_file_list=True)
-    assert len(source._file_list) >= 150
+    assert len(source._file_list) >= 90
     assert len(source._file_list) < 550
 
 
@@ -41,7 +42,7 @@ def test_iteration():
     source = FileSource.from_source(base_dir, recursive=True,
                                     fetch_file_list=True, search_mask="*.py")
     assert len(source._file_list) >= 3
-    assert len(source._file_list) < 10
+    assert len(source._file_list) < 20
 
     total_size = 0
     total_count = 0
@@ -49,7 +50,7 @@ def test_iteration():
         total_count += 1
         total_size += len(element.data)
 
-    assert 3 <= total_count <= 10
+    assert 3 <= total_count <= 20
     assert total_size >= 5000
 
 
@@ -244,3 +245,32 @@ def test_file_list():
                                          file_list_name=(fl_name, 1))
     assert len(file_source.get_file_list()) == 3
     assert "d.bin" not in file_source
+
+
+def test_hash(tmp_path):
+    """
+    Test's the file source's hash functionality
+    """
+    tar_dir = str(tmp_path) + "/obsdir"
+    try:
+        shutil.rmtree(tar_dir)
+    except FileNotFoundError:
+        pass
+    os.makedirs(tar_dir, exist_ok=True)
+    FileStag.save(tar_dir + "/testa.bin", b"123")
+    FileStag.save(tar_dir + "/testb.bin", b"456")
+    source = FileSource.from_source(tar_dir)
+    hash_val = source.get_hash()
+    source.refresh()
+    assert source.get_hash() == hash_val
+    source.refresh()
+    for tries in range(20):
+        FileStag.save(tar_dir + "/testb.bin", b"789")
+        if source.get_hash() != hash_val:
+            break
+        time.sleep(0.1)
+        source.refresh()
+    assert not source.get_hash() == hash_val
+    hash_val = source.get_hash(max_content_size=10)
+    FileStag.save(tar_dir + "/testb.bin", b"555")
+    assert source.get_hash(max_content_size=10) != hash_val

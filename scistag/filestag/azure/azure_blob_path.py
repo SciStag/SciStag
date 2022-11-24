@@ -67,7 +67,7 @@ class AzureBlobPath(BaseModel):
             index = element.index("=")
             con_props[element[0:index]] = element[
                                           index + 1:]
-        return AzureBlobPath(
+        blob_path = AzureBlobPath(
             default_endpoints_protocol=con_props.get("DefaultEndpoints"
                                                      "Protocol"),
             account_name=con_props.get("AccountName"),
@@ -76,6 +76,10 @@ class AzureBlobPath(BaseModel):
             container_name=container,
             blob_name=search_path
         )
+        if len(blob_path.account_key) != 0 and blob_path.account_key.startswith(
+                "{{") and blob_path.account_key.endswith("}}"):
+            raise ValueError(f"Account key not specified in connection string {connection_string}")
+        return blob_path
 
     @classmethod
     def split_azure_url(cls, url: str, insert_key: bool = True) \

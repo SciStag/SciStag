@@ -47,4 +47,4 @@ class MemoryZip(zipfile.ZipFile):
         if self._is_closed:
             return
         self._is_closed = True
-        super(MemoryZip, self).close()
+        super().close()
