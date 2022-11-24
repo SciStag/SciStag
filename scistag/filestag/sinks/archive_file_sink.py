@@ -36,14 +36,6 @@ class ArchiveFileSinkProto(FileSink):
         """
         super().__init__(target=target, **params)
 
-    def get_data(self) -> bytes:
-        """
-        Returns the archive's content as single bytes string.
-
-        :return: The sink's data, e.g. the byte stream of a zip archive.
-        """
-        raise NotImplementedError("Data retrieval function not implemented")
-
     def _store_int(self,
                    filename: str,
                    data: bytes,

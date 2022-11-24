@@ -9,9 +9,11 @@ from .protocols import ZIP_SOURCE_PROTOCOL
 from .file_stag import FileStag
 from .file_path import FilePath
 from .file_source import FileSource
+from .file_source_observer import FileSourceObserver
 from .file_sink import FileSink, FileStorageOptions
 from .memory_zip import MemoryZip
 from .bundle import Bundle
 
 __all__ = ["SharedArchive", "FileStag", "FileSource",
-           "FilePath", "MemoryZip", "Bundle", "FileSink", "FileStorageOptions"]
+           "FilePath", "Bundle", "FileSink", "FileStorageOptions",
+           "FileSourceObserver", "MemoryZip"]

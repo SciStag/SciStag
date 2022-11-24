@@ -5,6 +5,9 @@ for storage target containers.
 
 from __future__ import annotations
 
+import os
+
+from scistag.filestag import FilePath
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
     ZIP_SOURCE_PROTOCOL
 
@@ -51,11 +54,18 @@ class FileSink:
         :return: The FileSink instance
         """
         if target == ZIP_SOURCE_PROTOCOL:
-            from .zip_file_sink import ZipFileSink
-            return ZipFileSink(target=target, **params)
+            from scistag.filestag.sinks import FileSinkZip
+            return FileSinkZip(target=target, **params)
         if target.startswith(AZURE_PROTOCOL_HEADER):
             from .azure.azure_storage_file_sink import AzureStorageFileSink
             return AzureStorageFileSink(target=target, **params)
+        if target.startswith("/") or (
+                len(target) >= 2 and target[1] == ":") or \
+                target.startswith("\\\\"):
+            from scistag.filestag.sinks import FileSinkDisk
+            if params.get("create_dirs", True):
+                FilePath.make_dirs(target)
+            return FileSinkDisk(target=target, **params)
         raise ValueError("Unsupported target type")
 
     def store(self,
@@ -108,6 +118,17 @@ class FileSink:
         if self._closed:
             raise AssertionError("Tried to close FileSink twice")
         self._closed = True
+
+    def get_value(self) -> bytes:
+        """
+        Returns the sink's content as single bytes string.
+
+        This is only supported by a small amount of sinks such as the
+        FileSinkZip.
+
+        :return: The sink's data, e.g. the byte stream of a zip archive.
+        """
+        raise NotImplementedError("Data retrieval function not implemented")
 
     def __enter__(self):
         return self
