@@ -11,8 +11,9 @@ from __future__ import annotations
 import os
 from abc import abstractmethod
 from collections import Counter
+from datetime import datetime
 from fnmatch import fnmatch
-from typing import Callable, Any, TYPE_CHECKING
+from typing import Callable, Any, TYPE_CHECKING, Union
 
 from pydantic import BaseModel, SecretStr
 
@@ -68,8 +69,12 @@ class FileListEntry(BaseModel):
     """
     filename: str
     "The file's name"
-    file_size: int
+    file_size: Union[int, None]
     "The file's size in bytes"
+    created: Union[datetime, None]
+    "The element's creation time"
+    modified: Union[datetime, None]
+    "The element's last modification time"
 
 
 class FileListModel(BaseModel):
@@ -632,8 +637,8 @@ class FileSource:
         output_filenames = []
         cleaned_list = []
         for index, element in enumerate(self._file_list):
-            file_info = FileIterationData(self, index, element.filename,
-                                          element.file_size)
+            file_info = FileIterationData(self, index,
+                                          element=element)
             new_filename = self.handle_skip_check(file_info)
             if new_filename is None:
                 continue
@@ -663,32 +668,34 @@ class FileSource:
                 iterator.processed_file_count >= self.max_file_count):
             raise StopIteration
         while True:
-            next_file = self.handle_get_next_filename(iterator)
-            if next_file is None:  # stop if no files are available anymore
+            next_entry = self.handle_get_next_entry(iterator)
+            if next_entry is None:  # stop if no files are available anymore
                 return None
-            filename, filesize = next_file
             # was already filtered using reduce_file_list
             if self.output_filename_list is not None:
                 target_name = self.output_filename_list[iterator.file_index - 1]
             else:
                 target_name = self.handle_skip_check(
                     FileIterationData(self, iterator.file_index - 1,
-                                      filename, filesize))
+                                      element=next_entry))
             # continue if just the current file is skipped
             if target_name is not None:
                 break
-        data = self.read_file(filename) if not self.dont_load else None
+        data = self.read_file(
+            next_entry.filename) if not self.dont_load else None
         return self.handle_provide_result(iterator, target_name, data)
 
-    def handle_get_next_filename(self, iterator: "FileSourceIterator") -> \
-            tuple[str, int] | None:
+    def handle_get_next_entry(self, iterator: "FileSourceIterator") -> \
+            FileListEntry | None:
         """
-        Returns the filename and the file size of the next file to be processed.
+        Returns the FileListEntry containing all information about the next file
+        to be processed.
 
         Overwrite this method for your own, custom File iterator.
 
         :param iterator: The file iterator object
-        :return: Name and size of the next element as tuple
+        :return: All details about the next file to be processed. None if no
+            file needs to be processed anymore.
         """
         index = iterator.file_index
         iterator.file_index += 1
@@ -696,7 +703,7 @@ class FileSource:
             return None
         if index >= len(self._file_list):
             return None
-        return self._file_list[index].filename, self._file_list[index].file_size
+        return self._file_list[index]
 
     def handle_fetch_file_list(self, force: bool = False) -> None:
         """
@@ -729,7 +736,7 @@ class FileSource:
             self.save_file_list(self._file_list_name,
                                 version=self._file_list_version)
 
-    def handle_file_list_filter(self, filename: str) -> bool:
+    def handle_file_list_filter(self, entry: FileListEntry) -> bool:
         """
         Verifies if the file is valid and shall be processed by comparing it to
         the file mask, the index_filter etc.
@@ -737,16 +744,13 @@ class FileSource:
         Increases the file_index upon failure. Does NOT increase it upon success
         (as :meth:`provide_result` will do so).
 
-        :param filename: The file's name
+        :param entry: The file entry to verify
         :return: A valid filename if the file shall be processed,
             None otherwise.
         """
-        if not fnmatch(os.path.basename(filename), self.search_mask):
+        if not fnmatch(os.path.basename(entry.filename), self.search_mask):
             return False
-        if len(self.search_path) > 0 and not filename.startswith(
-                self.search_path):
-            return False
-        rest = filename[len(self.search_path):].lstrip("/").lstrip("\\")
+        rest = entry.filename[len(self.search_path):].lstrip("/").lstrip("\\")
         if not self.recursive:
             if "/" in rest or "\\" in rest:
                 return False
@@ -763,7 +767,7 @@ class FileSource:
         :param file_info: Information about the current file
         :return: A valid filename if the file shall be processed, None otherwise.
         """
-        filename = file_info.filename
+        filename = file_info.element.filename
         if self.index_filter is not None:
             if (file_info.file_index % self.index_filter[0] !=
                     self.index_filter[1]):

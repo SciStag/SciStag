@@ -46,18 +46,20 @@ class FileSourceDisk(FileSource):
         if self._file_list is not None and not force:
             return
         cleaned_path = os.path.normpath(self.search_path)
-        full_list = glob.glob(self.search_path + "/**",
+        name_list = glob.glob(self.search_path + "/**",
                               recursive=self.recursive)
         cpl = len(cleaned_path)
-        full_list = [element[cpl + 1:] for index, element in
-                     enumerate(full_list) if os.path.isfile(element) and
+        name_list = [element[cpl + 1:] for index, element in
+                     enumerate(name_list) if os.path.isfile(element)]
+        full_list = [FileListEntry(filename=cur_element,
+                                   file_size=os.path.getsize(
+                                       self.search_path + "/" +
+                                       cur_element))
+                     for cur_element in name_list]
+        full_list = [element for element in full_list if
                      self.handle_file_list_filter(element)]
-        elements = sorted(full_list)
-        self.update_file_list([FileListEntry(filename=cur_element,
-                                             file_size=os.path.getsize(
-                                                 self.search_path + "/" +
-                                                 cur_element))
-                               for cur_element in elements])
+        elements = sorted(full_list, key=lambda x: x.filename)
+        self.update_file_list(elements)
 
     def get_absolute(self, filename: str,
                      options: FileSourcePathOptions | None = None) -> \

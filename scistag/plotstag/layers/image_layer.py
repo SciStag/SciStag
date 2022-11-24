@@ -4,6 +4,8 @@ Implements the :class:`ImageLayer: which visualizes an image on a :class:`Plot`.
 
 from __future__ import annotations
 
+from typing import Literal
+
 import numpy as np
 
 from scistag.common import get_global_cache
@@ -85,14 +87,22 @@ class ImageLayer(PlotLayer):
                                round(self._image.height * eff_scaling))
 
     @staticmethod
-    def generate_checkerboard() -> Image:
+    def generate_checkerboard(tile_size: int,
+                              color_a=Colors.LIGHT_GRAY,
+                              color_b=Colors.WHITE) -> Image:
         """
         Renders a checkerboard as background for transparent images
+
+        :param tile_size: The size of a tile in pixels
+        :param color_a: The primary tile color
+        :param color_b: The secondary tile color
         :return: The checkerboard graphic
         """
-        cb = Checkerboard(col_row_count=(16, 16),
-                          tile_size=16,
-                          color_a=Colors.LIGHT_GRAY)
+        repetition = max(256 // tile_size, 2)
+        cb = Checkerboard(col_row_count=(repetition, repetition),
+                          tile_size=tile_size,
+                          color_a=color_a,
+                          color_b=color_b)
         return cb.to_image()
 
     def paint(self, canvas: Canvas):
@@ -106,9 +116,7 @@ class ImageLayer(PlotLayer):
         if self._scaled_image.pixel_format == PixelFormat.RGBA and \
                 self.bg_fill is not None:
             if self.bg_fill == CHECKERBOARD_BACKGROUND:
-                cache = get_global_cache()
-                cb: Image = cache.cache("plotstag.ImageLayer.backgroundGrid",
-                                        generator=self.generate_checkerboard)
+                cb = self.get_cb_pattern()
                 canvas.pattern(cb, ((0, 0),
                                     (self._scaled_image.width,
                                      self._scaled_image.height)))
@@ -118,3 +126,28 @@ class ImageLayer(PlotLayer):
                                   self._scaled_image.height),
                             color=self.bg_fill)
         canvas.draw_image(self._scaled_image, (0, 0))
+
+    @classmethod
+    def get_cb_pattern(cls, tile_size: int = 16,
+                       style: Literal[
+                           "graywhite", "neon"] = "graywhite") -> Image:
+        """
+        Returns an image with a checkerboard pattern
+
+        :param tile_size: The tile size in pixels
+        :param style: Defines the checkerboard's color style, either graywhite
+            or neon as of now.
+        :return: An image full of checkerboard patterns which can e.g be sued
+            as background for transparent images.
+        """
+        cache = get_global_cache()
+        if style == "neon":
+            col_a = Colors.CYAN
+            col_b = Colors.MAGENTA
+        else:
+            col_a = Colors.WHITE
+            col_b = Colors.LIGHT_GRAY
+        cb: Image = cache.cache(
+            f"plotstag.ImageLayer.backgroundGrid{tile_size}{style}",
+            cls.generate_checkerboard, tile_size, col_b, col_a)
+        return cb
