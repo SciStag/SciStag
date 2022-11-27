@@ -319,7 +319,7 @@ class Image(ImageBase):
 
     def resized(self,
                 size: Size2DTypes,
-                interpolation: InterpolationMethod = InterpolationMethod.LANCZOS) -> "Image":
+                interpolation: InterpolationMethod = InterpolationMethod.LANCZOS) -> Image:
         """
         Returns an image resized to given resolution
 
@@ -347,7 +347,7 @@ class Image(ImageBase):
                     factor: float | tuple[float, float] | None = None,
                     interpolation: InterpolationMethod =
                     InterpolationMethod.LANCZOS,
-                    background_color=Color(0.0, 0.0, 0.0, 1.0)) -> "Image":
+                    background_color=Color(0.0, 0.0, 0.0, 1.0)) -> Image:
         """
         Returns a resized variant of the image with many configuration
         possibilities.

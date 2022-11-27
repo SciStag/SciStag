@@ -10,7 +10,8 @@ from typing import Optional
 from pydantic import BaseModel
 
 from scistag.common import Env
-from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
+from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
+    AZURE_DEFAULT_ENDPOINTS_HEADER
 
 
 class AzureBlobPath(BaseModel):
@@ -97,9 +98,9 @@ class AzureBlobPath(BaseModel):
             returned.
         """
         if not url.startswith(AZURE_PROTOCOL_HEADER) and not url.startswith(
-                "DefaultEndpoints"):
+                AZURE_DEFAULT_ENDPOINTS_HEADER):
             return None
-        if not url.startswith("DefaultEndpoints"):
+        if not url.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
             url = url[len(AZURE_PROTOCOL_HEADER):]
         if insert_key:
             url = Env.insert_environment_data(url)

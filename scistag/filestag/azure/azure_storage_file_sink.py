@@ -60,7 +60,8 @@ class AzureStorageFileSink(FileSink):
         if sub_folder is None:
             sub_folder = ""
         if target is not None:
-            if not target.startswith(AZURE_PROTOCOL_HEADER):
+            if not target.startswith(AZURE_PROTOCOL_HEADER) and not \
+                    target.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
                 raise ValueError(
                     "Target has to be in the form azure://DefaultEndPoints...")
             self.blob_path = AzureBlobPath.from_string(target)
