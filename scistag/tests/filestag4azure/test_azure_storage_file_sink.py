@@ -170,7 +170,7 @@ def test_azure_file_sink_deletion():
                                 recreate_container=True)
     source = FileSource.from_source(sink_target_container_string,
                                     fetch_file_list=True)
-    assert len(source.get_file_list()) == 0
+    assert len(source.filelist) == 0
     # upload new data
     random_name = hashlib.md5(int(time.time()).to_bytes(16, "big")).hexdigest()
     verification_data = b"TestData" + random_name.encode("utf-8")
@@ -178,4 +178,4 @@ def test_azure_file_sink_deletion():
     time.sleep(1.0)
     source = FileSource.from_source(sink_target_container_string,
                                     fetch_file_list=True)
-    assert len(source.get_file_list()) == 1
+    assert len(source.filelist) == 1

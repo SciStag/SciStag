@@ -81,6 +81,13 @@ class WebStagServer:
         "Suppresses output to the logs and to the console"
 
     @property
+    def services(self) -> list[WebStagService]:
+        """
+        Returns a list of all services
+        """
+        return self._services
+
+    @property
     def port(self):
         """
         The network port the server uses

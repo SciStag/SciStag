@@ -23,13 +23,16 @@ class OpenCVHandler:
     """
     Keeps track of the current Open CV support state
     """
-    available = False
+    available = True
     "Defines if OpenCV is available"
 
 
 _cv = None
+"Holds the OpenCV module if it's available"
 _cv_available = None
+"Defines if OpenCV is available"
 _cv_access_lock = RLock()
+"Thread-secure access for first initialization"
 
 
 def get_opencv() -> ModuleType | None:
@@ -48,7 +51,6 @@ def get_opencv() -> ModuleType | None:
                 _cv_available = True
             except ModuleNotFoundError:
                 _cv_available = False
-                pass
         return _cv
 
 

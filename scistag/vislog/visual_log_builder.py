@@ -25,6 +25,8 @@ MAX_NP_ARRAY_SIZE = 100
 
 if TYPE_CHECKING:
     from scistag.vislog.pyplot_log_context import PyPlotLogContext
+    from scistag.vislog.visual_log_markdown_builder import \
+        VisualMarkdownBuilderExtension
     from matplotlib import pyplot as plt
     import pandas as pd
 
@@ -50,6 +52,11 @@ class VisualLogBuilder:
         :param log: The log to which the content shall be added.
         """
         self.target_log: "VisualLog" = log
+        self._file_dependencies = []
+        """
+        A list of files which were used to build the current log. When ever
+        any of these files changes the log should be rebuild.
+        """
         "The main logging target"
         from .visual_log_test_helper import VisualLogTestHelper
         self.test = VisualLogTestHelper(self)
@@ -63,8 +70,8 @@ class VisualLogBuilder:
         
         Can also be called directly to add a simple image to the log.
         """
-        from .visual_table_logger import VisualLogTableLogger
-        self.table = VisualLogTableLogger(self)
+        from .visual_log_table_builder import VisualLogTableBuilderExtension
+        self.table = VisualLogTableBuilderExtension(self)
         """
         Helper class for adding tables to the log.
         
@@ -77,8 +84,13 @@ class VisualLogBuilder:
         """
         from .visual_log_basic_logger import VisualLogBasicLogger
         self.log = VisualLogBasicLogger(self)
+        from .visual_log_markdown_builder import VisualMarkdownBuilderExtension
+        self._md: VisualMarkdownBuilderExtension | None = None
+        """
+        Markdown extension for VisualLog
+        """
 
-    def build_body(self):
+    def build(self):
         """
         Is called when the body of the log shall be build or rebuild.
 
@@ -87,7 +99,7 @@ class VisualLogBuilder:
         """
         pass
 
-    def build(self):
+    def build_page(self):
         """
         Builds the whole page including header, footers and other sugar.
 
@@ -95,7 +107,7 @@ class VisualLogBuilder:
         customization.
         """
         self.build_header()
-        self.build_body()
+        self.build()
         self.build_footer()
 
     def build_header(self):
@@ -336,39 +348,6 @@ class VisualLogBuilder:
         self.sub(text, level=4)
         return self
 
-    def md(self, text: str, exclude_targets: set[str] | None = None) \
-            -> VisualLogBuilder:
-        """
-        Adds a markdown section.
-
-        Requires the Markdown package to be installed.
-
-        :param text: The text to parse
-        :param exclude_targets: Defines the target to exclude
-        :return: The builder
-        """
-        lines = text.split("\n")
-        # use equal trim when triple quotation marks were used
-        if len(lines) > 1 and len(lines[0]) <= 1:
-            trimmed = lines[1].lstrip(" \t")
-            trim_dist = len(lines[1]) - len(trimmed)
-            for index, line in enumerate(lines):
-                if len(line) > trim_dist:
-                    lines[index] = line[trim_dist:]
-            text = "\n".join(lines)
-        if exclude_targets is None:
-            exclude_targets = set()
-        import markdown
-        parsed = markdown.markdown(text)
-        if MD not in exclude_targets:
-            self.add_md(text + "\n")
-        if HTML not in exclude_targets:
-            self.add_html(parsed + "\n")
-        if TXT not in exclude_targets:
-            self.add_txt(text)
-        self.clip_logs()
-        return self
-
     def hr(self) -> VisualLogBuilder:
         """
         Adds a horizontal rule to the document
@@ -389,6 +368,16 @@ class VisualLogBuilder:
         self.add_html(code + "\n")
         self.clip_logs()
         return self
+
+    @property
+    def md(self) -> "VisualMarkdownBuilderExtension":
+        """
+        Methods to add markdown content
+        """
+        from .visual_log_markdown_builder import VisualMarkdownBuilderExtension
+        if self._md is None:
+            self._md = VisualMarkdownBuilderExtension(self)
+        return self._md
 
     def code(self, code: str) -> VisualLogBuilder:
         """
@@ -692,3 +681,14 @@ class VisualLogBuilder:
         """
         self.target_log.flush()
         return self
+
+    def add_file_dependency(self, filename: str):
+        """
+        Adds a file dependency to the log for automatic cache clearance and
+        triggering the auto-reloader (if enabled) when an included file gets
+        modified.
+
+        :param filename: The name of the file which shall be tracked. By
+            default only local files are observed.
+        """
+        self._file_dependencies.append(filename)

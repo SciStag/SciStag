@@ -1,10 +1,10 @@
 """
-Tests the FileSourceObserver class
+Tests the FileObserver class
 """
 import shutil
 import time
 
-from scistag.filestag import FileStag, FilePath, FileSource, FileSourceObserver
+from scistag.filestag import FileStag, FilePath, FileSource, FileObserver
 
 
 def test_file_source_observer(tmp_path):
@@ -20,8 +20,8 @@ def test_file_source_observer(tmp_path):
     FileStag.save(tar_dir + "/testa.bin", b"123")
     FileStag.save(tar_dir + "/testb.bin", b"456")
     source = FileSource.from_source(tar_dir, search_mask="*.bin")
-    fs_obs = FileSourceObserver(source, max_content_size=8,
-                                refresh_time_s=0.04)
+    fs_obs = FileObserver(source, max_content_size=8,
+                          refresh_time_s=0.04)
     hash_val = fs_obs.__hash__()
     assert fs_obs.__hash__() == hash_val
     FileStag.save(tar_dir + "/testb.bin", b"789")

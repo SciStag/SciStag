@@ -23,7 +23,7 @@ from the web
 FILE_PATH_PROTOCOL_URL_HEADER = "file://"
 "Definition for the beginning of a local file url"
 
-FileSourceTypes = Union[str, SecretStr]
+FileSourceTypes = Union[str, SecretStr, bytes]
 """
 The file source path.
 
@@ -93,6 +93,8 @@ class FileStag:
             as ``timeout_s`` or ``max_cache_age`` for files from the web.
         :return: The data if the file could be found
         """
+        if isinstance(source, bytes):  # pass through
+            return source
         source = cls.resolve_name(source)
         from .shared_archive import SharedArchive
         from scistag.filestag import ZIP_SOURCE_PROTOCOL

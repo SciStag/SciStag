@@ -341,7 +341,7 @@ class FileSource:
         :return: The MD5 hash
         """
         stream = io.BytesIO()
-        for cur_file in self.get_file_list():
+        for cur_file in self.filelist:
             stream.write(
                 cur_file.filename.__hash__().to_bytes(8, "little", signed=True))
             stream.write(cur_file.file_size.to_bytes(8, "little", signed=True))
@@ -371,7 +371,8 @@ class FileSource:
         """
         return ""
 
-    def get_file_list(self) -> FileList | None:
+    @property
+    def file_list(self) -> FileList | None:
         """
         Returns the file list (if available).
 

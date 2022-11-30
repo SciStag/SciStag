@@ -1,5 +1,6 @@
 import platform
 
+from .stag_app import StagApp
 from .essential_data import ESSENTIAL_DATA_ARCHIVE_NAME, ESSENTIAL_DATA_URL, \
     get_edp, ESSENTIAL_DATA_SIZE
 from .mt import StagLock
@@ -16,7 +17,7 @@ WINDOWS = ("CYGWIN" in platform.system().upper() or
 
 __all__ = ["ESSENTIAL_DATA_ARCHIVE_NAME", "ESSENTIAL_DATA_URL", "get_edp",
            "ESSENTIAL_DATA_SIZE",
-           "Cache",
+           "Cache", "StagApp",
            "Component", "ConfigStag",
            "get_test_data", "get_test_image", "TestDataNames",
            "StagLock", "Env", "WINDOWS", "get_global_cache",

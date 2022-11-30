@@ -1,5 +1,5 @@
 """
-Defines the class :class:`VisualLogTableLogger` and
+Defines the class :class:`VisualLogTableBuilderExtension` and
 :class:`VisualLogTableContext` which help to easily store tabular data in a
 log.
 """
@@ -14,6 +14,7 @@ from scistag.vislog.visual_log_element_context import \
 
 from scistag.imagestag import Image
 from scistag.plotstag import Figure
+from . import VisualLogBuilderExtension
 
 if TYPE_CHECKING:
     from .visual_log_builder import VisualLogBuilder
@@ -139,18 +140,17 @@ class VisualLogColumnContext(VisualLogElementContext):
         return self
 
 
-class VisualLogTableLogger:
+class VisualLogTableBuilderExtension(VisualLogBuilderExtension):
     """
     Helper class for storing tables inside a log
     """
 
-    def __init__(self, builder: "VisualLogBuilder"):
+    def __init__(self, builder: VisualLogBuilder):
         """
         :param builder: The builder object with which we write to the log
         """
+        super().__init__(builder)
         self.show = self.__call__
-        self.builder: "VisualLogBuilder" = builder
-        self.log = self.builder.target_log
 
     def begin(self):
         """

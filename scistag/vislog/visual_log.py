@@ -4,13 +4,15 @@ Helper functions to export images of rendering methods for manual verification
 from __future__ import annotations
 
 import builtins
+import inspect
 import os
 import shutil
+import sys
 import time
 from collections import Counter
-from typing import TYPE_CHECKING, Callable, Union, Type
+from typing import TYPE_CHECKING, Callable, Union, Type, Literal
 
-from scistag.common import StagLock, Cache
+from scistag.common import StagLock, Cache, StagApp
 from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Size2D, Size2DTypes
 from scistag.vislog.visual_log_service import VisualLogService
@@ -104,6 +106,9 @@ class VisualLog:
 
     def __init__(self, title: str = "SciStag - VisualLog",
                  target_dir: str = "./logs",
+                 app: Literal["cute"] | None = None,
+                 start_browser: bool = False,
+                 resolution: Size2D | None = None,
                  formats_out: set[str] | None = None,
                  ref_dir: str | None = None,
                  tmp_dir: str | None = None,
@@ -123,6 +128,14 @@ class VisualLog:
         """
         :param target_dir: The output directory
         :param title: The log's name
+        :param app: Defines if the log shall behave like an application.
+
+            In the future you will be able to pass here a application class
+            or instance. At the moment you can pass "cute" to open the app
+            in a webkit built-in browser (requires the extra "cutestag") or
+            an explicit installation of pyside6 (or above).
+        :param start_browser: Defines if a browser shall be started when the
+            log winds up a web server.
         :param formats_out: A set of the formats to export.
 
             "html", "txt" (pure Text)  and "md" (markdown) are supported.
@@ -184,13 +197,21 @@ class VisualLog:
             pass
         if formats_out is None:
             formats_out = {"html"}
-
+        self._app = app
+        "Defines the initial application to wind up with this log"
+        self._resolution = resolution
+        "Defines the desired initial resolution"
+        self._start_browser = start_browser
+        "Defines if a browser shall be started once a local server is wind up"
         self._cache: Cache | None = None
         """
         The log's data cache to store computation results between execution
         sessions
         """
-
+        self.last_page_request = 0.0
+        """Defines the timestamp when the page was requested for the last time
+        via http.
+        """
         self._title = title
         "The log's title"
         self.target_dir = os.path.abspath(target_dir)
@@ -704,6 +725,7 @@ class VisualLog:
         :return: The page's content.
         """
         with self._page_lock:
+            self.last_page_request = time.time()
             if format_type in self._page_backups:
                 return self._page_backups[format_type]
             return b""
@@ -867,8 +889,8 @@ class VisualLog:
             first port within. 8010 by default. 0 for a random port.
         :param url_prefix: The url prefix at which the service shall be hosted.
 
-            "" = At http://server
-            "log/" = At http://server/log
+            "" = At https://server
+            "log/" = At https://server/log
         :param public_ips: If you run the service on a virtual machine in
             the cloud you can pass its public IPs to log the correct
             connection URls to the console.
@@ -1033,6 +1055,8 @@ class VisualLog:
                     self.write_to_disk()
         mt = mt and not test
         server.start(mt=mt, test=test)
+        self._start_app_or_browser(real_log=self,
+                                   url_prefix=url_prefix)
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
@@ -1144,7 +1168,7 @@ class VisualLog:
         """
         if builder is not None:
             if getattr(builder, "build", None) is not None:
-                builder.build()
+                builder.build_page()
             else:
                 builder(self.default_builder)
         self.write_to_disk()
@@ -1166,6 +1190,34 @@ class VisualLog:
                 raise ValueError("No valid VisualLogBuilder base "
                                  "class provided")
         return builder
+
+    def _start_app_or_browser(self,
+                              real_log: VisualLog,
+                              https: bool = False,
+                              url_prefix: str = ""):
+        """
+        This function is called when the log is set up and ready to go
+
+        If an application setup was attached or a browser shall be started,
+        this function does just start.
+
+        :param real_log: Defines the log which actually hosts the web service
+        ;param https: Defines if https is being used
+        :param url_prefix: Defines the http root directory at which the log
+            is hosed.
+        """
+        if self._start_browser:
+            port = real_log.server.port
+            import webbrowser
+            protocol = "https" if https else "http"
+            # check if an old browser is alive
+            wait_time = max([real_log.refresh_time_s, 0.5])
+            time.sleep(wait_time * 1.5)
+            # if the page was loaded don't open another browser
+            if time.time() - real_log.last_page_request > wait_time:
+                webbrowser.open(
+                    f"{protocol}://127.0.0.1:{port}{url_prefix}/live")
+        # TODO Implementation of Cute app
 
     def kill_server(self) -> bool:
         """
@@ -1420,6 +1472,8 @@ class VisualLog:
 
         :return: True if the calling method is in the main module.
         """
+        if StagApp.is_main(2):
+            return True
         from scistag.vislog.visual_log_autoreloader import \
             VisualLogAutoReloader
         return VisualLogAutoReloader.is_main(2)

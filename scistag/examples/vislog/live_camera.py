@@ -25,7 +25,7 @@ class LiveCameraDemo(VisualLogBuilder):
         self.frame_timestamp = 0.0
         self.last_image = None
 
-    def build_body(self):
+    def build(self):
         """
         Is called at the defined refresh_time_s interval
         """
@@ -44,12 +44,11 @@ class LiveCameraDemo(VisualLogBuilder):
         vl.log_statistics()
 
 
-if __name__ == "__main__":
+if VisualLog.is_main():
     frame_rate = 60.0  # update as fast as possible
     test_log = VisualLog("Webcam Demo",
-                         log_to_disk=False,  # no need, we host via a server
-                         log_to_stdout=False,
                          refresh_time_s=1.0 / frame_rate,
+                         start_browser=True,
                          image_format=("jpg", 80))
     test_log.run_server(continuous=True,  # update continuously
                         auto_clear=True,  # clear log for us each turn

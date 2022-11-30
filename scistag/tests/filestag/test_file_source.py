@@ -207,7 +207,7 @@ def test_statistics():
     statistics = str(test_source)
     vl.test.assert_val("essential_archive_statistics", statistics,
                        hash_val="dcc44322ca043dff16eb57ce972e10b7")
-    list = test_source.get_file_list()
+    list = test_source.filelist
     assert len(list) == 3706
     # statistics twice
     assert test_source.get_statistics() is not None
@@ -236,14 +236,14 @@ def test_file_list():
     file_source = FileSource.from_source(secret_path,
                                          fetch_file_list=True,
                                          file_list_name=(fl_name, 1))
-    assert len(file_source.get_file_list()) == 3
+    assert len(file_source.filelist) == 3
     assert len(file_source) == 3
     assert "a.bin" in file_source
     FileStag.save(test_dir + "d.bin", data=b"123")
     file_source = FileSource.from_source(test_dir,
                                          fetch_file_list=True,
                                          file_list_name=(fl_name, 1))
-    assert len(file_source.get_file_list()) == 3
+    assert len(file_source.filelist) == 3
     assert "d.bin" not in file_source
 
 
