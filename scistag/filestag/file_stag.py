@@ -121,6 +121,8 @@ class FileStag:
             type of storage, such as timeout_s for file's stored via network.
         :return: True on success
         """
+        if data is None:
+            raise ValueError("No data provided")
         target = cls.resolve_name(target)
         if not cls.is_simple(target):
             raise NotImplementedError("At the moment only local file storage"
@@ -192,6 +194,8 @@ class FileStag:
             type of storage, such as timeout_s for file's stored via network.
         :return: True on success
         """
+        if text is None:
+            raise ValueError("No data provided")
         target = cls.resolve_name(target)
         encoded_text = text.encode(encoding=encoding)
         return cls.save(target, data=encoded_text, **params)
