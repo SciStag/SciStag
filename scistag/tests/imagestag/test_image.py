@@ -5,7 +5,6 @@ import io
 import os
 from unittest import mock
 
-import IPython.display
 import numpy as np
 import pandas as pd
 
@@ -173,7 +172,17 @@ def test_encoding(stag_image_data, tmp_path):
     assert bmp_data is not None and len(bmp_data) > 0
     decoded_bmp = Image(bmp_data)
     assert np.array_equal(decoded_bmp.get_pixels_rgb(), image.get_pixels_rgb())
-    assert isinstance(image.to_ipython(), IPython.display.Image)
+    ipython = False
+    try:
+        import IPython.display
+        ipython = True
+    except ModuleNotFoundError:
+        pass
+    if ipython:
+        assert isinstance(image.to_ipython(), IPython.display.Image)
+    else:
+        with pytest.raises(RuntimeError):
+            image.to_ipython()
 
     # disk encoding
 

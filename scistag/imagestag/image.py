@@ -827,9 +827,14 @@ class Image(ImageBase):
         :param params: Advanced encoding params. See :meth:`encode`
         :return: The IPython.display.Image
         """
-        from IPython.display import Image as IPImage
-        return IPImage(self.encode(filetype=filetype, quality=quality,
-                                   **params))
+        try:
+            from IPython.display import Image as IPImage
+            return IPImage(self.encode(filetype=filetype, quality=quality,
+                                       **params))
+        except ModuleNotFoundError:
+            raise RuntimeError("Jupyter Notebook not found. "
+                               "Please install SciStag with Jupyter support, "
+                               "e.g. pip install scistag[common,jupyter]")
 
     def save(self, target: str, **params):
         """
