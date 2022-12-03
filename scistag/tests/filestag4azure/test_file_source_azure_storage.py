@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import os
+
 import pytest
 
 import scistag.tests
@@ -26,6 +29,12 @@ connection_string = \
 """
 Test storage
 """
+
+test_source_sas_inv = os.environ["AZ_TEST_SOURCE_SAS_INV"]
+"Test source using a SAS url"
+
+test_source_sas = os.environ["AZ_TEST_SOURCE_SAS"]
+"Test source using a SAS url"
 
 skip_tests = ConfigStag.get("testConfig.azure.skip", False)
 "Defines if the Azure tests shall be skipped"
@@ -204,7 +213,7 @@ def test_conn_string():
     assert path.endpoint_suffix == "core.windows.net"
 
 
-def test_sas():
+def test_sas_creation():
     """
     Tests the creation and usage of SAS tokens
     """
@@ -227,3 +236,14 @@ def test_sas():
     sas_data = web_fetch(
         azure_source.get_absolute("fonts/Roboto/Roboto-Black.ttf"))
     assert sas_data == blob_data
+
+
+def test_sas_listing():
+    """
+    Tests the listing of a source using a SAS key
+    """
+    with pytest.raises(ValueError):
+        source = FileSource.from_source(test_source_sas_inv)
+    source = FileSource.from_source(test_source_sas,
+                                    search_path="fonts")
+    assert len(source.file_list) == 20

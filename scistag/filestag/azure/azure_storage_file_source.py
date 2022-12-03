@@ -74,7 +74,7 @@ class AzureStorageFileSource(FileSource):
         "Connector to a specific container"
         self.container_name = self.blob_path.container_name
         "The container's name"
-        search_path = self.blob_path.blob_name
+        search_path = self.blob_path.blob_name + self.search_path
         self.prefix = search_path + "/" if len(search_path) else ""
         "The prefix (base folder) if specified"
         self.tag_filter_expression = tag_filter if tag_filter is not None and \
@@ -190,18 +190,24 @@ class AzureStorageFileSource(FileSource):
             return
         from scistag.common.iter_helper import limit_iter
         blob_iterator = self.setup_blob_iterator()
-        if self.tag_filter_expression is not None:
-            cleaned_list = [FileListEntry(filename=element.name)
+        from azure.core.exceptions import HttpResponseError
+        try:
+            if self.tag_filter_expression is not None:
+                cleaned_list = [FileListEntry(filename=element.name)
+                                for element in
+                                limit_iter(blob_iterator, self.max_file_count)
+                                if self.handle_file_list_filter(
+                        FileListEntry(filename=element['name']))]
+            else:
+                elements = [self._file_list_entry_from_blob(element)
                             for element in
-                            limit_iter(blob_iterator, self.max_file_count)
-                            if self.handle_file_list_filter(
-                    FileListEntry(filename=element['name']))]
-        else:
-            elements = [self._file_list_entry_from_blob(element)
-                        for element in
-                        limit_iter(blob_iterator, self.max_file_count)]
-            cleaned_list = [element for element in elements
-                            if self.handle_file_list_filter(element)]
+                            limit_iter(blob_iterator, self.max_file_count)]
+                cleaned_list = [element for element in elements
+                                if self.handle_file_list_filter(element)]
+        except HttpResponseError:
+            raise ValueError("Connection error. This is often due to an"
+                             "outdated connection string or missing "
+                             "assigned permissions such as LIST.")
         elements = sorted(cleaned_list, key=lambda element: element.filename)
         self.update_file_list(elements)
 
