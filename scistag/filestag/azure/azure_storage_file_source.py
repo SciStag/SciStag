@@ -3,15 +3,14 @@ Implements the :class:`AzureStorageFileSource` class which allows iterating
 files stored in an Azure Blob Storage
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 from collections.abc import Iterable
 from scistag.filestag.azure.azure_blob_path import \
     AzureBlobPath
 from scistag.filestag.file_source import FileSource, FileListEntry, \
     FileSourcePathOptions
 from scistag.filestag.file_source_iterator import FileSourceIterator
-from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
-    AZURE_DEFAULT_ENDPOINTS_HEADER
+from scistag.filestag.protocols import is_azure_storage_source
 
 if TYPE_CHECKING:
     from azure.storage.blob import BlobServiceClient, ContainerClient
@@ -49,20 +48,29 @@ class AzureStorageFileSource(FileSource):
         self.timeout: int = int(params.pop("timeout", 30))
         "The connection timeout in seconds"
         super().__init__(**params)
-        if not (source.startswith(AZURE_PROTOCOL_HEADER) or
-                source.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER)):
+        if not is_azure_storage_source(source):
             raise ValueError(
-                "source has be in the form azure://DefaultEndpoints...")
+                "source has be an SAS URL, in the form "
+                "azure://DefaultEndpoints... or DefaultEndpoints...")
 
         self.blob_path = AzureBlobPath.from_string(source)
-        assert len(self.blob_path.container_name)
-        self.service_client: "BlobServiceClient" = \
-            self.service_from_connection_string(
+        assert len(
+            self.blob_path.container_name) or self.blob_path.sas_url is not None
+        if self.blob_path.is_sas():
+            from azure.storage.blob import BlobServiceClient, ContainerClient
+            container_client = \
+                ContainerClient.from_container_url(
+                    self.blob_path.get_connection_string())
+            service_client = None
+        else:
+            service_client = self.service_from_connection_string(
                 self.blob_path.get_connection_string())
+            container_client = \
+                service_client.get_container_client(
+                    self.blob_path.container_name)
+        self.service_client: Union["BlobServiceClient", None] = service_client
         "Connector to the Azure storage"
-        self.container_client: "ContainerClient" = \
-            self.service_client.get_container_client(
-                self.blob_path.container_name)
+        self.container_client: "ContainerClient" = container_client
         "Connector to a specific container"
         self.container_name = self.blob_path.container_name
         "The container's name"
