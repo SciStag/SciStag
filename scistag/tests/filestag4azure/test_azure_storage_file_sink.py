@@ -2,12 +2,11 @@
 Tests the Azure storage file sink
 """
 import hashlib
-import os
 import time
 
 import pytest
 
-from scistag.common import ConfigStag
+from scistag.common import ConfigStag, SystemInfo
 from scistag.filestag import FileSink, FileSource
 from scistag.filestag.azure import AzureStorageFileSink
 from scistag.webstag import web_fetch
@@ -16,7 +15,7 @@ from scistag.tests import RELEASE_TEST
 sink_target_container_string = \
     "azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;" \
     "AccountKey={{env.AZ_TEST_SOURCE_KEY}};EndpointSuffix=" \
-    "core.windows.net/testtarget"
+    f"core.windows.net/testtarget{SystemInfo.os_type.identifier}"
 """
 Test storage container
 """

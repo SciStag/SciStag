@@ -6,9 +6,9 @@ import pytest
 from . import vl
 from ...emojistag import render_emoji, EmojiRenderer
 from ...imagestag import Colors
-from scistag.common import WINDOWS
+from ...common.sytem_info import SystemInfo
 
-SKIP_SVG = WINDOWS and not EmojiRenderer.get_svg_support()
+SKIP_SVG = SystemInfo.os_type.is_windows and not EmojiRenderer.get_svg_support()
 
 
 @pytest.mark.skipif(SKIP_SVG, reason="Svg tests skipped on Windows")

@@ -474,7 +474,9 @@ class Cache:
                     self._mem_cache_versions[key] == eff_version)
 
 
-_global_cache = Cache()
+_cache_access_lock = StagLock()
+"Cache creation lock"
+_global_cache: Cache | None = None
 "Shared, singleton global cache"
 
 
@@ -485,4 +487,8 @@ def get_global_cache() -> Cache:
 
     :return: The global cache
     """
-    return _global_cache
+    global _global_cache
+    with _cache_access_lock:
+        if _global_cache is None:
+            _global_cache = Cache()
+        return _global_cache
