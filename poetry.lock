@@ -2436,10 +2436,11 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 
 [extras]
 azure = ["azure-storage-blob"]
+common = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "pyarrow", "CairoSVG", "opencv-contrib-python", "Flask", "gunicorn", "azure-storage-blob", "moviepy", "imgkit"]
 cutestag = ["PySide6-Addons"]
 datastag = ["pyarrow"]
 flask = ["Flask", "gunicorn"]
-full = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "pyarrow", "CairoSVG", "opencv-contrib-python", "Flask", "gunicorn", "kivy", "jupyter", "jupyterlab", "moviepy", "imgkit", "azure-storage-blob", "PySide6-Addons"]
+full = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "pyarrow", "CairoSVG", "opencv-contrib-python", "Flask", "gunicorn", "azure-storage-blob", "moviepy", "imgkit", "jupyter", "jupyterlab", "kivy", "PySide6-Addons"]
 jupyter = ["jupyter", "jupyterlab"]
 kivy = ["kivy"]
 logstag = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2"]
@@ -2450,7 +2451,7 @@ svg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9 <=3.10"
-content-hash = "6b5661cba6d6e8269c1f2b7a95e60fa024187f4c6bce1a51a6de8cdefc0549ec"
+content-hash = "b60ca37a87cc9b4ecf96db7ebfe2fba4b4bc2d8b8477e9f51865a68393023013"
 
 [metadata.files]
 alabaster = [

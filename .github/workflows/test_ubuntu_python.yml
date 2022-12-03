@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: 3.9
           cache: 'poetry'
-      - run: poetry install -E "full" --with dev --no-interaction --no-root
+      - run: poetry install -E "common" --with dev --no-interaction --no-root
       - run: |
           poetry run coverage run -m pytest ./scistag/tests
           poetry run coverage lcov -i

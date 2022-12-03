@@ -45,22 +45,30 @@ logstag = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "
 datastag = ["pyarrow"]
 svg = ["CairoSVG"]
 opencv = ["opencv-contrib-python"]
-azure = ["azure-storage-blob"]
 flask = ["Flask", "gunicorn"]
 kivy = ["kivy"]
 jupyter = ["jupyter", "jupyterlab"]
+azure = ["azure-storage-blob"]
 moviepy = ["moviepy", "imgkit"]
 cutestag = ["PySide6-Addons"]
+common = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2",
+    "pyarrow",
+    "CairoSVG",
+    "opencv-contrib-python",
+    "Flask", "gunicorn",
+    "azure-storage-blob",
+    "moviepy", "imgkit"]
 full = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2",
     "pyarrow",
     "CairoSVG",
     "opencv-contrib-python",
     "Flask", "gunicorn",
-    "kivy",
-    "jupyter", "jupyterlab",
-    "moviepy", "imgkit",
     "azure-storage-blob",
-    "PySide6-Addons"]
+    "moviepy", "imgkit",
+    "jupyter", "jupyterlab",
+    "kivy",
+    "PySide6-Addons"
+]
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^2.14.0"
