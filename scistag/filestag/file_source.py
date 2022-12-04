@@ -354,7 +354,7 @@ class FileSource:
                 cur_file.modified.__hash__().to_bytes(8, "little", signed=True))
             if max_content_size > 0 and cur_file.file_size <= max_content_size:
                 stream.write(
-                    md5(self.read_file(cur_file.filename)).hexdigest().encode(
+                    md5(self.fetch(cur_file.filename)).hexdigest().encode(
                         "utf-8"))
         return md5(stream.getvalue()).hexdigest()
 
@@ -606,7 +606,7 @@ class FileSource:
         """
         return None
 
-    def read_file(self, filename: str) -> bytes | None:
+    def fetch(self, filename: str) -> bytes | None:
         """
         Reads a file from this file source, identified by name.
 
@@ -623,11 +623,8 @@ class FileSource:
         from scistag.webstag import WebCache
         if self.max_web_cache_age != 0:  # try to fetch data if cache is on
             unique_name = self._get_source_identifier() + "/" + filename
-            try:
-                data = WebCache.fetch(unique_name,
-                                      max_age=self.max_web_cache_age)
-            except:
-                data = None
+            data = WebCache.fetch(unique_name,
+                                  max_age=self.max_web_cache_age)
             if data is not None:
                 return data
         result = self._read_file_int(filename)
@@ -652,8 +649,8 @@ class FileSource:
 
     def copy(self, filename: str, target_name: str, overwrite=True,
              sink: Union["FileSink", None] = None,
-             on_downloading: Callable[[str], None] | None = None,
-             on_download_successful: Callable[[str, int], None] | None = None,
+             on_fetch: Callable[[str], None] | None = None,
+             on_fetch_done: Callable[[str, int], None] | None = None,
              on_stored: Callable[[str, int], None] | None = None,
              on_error: Callable[[str, str], None] | None = None,
              on_skip: Callable[[str], None] | None = None) -> bool:
@@ -668,8 +665,8 @@ class FileSource:
         :param sink: If defined the file will be copied to the specified sink
         :param on_skip: Is called if a file exists and will be skipped
         :param on_stored: Is called when ever a file was successfully uploaded
-        :param on_downloading: Is called before a file is downloaded
-        :param on_download_successful: Is called after a file was
+        :param on_fetch: Is called before a file is downloaded
+        :param on_fetch_done: Is called after a file was
             successfully downloaded and will now be uploaded or stored.
         :param on_error: Is called when an error occurred
         :return: True if the file was copied
@@ -678,24 +675,25 @@ class FileSource:
             if on_skip is not None:
                 on_skip(target_name)
             return False
-        if on_downloading is not None:
-            on_downloading(filename)
-        data = self.read_file(filename)
+        if on_fetch is not None:
+            on_fetch(filename)
+        data = self.fetch(filename)
         if data is None:
             if on_error is not None:
                 on_error(filename, f"Could not load {filename}")
             return False
-        if on_download_successful is not None:
-            on_download_successful(filename, len(data))
+        if on_fetch_done is not None:
+            on_fetch_done(filename, len(data))
         if sink is not None:
-            result = sink.store(target_name, data)
+            result = sink.store(target_name, data, overwrite=overwrite)
         else:
-            result = FileStag.save(target_name, data)
-        if result and on_stored is not None:
-            on_stored(filename, len(data))
+            result = FileStag.save(target_name, data, overwrite=overwrite)
+        if result:
+            if on_stored is not None:
+                on_stored(filename, len(data))
         else:
             if on_error is not None:
-                on_error(f"Could not store {filename}")
+                on_error(filename, f"Could not store {filename}")
         return result
 
     def copy_to(self, target: Union["FileSink", str],
@@ -719,6 +717,7 @@ class FileSource:
                 if cur_file.data is None:
                     error_log.append(
                         f"Could not load file {cur_file.filename}")
+                    continue
                 if not target.store(cur_file.filename, cur_file.data,
                                     overwrite=overwrite):
                     error_log.append(
@@ -742,16 +741,16 @@ class FileSource:
         """
         for cur_file in self.file_list:
             target_name = target + "/" + cur_file.filename
-            rel_path = os.path.dirname(target)
+            rel_path = os.path.dirname(target_name)
             os.makedirs(rel_path, exist_ok=True)
             if FileStag.exists(target_name):
                 continue
-            cur_file_data = self.read_file(cur_file.filename)
+            cur_file_data = self.fetch(cur_file.filename)
             if cur_file_data is None:
                 error_log.append(
                     f"Could not load file {cur_file.filename}")
                 continue
-            if not FileStag.save(target_name, cur_file.data,
+            if not FileStag.save(target_name, cur_file_data,
                                  overwrite=overwrite):
                 error_log.append(
                     f"Could not store file {cur_file.filename}")
@@ -771,7 +770,7 @@ class FileSource:
                     f"Could not load file {cur_file.filename}")
                 continue
             target_name = target + "/" + cur_file.filename
-            rel_path = os.path.dirname(target)
+            rel_path = os.path.dirname(target_name)
             os.makedirs(rel_path, exist_ok=True)
             if not FileStag.save(target_name, cur_file.data,
                                  overwrite=overwrite):
@@ -856,7 +855,7 @@ class FileSource:
             # continue if just the current file is skipped
             if target_name is not None:
                 break
-        data = self.read_file(
+        data = self.fetch(
             next_entry.filename) if not self.dont_load else None
         return self.handle_provide_result(iterator, target_name, data)
 
@@ -928,7 +927,7 @@ class FileSource:
         """
         if not fnmatch(os.path.basename(entry.filename), self.search_mask):
             return False
-        rest = entry.filename[len(self.search_path):].lstrip("/").lstrip("\\")
+        rest = entry.filename.lstrip("/").lstrip("\\")
         if not self.recursive:
             if "/" in rest or "\\" in rest:
                 return False

@@ -72,7 +72,7 @@ full = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jin
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^2.14.0"
-coverage = "^6.4.1"
+coverage = { version = "^6.4.1", extras = ["toml"] }
 pytest = "^7.1.2"
 pytest-mock = "^3.7.0"
 pytest-order = "^1.0.1"
@@ -90,3 +90,33 @@ sphinx_mdinclude = { version = "^0.5.2" }
 anybadge = { version = "^1.14.0" }
 sphinx-autodoc-typehints = { version = "^1.19.2" }
 importtime-waterfall = { version = "1.0.0" }
+
+[tool.coverage.run]
+omit = [".*", "*/site-packages/*",
+    "*/config-*.py",
+    "*/config.py",
+    "*/cli/*",
+    "*/examples/*",
+    "*/tests/*",
+    "*/workbench/*",
+    "*/third_party/*",
+    "*/shibokensupport/*",
+    "*/pyscript",
+    "*/signature_bootstrap.py"]
+branch = true
+
+[tool.coverage.report]
+skip_empty = true
+
+# Regexes for lines to exclude from consideration
+exclude_lines = ["pragma: no cover",
+    "def __repr__",
+    "if self.debug",
+    "if TYPE_CHECKING:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    'if __name__ == "__main__":',
+    "@(abc.)?abstractmethod"]
+
+ignore_errors = true

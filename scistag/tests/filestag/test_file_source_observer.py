@@ -31,3 +31,15 @@ def test_file_source_observer(tmp_path):
     time.sleep(0.05)
     FileStag.save(tar_dir + "/testc.bin", b"555")
     assert hash_val != fs_obs.__hash__()
+
+    source = FileSource.from_source(tar_dir, search_mask="*.bin")
+    single_file = str(tmp_path) + "/single_file.bin"
+    fs_obs = FileObserver(None, max_content_size=8,
+                          refresh_time_s=0.04)
+    fs_obs.add(source)
+    fs_obs.add(single_file)
+    FileStag.save(single_file, b"123")
+    hash_val = fs_obs.__hash__()
+    time.sleep(0.05)
+    FileStag.save(single_file, b"456")
+    assert hash_val != fs_obs.__hash__()

@@ -342,3 +342,18 @@ def test_printing():
         log.write_md("md")
         assert printer.called
     log.render()
+
+
+def test_start_browser():
+    """
+    Tests the browser startup
+    """
+    with mock.patch("webbrowser.open") as open_browser:
+        vis_log = VisualLog(start_browser=True, refresh_time_s=0.05)
+        vis_log.run_server(test=True, show_urls=False)
+        vis_log._start_app_or_browser(real_log=vis_log, https=False)
+        assert open_browser.called
+    with mock.patch("webbrowser.open") as open_browser:
+        vis_log = VisualLog(app="cute", refresh_time_s=0.05)
+        vis_log.run_server(test=True, show_urls=False)
+        assert not open_browser.called

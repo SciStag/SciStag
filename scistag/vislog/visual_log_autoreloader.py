@@ -211,7 +211,7 @@ class VisualLogAutoReloader:
             with cls._access_lock:
                 if cls.testing:  # return test client when in testing mode
                     cls._test_client = \
-                        cls.main_log.server.get_handle().test_client()
+                        cls.main_log.server.handle.test_client()
                 else:
                     cls._test_client = None
         try:

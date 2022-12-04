@@ -74,7 +74,7 @@ class FileSourceZip(FileSource):
     def _read_file_int(self, filename: str) -> bytes | None:
         with self.access_lock:
             try:
-                return self.zip_archive.read(filename)
+                return self.zip_archive.read(self.search_path + filename)
             except KeyError:
                 raise FileNotFoundError(f"Could not find {filename}")
 
@@ -82,7 +82,7 @@ class FileSourceZip(FileSource):
         with self.access_lock:
             if self._file_list:
                 return super().exists(filename)
-            return filename in self.zip_archive.namelist()
+            return self.search_path + filename in self.zip_archive.namelist()
 
     def handle_get_next_entry(self, iterator: FileSourceIterator) -> \
             FileListEntry | None:
@@ -94,8 +94,11 @@ class FileSourceZip(FileSource):
                     index = iterator.file_index
                     iterator.file_index += 1
                     cur_entry = self.zip_archive.filelist[index]
+                    if not cur_entry.filename.startswith(self.search_path):
+                        continue
+                    spl = len(self.search_path)
                     new_entry = FileListEntry(
-                        filename=cur_entry.filename,
+                        filename=cur_entry.filename[spl:],
                         file_size=cur_entry.file_size,
                         modified=datetime(*cur_entry.date_time),
                         created=datetime(*cur_entry.date_time)
@@ -111,12 +114,14 @@ class FileSourceZip(FileSource):
         with self.access_lock:
             if self._file_list is not None and not force:
                 return
-            full_list = [FileListEntry(filename=element.filename,
+            spl = len(self.search_path)
+            full_list = [FileListEntry(filename=element.filename[spl:],
                                        file_size=element.file_size,
                                        modified=datetime(*element.date_time),
                                        created=datetime(*element.date_time))
                          for element
-                         in self.zip_archive.filelist]
+                         in self.zip_archive.filelist
+                         if element.filename.startswith(self.search_path)]
             cleaned_list = [element for element in full_list if
                             self.handle_file_list_filter(element)]
             elements = sorted(cleaned_list,

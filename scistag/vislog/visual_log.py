@@ -65,6 +65,9 @@ TXT = "txt"
 MD = "md"
 "Markdown output"
 
+CUTE_APP = "cute"
+"Defines that the app shall be started in a Qt browser window"
+
 MAIN_LOG = "mainLog"
 "The name of the main log"
 
@@ -1056,7 +1059,8 @@ class VisualLog:
         mt = mt and not test
         server.start(mt=mt, test=test)
         self._start_app_or_browser(real_log=self,
-                                   url_prefix=url_prefix)
+                                   url_prefix=url_prefix,
+                                   test=test)
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
@@ -1194,7 +1198,8 @@ class VisualLog:
     def _start_app_or_browser(self,
                               real_log: VisualLog,
                               https: bool = False,
-                              url_prefix: str = ""):
+                              url_prefix: str = "",
+                              test: bool = False):
         """
         This function is called when the log is set up and ready to go
 
@@ -1205,19 +1210,36 @@ class VisualLog:
         ;param https: Defines if https is being used
         :param url_prefix: Defines the http root directory at which the log
             is hosed.
+        :param test: Defines if a test is being executed
         """
+        port = real_log.server.port if real_log.server is not None else 80
+        protocol = "https" if https else "http"
+        own_url = f"{protocol}://127.0.0.1:{port}{url_prefix}/live"
         if self._start_browser:
-            port = real_log.server.port
             import webbrowser
-            protocol = "https" if https else "http"
             # check if an old browser is alive
             wait_time = max([real_log.refresh_time_s, 0.5])
             time.sleep(wait_time * 1.5)
             # if the page was loaded don't open another browser
             if time.time() - real_log.last_page_request > wait_time:
                 webbrowser.open(
-                    f"{protocol}://127.0.0.1:{port}{url_prefix}/live")
-        # TODO Implementation of Cute app
+                    own_url)
+            return
+        if self._app is not None and len(self._app) != 0:
+            if self._app == CUTE_APP:
+                from scistag.cutestag import cute_available
+                if not cute_available():
+                    raise RuntimeError("Please install PySide 6 to run the log"
+                                       "as stand-alone application. You can do "
+                                       "so via install PySide6-components or "
+                                       "by adding cutestag as extra to SciStag, "
+                                       "e.g. "
+                                       "pip install scistag[common,cutestag]")
+                from scistag.cutestag.browser import CuteBrowserApp
+                app = CuteBrowserApp()
+                app.run_in_background()
+                return
+            raise ValueError(f"Unknown application type: {self._app}")
 
     def kill_server(self) -> bool:
         """

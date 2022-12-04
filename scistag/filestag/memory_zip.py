@@ -27,7 +27,7 @@ class MemoryZip(zipfile.ZipFile):
             if not isinstance(data, bytes):
                 data = FileStag.load(source)
                 if data is None:
-                    raise ValueError(f"Invalid data source, file not found")
+                    raise FileNotFoundError(f"Invalid data source, file not found")
             self._stream = io.BytesIO(data)
             super().__init__(file=self._stream, mode="a", **kwargs)
         else:

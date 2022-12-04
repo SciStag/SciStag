@@ -39,7 +39,7 @@ def test_zip_source_prefetched():
         assert files_handled == TEST_ARCHIVE_FILE_COUNT
         assert total_data == TEST_ARCHIVE_EXTRACTED_FILE_SIZE
         with pytest.raises(FileNotFoundError):
-            test_source.read_file("doesnexist.txt")
+            test_source.fetch("doesnexist.txt")
 
 
 def test_zip_source_dynamic():

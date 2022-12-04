@@ -50,8 +50,8 @@ def test_iteration():
     azure_source = FileSource.from_source(connection_string + "/fonts",
                                           fetch_file_list=True)
     assert len(azure_source._file_list) == TOTAL_FONT_COUNT
-    assert azure_source.exists("fonts/Roboto/Roboto-Black.ttf")
-    assert not azure_source.exists("fonts/Roboto/Roboto-BlackX2.ttf")
+    assert azure_source.exists("Roboto/Roboto-Black.ttf")
+    assert not azure_source.exists("Roboto/Roboto-BlackX2.ttf")
 
     # test dynamic iteration
     azure_source = FileSource.from_source(connection_string,
@@ -111,8 +111,8 @@ def test_basics():
     Provoke errors and edge cases
     """
     azure_source = FileSource.from_source(connection_string + "/fonts/Roboto")
-    assert azure_source.read_file("notExistingFile.txt") is None
-    assert azure_source.exists("fonts/Roboto/LICENSE.txt")
+    assert azure_source.fetch("notExistingFile.txt") is None
+    assert azure_source.exists("LICENSE.txt")
     assert not azure_source.exists("WhatEver.zip")
     azure_source.close()
     azure_source.close()
@@ -160,6 +160,12 @@ def test_tags():
     for _ in azure_source:
         counter += 1
     assert counter == 1
+
+
+def test_tags_with_path():
+    """
+    Search for elements with tag in a search path
+    """
     # filter prefix and tag with prefetch
     azure_source = AzureStorageFileSource(connection_string + "/fonts",
                                           tag_filter="licenseFile = 'SciStag'",
@@ -222,19 +228,19 @@ def test_sas_creation():
         connection_string + "/fonts",
         fetch_file_list=True)
     assert len(azure_source._file_list) == TOTAL_FONT_COUNT
-    assert azure_source.exists("fonts/Roboto/Roboto-Black.ttf")
-    test_file = "fonts/Roboto/Roboto-Black.ttf"
+    assert azure_source.exists("Roboto/Roboto-Black.ttf")
+    test_file = "Roboto/Roboto-Black.ttf"
     sas = azure_source.create_sas_url(test_file, end_time_days=1.0)
     assert len(sas)
     # read via sas url
     rest_data = web_fetch(sas, max_cache_age=0)
     # read via azure package
-    blob_data = azure_source.read_file(test_file)
+    blob_data = azure_source.fetch(test_file)
     # compare
     assert len(blob_data) == len(rest_data)
     assert blob_data == rest_data
     sas_data = web_fetch(
-        azure_source.get_absolute("fonts/Roboto/Roboto-Black.ttf"))
+        azure_source.get_absolute("Roboto/Roboto-Black.ttf"))
     assert sas_data == blob_data
 
 

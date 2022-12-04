@@ -19,6 +19,8 @@ from .size2d import Size2D, Size2DTypes
 from .definitions import ImsFramework, get_opencv
 from .image_base import ImageBase
 from ..filestag import FileStag
+from ..filestag.protocols import HTTP_PROTOCOL_URL_HEADER, \
+    HTTPS_PROTOCOL_URL_HEADER
 
 if TYPE_CHECKING:
     from scistag.imagestag.canvas import Canvas
@@ -167,7 +169,8 @@ class Image(ImageBase):
             pixel_format = cls.detect_format(source)
         # fetch from web if desired
         if isinstance(source, str):
-            if source.startswith("http://") or source.startswith("http:s//"):
+            if source.startswith(HTTP_PROTOCOL_URL_HEADER) or source.startswith(
+                    HTTPS_PROTOCOL_URL_HEADER):
                 params['cache'] = params.get("cache", True)
             source = FileStag.load(source, **params)
             if source is None:
@@ -194,18 +197,14 @@ class Image(ImageBase):
                                                    is_cv2=True)
         self.height, self.width = self._pixel_data.shape[0:2]
 
-    def _init_as_pil(self, source):
+    def _init_as_pil(self, source: bytes | np.ndarray | PIL.Image.Image):
         """
         Initializes the image as PIL image
 
         :param source: The data source
         """
         try:
-            if source is None:
-                raise ValueError("No image data provided")
-            if isinstance(source, str):
-                self._pil_handle = PIL.Image.open(source)
-            elif isinstance(source, bytes):
+            if isinstance(source, bytes):
                 data = io.BytesIO(source)
                 self._pil_handle = PIL.Image.open(data)
             elif isinstance(source, np.ndarray):
@@ -339,7 +338,7 @@ class Image(ImageBase):
                 self.to_pil().resize(size, resample=resample_method))
 
     def resized_ext(self, size: Size2DTypes | None = None,
-                    max_size: Size2DTypes | tuple[
+                    max_size: Size2DTypes | int | float | tuple[
                         int | None, int | None] | None = None,
                     keep_aspect: bool = False,
                     target_aspect: float | None = None,
@@ -482,6 +481,8 @@ class Image(ImageBase):
         :param org_size: The original size
         :return: The effective size in pixels
         """
+        if isinstance(max_size, (float, int)):
+            max_size = (max_size, max_size)
         if isinstance(max_size, tuple) and len(max_size) == 2:
             max_width = \
                 int(round(max_size[0])) if max_size[0] is not None else None

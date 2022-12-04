@@ -22,6 +22,7 @@ def test_file_stag():
     ed = FileStag.load(ESSENTIAL_DATA_ARCHIVE_NAME)
     assert FileStag.load(ESSENTIAL_DATA_ARCHIVE_NAME + "123") is None
     assert len(ed) == 13754681
+    assert FileStag.load(b"Test123") == b"Test123"
     # load file from the web
     stag_image = FileStag.load(TestConstants.STAG_URL, cache=True)
     stag_image = FileStag.load(SecretStr(TestConstants.STAG_URL), cache=True)
@@ -51,6 +52,8 @@ def test_file_stag():
     with pytest.raises(NotImplementedError):
         FileStag.save("https://www.google.com", b"yahoo")
     assert not FileStag.save("/somenotexistingfolder/youcantaccess", b"yahoo")
+    with pytest.raises(ValueError):
+        FileStag.save("/somenotexistingfolder/youcantaccess", None)
 
 
 def test_simple_file():
@@ -79,6 +82,9 @@ def test_json(tmp_path):
     FileStag.save_json(SecretStr(output_fn), some_dict)
     loaded_dict = FileStag.load_json(SecretStr(output_fn))
     assert some_dict == loaded_dict
+    with pytest.raises(ValueError):
+        FileStag.save_json(output_fn, None)
+    assert FileStag.load_json(b'{"test":"fromBytes"}')['test'] == 'fromBytes'
 
 
 def test_text(tmp_path):
@@ -98,6 +104,9 @@ def test_text(tmp_path):
     assert os.path.exists(output_fn)
     assert FileStag.load_text(SecretStr(output_fn)) == test_data
     assert FileStag.delete(SecretStr(output_fn))
+    with pytest.raises(ValueError):
+        FileStag.save_text(output_fn, None)
+    assert FileStag.load_text(b'test') == "test"
 
 
 def test_copy(tmp_path):

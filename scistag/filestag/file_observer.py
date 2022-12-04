@@ -7,8 +7,11 @@ hash value when ever a file was modified.
 from __future__ import annotations
 
 import hashlib
+import io
+import os
 
 from scistag.common.observer import Observer
+from scistag.filestag import FileStag
 from scistag.filestag.file_source import FileSource
 
 
@@ -47,7 +50,14 @@ class FileObserver(Observer):
         "The list of single files to observe"
 
     def add(self, source: FileSource | str):
+        """
+        Adds a new file source or single file to the list of observed targets
+
+        :param source: The source, either a filename or a FileSource object
+        """
         if isinstance(source, str):
+            if not FileStag.is_simple(source):
+                raise ValueError("Only local files supported as of now")
             self.files.append(source)
         else:
             self.sources.append(source)
@@ -58,5 +68,17 @@ class FileObserver(Observer):
             cur_source.refresh()
             hashes += cur_source.get_hash(
                 max_content_size=self.max_content_size)
-        # TODO Add single file hashes
+        for element in self.files:
+            if not FileStag.is_simple(element):
+                raise ValueError("Only local files supported as of now")
+            mod_date = os.path.getmtime(element)
+            size = os.path.getsize(element)
+            content_hash: str = ""
+            if size < self.max_content_size:
+                content_hash = hashlib.md5(FileStag.load(element)).hexdigest()
+            stream = io.BytesIO()
+            stream.write(content_hash.encode("utf-8"))
+            stream.write(int(mod_date * 10).to_bytes(8, "little", signed=True))
+            stream.write(size.to_bytes(8, "little", signed=True))
+            hashes += hashlib.md5(stream.getvalue()).hexdigest()
         return hashlib.md5(hashes.encode("utf-8")).hexdigest()

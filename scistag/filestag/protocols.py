@@ -28,3 +28,18 @@ def is_azure_storage_source(source: str):
 
 ZIP_SOURCE_PROTOCOL = "zip://"
 "A file path flagging the file as being stored in a zipfile"
+
+HTTPS_PROTOCOL_URL_HEADER = "https://"
+"""
+Definition for the beginning of a https url to check if a file has to be fetched 
+from the web
+"""
+
+HTTP_PROTOCOL_URL_HEADER = "http://"
+"""
+Definition for the beginning of a http url to check if a file has to be fetched 
+from the web
+"""
+
+FILE_PATH_PROTOCOL_URL_HEADER = "file://"
+"Definition for the beginning of a local file url"

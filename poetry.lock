@@ -311,6 +311,9 @@ category = "dev"
 optional = false
 python-versions = ">=3.7"
 
+[package.dependencies]
+tomli = {version = "*", optional = true, markers = "python_full_version <= \"3.11.0a6\" and extra == \"toml\""}
+
 [package.extras]
 toml = ["tomli"]
 
@@ -2451,7 +2454,7 @@ svg = ["CairoSVG"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9 <=3.10"
-content-hash = "b60ca37a87cc9b4ecf96db7ebfe2fba4b4bc2d8b8477e9f51865a68393023013"
+content-hash = "2862128bc472d9441281e1cd134a9ad4cf521a3ae3c1a5a039ec7f78f92b1ba3"
 
 [metadata.files]
 alabaster = [
