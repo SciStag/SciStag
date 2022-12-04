@@ -10,7 +10,8 @@ from typing import Optional
 from pydantic import BaseModel
 
 from scistag.common import Env
-from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
+from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
+    AZURE_DEFAULT_ENDPOINTS_HEADER, AZURE_SAS_URL_COMPONENT
 
 
 class AzureBlobPath(BaseModel):
@@ -20,11 +21,11 @@ class AzureBlobPath(BaseModel):
     This path contains at least the account name,
     may contain the access key and path to the blob within the container.
     """
-    default_endpoints_protocol: str
+    default_endpoints_protocol: Optional[str]
     "The protocol being used such as https"
-    account_name: str
+    account_name: Optional[str]
     "The account name"
-    endpoint_suffix: str
+    endpoint_suffix: Optional[str]
     "The endpoint suffix such as core.windows.net"
     account_key: Optional[str]
     "The account key, optional"
@@ -32,6 +33,8 @@ class AzureBlobPath(BaseModel):
     "The container name, optional"
     blob_name: Optional[str]
     "The blob name or search mask, optional"
+    sas_url: Optional[str]
+    "The full SAS url if provided as SAS"
 
     @classmethod
     def from_string(cls,
@@ -54,6 +57,12 @@ class AzureBlobPath(BaseModel):
             - ...;windows.core.net/container_name/*.txt
         :return: The AzureBlobPath object
         """
+        if (connection_string.startswith("http") and AZURE_SAS_URL_COMPONENT in
+                connection_string):
+            return AzureBlobPath(sas_url=connection_string,
+                                 container_name="",
+                                 blob_name="")
+
         source, container, search_path = cls.split_azure_url(
             connection_string,
             insert_key=True)
@@ -78,7 +87,8 @@ class AzureBlobPath(BaseModel):
         )
         if len(blob_path.account_key) != 0 and blob_path.account_key.startswith(
                 "{{") and blob_path.account_key.endswith("}}"):
-            raise ValueError(f"Account key not specified in connection string {connection_string}")
+            raise ValueError(
+                f"Account key not specified in connection string {connection_string}")
         return blob_path
 
     @classmethod
@@ -96,10 +106,12 @@ class AzureBlobPath(BaseModel):
             name or the search path are not provided, empty strings will be
             returned.
         """
+        if url.startswith("http") and AZURE_SAS_URL_COMPONENT in url:
+            return url, "", ""
         if not url.startswith(AZURE_PROTOCOL_HEADER) and not url.startswith(
-                "DefaultEndpoints"):
+                AZURE_DEFAULT_ENDPOINTS_HEADER):
             return None
-        if not url.startswith("DefaultEndpoints"):
+        if not url.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
             url = url[len(AZURE_PROTOCOL_HEADER):]
         if insert_key:
             url = Env.insert_environment_data(url)
@@ -119,6 +131,8 @@ class AzureBlobPath(BaseModel):
 
     def get_connection_string(self) -> str:
         epp = self.default_endpoints_protocol
+        if self.sas_url is not None:
+            return self.sas_url
         if self.account_key is not None:
             return f"DefaultEndpointsProtocol={epp};" \
                    f"AccountName={self.account_name};" \
@@ -145,6 +159,9 @@ class AzureBlobPath(BaseModel):
         :return: The https url pointing to the blob which can be shared as
             download link.
         """
+        if self.sas_url is not None:
+            raise ValueError(
+                "Can not create SAS w/o connection string as of now")
         import datetime as dt
         from azure.storage.blob import (
             BlobSasPermissions,
@@ -170,3 +187,11 @@ class AzureBlobPath(BaseModel):
             f'{self.container_name}/{blob_name}?{sas}'
         )
         return sas_url
+
+    def is_sas(self):
+        """
+        Defines if this URL uses a SAS url
+
+        :return: True if we are using a SAS instead of a connection string
+        """
+        return self.sas_url is not None

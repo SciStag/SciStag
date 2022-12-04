@@ -1,7 +1,7 @@
 """
 This demo shows VisualLogStag's auto-reload capability and some basic features.
 
-For further instructions see the metho build_body below
+For further instructions see the method build_body below
 """
 
 from math import ceil
@@ -15,7 +15,7 @@ from scistag.emojistag import EmojiDb, render_emoji
 
 class DemoBuilder(VisualLogBuilder):
 
-    def build_body(self):
+    def build(self):
         self.md(
             """
             # Welcome to SciStag VisualLog!
@@ -147,8 +147,5 @@ class DemoBuilder(VisualLogBuilder):
             ax2.set_ylabel('CSD (dB)')
 
 
-if __name__ == "__main__" or VisualLog.is_main():
-    #  Note: is_main() is required to still detect the main file after a reload
-    log = VisualLog(auto_reload=DemoBuilder,
-                    log_to_stdout=False,  # No console spamming
-                    log_to_disk=False)  # No archived files needed
+if VisualLog.is_main():
+    VisualLog(auto_reload=DemoBuilder)  # No archived files needed

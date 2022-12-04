@@ -5,7 +5,6 @@ import io
 import os
 from unittest import mock
 
-import IPython.display
 import numpy as np
 import pandas as pd
 
@@ -30,6 +29,7 @@ def test_load(stag_image_data):
     """
     image = Image(stag_image_data)
     assert image.get_size() == (665, 525)
+    assert image.size == (665, 525)
     assert image.to_pil() is not None
     pixels = image.get_pixels()
     assert pixels.shape == (525, 665, 3)
@@ -139,6 +139,18 @@ def test_resize_ext(stag_image_data):
         assert False  # shouldn't be reached
     except ValueError:
         pass
+    filled = image.resized_ext(max_size=(128, 128))
+    max_size_pixels = filled.get_pixels()
+    mean_max_size = np.mean(max_size_pixels)
+    single_val = image.resized_ext(max_size=128)
+    assert single_val.width == 128
+    max_width = image.resized_ext(max_size=(128, None))
+    assert max_width.width == 128 and max_width.height != 128
+    max_height = image.resized_ext(max_size=(None, 128))
+    assert max_height.height == 128 and max_width != 128
+    with pytest.raises(ValueError):
+        image.resized_ext(max_size=(None, None))
+    assert mean_max_size == pytest.approx(120.6, 0.05)
 
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
@@ -152,6 +164,7 @@ def test_encoding(stag_image_data, tmp_path):
     stag = render_emoji("deer", height=128)
     # automatic background filling when converting from RGBA to RGB
     decoded_jpg = Image(stag.encode("jpg"))
+    decoded_jpg_2 = Image(stag.encode(filetype=("jpg", 90)))
     assert decoded_jpg.get_pixels_rgb().mean() == pytest.approx(228, 0.005)
     image = Image(stag_image_data)
     jpg1_data = image.encode(filetype="jpg", quality=95)
@@ -173,7 +186,17 @@ def test_encoding(stag_image_data, tmp_path):
     assert bmp_data is not None and len(bmp_data) > 0
     decoded_bmp = Image(bmp_data)
     assert np.array_equal(decoded_bmp.get_pixels_rgb(), image.get_pixels_rgb())
-    assert isinstance(image.to_ipython(), IPython.display.Image)
+    ipython = False
+    try:
+        import IPython.display
+        ipython = True
+    except ModuleNotFoundError:
+        pass
+    if ipython:
+        assert isinstance(image.to_ipython(), IPython.display.Image)
+    else:
+        with pytest.raises(RuntimeError):
+            image.to_ipython()
 
     # disk encoding
 
@@ -212,6 +235,8 @@ def test_hsv(stag_image_data):
         plot.add_image(band, size_ratio=0.5)
     vl.test.assert_figure("HSV", fig,
                           hash_val="d14022d9f1d948479a81aad7577b7be0")
+    org_image = image.convert_to_raw().copy()
+    assert isinstance(org_image.get_handle(), np.ndarray)
 
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
@@ -371,3 +396,14 @@ def test_crop(stag_image_data):
     stag.convert_to_raw()
     cropped = stag.cropped((0, 0, 10.0, 10.0))
     assert cropped.width == 10 and cropped.height == 10
+
+
+@pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
+def test_damaged(stag_image_data):
+    """
+    Tests if loading successfully fails for damaged images
+    """
+    with pytest.raises(ValueError):
+        Image(b"12345", framework=ImsFramework.RAW)
+    with pytest.raises(ValueError):
+        Image(b"12345", framework=ImsFramework.CV)

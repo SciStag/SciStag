@@ -3,15 +3,14 @@ Implements the :class:`AzureStorageFileSource` class which allows iterating
 files stored in an Azure Blob Storage
 """
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 from collections.abc import Iterable
 from scistag.filestag.azure.azure_blob_path import \
     AzureBlobPath
 from scistag.filestag.file_source import FileSource, FileListEntry, \
     FileSourcePathOptions
 from scistag.filestag.file_source_iterator import FileSourceIterator
-from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
-    AZURE_DEFAULT_ENDPOINTS_HEADER
+from scistag.filestag.protocols import is_azure_storage_source
 
 if TYPE_CHECKING:
     from azure.storage.blob import BlobServiceClient, ContainerClient
@@ -49,26 +48,34 @@ class AzureStorageFileSource(FileSource):
         self.timeout: int = int(params.pop("timeout", 30))
         "The connection timeout in seconds"
         super().__init__(**params)
-        if not (source.startswith(AZURE_PROTOCOL_HEADER) or
-                source.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER)):
+        if not is_azure_storage_source(source):
             raise ValueError(
-                "source has be in the form azure://DefaultEndpoints...")
+                "source has be an SAS URL, in the form "
+                "azure://DefaultEndpoints... or DefaultEndpoints...")
 
         self.blob_path = AzureBlobPath.from_string(source)
-        assert len(self.blob_path.container_name)
-        self.service_client: "BlobServiceClient" = \
-            self.service_from_connection_string(
+        assert len(
+            self.blob_path.container_name) or self.blob_path.sas_url is not None
+        if self.blob_path.is_sas():
+            from azure.storage.blob import BlobServiceClient, ContainerClient
+            container_client = \
+                ContainerClient.from_container_url(
+                    self.blob_path.get_connection_string())
+            service_client = None
+        else:
+            service_client = self.service_from_connection_string(
                 self.blob_path.get_connection_string())
+            container_client = \
+                service_client.get_container_client(
+                    self.blob_path.container_name)
+        self.service_client: Union["BlobServiceClient", None] = service_client
         "Connector to the Azure storage"
-        self.container_client: "ContainerClient" = \
-            self.service_client.get_container_client(
-                self.blob_path.container_name)
+        self.container_client: "ContainerClient" = container_client
         "Connector to a specific container"
         self.container_name = self.blob_path.container_name
         "The container's name"
-        search_path = self.blob_path.blob_name
-        self.prefix = search_path + "/" if len(search_path) else ""
-        "The prefix (base folder) if specified"
+        search_path = self.blob_path.blob_name + self.search_path
+        self.search_path = search_path + "/" if len(search_path) else ""
         self.tag_filter_expression = tag_filter if tag_filter is not None and \
                                                    len(tag_filter) > 0 else None
         """
@@ -103,7 +110,8 @@ class AzureStorageFileSource(FileSource):
         if not self.handle_file_list_filter(entry):
             return None
         try:
-            return self.container_client.download_blob(filename).readall()
+            return self.container_client.download_blob(
+                self.search_path + filename).readall()
         except ResourceNotFoundError:
             return None
 
@@ -113,18 +121,20 @@ class AzureStorageFileSource(FileSource):
         entry = FileListEntry(filename=filename)
         if not self.handle_file_list_filter(entry):
             return False
-        blob_client = self.container_client.get_blob_client(filename)
+        blob_client = self.container_client.get_blob_client(
+            self.search_path + filename)
         return blob_client.exists()
 
     @staticmethod
-    def _file_list_entry_from_blob(element) -> FileListEntry:
+    def _file_list_entry_from_blob(element, spl: int) -> FileListEntry:
         """
         Creates a file list entry from a blob storage entry
 
         :param element: The blob storage entry
+        :param spl: The length of the search mask (prefix)
         :return: The file list entry containing the extracted properties
         """
-        return FileListEntry(filename=element.name,
+        return FileListEntry(filename=element.name[spl:],
                              file_size=element.size,
                              modified=element.last_modified,
                              created=element.creation_time)
@@ -141,10 +151,14 @@ class AzureStorageFileSource(FileSource):
             try:
                 next_element = next(iterator.processing_data['blobIter'])
                 if self.tag_filter_expression is not None:
+                    if not next_element["name"].startswith(self.search_path):
+                        continue
                     new_element = FileListEntry(filename=next_element["name"])
                 else:
+                    if not next_element.name.startswith(self.search_path):
+                        continue
                     new_element = self._file_list_entry_from_blob(
-                        next_element)
+                        next_element, len(self.search_path))
             except StopIteration:
                 iterator.processing_data['blobIter'] = None
                 return None
@@ -162,7 +176,7 @@ class AzureStorageFileSource(FileSource):
         if self.tag_filter_expression is None:
             return iter(
                 self.container_client.list_blobs(
-                    name_starts_with=self.prefix,
+                    name_starts_with=self.search_path,
                     results_per_page=self.results_per_page,
                     timeout=self.timeout))
         # filter by tag
@@ -171,29 +185,31 @@ class AzureStorageFileSource(FileSource):
             results_per_page=self.results_per_page,
             timeout=self.timeout)
 
-    def handle_file_list_filter(self, entry: FileListEntry) -> bool:
-        if len(self.prefix) > 0:
-            if not entry.filename.startswith(self.prefix):
-                return False
-        return super().handle_file_list_filter(entry)
-
     def handle_fetch_file_list(self, force: bool = False):
         if self._file_list is not None and not force:
             return
         from scistag.common.iter_helper import limit_iter
         blob_iterator = self.setup_blob_iterator()
-        if self.tag_filter_expression is not None:
-            cleaned_list = [FileListEntry(filename=element.name)
+        from azure.core.exceptions import HttpResponseError
+        spl = len(self.search_path)
+        try:
+            if self.tag_filter_expression is not None:
+                cleaned_list = [FileListEntry(filename=element.name[spl:])
+                                for element in
+                                limit_iter(blob_iterator, self.max_file_count)
+                                if element['name'].startswith(
+                        self.search_path) and self.handle_file_list_filter(
+                        FileListEntry(filename=element['name']))]
+            else:
+                elements = [self._file_list_entry_from_blob(element, spl)
                             for element in
-                            limit_iter(blob_iterator, self.max_file_count)
-                            if self.handle_file_list_filter(
-                    FileListEntry(filename=element['name']))]
-        else:
-            elements = [self._file_list_entry_from_blob(element)
-                        for element in
-                        limit_iter(blob_iterator, self.max_file_count)]
-            cleaned_list = [element for element in elements
-                            if self.handle_file_list_filter(element)]
+                            limit_iter(blob_iterator, self.max_file_count)]
+                cleaned_list = [element for element in elements
+                                if self.handle_file_list_filter(element)]
+        except HttpResponseError:
+            raise ValueError("Connection error. This is often due to an"
+                             "outdated connection string or missing "
+                             "assigned permissions such as LIST.")
         elements = sorted(cleaned_list, key=lambda element: element.filename)
         self.update_file_list(elements)
 
@@ -221,7 +237,8 @@ class AzureStorageFileSource(FileSource):
             download link.
         """
         return \
-            self.blob_path.create_sas_url(blob_name, start_time_min,
+            self.blob_path.create_sas_url(self.search_path +
+                                          blob_name, start_time_min,
                                           end_time_days)
 
     def get_absolute(self, filename: str,

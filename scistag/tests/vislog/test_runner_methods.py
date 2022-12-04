@@ -26,7 +26,7 @@ def test_log_runner_basics():
 
 
 class DummyBuilder(VisualLogBuilder):
-    def build_body(self):
+    def build(self):
         self.log("Some content")
         if self.target_log.get_statistics().update_counter == 2:
             self.target_log.terminate()

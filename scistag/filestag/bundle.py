@@ -347,6 +347,8 @@ def _register_base_types():
                             DataFrameBundler.bundle)
     Bundle.register_unpacker(DataFrameBundler.DF_CLASS_NAME,
                              DataFrameBundler.unpack)
+    Bundle.register_unpacker("DataFrameBundler",  # for backwards compatibility
+                             DataFrameBundler.unpack)
     # Pandas Series
     Bundle.register_bundler(DataSeriesBundler.SERIES_CLASS_NAME,
                             DataSeriesBundler.bundle)

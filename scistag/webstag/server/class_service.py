@@ -28,7 +28,8 @@ class WebClassService(WebStagService):
       Example. MyClass.get_item_count -> /myClass/itemCount.
     """
 
-    def __init__(self, service_name: str, url_prefix: str, support_flask=False):
+    def __init__(self, service_name: str, url_prefix: str = "",
+                 support_flask=False):
         """
         :param service_name: The name under which the service is registered.
             Just has to be unique.

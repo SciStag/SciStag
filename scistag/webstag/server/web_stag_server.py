@@ -81,6 +81,13 @@ class WebStagServer:
         "Suppresses output to the logs and to the console"
 
     @property
+    def services(self) -> list[WebStagService]:
+        """
+        Returns a list of all services
+        """
+        return self._services
+
+    @property
     def port(self):
         """
         The network port the server uses
@@ -99,6 +106,8 @@ class WebStagServer:
         with self._access_lock:
             assert not self._started
             assert service not in self._services
+            if service.service is None:
+                service.setup_wrapper_blueprint()
             self._services.append(service)
 
     def start(self, mt=False, test=False):
@@ -170,14 +179,16 @@ class WebStagServer:
                         ssl_context=self.ssl_context,
                         debug=False)
 
-    def get_started(self):
+    @property
+    def started(self):
         """
         Returns if the server was started
         """
         with self._access_lock:
             return self._started
 
-    def get_handle(self) -> "Flask":
+    @property
+    def handle(self) -> "Flask":
         """
         Returns the server's native handle
         """

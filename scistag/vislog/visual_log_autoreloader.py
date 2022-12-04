@@ -211,11 +211,14 @@ class VisualLogAutoReloader:
             with cls._access_lock:
                 if cls.testing:  # return test client when in testing mode
                     cls._test_client = \
-                        cls.main_log.server.get_handle().test_client()
+                        cls.main_log.server.handle.test_client()
                 else:
                     cls._test_client = None
         try:
             print(f"Auto-reloading enabled for module {cls.imp_module}")
+            cls._embedded_log._start_app_or_browser(real_log=cls.main_log,
+                                                    https=False,
+                                                    url_prefix=url_prefix)
             while True:
                 with cls._access_lock:
                     sht = cls._shall_terminate

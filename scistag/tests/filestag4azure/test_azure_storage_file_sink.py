@@ -2,12 +2,11 @@
 Tests the Azure storage file sink
 """
 import hashlib
-import os
 import time
 
 import pytest
 
-from scistag.common import ConfigStag
+from scistag.common import ConfigStag, SystemInfo
 from scistag.filestag import FileSink, FileSource
 from scistag.filestag.azure import AzureStorageFileSink
 from scistag.webstag import web_fetch
@@ -16,7 +15,7 @@ from scistag.tests import RELEASE_TEST
 sink_target_container_string = \
     "azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;" \
     "AccountKey={{env.AZ_TEST_SOURCE_KEY}};EndpointSuffix=" \
-    "core.windows.net/testtarget"
+    f"core.windows.net/testtarget{SystemInfo.os_type.identifier}"
 """
 Test storage container
 """
@@ -170,7 +169,7 @@ def test_azure_file_sink_deletion():
                                 recreate_container=True)
     source = FileSource.from_source(sink_target_container_string,
                                     fetch_file_list=True)
-    assert len(source.get_file_list()) == 0
+    assert len(source.file_list) == 0
     # upload new data
     random_name = hashlib.md5(int(time.time()).to_bytes(16, "big")).hexdigest()
     verification_data = b"TestData" + random_name.encode("utf-8")
@@ -178,4 +177,4 @@ def test_azure_file_sink_deletion():
     time.sleep(1.0)
     source = FileSource.from_source(sink_target_container_string,
                                     fetch_file_list=True)
-    assert len(source.get_file_list()) == 1
+    assert len(source.file_list) == 1

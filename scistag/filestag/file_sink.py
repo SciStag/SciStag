@@ -9,7 +9,7 @@ import os
 
 from scistag.filestag import FilePath
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
-    ZIP_SOURCE_PROTOCOL
+    ZIP_SOURCE_PROTOCOL, AZURE_DEFAULT_ENDPOINTS_HEADER
 
 
 class FileStorageOptions:
@@ -56,7 +56,8 @@ class FileSink:
         if target == ZIP_SOURCE_PROTOCOL:
             from scistag.filestag.sinks import FileSinkZip
             return FileSinkZip(target=target, **params)
-        if target.startswith(AZURE_PROTOCOL_HEADER):
+        if target.startswith(AZURE_PROTOCOL_HEADER) or \
+                target.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
             from .azure.azure_storage_file_sink import AzureStorageFileSink
             return AzureStorageFileSink(target=target, **params)
         if target.startswith("/") or (

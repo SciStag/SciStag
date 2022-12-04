@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: tests
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Poetry Installer
         uses: abatilo/actions-poetry@v2
         with:
@@ -17,12 +17,16 @@ jobs:
         with:
           python-version: 3.9
           cache: 'poetry'
-      - run: poetry install -E "full" --with dev --no-interaction --no-root
+      - run: poetry install -E "common cutestag" --with dev --no-interaction --no-root
+        env:
+          PYTHON_KEYRING_BACKEND: keyring.backends.null.Keyring
       - run: |
           poetry run coverage run -m pytest ./scistag/tests
           poetry run coverage lcov -i
         env:
           AZ_TEST_SOURCE_KEY: "${{ secrets.AZ_TEST_SOURCE_KEY }}"
+          AZ_TEST_SOURCE_SAS: "${{ secrets.AZ_TEST_SOURCE_SAS }}"
+          AZ_TEST_SOURCE_SAS_INV: "${{ secrets.AZ_TEST_SOURCE_SAS_INV }}"
           TEST_RELEASE: 1
           SCISTAG_FULL_TEST: 1
       - name: Coveralls

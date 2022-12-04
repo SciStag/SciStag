@@ -6,24 +6,11 @@ from typing import Union
 
 from pydantic import SecretStr
 
+from scistag.filestag.protocols import HTTPS_PROTOCOL_URL_HEADER, \
+    HTTP_PROTOCOL_URL_HEADER, FILE_PATH_PROTOCOL_URL_HEADER
 from scistag.webstag import web_fetch
 
-HTTPS_PROTOCOL_URL_HEADER = "https://"
-"""
-Definition for the beginning of a https url to check if a file has to be fetched 
-from the web
-"""
-
-HTTP_PROTOCOL_URL_HEADER = "http://"
-"""
-Definition for the beginning of a http url to check if a file has to be fetched 
-from the web
-"""
-
-FILE_PATH_PROTOCOL_URL_HEADER = "file://"
-"Definition for the beginning of a local file url"
-
-FileSourceTypes = Union[str, SecretStr]
+FileSourceTypes = Union[str, SecretStr, bytes]
 """
 The file source path.
 
@@ -66,15 +53,17 @@ class FileStag:
         return True
 
     @staticmethod
-    def resolve_name(path: str | SecretStr) -> str:
+    def resolve_name(path: str | SecretStr | bytes) -> str | bytes:
         """
         Tries to simplify the file name or path
 
         :param path: The original filename or path
-        :return: The simplified name
+        :return: The simplified name or the original data if invalid type
         """
         if isinstance(path, SecretStr):
             path = path.get_secret_value()
+        elif not isinstance(path, str):
+            return path
         if path.startswith(FILE_PATH_PROTOCOL_URL_HEADER):
             path = path[len(FILE_PATH_PROTOCOL_URL_HEADER):]
         return path
@@ -93,6 +82,8 @@ class FileStag:
             as ``timeout_s`` or ``max_cache_age`` for files from the web.
         :return: The data if the file could be found
         """
+        if isinstance(source, bytes):  # pass through
+            return source
         source = cls.resolve_name(source)
         from .shared_archive import SharedArchive
         from scistag.filestag import ZIP_SOURCE_PROTOCOL
@@ -119,6 +110,8 @@ class FileStag:
             type of storage, such as timeout_s for file's stored via network.
         :return: True on success
         """
+        if data is None:
+            raise ValueError("No data provided")
         target = cls.resolve_name(target)
         if not cls.is_simple(target):
             raise NotImplementedError("At the moment only local file storage"
@@ -190,6 +183,8 @@ class FileStag:
             type of storage, such as timeout_s for file's stored via network.
         :return: True on success
         """
+        if text is None:
+            raise ValueError("No data provided")
         target = cls.resolve_name(target)
         encoded_text = text.encode(encoding=encoding)
         return cls.save(target, data=encoded_text, **params)
@@ -233,6 +228,8 @@ class FileStag:
             type of storage, such as timeout_s for file's stored via network.
         :return: True on success
         """
+        if data is None:
+            raise ValueError("No data provided")
         target = cls.resolve_name(target)
         text = json.dumps(data) if indent is None else json.dumps(data,
                                                                   indent=indent)

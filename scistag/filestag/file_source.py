@@ -22,14 +22,14 @@ from pydantic import BaseModel, SecretStr
 from scistag.filestag.bundle import Bundle
 from scistag.filestag.file_source_iterator import FileSourceIterator, \
     FileIterationData, FilterCallback
-from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
-    AZURE_DEFAULT_ENDPOINTS_HEADER
+from scistag.filestag.protocols import is_azure_storage_source
 from scistag.filestag.file_stag import FileStag
 
 CACHE_VERSION = "cache_version"
 
 if TYPE_CHECKING:
     import pandas as pd
+    from scistag.filestag.file_sink import FileSink
 
 
 class FileSourceElement:
@@ -202,6 +202,8 @@ class FileSource:
             else:
                 self._file_list_name = file_list_name
         self.max_web_cache_age = max_web_cache_age
+        self.download = self.copy
+        self.download_all = self.copy_to
 
     @staticmethod
     def from_source(source: str | bytes | SecretStr,
@@ -228,7 +230,9 @@ class FileSource:
             * /home/myZipArchive.zip: Will return a FileSourceZip object to
                 iterate through a zip archive
             * azure://DefaultEndpointsProtocol=https;AccountName=...;AccountKey=.../container/path:
-                Will iterate to an Azure Blob Storage.
+                will iterate to an Azure Blob Storage.
+            * https://my_storage_name.blob.core.windows.net/my_container_name
+                will iterate an Azure Blob Storage provided via SAS url.
             * A bytes object: Detects the source type and opens it. At the
                 moment only zip archive data ia supported.
 
@@ -303,8 +307,7 @@ class FileSource:
         if isinstance(source, bytes):
             from scistag.filestag.sources.file_source_zip import FileSourceZip
             return FileSourceZip(source=source, **params)
-        if source.startswith(AZURE_PROTOCOL_HEADER) or \
-                source.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
+        if is_azure_storage_source(source):
             from scistag.filestag.azure.azure_storage_file_source import \
                 AzureStorageFileSource
             return AzureStorageFileSource(source=source, **params)
@@ -341,7 +344,7 @@ class FileSource:
         :return: The MD5 hash
         """
         stream = io.BytesIO()
-        for cur_file in self.get_file_list():
+        for cur_file in self.file_list:
             stream.write(
                 cur_file.filename.__hash__().to_bytes(8, "little", signed=True))
             stream.write(cur_file.file_size.to_bytes(8, "little", signed=True))
@@ -351,7 +354,7 @@ class FileSource:
                 cur_file.modified.__hash__().to_bytes(8, "little", signed=True))
             if max_content_size > 0 and cur_file.file_size <= max_content_size:
                 stream.write(
-                    md5(self.read_file(cur_file.filename)).hexdigest().encode(
+                    md5(self.fetch(cur_file.filename)).hexdigest().encode(
                         "utf-8"))
         return md5(stream.getvalue()).hexdigest()
 
@@ -371,7 +374,8 @@ class FileSource:
         """
         return ""
 
-    def get_file_list(self) -> FileList | None:
+    @property
+    def file_list(self) -> FileList | None:
         """
         Returns the file list (if available).
 
@@ -602,7 +606,7 @@ class FileSource:
         """
         return None
 
-    def read_file(self, filename: str) -> bytes | None:
+    def fetch(self, filename: str) -> bytes | None:
         """
         Reads a file from this file source, identified by name.
 
@@ -619,11 +623,8 @@ class FileSource:
         from scistag.webstag import WebCache
         if self.max_web_cache_age != 0:  # try to fetch data if cache is on
             unique_name = self._get_source_identifier() + "/" + filename
-            try:
-                data = WebCache.fetch(unique_name,
-                                      max_age=self.max_web_cache_age)
-            except:
-                data = None
+            data = WebCache.fetch(unique_name,
+                                  max_age=self.max_web_cache_age)
             if data is not None:
                 return data
         result = self._read_file_int(filename)
@@ -645,6 +646,136 @@ class FileSource:
         if self._file_set is not None:
             return filename in self._file_set
         raise NotImplementedError("Missing implementation for exists method")
+
+    def copy(self, filename: str, target_name: str, overwrite=True,
+             sink: Union["FileSink", None] = None,
+             on_fetch: Callable[[str], None] | None = None,
+             on_fetch_done: Callable[[str, int], None] | None = None,
+             on_stored: Callable[[str, int], None] | None = None,
+             on_error: Callable[[str, str], None] | None = None,
+             on_skip: Callable[[str], None] | None = None) -> bool:
+        """
+        Copies a file from this FileSource to a FileStag compatible target
+        path.
+
+        :param filename: The name of the file to be copied
+        :param target_name: The target path
+        :param overwrite: Defines if the file shall be overwritten if it does
+            already exist.
+        :param sink: If defined the file will be copied to the specified sink
+        :param on_skip: Is called if a file exists and will be skipped
+        :param on_stored: Is called when ever a file was successfully uploaded
+        :param on_fetch: Is called before a file is downloaded
+        :param on_fetch_done: Is called after a file was
+            successfully downloaded and will now be uploaded or stored.
+        :param on_error: Is called when an error occurred
+        :return: True if the file was copied
+        """
+        if sink is None and not overwrite and FileStag.exists(target_name):
+            if on_skip is not None:
+                on_skip(target_name)
+            return False
+        if on_fetch is not None:
+            on_fetch(filename)
+        data = self.fetch(filename)
+        if data is None:
+            if on_error is not None:
+                on_error(filename, f"Could not load {filename}")
+            return False
+        if on_fetch_done is not None:
+            on_fetch_done(filename, len(data))
+        if sink is not None:
+            result = sink.store(target_name, data, overwrite=overwrite)
+        else:
+            result = FileStag.save(target_name, data, overwrite=overwrite)
+        if result:
+            if on_stored is not None:
+                on_stored(filename, len(data))
+        else:
+            if on_error is not None:
+                on_error(filename, f"Could not store {filename}")
+        return result
+
+    def copy_to(self, target: Union["FileSink", str],
+                error_log: list[str] | None = None,
+                overwrite=True) -> bool:
+        """
+        Copies the whole content of this FileSource to a defined target which
+        can either be a FileSink or a local directory.
+
+        :param target: The target, either a FileSink or a local file path
+        :param error_log: If provided all errors will be added to this log
+        :param overwrite: Defines if files in the target may be overwritten,
+            True by default.
+        :return: True if no errors occurred
+        """
+        if error_log is None:
+            error_log = []
+        from scistag.filestag.file_sink import FileSink
+        if isinstance(target, FileSink):
+            for cur_file in self:
+                if cur_file.data is None:
+                    error_log.append(
+                        f"Could not load file {cur_file.filename}")
+                    continue
+                if not target.store(cur_file.filename, cur_file.data,
+                                    overwrite=overwrite):
+                    error_log.append(
+                        f"Could not store file {cur_file.filename}")
+        else:
+            if overwrite or self._file_list is None:
+                self._copy_to_local_iterator(target, overwrite, error_log)
+            else:
+                self._copy_to_local_file_list(target, overwrite, error_log)
+        return len(error_log) == 0
+
+    def _copy_to_local_file_list(self, target: str, overwrite: bool,
+                                 error_log: list[str]):
+        """
+        Copies to a local directory known the files in advance, so we can
+        skip already existing files.
+
+        :param target: The target directory
+        :param overwrite: Defines if files may be overwritten
+        :param error_log: The error log target list
+        """
+        for cur_file in self.file_list:
+            target_name = target + "/" + cur_file.filename
+            rel_path = os.path.dirname(target_name)
+            os.makedirs(rel_path, exist_ok=True)
+            if FileStag.exists(target_name):
+                continue
+            cur_file_data = self.fetch(cur_file.filename)
+            if cur_file_data is None:
+                error_log.append(
+                    f"Could not load file {cur_file.filename}")
+                continue
+            if not FileStag.save(target_name, cur_file_data,
+                                 overwrite=overwrite):
+                error_log.append(
+                    f"Could not store file {cur_file.filename}")
+
+    def _copy_to_local_iterator(self, target, overwrite, error_log):
+        """
+        Copies to a local directory NOT knowing the files, so we have to
+        iterate them.
+
+        :param target: The target directory
+        :param overwrite: Defines if files may be overwritten
+        :param error_log: The error log target list
+        """
+        for cur_file in self:
+            if cur_file.data is None:
+                error_log.append(
+                    f"Could not load file {cur_file.filename}")
+                continue
+            target_name = target + "/" + cur_file.filename
+            rel_path = os.path.dirname(target_name)
+            os.makedirs(rel_path, exist_ok=True)
+            if not FileStag.save(target_name, cur_file.data,
+                                 overwrite=overwrite):
+                error_log.append(
+                    f"Could not store file {cur_file.filename}")
 
     def update_file_list(self, new_list: list[FileListEntry], may_sort=True):
         """
@@ -724,7 +855,7 @@ class FileSource:
             # continue if just the current file is skipped
             if target_name is not None:
                 break
-        data = self.read_file(
+        data = self.fetch(
             next_entry.filename) if not self.dont_load else None
         return self.handle_provide_result(iterator, target_name, data)
 
@@ -796,7 +927,7 @@ class FileSource:
         """
         if not fnmatch(os.path.basename(entry.filename), self.search_mask):
             return False
-        rest = entry.filename[len(self.search_path):].lstrip("/").lstrip("\\")
+        rest = entry.filename.lstrip("/").lstrip("\\")
         if not self.recursive:
             if "/" in rest or "\\" in rest:
                 return False

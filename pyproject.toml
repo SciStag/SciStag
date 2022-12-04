@@ -15,7 +15,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9 <=3.10"
 matplotlib = "^3.5.2"
 requests = "^2.27.1"
 pandas = "^1.4.2"
@@ -37,6 +37,7 @@ moviepy = { version = "^1.0.3", optional = true }
 imgkit = { version = "1.2.2", optional = true }
 jupyterlab = { version = "^3.4.7", optional = true }
 jupyter = { version = "^1.0.0", optional = true }
+PySide6-Addons = { version = "^6.4.1", optional = true }
 
 
 [tool.poetry.extras]
@@ -44,24 +45,34 @@ logstag = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "
 datastag = ["pyarrow"]
 svg = ["CairoSVG"]
 opencv = ["opencv-contrib-python"]
-azure = ["azure-storage-blob"]
 flask = ["Flask", "gunicorn"]
 kivy = ["kivy"]
 jupyter = ["jupyter", "jupyterlab"]
+azure = ["azure-storage-blob"]
 moviepy = ["moviepy", "imgkit"]
+cutestag = ["PySide6-Addons"]
+common = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2",
+    "pyarrow",
+    "CairoSVG",
+    "opencv-contrib-python",
+    "Flask", "gunicorn",
+    "azure-storage-blob",
+    "moviepy", "imgkit"]
 full = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2",
     "pyarrow",
     "CairoSVG",
     "opencv-contrib-python",
     "Flask", "gunicorn",
-    "kivy",
-    "jupyter", "jupyterlab",
+    "azure-storage-blob",
     "moviepy", "imgkit",
-    "azure-storage-blob"]
+    "jupyter", "jupyterlab",
+    "kivy",
+    "PySide6-Addons"
+]
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^2.14.0"
-coverage = "^6.4.1"
+coverage = { version = "^6.4.1", extras = ["toml"] }
 pytest = "^7.1.2"
 pytest-mock = "^3.7.0"
 pytest-order = "^1.0.1"
@@ -79,3 +90,35 @@ sphinx_mdinclude = { version = "^0.5.2" }
 anybadge = { version = "^1.14.0" }
 sphinx-autodoc-typehints = { version = "^1.19.2" }
 importtime-waterfall = { version = "1.0.0" }
+
+[tool.coverage.run]
+omit = [".*", "*/site-packages/*",
+    "*/config-*.py",
+    "*/config.py",
+    "*/cutestag/*",
+    "*/cli/*",
+    "*/examples/*",
+    "*/tests/*",
+    "*/workbench/*",
+    "*/third_party/*",
+    "*/shibokensupport/*",
+    "*/pyscript",
+    "*/signature_bootstrap.py"]
+branch = true
+
+[tool.coverage.report]
+skip_empty = true
+
+# Regexes for lines to exclude from consideration
+exclude_lines = ["pragma: no cover",
+    "def __repr__",
+    "if self.debug",
+    "if not _UNIT_TESTING:",
+    "if TYPE_CHECKING:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    'if __name__ == "__main__":',
+    "@(abc.)?abstractmethod"]
+
+ignore_errors = true

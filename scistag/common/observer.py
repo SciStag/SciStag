@@ -1,7 +1,7 @@
 """
 Implements the classes :class:`Observer` and :class:`ObserverList` whose
 ancestors / implementations allow the observing of databases, data elements
-and file sources. See :class:`FileSourceObserver` for example.
+and file sources. See :class:`FileObserver` for example.
 """
 
 from __future__ import annotations
