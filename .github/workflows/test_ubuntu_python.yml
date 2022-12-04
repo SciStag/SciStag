@@ -9,7 +9,9 @@ jobs:
     environment: tests
     steps:
       - uses: actions/checkout@v3
-      - uses: openrndr/setup-opengl@v1.1
+      - run: |
+          sudo apt update
+          sudo apt install libgl1-mesa-glx
       - name: Poetry Installer
         uses: abatilo/actions-poetry@v2
         with:

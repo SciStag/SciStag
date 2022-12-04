@@ -414,7 +414,7 @@ def test_custom_file_list():
     cur_path = os.path.dirname(__file__)
     local_source = FileSource.from_source(cur_path)
     assert local_source.exists("test_file_stag.py")
-    assert len(local_source.file_list) == 48
+    assert len(local_source.file_list) > 20
     local_source.set_file_list(["test_file_source.py"])
     assert not local_source.exists("test_file_stag.py")
     assert local_source.exists("test_file_source.py")
