@@ -112,6 +112,7 @@ skip_empty = true
 exclude_lines = ["pragma: no cover",
     "def __repr__",
     "if self.debug",
+    "if not _UNIT_TESTING:",
     "if TYPE_CHECKING:",
     "raise AssertionError",
     "raise NotImplementedError",

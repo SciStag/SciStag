@@ -16,6 +16,7 @@ from scistag.imagestag import Size2D
 import sys
 
 DEFAULT_URL = "https://github.com/SciStag/SciStag#readme"
+_UNIT_TESTING = "PYTEST_CURRENT_TEST" in os.environ
 
 from PySide6.QtWidgets import (QApplication, QMainWindow)
 from PySide6.QtCore import QUrl, QLoggingCategory
@@ -37,10 +38,12 @@ class CuteBrowserWindow(QMainWindow):
         self.setWindowTitle('PySide6 WebEngineWidgets Example')
         web_engine_context_log = QLoggingCategory("qt.webenginecontext")
         web_engine_context_log.setFilterRules("*.info=false")
-        self.web_view = QWebEngineView()
-        self.setCentralWidget(self.web_view)
-        self.web_view.load(QUrl(self.initial_url))
-        self.web_view.page().titleChanged.connect(self.setWindowTitle)
+
+        if not _UNIT_TESTING:  # OpenGL issus with GitHub actions
+            self.web_view = QWebEngineView()
+            self.setCentralWidget(self.web_view)
+            self.web_view.load(QUrl(self.initial_url))
+            self.web_view.page().titleChanged.connect(self.setWindowTitle)
 
 
 class CuteBrowserApp:
@@ -98,7 +101,7 @@ class _CuteAppRunnerThread(ManagedThread):
         self.app = app
 
     def run_loop(self):
-        if "PYTEST_CURRENT_TEST" not in os.environ:
+        if not _UNIT_TESTING:
             self.app.exec()
         self.terminate()
 
