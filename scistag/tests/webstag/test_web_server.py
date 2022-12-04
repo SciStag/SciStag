@@ -5,6 +5,7 @@ import time
 
 import pytest
 
+import scistag.common
 from scistag.webstag import web_fetch
 from scistag.webstag.server import WebStagServer, WebClassService
 
@@ -24,9 +25,11 @@ def test_init():
     server._setup_logging()
     assert server.port != 0
 
-    with pytest.raises(OSError):
-        WebStagServer(host_name="127.0.0.1", port=(389, 389),
-                      silent=True)
+    if scistag.common.SystemInfo.os_type == \
+            scistag.common.SystemInfo.os_type.LINUX:
+        with pytest.raises(OSError):
+            WebStagServer(host_name="127.0.0.1", port=(389, 389),
+                          silent=True)
     server = WebStagServer(host_name="127.0.0.1", port=(4000, 4100),
                            silent=True)
     assert 4000 <= server.port <= 4100
