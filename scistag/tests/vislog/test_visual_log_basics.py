@@ -8,6 +8,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
+import scistag.common
 from . import vl
 from ...emojistag import render_emoji
 from ...filestag import FilePath, FileStag
@@ -353,7 +354,8 @@ def test_start_browser():
         vis_log.run_server(test=True, show_urls=False)
         vis_log._start_app_or_browser(real_log=vis_log, https=False)
         assert open_browser.called
-    with mock.patch("webbrowser.open") as open_browser:
-        vis_log = VisualLog(app="cute", refresh_time_s=0.05)
-        vis_log.run_server(test=True, show_urls=False)
-        assert not open_browser.called
+    if scistag.common.SystemInfo.os_type.is_windows:
+        with mock.patch("webbrowser.open") as open_browser:
+            vis_log = VisualLog(app="cute", refresh_time_s=0.05)
+            vis_log.run_server(test=True, show_urls=False)
+            assert not open_browser.called

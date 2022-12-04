@@ -38,12 +38,10 @@ class CuteBrowserWindow(QMainWindow):
         self.setWindowTitle('PySide6 WebEngineWidgets Example')
         web_engine_context_log = QLoggingCategory("qt.webenginecontext")
         web_engine_context_log.setFilterRules("*.info=false")
-
-        if not _UNIT_TESTING:  # OpenGL issus with GitHub actions
-            self.web_view = QWebEngineView()
-            self.setCentralWidget(self.web_view)
-            self.web_view.load(QUrl(self.initial_url))
-            self.web_view.page().titleChanged.connect(self.setWindowTitle)
+        self.web_view = QWebEngineView()
+        self.setCentralWidget(self.web_view)
+        self.web_view.load(QUrl(self.initial_url))
+        self.web_view.page().titleChanged.connect(self.setWindowTitle)
 
 
 class CuteBrowserApp:

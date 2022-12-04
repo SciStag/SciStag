@@ -95,6 +95,7 @@ importtime-waterfall = { version = "1.0.0" }
 omit = [".*", "*/site-packages/*",
     "*/config-*.py",
     "*/config.py",
+    "*/cutestag/*",
     "*/cli/*",
     "*/examples/*",
     "*/tests/*",
