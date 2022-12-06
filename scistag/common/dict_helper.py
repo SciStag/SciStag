@@ -29,6 +29,18 @@ def dict_to_bullet_list(cd: dict | list,
             else:
                 cur_str += f"{tabs}* {bold_str}{key}{bold_str}: {value}\n"
     elif isinstance(cd, list):
+        flat = False
+        if len(cd) <= 4:
+            flat = True
+            for element in cd:
+                if element is not None and not isinstance(element,
+                                                          (float, bool, int)):
+                    flat = False
+                    break
+        if flat:
+            elements = ", ".join([str(element) for element in cd])
+            cur_str += f"{tabs} {elements}"
+            return cur_str
         for element in cd:
             if isinstance(element, dict) or isinstance(element, list):
                 if isinstance(element, dict):
@@ -39,9 +51,9 @@ def dict_to_bullet_list(cd: dict | list,
                                                level=level + 1,
                                                bold=bold)
                 if isinstance(element, dict):
-                    cur_str += f"{tabs}* }}\n"
+                    cur_str += f"\n{tabs}* }}\n"
                 else:
-                    cur_str += f"{tabs}* ]\n"
+                    cur_str += f"{tabs} ]\n"
             else:
                 cur_str += f"{tabs}* " + str(element) + "\n"
     return cur_str

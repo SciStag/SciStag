@@ -60,7 +60,7 @@ def test_basics_logging_methods():
     vl.add(123.456)
     vl.add([123, 456])
     vl.add({"someProp": "someVal"})
-    vl.test.assert_cp_diff(hash_val='1041304ae2e7d328eca4e0f06f4ba8a6')
+    vl.test.assert_cp_diff(hash_val='e2c7f27c770c8cbe5abfdeaf6b78ab19')
     assert vl.max_fig_size.width > 100
 
 
@@ -354,7 +354,8 @@ def test_start_browser():
         vis_log.run_server(test=True, show_urls=False)
         vis_log._start_app_or_browser(real_log=vis_log, https=False)
         assert open_browser.called
-    if scistag.common.SystemInfo.os_type.is_windows:
+    if scistag.common.SystemInfo.os_type.is_windows or os.environ.get(
+            "QT_TESTS", "0") == "1":
         with mock.patch("webbrowser.open") as open_browser:
             vis_log = VisualLog(app="cute", refresh_time_s=0.05)
             vis_log.run_server(test=True, show_urls=False)

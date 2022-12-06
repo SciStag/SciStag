@@ -381,6 +381,18 @@ class VisualLog:
         Defines if the log is run in test mode and e.g. shall not spawn a
         real http server
         """
+        self.urls = []
+        "List of urls at which the main page of this log can be accessed"
+        self.live_urls = []
+        "List of live urls at which the main page of this log can be accessed"
+        self._builder_handler: BuilderTypes | None = None
+        "The builder being used"
+        self._auto_clear: bool = False
+        "Defines if the log shall be cleared for continuous logs"
+        self._continuous_build: bool = False
+        "Defines if the log shall be rebuilt continuously"
+        self._auto_reload = auto_reload
+        "Defines if auto-reloading is active"
         # execute auto-reloader if provided
         if not isinstance(auto_reload, bool) and auto_reload is not None:
             self.run_server(host_name="127.0.0.1",
@@ -980,10 +992,15 @@ class VisualLog:
             WebStagServer upon creation.
         """
         test = self.testing or test
+        self.testing = test
         if builder is not None:
             builder = self.prepare_builder(builder)
+        self._auto_clear = auto_clear
+        self._continuous_build = continuous
+        self._builder_handler = builder
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
+            self._auto_reload = True
             from scistag.vislog.visual_log_autoreloader import \
                 VisualLogAutoReloader
             if continuous:
@@ -1034,18 +1051,26 @@ class VisualLog:
             if element == "auto":
                 public_ips[index] = WebHelper.get_public_ip()
         # show URLs if desired
+        self.urls = []
+        self.live_urls = []
+        protocol = "http://"
+        if "localhost" not in public_ips and "127.0.0.1" not in public_ips:
+            public_ips.append("127.0.0.1")
+        for cur_ip in public_ips:
+            if cur_ip == "0.0.0.0":
+                continue
+            self.urls.append(f"{protocol}{cur_ip}:{port}{url_prefix}")
+            self.live_urls.append(f"{protocol}{cur_ip}:{port}{url_prefix}/live")
         if show_urls:
             print("\nVisualLog web service started\n")
             print("Connect at:")
-            if "localhost" not in public_ips and "127.0.0.1" not in public_ips:
-                public_ips.append("127.0.0.1")
             for cur_ip in public_ips:
                 if cur_ip == "0.0.0.0":
                     continue
                 print(
-                    f"* http://{cur_ip}:{port}{url_prefix} for the static log")
+                    f"* {protocol}{cur_ip}:{port}{url_prefix} for the static log")
                 print(
-                    f"* http://{cur_ip}:{port}{url_prefix}/live for "
+                    f"* {protocol}{cur_ip}:{port}{url_prefix}/live for "
                     f"the auto-reloader")
                 print('\n')
         overwrite = overwrite if overwrite is not None else True
@@ -1061,13 +1086,24 @@ class VisualLog:
         self._start_app_or_browser(real_log=self,
                                    url_prefix=url_prefix,
                                    test=test)
-        if continuous:
-            auto_clear = auto_clear if auto_clear is not None else True
-            self._run_continuous(auto_clear, builder)
+        self._run_log_mt(mt, overwrite, wait)
+
+    def _run_log_mt(self, mt: bool, overwrite: bool, wait: bool):
+        """
+        Runs the log updating when the log itself runs in the background
+
+        :param mt: Defines if multi-threading is being used
+        :param overwrite: Defines if the old logs may be overwritten
+        :param wait: Defines if the thread shall wait till the log is terminated
+        """
+        if self._continuous_build:
+            auto_clear = self._auto_clear if self._auto_clear is not None \
+                else True
+            self._run_continuous(auto_clear, self._builder_handler)
         elif mt:
-            if builder is not None:  # call once
+            if self._builder_handler is not None:  # call once
                 if overwrite is True or not self.load_old_logs():
-                    self._run_builder(builder)
+                    self._run_builder(self._builder_handler)
                     self.handle_event_list()
                     self.write_to_disk()
             if wait:
@@ -1127,8 +1163,12 @@ class VisualLog:
         """
         if builder is not None:
             builder = self.prepare_builder(builder)
+        self._auto_clear = auto_clear
+        self._continuous_build = continuous
+        self._builder_handler = builder
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
+            self._auto_reload = True
             from scistag.vislog.visual_log_autoreloader import \
                 VisualLogAutoReloader
             if continuous:
@@ -1229,16 +1269,34 @@ class VisualLog:
             if self._app == CUTE_APP:
                 from scistag.cutestag import cute_available
                 if not cute_available():
-                    raise RuntimeError("Please install PySide 6 to run the log"
+                    raise RuntimeError("Please install PySide 6 to run "
+                                       "VisualLog "
                                        "as stand-alone application. You can do "
                                        "so via install PySide6-components or "
                                        "by adding cutestag as extra to SciStag, "
                                        "e.g. "
                                        "pip install scistag[common,cutestag]")
+                if self._auto_reload:
+                    raise NotImplementedError("Auto-reloading is not supported "
+                                              "for apps as of now, please use "
+                                              "a browser for testing and "
+                                              "switch to app mode for "
+                                              "deployment w/o autoreload.")
                 from scistag.cutestag.browser import CuteBrowserApp
-                app = CuteBrowserApp()
-                app.run_in_background()
-                return
+                app = CuteBrowserApp(initial_url=own_url)
+                from .visual_log_background_handler import \
+                    VisualLogBackgroundHandler
+                bg_handler = VisualLogBackgroundHandler(self)
+                bg_handler.start()
+                if not self.testing:
+                    app.run()
+                    self.server.kill()  # kill flask
+                self.terminate()  # kill self
+                bg_handler.terminate()  # kill bg thread
+                if not self.testing:
+                    exit(0)
+                else:
+                    return
             raise ValueError(f"Unknown application type: {self._app}")
 
     def kill_server(self) -> bool:
@@ -1329,7 +1387,7 @@ class VisualLog:
             self._update_counter = 0
 
     def _setup_cache(self, auto_reload: bool,
-                     cache_version: str,
+                     cache_version: str | int,
                      cache_dir: str,
                      cache_name: str):
         """

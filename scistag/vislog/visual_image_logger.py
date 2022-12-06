@@ -40,6 +40,7 @@ class VisualImageLogger:
                  download: bool = False,
                  scaling: float = 1.0,
                  max_width: int | float | None = None,
+                 format: str | tuple[str, int] | None = None,
                  optical_scaling: float = 1.0,
                  html_linebreak=True):
         """
@@ -62,6 +63,10 @@ class VisualImageLogger:
             - float = Scale the image to the defined percentual size of the
                 max_fig_size, 1.0 = max_fig_size
 
+        :param format: The image format, with our without quality grade
+            e.g. "jpg" or ("jpg", 90).
+
+            Has no effect if the image was already as bytes stream.
         :param optical_scaling: Defines the factor with which the image shall
             be visualized on the html page without really rescaling the image
             itself and thus giving the possibility to zoom in the browser.
@@ -115,9 +120,15 @@ class VisualImageLogger:
         if isinstance(source, bytes):
             encoded_image = source
         else:
+            img_format, quality = self.log.image_format, self.log.image_quality
+            if format is not None:
+                if isinstance(format, tuple):
+                    img_format, quality = format
+                else:
+                    img_format = format
             encoded_image = source.encode(
-                filetype=self.log.image_format,
-                quality=self.log.image_quality)
+                filetype=img_format,
+                quality=quality)
         # store on disk if required
         if self.log.log_to_disk:
             file_location = self._log_image_to_disk(filename, name, source,

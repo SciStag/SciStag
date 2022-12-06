@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 from threading import Thread
+from typing import Callable, Union
 
 import PySide6
 
@@ -12,8 +13,6 @@ from scistag.common.mt import ManagedThread
 from scistag.imagestag import Size2D
 
 """PySide6 WebEngineWidgets Example"""
-
-import sys
 
 DEFAULT_URL = "https://github.com/SciStag/SciStag#readme"
 _UNIT_TESTING = "PYTEST_CURRENT_TEST" in os.environ
@@ -42,6 +41,13 @@ class CuteBrowserWindow(QMainWindow):
         self.setCentralWidget(self.web_view)
         self.web_view.load(QUrl(self.initial_url))
         self.web_view.page().titleChanged.connect(self.setWindowTitle)
+        self.on_close_callback: Union[Callable, None] = None
+        "Defines the function to be called when the window is being closed"
+
+    def closeEvent(self, event):
+        event.accept()  # let the window close
+        if self.on_close_callback is not None:
+            self.on_close_callback()
 
 
 class CuteBrowserApp:
@@ -58,10 +64,21 @@ class CuteBrowserApp:
         :param initial_size: The initial window size in pixels
         :param simple: If defined all standard browser elements will be hidden
         """
+        self.app = None
+        self.thread: Thread | None = None
+        self.main_window: CuteBrowserWindow | None = None
+        self.initial_url = initial_url
+        self.initial_size = initial_size
+        self.simple = simple
+        self.on_close_callback: Union[Callable, None] = None
+        "Defines the function to be called when the window is being closed"
+
+    def setup(self):
         self.app = QApplication()
         self.thread: Thread | None = None
-        self.main_window = CuteBrowserWindow(initial_url)
+        self.main_window = CuteBrowserWindow(self.initial_url)
         max_space = self.main_window.screen().availableGeometry()
+        initial_size = self.initial_size
         if initial_size is None:
             initial_size = Size2D(1280,
                                   1024)
@@ -76,32 +93,8 @@ class CuteBrowserApp:
         """
         Starts the application
         """
+        self.setup()
         self.app.exec()
-
-    def run_in_background(self):
-        """
-        Runs the application in the background
-        """
-        self.thread = _CuteAppRunnerThread(self.app)
-        self.thread.start()
-
-
-class _CuteAppRunnerThread(ManagedThread):
-    """
-    Helper class to run an application in a background thread
-    """
-
-    def __init__(self, app: QApplication):
-        """
-        :param app: The application to run
-        """
-        super().__init__("CuteApp")
-        self.app = app
-
-    def run_loop(self):
-        if not _UNIT_TESTING:
-            self.app.exec()
-        self.terminate()
 
 
 if __name__ == "__main__":

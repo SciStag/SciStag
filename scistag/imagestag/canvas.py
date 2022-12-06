@@ -13,6 +13,7 @@ import PIL.ImageFont
 import PIL.ImageDraw
 
 from .font import Font
+from .pixel_format import PixelFormatTypes
 from .text_alignment_definitions import (HTextAlignment,
                                          VTextAlignment,
                                          HTextAlignmentTypes,
@@ -51,12 +52,12 @@ class Canvas:
                  size: Size2DTypes = None,
                  target_image: Image = None,
                  default_color: ColorTypes = Colors.BLACK,
-                 image_format: "PixelFormat" = "RGB"):
+                 format: PixelFormatTypes = "RGB"):
         """
         :param size: The size in pixels (if a new image shall be created)
         :param target_image: An image into which the canvas shall paint
         :param default_color: The background fill color
-        :param image_format: The image format, currently only RGB, RGBA and G
+        :param format: The image format, currently only RGB, RGBA and G
         """
         default_color = default_color if isinstance(default_color, Color) \
             else Color(default_color)
@@ -98,9 +99,9 @@ class Canvas:
                 assert isinstance(self.target_image, PIL.Image.Image)
             else:
                 img_format = PixelFormat(
-                    image_format).to_pil()
+                    format).to_pil()
                 if format is None:
-                    raise NotImplemented(f"{image_format} not supported")
+                    raise NotImplemented(f"{format} not supported")
                 self.target_image = \
                     PIL.Image.new(img_format, (self.width, self.height),
                                   color=default_color.to_int_rgba())
