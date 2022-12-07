@@ -160,14 +160,15 @@ def test_azure_file_sink_deletion():
     """
     # ensure container exists
     AzureStorageFileSink(sink_target_container_string)
+    AzureStorageFileSink(sink_target_container_string + "x")
+    AzureStorageFileSink(sink_target_container_string + "empty")
     # test recreation
     with pytest.raises(ValueError):  # deletion requires some time
-        AzureStorageFileSink(sink_target_container_string,
+        AzureStorageFileSink(sink_target_container_string + "x",
                              recreate_container=True,
-                             delete_timeout_s=0.5)
-    sink = AzureStorageFileSink(sink_target_container_string,
-                                recreate_container=True)
-    source = FileSource.from_source(sink_target_container_string,
+                             delete_timeout_s=0.1)
+    sink = AzureStorageFileSink(sink_target_container_string)
+    source = FileSource.from_source(sink_target_container_string + "empty",
                                     fetch_file_list=True)
     assert len(source.file_list) == 0
     # upload new data
@@ -177,4 +178,4 @@ def test_azure_file_sink_deletion():
     time.sleep(1.0)
     source = FileSource.from_source(sink_target_container_string,
                                     fetch_file_list=True)
-    assert len(source.file_list) == 1
+    assert len(source.file_list) >= 1
