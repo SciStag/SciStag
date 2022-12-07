@@ -201,7 +201,7 @@ class Plot:
                 first_layer = self.layers[0]
                 canvas_size = first_layer.size.to_int_tuple()
                 image = canvas.to_image()
-                off = canvas.shift_position_by_offset(layer_offset)
+                off = canvas.transform(layer_offset)
                 image = image.cropped(box=(off[0],
                                            off[1],
                                            off[0] + canvas_size[0],

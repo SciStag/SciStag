@@ -217,8 +217,7 @@ class VisualLogAutoReloader:
         try:
             print(f"Auto-reloading enabled for module {cls.imp_module}")
             cls._embedded_log._start_app_or_browser(real_log=cls.main_log,
-                                                    https=False,
-                                                    url_prefix=url_prefix)
+                                                    url=cls.main_log.local_live_url)
             while True:
                 with cls._access_lock:
                     sht = cls._shall_terminate

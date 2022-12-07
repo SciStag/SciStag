@@ -72,7 +72,7 @@ class ImageFilter:
             input_image = {
                 IMAGE_FILTER_IMAGE: Image(input_image,
                                           framework=ImsFramework.RAW)}
-        # convert format if the filter requires a special format
+        # convert pixel_format if the filter requires a special pixel_format
         if self.required_format is not None:
             is_gray = input_image[
                           IMAGE_FILTER_IMAGE].pixel_format != PixelFormat.GRAY
@@ -91,7 +91,7 @@ class ImageFilter:
         # execute filter
         result = self._apply_filter(input_image)
         result[IMAGE_FILTER_NAME] = self.name
-        # convert to original input format
+        # convert to original input pixel_format
         if isinstance(original_input,
                       dict):  # if a dictionary was passed in return all details
             return result

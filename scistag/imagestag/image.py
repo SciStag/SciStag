@@ -93,7 +93,7 @@ class Image(ImageBase):
                 pixel_format = PixelFormat.RGB
             from .canvas import Canvas
             canvas = Canvas(size=size, default_color=bg_color,
-                            format=pixel_format)
+                            pixel_format=pixel_format)
             source = canvas.target_image
         if pixel_format is None:
             pixel_format = PixelFormat.RGB

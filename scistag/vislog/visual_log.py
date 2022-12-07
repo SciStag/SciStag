@@ -109,6 +109,7 @@ class VisualLog:
 
     def __init__(self, title: str = "SciStag - VisualLog",
                  target_dir: str = "./logs",
+                 index_name: str = "index",
                  app: Literal["cute"] | None = None,
                  start_browser: bool = False,
                  resolution: Size2D | None = None,
@@ -131,6 +132,11 @@ class VisualLog:
         """
         :param target_dir: The output directory
         :param title: The log's name
+        :param index: Defines the name of the log's index file. index by
+            default.
+
+            Extensions such as .html, .md and .txt will automatically
+            be added.
         :param app: Defines if the log shall behave like an application.
 
             In the future you will be able to pass here a application class
@@ -297,11 +303,13 @@ class VisualLog:
         "Defines if markdown gets exported"
         self.txt_export = TXT in self.log_formats
         "Defines if txt gets exported"
-        self._txt_filename = self.target_dir + "/index.txt"
+        self.index_name = index_name
+        "Defines the log's index file name"
+        self._txt_filename = self.target_dir + f"/{self.index_name}.txt"
         "The name of the txt file to which we shall save"
-        self._html_filename = self.target_dir + "/index.html"
+        self._html_filename = self.target_dir + f"/{self.index_name}.html"
         "The name of the html file to which we shall save"
-        self._md_filename = self.target_dir + "/index.md"
+        self._md_filename = self.target_dir + f"/{self.index_name}.md"
         "The name of the markdown file to which we shall save"
         self._consoles: list[Console] = []
         "Attached consoles to which the data shall be logged"
@@ -585,7 +593,7 @@ class VisualLog:
                                       retry_frequency=100,
                                       reload_frequency=int(
                                           self.refresh_time_s * 1000),
-                                      reload_url="index.html")
+                                      reload_url=f"{self.index_name}.html")
         if self.log_to_disk:
             FileStag.save_text(self.target_dir + "/liveView.html",
                                rendered_lv)
@@ -598,7 +606,7 @@ class VisualLog:
         self.add_static_file('liveView.html',
                              rendered_lv.encode("utf-8"))
 
-    def write_html(self, html_code: str):
+    def write_html(self, html_code: str | bytes):
         """
         The HTML code to add
 
@@ -607,7 +615,10 @@ class VisualLog:
         """
         if HTML not in self._logs:
             return
-        self._logs[HTML].append(html_code.encode("utf-8"))
+        if isinstance(html_code, bytes):
+            self._logs[HTML].append(html_code)
+        else:
+            self._logs[HTML].append(html_code.encode("utf-8"))
         if self.continuous_write:
             self.write_to_disk(formats={HTML})
         return True
@@ -1084,8 +1095,7 @@ class VisualLog:
         mt = mt and not test
         server.start(mt=mt, test=test)
         self._start_app_or_browser(real_log=self,
-                                   url_prefix=url_prefix,
-                                   test=test)
+                                   url=self.local_live_url)
         self._run_log_mt(mt, overwrite, wait)
 
     def _run_log_mt(self, mt: bool, overwrite: bool, wait: bool):
@@ -1202,7 +1212,10 @@ class VisualLog:
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
-        return True
+        if (self.log_to_disk and HTML in self.log_formats and
+                self._start_browser):
+            self._start_app_or_browser(self, url=self._html_filename)
+            return True
 
     def _run_builder(self, builder: BuilderTypes | None = None):
         """
@@ -1237,9 +1250,7 @@ class VisualLog:
 
     def _start_app_or_browser(self,
                               real_log: VisualLog,
-                              https: bool = False,
-                              url_prefix: str = "",
-                              test: bool = False):
+                              url: str):
         """
         This function is called when the log is set up and ready to go
 
@@ -1247,14 +1258,10 @@ class VisualLog:
         this function does just start.
 
         :param real_log: Defines the log which actually hosts the web service
-        ;param https: Defines if https is being used
-        :param url_prefix: Defines the http root directory at which the log
-            is hosed.
-        :param test: Defines if a test is being executed
+        :param url: Defines the URL which shall be opened
         """
+
         port = real_log.server.port if real_log.server is not None else 80
-        protocol = "https" if https else "http"
-        own_url = f"{protocol}://127.0.0.1:{port}{url_prefix}/live"
         if self._start_browser:
             import webbrowser
             # check if an old browser is alive
@@ -1262,9 +1269,8 @@ class VisualLog:
             time.sleep(wait_time * 1.5)
             # if the page was loaded don't open another browser
             if time.time() - real_log.last_page_request > wait_time:
-                webbrowser.open(
-                    own_url)
-            return
+                webbrowser.open(url)
+                return
         if self._app is not None and len(self._app) != 0:
             if self._app == CUTE_APP:
                 from scistag.cutestag import cute_available
@@ -1283,7 +1289,7 @@ class VisualLog:
                                               "switch to app mode for "
                                               "deployment w/o autoreload.")
                 from scistag.cutestag.browser import CuteBrowserApp
-                app = CuteBrowserApp(initial_url=own_url)
+                app = CuteBrowserApp(initial_url=url)
                 from .visual_log_background_handler import \
                     VisualLogBackgroundHandler
                 bg_handler = VisualLogBackgroundHandler(self)
@@ -1361,6 +1367,28 @@ class VisualLog:
         :meth:`run_server`.
         """
         return self._server
+
+    @property
+    def local_live_url(self) -> str | None:
+        """
+        Returns the local url at which the log can be displayed in a local
+        browser.
+        """
+        if len(self.urls) == 0:
+            return None
+        return self.live_urls[0]
+
+    @property
+    def local_static_url(self) -> str | None:
+        """
+        Returns the local url at which the log can be displayed in a local
+        browser.
+
+        Returns the static page w/o dynamic updating support from server side.
+        """
+        if len(self.urls) == 0:
+            return None
+        return self.urls[0]
 
     @property
     def cache(self) -> Cache:
@@ -1619,6 +1647,5 @@ class VisualLog:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.flush()
 
-
-__all__ = ["VisualLog", "VisualLogStatistics", "HTML", "MD", "TXT",
-           "TABLE_PIPE"]
+    __all__ = ["VisualLog", "VisualLogStatistics", "HTML", "MD", "TXT",
+               "TABLE_PIPE"]
