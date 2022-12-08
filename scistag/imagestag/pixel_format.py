@@ -6,7 +6,7 @@ formats supported by an :class:`Image` and it's properties.
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import Any, Literal
+from typing import Any, Literal, Union
 
 from numpy import uint8
 
@@ -177,3 +177,11 @@ class PixelFormat(IntEnum):
             }
 
         return Definitions.bands[self]
+
+
+PixelFormatTypes = Union[
+    PixelFormat, Literal["RGB", "RGBA", "BGR", "BGRA", "HSV", "G", "GRAY"]]
+"""
+Definition of supported ways to define a pixel format, either as string or
+as PixelFormat"
+"""

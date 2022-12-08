@@ -233,7 +233,10 @@ class AzureStorageFileSink(FileSink):
                 container_client = service.get_container_client(
                     container_name)
             else:
-                service.delete_container(container_name)
+                try:
+                    service.delete_container(container_name)
+                except ResourceNotFoundError:  # deletion in progress already
+                    pass
                 import time
                 start_time = time.time()
                 sleep_time = 0.25

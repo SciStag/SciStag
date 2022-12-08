@@ -11,8 +11,10 @@ from typing import Literal
 import PIL.Image
 import PIL.ImageFont
 import PIL.ImageDraw
+import numpy as np
 
 from .font import Font
+from .pixel_format import PixelFormatTypes
 from .text_alignment_definitions import (HTextAlignment,
                                          VTextAlignment,
                                          HTextAlignmentTypes,
@@ -51,12 +53,12 @@ class Canvas:
                  size: Size2DTypes = None,
                  target_image: Image = None,
                  default_color: ColorTypes = Colors.BLACK,
-                 image_format: "PixelFormat" = "RGB"):
+                 pixel_format: PixelFormatTypes = "RGB"):
         """
         :param size: The size in pixels (if a new image shall be created)
         :param target_image: An image into which the canvas shall paint
         :param default_color: The background fill color
-        :param image_format: The image format, currently only RGB, RGBA and G
+        :param pixel_format: The image format, currently only RGB, RGBA and G
         """
         default_color = default_color if isinstance(default_color, Color) \
             else Color(default_color)
@@ -90,7 +92,7 @@ class Canvas:
         Buffer to backup and restore the current painting state such as
         offset and clipping bounding
         """
-        self.target_image: Image
+        self.target_image: PIL.Image
         "The image into which the canvas will paint"
         if self.framework == ImsFramework.PIL:
             if target_image is not None:
@@ -98,9 +100,9 @@ class Canvas:
                 assert isinstance(self.target_image, PIL.Image.Image)
             else:
                 img_format = PixelFormat(
-                    image_format).to_pil()
-                if format is None:
-                    raise NotImplemented(f"{image_format} not supported")
+                    pixel_format).to_pil()
+                if pixel_format is None:
+                    raise NotImplemented(f"{pixel_format} not supported")
                 self.target_image = \
                     PIL.Image.new(img_format, (self.width, self.height),
                                   color=default_color.to_int_rgba())
@@ -160,8 +162,7 @@ class Canvas:
         self.offset = (self.offset[0] + offset[0], self.offset[1] + offset[1])
         return self
 
-    def shift_position_by_offset(self, position: tuple | Pos2D) \
-            -> tuple[float, float]:
+    def transform(self, position: tuple | Pos2D) -> tuple[float, float]:
         """
         Shifts given coordinates by this canvas' current drawing offset
 
@@ -171,6 +172,22 @@ class Canvas:
         if isinstance(position, Pos2D):
             return self.offset[0] + position.x, self.offset[1] + position.y
         return self.offset[0] + position[0], self.offset[1] + position[1]
+
+    def transform_size(self, size: Size2D) -> Size2D:
+        """
+        Scales the provided size by the canvas' scaling settings
+
+        :param size: The size to scale
+        :return: The new size
+        """
+        return size  # just prepared for later
+
+    @property
+    def transformations_applied(self) -> bool:
+        """
+        Returns if any transformations are applied to the canvas
+        """
+        return self.offset[0] != 0.0 or self.offset[1] != 0.0
 
     def clip(self, offset: (float, float), size: (float, float)) -> Canvas:
         """
@@ -269,16 +286,13 @@ class Canvas:
             if it contains an alpha channel
         :return: Self
         """
-        pos = self.shift_position_by_offset(Pos2D(pos).to_int_tuple())
+        pos = self.transform(Pos2D(pos).to_int_tuple())
         pos = (int(round(pos[0])), int(round(pos[1])))
-        if self.framework == ImsFramework.PIL:
-            pil_image: PIL.Image.Image = image.to_pil()
-            if pil_image.mode == "RGBA" and auto_blend:
-                self.target_image.paste(pil_image, pos, pil_image)
-            else:
-                self.target_image.paste(pil_image, pos)
+        pil_image: PIL.Image.Image = image.to_pil()
+        if pil_image.mode == "RGBA" and auto_blend:
+            self.target_image.paste(pil_image, pos, pil_image)
         else:
-            raise NotImplementedError
+            self.target_image.paste(pil_image, pos)
         return self
 
     def pattern(self, image: Image,
@@ -329,8 +343,6 @@ class Canvas:
         :param outline_width: The outline's width
         :return: Self
         """
-        if self.framework != ImsFramework.PIL:
-            raise NotImplementedError
         if bounding is not None:
             bounding = Bounding2D(bounding)
             pos = bounding.pos
@@ -342,7 +354,7 @@ class Canvas:
             color = Color(color)
         if outline_color is not None and isinstance(outline_color, tuple):
             outline_color = Color(outline_color)
-        xy = self.shift_position_by_offset(pos)
+        xy = self.transform(pos)
         x2y2 = (xy[0] + size.width - 1.0, xy[1] + size.height - 1.0)
         self.image_draw.rectangle(xy=(xy, x2y2),
                                   fill=color.to_int_rgba()
@@ -414,6 +426,118 @@ class Canvas:
                 for cur_rect, cur_color in zip(rectangles, colors):
                     self.image_draw.rectangle(xy=cur_rect,
                                               fill=cur_color)
+        return self
+
+    def polygon(self,
+                coords: list[Pos2DTypes] | np.ndarray,
+                color: ColorTypes | None = None,
+                outline_color: ColorTypes | None = None,
+                outline_width: int = 1) -> Canvas:
+        """
+        Draws a polygon onto the canvas
+
+        :param coords: A list of coordinates defining the polygon's bounding
+        :param color: The inner color
+        :param outline_color: The outline color
+        :param outline_width: The outline's width
+        :return: Self
+        """
+        if isinstance(coords, np.ndarray):
+            coords = coords.astype(float).tolist()
+        if self.transformations_applied:
+            coords = [self.transform(coord) for coord in
+                      coords]
+        coords = np.array(coords).flatten().tolist()
+        pixel_format = PixelFormat.from_pil(self.target_image.mode)
+        if color is not None:
+            color = Color(color).to_format(pixel_format)
+        if outline_color is not None:
+            outline_color = Color(outline_color).to_format(pixel_format)
+        self.image_draw.polygon(xy=coords,
+                                fill=color
+                                if color is not None else None,
+                                outline=outline_color
+                                if outline_color is not None else None,
+                                width=outline_width)
+        return self
+
+    def line(self,
+             coords: list[Pos2DTypes] | np.ndarray,
+             color: ColorTypes | None = None,
+             width: int = 1,
+             curved_joints: bool = False) -> Canvas:
+        """
+        Draws a line onto the canvas between two or more points
+
+        :param coords: A list of at least two x,y coordinates
+        :param color: The line's color
+        :param width: The line's width in pixels
+        :param curved_joints: Defines if the connections shall be smoothed,
+            recommend for very thick lines
+        :return: Self
+        """
+        if isinstance(coords, np.ndarray):
+            coords = coords.astype(float).tolist()
+        if self.transformations_applied:
+            coords = [self.transform(coord) for coord in
+                      coords]
+        coords = np.array(coords).flatten().tolist()
+        pixel_format = PixelFormat.from_pil(self.target_image.mode)
+        if color is not None:
+            color = Color(color).to_format(pixel_format)
+        self.image_draw.line(xy=coords,
+                             fill=color
+                             if color is not None else None,
+                             width=width,
+                             joint="curve" if curved_joints else None)
+        return self
+
+    def circle(self,
+               coord: Pos2DTypes,
+               radius: float | tuple[float, float] | None = None,
+               color: ColorTypes | None = None,
+               outline_color: ColorTypes | None = None,
+               outline_width: float = 1.0,
+               size: Size2DTypes | None = None
+               ) -> Canvas:
+        """
+        Draws a circle or ellipse onto the canvas
+
+        :param coord: The circle's or ellipse's center coordinate
+        :param radius: The circle's radius or the ellipse radius on
+            the x and y axis
+        :param color: The circle's fill color
+        :param outline_color: The outline color
+        :param outline_width: The outline's width
+        :param size: The circle or ellipse's size
+        :return: Self
+        """
+        pixel_format = PixelFormat.from_pil(self.target_image.mode)
+        if outline_color is not None:
+            outline_color = Color(outline_color).to_format(pixel_format)
+        if (radius is None and size is None) or (
+                size is not None and radius is not None):
+            raise ValueError(
+                "You need to either provide the size or the radius")
+        if radius is not None:
+            size = (Size2D(radius * 2, radius * 2)
+                    if isinstance(radius, (float, int)) else Size2D(
+                radius[0] * 2, radius[1] * 2))
+        else:
+            size = Size2D(size)
+        if self.transformations_applied:
+            coord = self.transform(coord)
+            size = self.transform_size(size)
+        half_width, half_height = size.width / 2, size.height / 2
+        coords = [coord[0] - half_width, coord[1] - half_height,
+                  coord[0] + half_width, coord[1] + half_height]
+        pixel_format = PixelFormat.from_pil(self.target_image.mode)
+        if color is not None:
+            color = Color(color).to_format(pixel_format)
+        self.image_draw.ellipse(xy=coords,
+                                fill=color,
+                                outline=outline_color,
+                                width=outline_width)
         return self
 
     def text(self,
@@ -491,7 +615,7 @@ class Canvas:
                 pos.x = pos.x + text_size.width // 2 - row_widths[index] // 2
             elif h_align == HTextAlignment.RIGHT:
                 pos.x = pos.x + text_size.width - row_widths[index]
-            xy = self.shift_position_by_offset(pos)
+            xy = self.transform(pos)
             if _show_formatting:
                 self.rect(pos=xy, size=(row_widths[index],
                                         font.row_height), color=None,

@@ -14,6 +14,7 @@ import hashlib
 
 import filetype
 import numpy as np
+from pydantic import BaseModel
 
 from scistag.imagestag import Image, Canvas, PixelFormat, Size2D
 
@@ -36,6 +37,15 @@ LogableContent = Union[str, float, int, bool, np.ndarray,
 Definition of all types which can be logged via `add` or provided as content
 for tables, lists and divs.
 """
+
+
+class VisualLogBackup(BaseModel):
+    """
+    Contains the backup of a log and all necessary data to integrate it into
+    another log.
+    """
+    data: bytes
+    "The logs html representation"
 
 
 class VisualLogBuilder:
@@ -188,9 +198,9 @@ class VisualLogBuilder:
             except TypeError:
                 raise ValueError(f"Data type could not be detected")
             from scistag.imagestag.image import SUPPORTED_IMAGE_FILETYPES
-            if ft.extension in SUPPORTED_IMAGE_FILETYPES:
+            if ft is not None and ft.extension in SUPPORTED_IMAGE_FILETYPES:
                 self.image(content)
-                return
+                return self
             else:
                 raise ValueError(f"Data of filetype {ft} not supported")
         # image
@@ -219,7 +229,7 @@ class VisualLogBuilder:
             return self
         self.log(str(content))
         if content is None or not isinstance(content, bytes):
-            raise NotImplementedError("Data type not supported")
+            raise ValueError("Data type not supported")
         return self
 
     def title(self, text: str) -> VisualLogBuilder:
@@ -440,7 +450,8 @@ class VisualLogBuilder:
                         build_table(df,
                                     self.target_log.html_table_style,
                                     index=index)
-            except ModuleNotFoundError:  # pragma: no-cover
+            # pragma: no-cover
+            except ModuleNotFoundError:
                 html_code = df.to_html(index=index)
         else:
             html_code = df.to_html(index=index)
@@ -457,7 +468,8 @@ class VisualLogBuilder:
                                    tablefmt=self.target_log.txt_table_format) +
                     "\n")
                 return
-            except ModuleNotFoundError:  # pragma: no-cover
+            # pragma: no-cover
+            except ModuleNotFoundError:
                 pass
         else:
             string_table = df.to_string(index=index) + "\n"
@@ -606,7 +618,7 @@ class VisualLogBuilder:
         """
         return text.replace("\n\r", "\n").replace("\n", "<br>")
 
-    def add_html(self, html_code: str):
+    def add_html(self, html_code: str | bytes):
         """
         Adds html code directly of the HTML section of this log.
 
@@ -617,6 +629,32 @@ class VisualLogBuilder:
         :return: True if txt logging is enabled
         """
         self.target_log.write_html(html_code)
+
+    def create_backup(self) -> VisualLogBackup:
+        """
+        Creates a backup of the log's content so it can for example be
+        returned from a helper process or node to the main process and
+        be inserted in the main log.
+
+        See :meth:`VisualLogBuilder.insert_backup`
+
+        Note:
+        At the moment only the HTML data can be backuped and inserted.
+
+        :return: The backup data
+        """
+        self.flush()
+        if HTML not in self.target_log.log_formats:
+            raise ValueError("At the moment only HTML backup is supported")
+        return VisualLogBackup(data=self.target_log.get_body(HTML))
+
+    def insert_backup(self, backup: VisualLogBackup):
+        """
+        Inserts another log's backup in this log
+
+        :param backup: The backup data
+        """
+        self.add_html(backup.data)
 
     def add_md(self, md_code: str, no_break: bool = False):
         """

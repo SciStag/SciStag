@@ -29,23 +29,70 @@ class VisualLogTableContext(VisualLogElementContext):
     Automatically adds the beginning and ending of a table to the log
     """
 
-    def __init__(self, builder: "VisualLogBuilder"):
+    def __init__(self, builder: "VisualLogBuilder",
+                 size: tuple[int, int] | None = None):
         """
         :param builder: The builder object with which we write to the log
+        :param size: The table's dimensions (cols x rows) (if known in advance).
+
+            If provided you can fill the table's contents via
+            ..  code-block: python
+
+                for row in vl.table.begin(size=(3,3)):
+                    for col in row:
+                        ...
+        """
+        self.size = size
+        """
+        The count of table rows and columns
         """
         log = builder.target_log
         log.write_html(f'<table class="log_table">')
         log.write_txt("\n", md=False)
         log.write_md("<table>")
+        self._entered: bool = False
+        "Defines if the table was entered already"
         closing_code = {"html": "</table><br>", "md": "</table><br>",
                         "txt": "\n"}
         super().__init__(builder, closing_code)
 
     def __enter__(self) -> VisualLogTableContext:
+        if self._entered:
+            return
+        self._entered = True
         return self
 
+    def __iter__(self) -> "VisualLogTableRowIterator":
+        """
+        Iterates through the table's rows. Requires that the table's size is
+        defined. See table.begin(size=..)).
+
+        :return: The row iterator
+        """
+        if self.size is None or self.size[1] is None:
+            raise ValueError("Table column size not defined. Pass the size "
+                             "argument to the table when creating it.")
+        return self.iter_rows(self.size[1])
+
+    def iter_rows(self, count: int) -> "VisualLogTableRowIterator":
+        """
+        Creates a row iterator which calls ddd_row for the count of rows
+        defined.
+
+        Usage:
+        ..  code-block: python
+
+            for row in vl.table.begin().iter_rows(8):
+                ...
+
+        :param count: Tne number of rows
+        :return: The iterator object
+        """
+        iterator = VisualLogTableRowIterator(self, count=count)
+        return iterator
+
     def add_row(self, content: list[ColumnContent] | None = None) \
-            -> Union["VisualLogRowContext", None]:
+            -> Union["VisualLogTableRowContext", None]:
         """
         Adds a new row context to the table.
 
@@ -69,32 +116,134 @@ class VisualLogTableContext(VisualLogElementContext):
                 self.builder.html("</td>")
             self.builder.html("</tr>")
             return None
-        return VisualLogRowContext(self.builder)
+        return VisualLogTableRowContext(self)
 
 
-class VisualLogRowContext(VisualLogElementContext):
+class VisualLogTableRowIterator:
+    """
+    Iterates through a set of defined rows of a VisualLogTableContext
+    """
+
+    def __init__(self, table: VisualLogTableContext, count: int):
+        self.table = table
+        """
+        The table to which the row shall be added
+        """
+        self.row_count = count
+        """
+        The count of rows
+        """
+        self.index = 0
+        """
+        The current index
+        """
+        self.previous_row: VisualLogTableRowContext = None
+        """
+        The previous row (... we need to close upon starting the next element)
+        """
+
+    def __iter__(self) -> VisualLogTableRowIterator:
+        """
+        Returns self
+        """
+        return self
+
+    def __next__(self) -> VisualLogTableRowContext:
+        """
+        Starts the next row and enters it, leaves the previous one (if any)
+        """
+        import sys
+        if self.previous_row:
+            self.previous_row.__exit__(*sys.exc_info())
+        if self.index >= self.row_count:
+            self.table.__exit__(*sys.exc_info())
+            raise StopIteration
+        self.index += 1
+        row = VisualLogTableRowContext(self.table)
+        self.previous_row = row
+        return row.__enter__()
+
+
+class VisualLogTableColumnIterator:
+    """
+    Iterates through a set of defined rows of a VisualLogTableContext
+    """
+
+    def __init__(self, row: "VisualLogTableRowContext", count: int):
+        self.row = row
+        """
+        The table to which the column shall be added
+        """
+        self.col_count = count
+        """
+        The count of rows
+        """
+        self.index = 0
+        """
+        The current index
+        """
+        self.previous_col: VisualLogTableColumnContext | None = None
+        """
+        The previous col (... we need to close upon starting the next element)
+        """
+
+    def __iter__(self) -> VisualLogTableColumnIterator:
+        """
+        Returns self
+        """
+        return self
+
+    def __next__(self) -> VisualLogTableColumnContext:
+        """
+        Starts the next column and enters it, leaves the previous one (if any)
+        """
+        import sys
+        if self.previous_col:
+            self.previous_col.__exit__(*sys.exc_info())
+        if self.index >= self.col_count:
+            raise StopIteration
+        self.index += 1
+        col = VisualLogTableColumnContext(self.row.builder)
+        self.previous_col = col
+        return col.__enter__()
+
+
+class VisualLogTableRowContext(VisualLogElementContext):
     """
     Automatically adds the beginning and ending of a row to the log
     """
 
-    def __init__(self, builder: "VisualLogBuilder"):
+    def __init__(self, table: "VisualLogTableContext"):
         """
         :param builder: The builder object with which we write to the log
         """
-        log = builder.target_log
+        self.table = table
+        log = self.table.builder.target_log
         log.write_html(f'<tr>\n')
         log.write_txt("| ", md=False)
         log.write_md("<tr>\n", no_break=True)
         closing_code = {"html": "</tr>", "md": "</tr>", "txt": "\n"}
-        super().__init__(builder, closing_code)
+        super().__init__(table.builder, closing_code)
 
-    def __enter__(self) -> VisualLogRowContext:
+    def __enter__(self) -> VisualLogTableRowContext:
         return self
+
+    def __iter__(self):
+        """
+        Iterates through the row's columns. Requires that the table's size is
+        defined. See table.begin(size=..)).
+
+        :return: The column iterator
+        """
+        if self.table.size is None or self.table.size[0] is None:
+            raise ValueError("Table column size not defined. Pass the size "
+                             "argument to the table when creating it.")
+        return self.iter_cols(self.table.size[0])
 
     def add_col(self,
                 content: ColumnContent | None = None,
                 md: bool = False) -> \
-            Union["VisualLogColumnContext", None]:
+            Union["VisualLogTableColumnContext", None]:
         """
         Adds a new column to the row
 
@@ -117,10 +266,28 @@ class VisualLogRowContext(VisualLogElementContext):
             self.builder.target_log.write_html("</td>")
             return None
 
-        return VisualLogColumnContext(self.builder)
+        return VisualLogTableColumnContext(self.builder)
+
+    def iter_cols(self, count: int) -> "VisualLogTableColumnIterator":
+        """
+        Creates a column iterator which calls ddd_col for the count of columns
+        defined.
+
+        Usage:
+        ..  code-block: python
+
+            for row in vl.table.begin().iter_rows(8):
+                for col in row.iter_cols(4):
+                    ...
+
+        :param count: Tne number of columns
+        :return: The iterator object
+        """
+        iterator = VisualLogTableColumnIterator(self, count=count)
+        return iterator
 
 
-class VisualLogColumnContext(VisualLogElementContext):
+class VisualLogTableColumnContext(VisualLogElementContext):
     """
     Automatically adds the beginning and ending of a column to the log
     """
@@ -136,7 +303,7 @@ class VisualLogColumnContext(VisualLogElementContext):
         closing_code = {"html": "</td>", "md": "</td>", "txt": " |\n"}
         super().__init__(builder, closing_code)
 
-    def __enter__(self) -> VisualLogColumnContext:
+    def __enter__(self) -> VisualLogTableColumnContext:
         return self
 
 
@@ -152,7 +319,7 @@ class VisualLogTableBuilderExtension(VisualLogBuilderExtension):
         super().__init__(builder)
         self.show = self.__call__
 
-    def begin(self):
+    def begin(self, size: tuple[int, int] | None = None):
         """
         Creates a table logging context
 
@@ -165,11 +332,20 @@ class VisualLogTableBuilderExtension(VisualLogBuilderExtension):
                             with row.add_col():
                                 vl.log(col_index)
 
+        :param size: The table's dimensions (cols x rows) (if known in advance)
+
+            If provided you can fill the table's contents via
+            ..  code-block: python
+
+                for row in vl.table.begin(size=(3,3)):
+                    for col in row:
+                        ...
         :return: The logging context
         """
-        return VisualLogTableContext(self.builder)
+        return VisualLogTableContext(self.builder, size=size)
 
-    def __call__(self, data: list[list[any]], index=False, header=False):
+    def __call__(self, data: list[list[str | int | float | bool]], index=False,
+                 header=False):
         """
         Adds a table to the log.
 
@@ -177,8 +353,6 @@ class VisualLogTableBuilderExtension(VisualLogBuilderExtension):
             columns.
 
             Each row has to provide the same count of columns.
-
-            At the moment only string content is supported.
         :param index: Defines if the table has an index column
         :param header: Defines if the table has a header
         """
@@ -188,8 +362,10 @@ class VisualLogTableBuilderExtension(VisualLogBuilderExtension):
             code += f"{tabs}<tr>\n"
             for col_index, col in enumerate(row):
                 code += f"\t{tabs}<td>\n{tabs}\t"
-                assert isinstance(col, str)  # more types to be supported soon
-                if index and col == 0:
+                assert isinstance(col, (
+                    str, int, float, bool))  # more types to be supported soon
+                col = str(col)
+                if index and col_index == 0:
                     code += "<b>"
                 major_cell = (row_index == 0 and header or
                               col_index == 0 and index)
@@ -197,7 +373,7 @@ class VisualLogTableBuilderExtension(VisualLogBuilderExtension):
                     code += f"<b>{col}</b>"
                 else:
                     code += col
-                if index and col == 0:
+                if index and col_index == 0:
                     code += "</b>"
                 code += f"\n{tabs}</td>\n"
                 tabs = tabs[0:-1]
@@ -207,11 +383,13 @@ class VisualLogTableBuilderExtension(VisualLogBuilderExtension):
         for row in data:
             row_text = "| "
             for index, col in enumerate(row):
+                col = str(col)
                 row_text += col + " | "
             self.log.write_txt(row_text, md=False)
         for row_index, row in enumerate(data):
             row_text = "| "
             for index, col in enumerate(row):
+                col = str(col)
                 row_text += col + " | "
             self.log.write_md(row_text)
             if row_index == 0:

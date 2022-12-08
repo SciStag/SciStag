@@ -56,6 +56,7 @@ def test_image():
     vl.sub_test("Logging an image provided as byte stream")
     vl.test.checkpoint("image.log.bytestream")
     vl.image(image_data.encode(), alt_text="image from byte stream")
+    vl.add(image_data.encode())
     # insert image from web (as url)
     vl.image(TestConstants.STAG_URL, alt_text="Image link from URL",
              download=False,

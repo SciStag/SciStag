@@ -6,7 +6,7 @@ from __future__ import annotations
 import hashlib
 import io
 import os
-from typing import Union, TYPE_CHECKING, Any
+from typing import Union, TYPE_CHECKING, Any, Literal
 
 import PIL.Image
 import numpy as np
@@ -14,7 +14,7 @@ import numpy as np
 from .color import Color, Colors
 from .bounding import Bounding2DTypes, Bounding2D
 from .interpolation import InterpolationMethod
-from .pixel_format import PixelFormat
+from .pixel_format import PixelFormat, PixelFormatTypes
 from .size2d import Size2D, Size2DTypes
 from .definitions import ImsFramework, get_opencv
 from .image_base import ImageBase
@@ -58,8 +58,8 @@ class Image(ImageBase):
     """
 
     def __init__(self, source: ImageSourceTypes | None = None,
-                 framework: ImsFramework = None,
-                 pixel_format: PixelFormat | None = None,
+                 framework: ImsFramework | Literal["PIL", "RAW", "CV"] = None,
+                 pixel_format: PixelFormatTypes | None = None,
                  size: Size2DTypes | None = None,
                  bg_color: Color | None = None,
                  **params):
@@ -82,6 +82,8 @@ class Image(ImageBase):
 
         Raises a ValueError if the image could not be loaded
         """
+        if pixel_format is not None and isinstance(pixel_format, str):
+            pixel_format = PixelFormat(pixel_format)
         if size is not None:
             size = Size2D(size) if not isinstance(size, Size2D) else size
             if bg_color is None:
@@ -93,7 +95,7 @@ class Image(ImageBase):
                 pixel_format = PixelFormat.RGB
             from .canvas import Canvas
             canvas = Canvas(size=size, default_color=bg_color,
-                            image_format=pixel_format)
+                            pixel_format=pixel_format)
             source = canvas.target_image
         if pixel_format is None:
             pixel_format = PixelFormat.RGB
@@ -101,7 +103,7 @@ class Image(ImageBase):
         "The image's width in pixels"
         self.height = 1
         "The image's height in pixels"
-        self.framework = framework if framework is not None else \
+        self.framework = ImsFramework(framework) if framework is not None else \
             ImsFramework.PIL
         "The framework being used. ImsFramework.PIL by default."
         self._pil_handle: PIL.Image.Image | None = None
@@ -115,15 +117,15 @@ class Image(ImageBase):
             self._prepare_data_source(framework, source,
                                       self.pixel_format, **params)
         # ------------------------------------------
-        if framework is None:
-            framework = ImsFramework.PIL
-        if framework == ImsFramework.PIL:
+        if self.framework is None:
+            self.framework = ImsFramework.PIL
+        if self.framework == ImsFramework.PIL:
             self._init_as_pil(source)
-        elif framework == ImsFramework.RAW:
+        elif self.framework == ImsFramework.RAW:
             self._pixel_data = self._pixel_data_from_source(source)
             self.height, self.width = self._pixel_data.shape[0:2]
             self.pixel_format = self.detect_format(self._pixel_data)
-        elif framework == ImsFramework.CV:
+        elif self.framework == ImsFramework.CV:
             self._init_as_cv2(source)
         else:
             raise NotImplementedError

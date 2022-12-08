@@ -1,10 +1,11 @@
 """
 Tests the :class:`Canvas` class.
 """
+import numpy as np
 import pytest
 
 from scistag.tests.visual_test_log_scistag import VisualTestLogSciStag
-from scistag.imagestag import Colors, Color
+from scistag.imagestag import Colors, Color, Size2D
 from scistag.imagestag.canvas import Canvas
 
 from . import vl, skip_imagestag
@@ -119,3 +120,93 @@ def test_draw_rectangle_list():
         hash_val = "b2ca8a2a847d9ffc4092476124e74b5d" if outline \
             else "0eb9e0c61ed35d0aabb35cf713500e58"
         vl.test.assert_image("draw_rectangle", canvas, hash_val)
+
+
+@pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
+def test_draw_polygon_fill():
+    """
+    Filled polygon
+    """
+    vl.sub_test("Rendering polygons")
+    canvas = Canvas(size=(128, 128), default_color=Colors.BLACK)
+    polygon = [(20, 20), (80, 30), (90, 90), (30, 100)]
+    canvas.polygon(polygon, color=Colors.RED)
+    hash_val = "3f90539daefb6b3dc60fa8129c1c6377"
+    vl.test.assert_image("polygon_convex_fill", canvas, hash_val)
+
+
+@pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
+def test_draw_polygon_fill_outline():
+    """
+    Filled polygon with outline
+    """
+    canvas = Canvas(size=(128, 128), default_color=Colors.BLACK)
+    polygon = [(20, 20), (80, 30), (90, 90), (30, 100)]
+    canvas.polygon(polygon, color=Colors.RED, outline_color=Colors.BLUE,
+                   outline_width=2)
+    hash_val = "6af0b5c529594912d9fbae60e1d7bab9"
+    vl.test.assert_image("polygon_convex_fill_border", canvas, hash_val)
+
+
+@pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
+def test_draw_polygon_fill_outline_concave():
+    """
+    Concave filled polygon with outline
+    """
+    canvas = Canvas(size=(128, 128), default_color=Colors.BLACK)
+    canvas.add_offset_shift((15, 15))
+    polygon = np.array([(20, 20), (80, 30), (90, 90), (60, 70), (30, 100)])
+    canvas.polygon(polygon, color=Colors.RED, outline_color=Colors.WHITE,
+                   outline_width=8)
+    hash_val = "7b68caffba93580e75f3079dd0e959bf"
+    vl.test.assert_image("polygon_convex_fill_border_concave", canvas, hash_val)
+
+
+@pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
+def test_draw_lines():
+    """
+    Lines and multi-lines
+    """
+    canvas = Canvas(size=(128, 128), default_color=Colors.BLACK)
+    line_list = [(20, 20), (80, 30), (90, 90), (60, 70), (30, 100)]
+    canvas.line(line_list, color=Colors.RED, width=3)
+    hash_val = "69cc3fab0cbaef77fae888186050fb66"
+    vl.test.assert_image("line_list", canvas, hash_val)
+    # shift line with two points
+    canvas.add_offset_shift((15, 15))
+    canvas = Canvas(size=(128, 128), default_color=Colors.BLACK)
+    line_list = [(20, 20), (80, 30)]
+    canvas.line(line_list, color=Colors.RED, width=10, curved_joints=True)
+    hash_val = "83e521e68b400fae3f2c476728aecb8e"
+    vl.test.assert_image("line_list_two_points", canvas, hash_val)
+    # shift line with three points and joint
+    canvas = Canvas(size=(128, 128), default_color=Colors.BLACK)
+    canvas.add_offset_shift((15, 15))
+    line_list = np.array([(20, 20), (80, 30), (100, 80)])
+    canvas.line(line_list, color=Colors.RED, width=10, curved_joints=True)
+    hash_val = "a1ebba1a8b202b07f7b4a039b384df17"
+    vl.test.assert_image("line_list_three_points", canvas, hash_val)
+
+
+@pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
+def test_draw_circles():
+    """
+    Circles
+    """
+    canvas = Canvas(size=(128, 128), default_color=Colors.BLACK)
+    canvas.circle((70, 70), radius=30, color=Colors.RED)
+    hash_val = "dbcc979c2e855e1b0f5efde1d394dfbb"
+    vl.test.assert_image("circle", canvas, hash_val)
+    # shifted and as ellipse
+    canvas.add_offset_shift((15, 15))
+    canvas = Canvas(size=(128, 128), default_color=Colors.BLACK)
+    canvas.circle((70, 70), radius=(40, 20), color=Colors.RED)
+    hash_val = "81dc4f4c659a9c4867f413470a8f299f"
+    vl.test.assert_image("ellipse", canvas, hash_val)
+    # with outline
+    canvas = Canvas(size=(128, 128), default_color=Colors.BLACK)
+    canvas.add_offset_shift((15, 15))
+    canvas.circle((70, 70), size=Size2D(80, 40), outline_color=Colors.BLUE,
+                  outline_width=3)
+    hash_val = "751338bf0aeebf031e19c2cf7eba0a2e"
+    vl.test.assert_image("ellipse_outline", canvas, hash_val)

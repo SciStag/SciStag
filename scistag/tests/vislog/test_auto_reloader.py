@@ -77,7 +77,7 @@ def test_auto_reload():
         content = test_client.get("/index")
         assert content.text is not None
         assert "testlog" in content.text
-        assert VisualLogAutoReloader.reload_count == 2
+        assert VisualLogAutoReloader.reload_count >= 2
         assert VisualLogAutoReloader.error_count >= 1
     VisualLogAutoReloader.testing = False
     VisualLogAutoReloader.reset()

@@ -62,7 +62,7 @@ class ImsFramework(enum.Enum):
 
     PIL = "PIL"
     "Prefer using a Pillow image handle to store the pixel data"
-    RAW = "NP"
+    RAW = "RAW"
     """
     Prefer using numpy to store the image data. RGB and RGBA images are 
     represented in RGB/RGBA order
@@ -72,6 +72,15 @@ class ImsFramework(enum.Enum):
     Prefer using OpenCV to store the pixel data. RGB and RGBA images are 
     represented in BGR/BGRA order
     """
+
+    @classmethod
+    def _missing_(cls, value: object) -> Any:
+        missing_dict = {"PIL": cls.PIL,
+                        "RAW": cls.RAW,
+                        "CV": cls.CV}
+        if value in missing_dict:
+            return missing_dict[value]
+        return None
 
 
 __all__ = ["ImsFramework", "get_opencv", "PIL_AVAILABLE", "PIL"]

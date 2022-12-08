@@ -78,12 +78,31 @@ table.log_table td, table.log_table th {
 }
 
 .greenButton {
-  background-color: #4CAF50; /* Green */
-  border: none;
-  color: white;
-  padding: 15px 32px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
+    background-color: #4CAF50; /* Green */
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+}
+
+a:link {
+    text-decoration: none;
+    color: darkblue;
+}
+
+a:visited {
+    text-decoration: none;
+    color: darkblue;
+}
+
+a:hover {
+    color: #5050FF;
+    text-decoration: underline;
+}
+
+a:active {
+    text-decoration: underline;
 }

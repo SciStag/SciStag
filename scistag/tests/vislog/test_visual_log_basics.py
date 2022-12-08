@@ -12,6 +12,7 @@ import scistag.common
 from . import vl
 from ...emojistag import render_emoji
 from ...filestag import FilePath, FileStag
+from ...imagestag import Color
 from ...logstag import LogLevel
 from ...logstag.console_stag import Console
 from ...vislog import VisualLog
@@ -53,6 +54,13 @@ def test_basics_logging_methods():
     vl.page_break()
     vl.test.assert_cp_diff(hash_val='deb09ddaa3e0f23720a6536af11da0c9')
     assert not vl.target_log.is_micro
+
+
+def test_add_and_links():
+    """
+    Tests the add and link functionalities
+    :return:
+    """
     vl.test.checkpoint("log.link")
     vl.link("SciStag", "https://github.com/scistag/scistag")
     vl.add("Test text")
@@ -60,7 +68,14 @@ def test_basics_logging_methods():
     vl.add(123.456)
     vl.add([123, 456])
     vl.add({"someProp": "someVal"})
-    vl.test.assert_cp_diff(hash_val='1041304ae2e7d328eca4e0f06f4ba8a6')
+    with pytest.raises(ValueError):
+        vl.add(Color(22, 33, 44))
+    with pytest.raises(ValueError):
+        vl.add(b"12345")
+    vl.test.assert_cp_diff(hash_val='dbee28561898b78b5ddc19ca55b18878')
+    vl.test.checkpoint("log.link_adv")
+    vl.link("Multiline\nLink", "https://github.com/scistag/scistag")
+    vl.test.assert_cp_diff(hash_val='9ebcc1aada224b97a34d223ae5da4875')
     assert vl.max_fig_size.width > 100
 
 
@@ -345,6 +360,19 @@ def test_printing():
     log.render()
 
 
+def test_backup():
+    """
+    Tests creating and inserting backups
+    """
+    other_log = VisualLog()
+    other_log.default_builder.log("Hello World")
+    backup = other_log.default_builder.create_backup()
+    vl.sub_test("inserting backups")
+    vl.test.checkpoint("log.title")
+    vl.insert_backup(backup)
+    vl.test.assert_cp_diff(hash_val="ce44db53fa376147f10abb4f5967a152")
+
+
 def test_start_browser():
     """
     Tests the browser startup
@@ -352,10 +380,19 @@ def test_start_browser():
     with mock.patch("webbrowser.open") as open_browser:
         vis_log = VisualLog(start_browser=True, refresh_time_s=0.05)
         vis_log.run_server(test=True, show_urls=False)
-        vis_log._start_app_or_browser(real_log=vis_log, https=False)
+        vis_log._start_app_or_browser(real_log=vis_log,
+                                      url=vis_log.local_live_url)
         assert open_browser.called
-    if scistag.common.SystemInfo.os_type.is_windows:
+    if scistag.common.SystemInfo.os_type.is_windows or os.environ.get(
+            "QT_TESTS", "0") == "1":
         with mock.patch("webbrowser.open") as open_browser:
             vis_log = VisualLog(app="cute", refresh_time_s=0.05)
             vis_log.run_server(test=True, show_urls=False)
             assert not open_browser.called
+
+
+def test_dependencies():
+    """
+    Tests dependency handling
+    """
+    vl.add_file_dependency("test.md")  # not yet implemented

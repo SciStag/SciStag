@@ -1,6 +1,11 @@
 from __future__ import annotations
+
+import typing
 from typing import Union
 from dataclasses import dataclass
+
+if typing.TYPE_CHECKING:
+    from scistag.imagestag import PixelFormat
 
 ColorTypes = Union["Color", tuple[int, int, int], tuple[int, int, int, int],
                    tuple[float, float, float],
@@ -140,6 +145,41 @@ class Color:
         self._int_rgba = tuple(
             [int(round(element * 255.0)) for element in self._rgba])
 
+    _HSV_TO_RGB_MAP = {
+        0: lambda p, q, t, v: Color(v, t, p),
+        1: lambda p, q, t, v: Color(q, v, p),
+        2: lambda p, q, t, v: Color(p, v, t),
+        3: lambda p, q, t, v: Color(p, q, v),
+        4: lambda p, q, t, v: Color(t, p, v),
+        5: lambda p, q, t, v: Color(v, p, q)
+    }
+    """
+    Hash hap for converting HSV to RGB 
+    """
+
+    @classmethod
+    def from_hsv(cls, h: float, s: float, v: float) -> Color:
+        """
+        Creates a Color from hue, saturation and value (HSV)
+
+        :param h: The hue, so the degree on the "color circle" from 0 .. 360
+        :param s: The saturation in percent (0 .. 1.0)
+        :param v: The value in percent (0 .. 1.0)
+        :return: The Color (RGB) representation
+        """
+        h /= 360.0
+        if s == 0.0:
+            v *= 255
+            return Color(v, v, v)
+        i = int(h * 6.0)
+        f = (h * 6.0) - i
+        p, q, t = (int(255 * (v * (1. - s))),
+                   int(255 * (v * (1. - s * f))),
+                   int(255 * (v * (1. - s * (1. - f)))))
+        v *= 255
+        i %= 6
+        return cls._HSV_TO_RGB_MAP[i](p, q, t, v)
+
     def __setattr__(self, key, value):
         if key in {"r", "g", "b", "a", "_rgba", "_int_rgba"} and \
                 "_int_rgba" in self.__dict__:
@@ -167,24 +207,99 @@ class Color:
     def to_int_rgb(self) -> (int, int, int):
         """
         Returns the color as rgb int tuple (values from 0 .. 255)
+
         :return: The RGB values
         """
         return self._int_rgba[0:3]
 
     def to_rgba(self) -> (float, float, float, float):
         """
-        Returns the color as rgb tuple (values from 0.0 .. 1.0)
+        Returns the color as rgba tuple (values from 0.0 .. 1.0)
 
-        :return: The RGB values
+        :return: The RGBA values
         """
         return tuple(self._rgba)
 
     def to_int_rgba(self) -> (int, int, int, int):
         """
-        Returns the color as rgb int tuple (values from 0 .. 255)
-        :return: The RGB values
+        Returns the color as rgba int tuple (values from 0 .. 255)
+
+        :return: The RGBA values
         """
         return tuple(self._int_rgba)
+
+    def to_int_bgra(self) -> (int, int, int, int):
+        """
+        Returns the color as bgra int tuple (values from 0 .. 255)
+
+        :return: The BGRA values
+        """
+        return (self._int_rgba[2], self._int_rgba[1], self._int_rgba[0],
+                self._int_rgba[3])
+
+    def to_int_bgr(self) -> (int, int, int):
+        """
+        Returns the color as bgr int tuple (values from 0 .. 255)
+
+        :return: The BGR values
+        """
+        return self._int_rgba[2], self._int_rgba[1], self._int_rgba[0]
+
+    def to_gray(self) -> float:
+        """
+        Returns the color as int gray value (0..1.0)
+
+        :return: The gray value (0 .. 1.0)
+        """
+        return min(max(0.299 * self.r + 0.587 * self.g + 0.114 * self.b, 0.0),
+                   1.0)  # convert to gray and clip between 0.0 and 1.0
+
+    def to_int_gray(self) -> int:
+        """
+        Returns the color as int gray value (0..255)
+
+        :return: The gray value (0 .. 255)
+        """
+        gray = min(max(0.299 * self.r + 0.587 * self.g + 0.114 * self.b, 0.0),
+                   1.0)  # convert to gray and clip between 0.0 and 1.0
+        return int(round(gray * 255))
+
+    def to_hsv(self) -> (float, float, float):
+        """
+        Converts the RGB color components to hue, saturation and value
+
+        :return: Hue (0..360.0 degree), Saturation (0 .. 1.0), Value (0.. 1.0)
+        """
+        r, g, b = self.r, self.g, self.b
+        max_val = max(r, g, b)  # dominant color component
+        min_val = min(r, g, b)  # most undominant color component
+        val_range = max_val - min_val
+        hue = 0.0
+        if max_val == min_val:
+            pass
+        elif max_val == r:
+            hue = (60.0 * ((g - b) / val_range) + 360.0) % 360.0
+        elif max_val == g:
+            hue = (60.0 * ((b - r) / val_range) + 120.0) % 360.0
+        elif max_val == b:
+            hue = (60.0 * ((r - g) / val_range) + 240.0) % 360.0
+        if max_val == 0.0:
+            saturation = 0.0
+        else:
+            saturation = (val_range / max_val)
+        value = max_val
+        return hue, saturation, value
+
+    def to_int_hsv(self) -> (int, int, int):
+        """
+        Converts the color to an integer HSV representation.
+
+        We are using the PILLOW definition (0..255, 0..255, 0..255)
+
+        :return: The hue saturation and value as int tuple
+        """
+        h, s, v = self.to_hsv()
+        return int(round(h / 360. * 255)), int(round(s*255)), int(round(v*255))
 
     def to_hex(self) -> str:
         """
@@ -211,6 +326,25 @@ class Color:
                self.g != other.g or \
                self.b != other.b or \
                self.a != other.a
+
+    def to_format(self, pixel_format: "PixelFormat") -> tuple | int | float:
+        """
+        Returns the value as representation in the given target pixel format
+
+        :param pixel_format: The format to convert to
+        :return: The converted color
+        """
+        from scistag.imagestag import PixelFormat
+        _CONVERSION_METHODS = {
+            PixelFormat.RGB: lambda color: color.to_int_rgb(),
+            PixelFormat.RGBA: lambda color: color.to_int_rgba(),
+            PixelFormat.BGR: lambda color: color.to_int_bgr(),
+            PixelFormat.BGRA: lambda color: color.to_int_bgr(),
+            PixelFormat.GRAY: lambda color: color.to_int_gray(),
+            PixelFormat.HSV: lambda color: color.to_int_hsv()}
+        if pixel_format in _CONVERSION_METHODS:
+            return _CONVERSION_METHODS[pixel_format](self)
+        raise ValueError(f"Unsupported target format {pixel_format}")
 
 
 class Colors:

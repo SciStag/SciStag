@@ -254,7 +254,7 @@ def test_creation():
     assert tuple(image.get_pixels()[0, 0]) == (255, 0, 0)
     with pytest.raises(ValueError):
         Image(source=np.zeros((5, 5)), size=(5, 5))
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(ValueError):
         Image(source=np.zeros((5, 5), dtype=np.uint8), framework=99)
 
     from_web = Image(TestConstants.STAG_URL, cache=True)
