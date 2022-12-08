@@ -198,9 +198,9 @@ class VisualLogBuilder:
             except TypeError:
                 raise ValueError(f"Data type could not be detected")
             from scistag.imagestag.image import SUPPORTED_IMAGE_FILETYPES
-            if ft.extension in SUPPORTED_IMAGE_FILETYPES:
+            if ft is not None and ft.extension in SUPPORTED_IMAGE_FILETYPES:
                 self.image(content)
-                return
+                return self
             else:
                 raise ValueError(f"Data of filetype {ft} not supported")
         # image
@@ -229,7 +229,7 @@ class VisualLogBuilder:
             return self
         self.log(str(content))
         if content is None or not isinstance(content, bytes):
-            raise NotImplementedError("Data type not supported")
+            raise ValueError("Data type not supported")
         return self
 
     def title(self, text: str) -> VisualLogBuilder:
@@ -450,7 +450,8 @@ class VisualLogBuilder:
                         build_table(df,
                                     self.target_log.html_table_style,
                                     index=index)
-            except ModuleNotFoundError:  # pragma: no-cover
+            # pragma: no-cover
+            except ModuleNotFoundError:
                 html_code = df.to_html(index=index)
         else:
             html_code = df.to_html(index=index)
@@ -467,7 +468,8 @@ class VisualLogBuilder:
                                    tablefmt=self.target_log.txt_table_format) +
                     "\n")
                 return
-            except ModuleNotFoundError:  # pragma: no-cover
+            # pragma: no-cover
+            except ModuleNotFoundError:
                 pass
         else:
             string_table = df.to_string(index=index) + "\n"
@@ -641,6 +643,7 @@ class VisualLogBuilder:
 
         :return: The backup data
         """
+        self.flush()
         if HTML not in self.target_log.log_formats:
             raise ValueError("At the moment only HTML backup is supported")
         return VisualLogBackup(data=self.target_log.get_body(HTML))

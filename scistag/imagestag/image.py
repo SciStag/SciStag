@@ -14,7 +14,7 @@ import numpy as np
 from .color import Color, Colors
 from .bounding import Bounding2DTypes, Bounding2D
 from .interpolation import InterpolationMethod
-from .pixel_format import PixelFormat
+from .pixel_format import PixelFormat, PixelFormatTypes
 from .size2d import Size2D, Size2DTypes
 from .definitions import ImsFramework, get_opencv
 from .image_base import ImageBase
@@ -59,7 +59,7 @@ class Image(ImageBase):
 
     def __init__(self, source: ImageSourceTypes | None = None,
                  framework: ImsFramework | Literal["PIL", "RAW", "CV"] = None,
-                 pixel_format: PixelFormat | None = None,
+                 pixel_format: PixelFormatTypes | None = None,
                  size: Size2DTypes | None = None,
                  bg_color: Color | None = None,
                  **params):
@@ -82,6 +82,8 @@ class Image(ImageBase):
 
         Raises a ValueError if the image could not be loaded
         """
+        if pixel_format is not None and isinstance(pixel_format, str):
+            pixel_format = PixelFormat(pixel_format)
         if size is not None:
             size = Size2D(size) if not isinstance(size, Size2D) else size
             if bg_color is None:

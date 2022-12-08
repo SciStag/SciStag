@@ -299,7 +299,7 @@ class Color:
         :return: The hue saturation and value as int tuple
         """
         h, s, v = self.to_hsv()
-        return int(round(h / 360.) * 255), int(round(s)), int(round(v))
+        return int(round(h / 360. * 255)), int(round(s*255)), int(round(v*255))
 
     def to_hex(self) -> str:
         """

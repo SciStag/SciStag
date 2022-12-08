@@ -51,3 +51,21 @@ def test_color_basics():
     # test passing colors as rgb int
     assert Color(255, 255, 255) == Color((255, 255, 255))
     assert Color(255, 255, 255, 127 / 255) == Color(255, 255, 255, 127)
+
+
+def test_conversion_functions():
+    """
+    Test advanced conversion functions
+    """
+    assert Color(244, 48, 29).to_int_hsv() == (4, 225, 244)
+    h, s, v = Color(30, 98, 29).to_hsv()
+    assert h == pytest.approx(119, 0.01)
+    assert s == pytest.approx(0.7, 0.01)
+    assert v == pytest.approx(0.3843, 0.01)
+    gray = Color(123, 64, 59).to_gray()
+    assert gray == pytest.approx(0.3179, 0.01)
+    gray = Color(30, 190, 110).to_int_gray()
+    assert gray == pytest.approx(133, 0.01)
+    assert Color(255, 44, 38).to_int_bgr() == (38, 44, 255)
+    assert Color(255, 44, 38).to_int_bgra() == (38, 44, 255, 255)
+    assert Color(255, 44, 38, 33).to_int_bgra() == (38, 44, 255, 33)

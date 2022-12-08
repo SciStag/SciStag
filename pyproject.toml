@@ -112,6 +112,7 @@ skip_empty = true
 # Regexes for lines to exclude from consideration
 exclude_lines = ["pragma: no cover",
     "def __repr__",
+    "pass",
     "if self.debug",
     "if not _UNIT_TESTING:",
     "if TYPE_CHECKING:",
