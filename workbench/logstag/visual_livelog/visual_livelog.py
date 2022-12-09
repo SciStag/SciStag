@@ -14,9 +14,9 @@ from ..visual_log.visual_log import VisualLog, HTML
 from ..visual_log.sub_log import SubLogLock
 
 if TYPE_CHECKING:
-    from .livelog_progress_bar import LogProgress
+    from .livelog_progress_bar import LProgress
     from .livelog_image import LogImage
-    from .livelog_text import LogText
+    from .livelog_text import LText
     from .log_widget import LogWidget
 
 
@@ -79,7 +79,7 @@ class VisualLiveLog(VisualLog):
             new_template,
             live_content_width=int(self._max_live_fig_size.width),
             live_content_height=int(self._max_live_fig_size.height))
-        self.widgets: list["LogWidget"] = []
+        self.widgets: list["LWidget"] = []
         """
         The widgets which are displayed in the live log area
         """
@@ -207,21 +207,21 @@ class VisualLiveLog(VisualLog):
         self.add_widget(image_widget)
         return image_widget
 
-    def add_text_widget(self, text: str | None) -> "LogText":
+    def add_text_widget(self, text: str | None) -> "LText":
         """
         Adds a text widget which can display text in the live log area
 
         :param text: The initial text
         :return: The text widget
         """
-        from .livelog_text import LogText
-        text_widget = LogText(log=self, text=text)
+        from .livelog_text import LText
+        text_widget = LText(log=self, text=text)
         self.add_widget(text_widget)
         return text_widget
 
     def add_progress_bar(self, progress: int | float,
                          max_progress: int | float,
-                         text: str | None = None) -> "LogProgress":
+                         text: str | None = None) -> "LProgress":
         """
         Adds a progress bar widget
 
@@ -233,10 +233,10 @@ class VisualLiveLog(VisualLog):
         :param text: Defines the text to be displayed above the progress bar
         :return: The new widget
         """
-        from .livelog_progress_bar import LogProgress
-        prog_widget = LogProgress(self, progress=progress,
-                                  max_progress=max_progress,
-                                  text=text)
+        from .livelog_progress_bar import LProgress
+        prog_widget = LProgress(self, progress=progress,
+                                max_progress=max_progress,
+                                text=text)
         self.add_widget(prog_widget)
         return prog_widget
 
@@ -254,7 +254,7 @@ class VisualLiveLog(VisualLog):
                 }}</style> """
         self.html(style)
 
-    def handle_widget_modified(self, widget: "LogWidget"):
+    def handle_widget_modified(self, widget: "LWidget"):
         """
         Is called from a widget when ever it was modified directly
 

@@ -1,5 +1,5 @@
 """
-Defines VisualLogBasicLogger which provides functions for classic logging
+Defines BasicLogger which provides functions for classic logging
 with info, warning, error etc.
 """
 
@@ -7,14 +7,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from scistag.logstag import LogLevel
-from scistag.vislog.extensions.visual_log_builder_extension import \
-    VisualLogBuilderExtension
+from scistag.vislog.extensions.builder_extension import \
+    BuilderExtension
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
 
 
-class VisualLogBasicLogger(VisualLogBuilderExtension):
+class BasicLogger(BuilderExtension):
     """
     Helper class for classic logging via info, debug, warning etc.
     """

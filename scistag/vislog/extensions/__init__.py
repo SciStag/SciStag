@@ -2,6 +2,6 @@
 Extensions for VisualLogBuilder to be able all kinds of different data
 """
 
-from .visual_log_builder_extension import VisualLogBuilderExtension
+from .builder_extension import BuilderExtension
 
-__all__ = [VisualLogBuilderExtension]
+__all__ = [BuilderExtension]

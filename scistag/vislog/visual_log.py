@@ -23,14 +23,14 @@ from scistag.vislog.common.sub_log import SubLog, SubLogLock
 if TYPE_CHECKING:
     from scistag.webstag.server import WebStagServer
     from scistag.webstag.server import WebStagService
-    from scistag.vislog.renderers.visual_log_renderer import VisualLogRenderer
-    from scistag.vislog.renderers.visual_log_renderer_html import \
-        VisualLogHtmlRenderer
-    from scistag.vislog.widgets.log_widget import LogWidget
-    from scistag.vislog.widgets.log_button import LogButton
+    from scistag.vislog.renderers.log_renderer import LogRenderer
+    from scistag.vislog.renderers.log_renderer_html import \
+        HtmlLogRenderer
+    from scistag.vislog.widgets.log_widget import LWidget
+    from scistag.vislog.widgets.log_button import LButton
     from scistag.vislog.visual_log_builder import VisualLogBuilder
-    from scistag.vislog.common import VisualLogStatistics
-    from scistag.vislog.widgets.log_event import LogEvent
+    from scistag.vislog.common import LogStatistics
+    from scistag.vislog.widgets.log_event import LEvent
 
 # Error messages
 TABLE_PIPE = "|"
@@ -69,6 +69,8 @@ _ERROR_INSTALL_CUTE = "Please install PySide 6 to run " \
 
 LOG_EVENT_CACHE_NAME = "__logEvents"
 "Name of the cache entry in which the log events are stored"
+
+SLEEPING_TEXT_MESSAGE = "\nZzzzzzz - Press Ctrl-C to terminate\n"
 
 # Definition of output types
 HTML = "html"
@@ -293,16 +295,6 @@ class VisualLog:
         "Defines if markdown shall support html embedding"
         self.log_txt_images = True
         "Defines if images shall also be logged to text files as ASCII"
-        self.use_tabulate = True
-        "Defines if tabulate may be used"
-        self.use_pretty_html_table = True
-        "Defines if pretty html shall be used"
-        self.html_table_style = 'blue_light'
-        "The pretty html style to be used"
-        self.txt_table_format = "rounded_outline"
-        "The text table format to use in tabulate"
-        self.md_table_format = "github"
-        "The markdown table format to use"
         self.embed_images = (embed_images if embed_images is not None else
                              MD not in formats_out)
         if isinstance(image_format, tuple):  # unpack tuple if required
@@ -333,10 +325,10 @@ class VisualLog:
         The current log limit (maximum number of rows before starting deleting
         the oldest ones)
         """
-        from scistag.vislog.renderers.visual_log_renderer_html import \
-            VisualLogHtmlRenderer
-        self._renderers: dict[str, "VisualLogRenderer"] = {
-            HTML: VisualLogHtmlRenderer(title=self._title)}
+        from scistag.vislog.renderers.log_renderer_html import \
+            HtmlLogRenderer
+        self._renderers: dict[str, "LogRenderer"] = {
+            HTML: HtmlLogRenderer(title=self._title)}
         "The renderers for the single supported formats"
         self._page_lock = StagLock()
         "Lock for multithread secure access to the latest page update"
@@ -1296,9 +1288,9 @@ class VisualLog:
                     raise NotImplementedError(_ERROR_NO_APP_AUTO_RELOAD)
                 from scistag.cutestag.browser import CuteBrowserApp
                 app = CuteBrowserApp(initial_url=url)
-                from scistag.vislog.common.visual_log_background_handler \
-                    import VisualLogBackgroundHandler
-                bg_handler = VisualLogBackgroundHandler(self)
+                from scistag.vislog.common.background_handler \
+                    import BackgroundHandler
+                bg_handler = BackgroundHandler(self)
                 bg_handler.start()
                 if not self.testing:
                     app.run()
@@ -1333,7 +1325,8 @@ class VisualLog:
         terminated by Ctrl-L or by an exit button added to the log or a quit
         call triggered.
         """
-        print("\nZzzzzzz - Press Ctrl-C to terminate\n")
+        if not self.testing:
+            print(SLEEPING_TEXT_MESSAGE)
         while not self._shall_terminate:
             time.sleep(self.refresh_time_s)
 
@@ -1457,7 +1450,7 @@ class VisualLog:
                             ) if auto_reload_cache is None \
             else auto_reload_cache
 
-    def add_event(self, event: "LogEvent"):
+    def add_event(self, event: "LEvent"):
         """
         Adds an event to the event queue which will be handled before and
         after the next re-build (or loop turn in case of a continuous log).
@@ -1479,7 +1472,7 @@ class VisualLog:
         for element in event_list:
             self.handle_event(element)
 
-    def handle_event(self, event: "LogEvent"):
+    def handle_event(self, event: "LEvent"):
         """
         Handles a single event and forwards it to the correct widget
 
@@ -1488,7 +1481,7 @@ class VisualLog:
         if event.name in self._widgets:
             self._widgets[event.name].handle_event(event)
 
-    def get_events(self, clear: bool = False) -> list["LogEvent"]:
+    def get_events(self, clear: bool = False) -> list["LEvent"]:
         """
         Returns the current list of events
 
@@ -1502,7 +1495,7 @@ class VisualLog:
                 self.cache.set(LOG_EVENT_CACHE_NAME, self._events)
             return event_list
 
-    def register_widget(self, name: str, widget: "LogWidget"):
+    def register_widget(self, name: str, widget: "LWidget"):
         """
         Registers a widget which is able to receive events
 
@@ -1514,7 +1507,7 @@ class VisualLog:
     def add_button(self,
                    name: str,
                    caption: str,
-                   on_click: Union[Callable, None] = None) -> "LogButton":
+                   on_click: Union[Callable, None] = None) -> "LButton":
         """
         Adds a button to the log which can be clicked and raise a click event.
 
@@ -1523,8 +1516,8 @@ class VisualLog:
         :param on_click: The function to be called when the button is clicked
         :return: The button widget
         """
-        from scistag.vislog.widgets.log_button import LogButton
-        new_button = LogButton(self, name, caption=caption, on_click=on_click)
+        from scistag.vislog.widgets.log_button import LButton
+        new_button = LButton(self, name, caption=caption, on_click=on_click)
         new_button.write()
         return new_button
 
@@ -1542,7 +1535,7 @@ class VisualLog:
         """
         return self._invalid
 
-    def get_statistics(self) -> "VisualLogStatistics":
+    def get_statistics(self) -> "LogStatistics":
         """
         Returns statistics about the log
 
@@ -1552,11 +1545,11 @@ class VisualLog:
             - upTime - How long is the log being updated?
         """
 
-        from scistag.vislog.common.visual_log_statistics import \
-            VisualLogStatistics
-        return VisualLogStatistics(update_counter=self._total_update_counter,
-                                   update_rate=self._update_rate,
-                                   uptime=time.time() - self.start_time)
+        from scistag.vislog.common.log_statistics import \
+            LogStatistics
+        return LogStatistics(update_counter=self._total_update_counter,
+                             update_rate=self._update_rate,
+                             uptime=time.time() - self.start_time)
 
     def embed(self, log_data: VisualLog):
         """
@@ -1654,5 +1647,5 @@ class VisualLog:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.flush()
 
-    __all__ = ["VisualLog", "VisualLogStatistics", "HTML", "MD", "TXT",
+    __all__ = ["VisualLog", "LogStatistics", "HTML", "MD", "TXT",
                "TABLE_PIPE"]

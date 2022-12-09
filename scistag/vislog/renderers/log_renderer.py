@@ -1,5 +1,5 @@
 """
-Implements the class :class:`VisualLogRenderer` which defines an abstract
+Implements the class :class:`LogRenderer` which defines an abstract
 base interface for different logging output file types.
 """
 
@@ -9,7 +9,7 @@ from scistag.optional.jinja_opt import jinja_available, jinja2
 from scistag.vislog.visual_log import MAIN_LOG
 
 
-class VisualLogRenderer:
+class LogRenderer:
     """
     Defines an abstract interface for adding data to a log of any format
     """

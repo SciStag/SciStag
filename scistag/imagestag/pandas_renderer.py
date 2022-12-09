@@ -44,7 +44,7 @@ class PandasRenderer:
     def render(self, html_options: dict | None = None) -> Image:
         """
         Renders the table to an image
-        :param html_options: The advanced options for a HTML renderer. See HtmlRenderer. Optional.
+        :param html_options: The advanced options for a HTML renderer. See HtmlLogRenderer. Optional.
         :return: The image
         """
         import pretty_html_table

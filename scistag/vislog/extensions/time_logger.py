@@ -1,19 +1,19 @@
 """
-Defines VisualLogTimeLogger which provides functions for timing the performance
+Defines TimeLogger which provides functions for timing the performance
 and timestamp in a log.
 """
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Union, Callable
 
-from scistag.vislog.extensions.visual_log_builder_extension import \
-    VisualLogBuilderExtension
+from scistag.vislog.extensions.builder_extension import \
+    BuilderExtension
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
 
 
-class VisualLogTimeLogger(VisualLogBuilderExtension):
+class TimeLogger(BuilderExtension):
     """
     Helper class for logging time stamps and performance estimations to a log.
     """

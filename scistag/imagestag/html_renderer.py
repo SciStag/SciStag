@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 
 class HtmlRenderer:
     """
-    The HtmlRenderer allows the conversion from HTML code to an image for
+    The HtmlLogRenderer allows the conversion from HTML code to an image for
     example to create the thumbnail of a web page or to integrate HTML elements
     into a slide.
 

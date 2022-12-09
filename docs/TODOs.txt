@@ -1,5 +1,7 @@
 -- TODO NOTES --
 
+- BUG: CollectionLogger.log does not correctly log lists nested in lists
+- Move VisualLog options to separate class, further extract elements
 - Allow VisuaLog to exchange single parts of a page rather than the whole page
 - Switching to Black for code formatting
 - Evaluation of integration of mypy

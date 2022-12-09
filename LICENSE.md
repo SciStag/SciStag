@@ -1,3 +1,5 @@
+MIT License
+
 Copyright (C) 2022 Michael Ikemann
 
 Permission is hereby granted, free of charge, to any person obtaining

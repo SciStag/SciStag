@@ -1,12 +1,12 @@
 """
-Defines the class :class:`VisualLogBuilderExtension` which is the base class
+Defines the class :class:`BuilderExtension` which is the base class
 for VisualLogBuilder extensions such as adding markdown or HTML.
 """
 
 from scistag.vislog import VisualLogBuilder
 
 
-class VisualLogBuilderExtension:
+class BuilderExtension:
     """
     Helper class which adds a specific logging feature to VisualLogBuilder
     such as logging tables or logging markdown.
@@ -20,7 +20,7 @@ class VisualLogBuilderExtension:
         """
         The builder we are adding our content to
         """
-        self.log = self.builder.target_log
+        self.target_log = self.builder.target_log
         """
         The log object
         """

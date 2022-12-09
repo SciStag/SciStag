@@ -8,10 +8,10 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from scistag.vislog import VisualLog
-    from scistag.vislog.log_event import LogEvent
+    from scistag.vislog.widgets.log_event import LEvent
 
 
-class LogWidget:
+class LWidget:
     """
     Defines a widget which can be attached to a VisualLiveLog
     """
@@ -35,7 +35,7 @@ class LogWidget:
         """
         pass
 
-    def handle_event(self, event: "LogEvent"):
+    def handle_event(self, event: "LEvent"):
         """
         Is called for each event received by the web server
         """

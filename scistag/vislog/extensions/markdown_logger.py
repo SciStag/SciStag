@@ -1,16 +1,16 @@
 """
-Implements the class :class:`VisualMarkdownBuilderExtension` which adds Markdown
+Implements the class :class:`MarkdownLogger` which adds Markdown
 support to the VisualLogBuilder.
 """
 
 from __future__ import annotations
 
 from scistag.filestag import FileStag, FileSourceTypes
-from scistag.vislog import VisualLogBuilder, VisualLogBuilderExtension
+from scistag.vislog import VisualLogBuilder, BuilderExtension
 from scistag.vislog.visual_log import MD, HTML, TXT
 
 
-class VisualMarkdownBuilderExtension(VisualLogBuilderExtension):
+class MarkdownLogger(BuilderExtension):
     """
     Adds the possibility to log single markdown lines or even whole Markdown
     files to a VisualLog.

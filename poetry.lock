@@ -293,7 +293,7 @@ name = "contourpy"
 version = "1.0.6"
 description = "Python library for calculating contours of 2D quadrilateral grids"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -360,7 +360,7 @@ name = "cycler"
 version = "0.11.0"
 description = "Composable style cycles"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.6"
 
 [[package]]
@@ -510,7 +510,7 @@ name = "fonttools"
 version = "4.38.0"
 description = "Tools to manipulate font files"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 
 [package.extras]
@@ -1059,7 +1059,7 @@ name = "kiwisolver"
 version = "1.4.4"
 description = "A fast implementation of the Cassowary constraint solver"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 
 [[package]]
@@ -1118,7 +1118,7 @@ name = "matplotlib"
 version = "3.6.2"
 description = "Python plotting package"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.8"
 
 [package.dependencies]
@@ -2012,7 +2012,7 @@ name = "setuptools-scm"
 version = "7.0.5"
 description = "the blessed package to manage your versions by scm tags"
 category = "main"
-optional = false
+optional = true
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -2443,22 +2443,23 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 
 [extras]
 azure = ["azure-storage-blob"]
-common = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "pyarrow", "CairoSVG", "opencv-contrib-python", "Flask", "gunicorn", "azure-storage-blob", "moviepy", "imgkit"]
+common = ["requests", "matplotlib", "pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib", "pyarrow", "CairoSVG", "opencv-contrib-python", "Flask", "gunicorn", "azure-storage-blob", "moviepy", "imgkit"]
 cutestag = ["PySide6-Addons"]
 datastag = ["pyarrow"]
 flask = ["Flask", "gunicorn"]
-full = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "pyarrow", "CairoSVG", "opencv-contrib-python", "Flask", "gunicorn", "azure-storage-blob", "moviepy", "imgkit", "jupyter", "jupyterlab", "kivy", "PySide6-Addons"]
+full = ["requests", "matplotlib", "pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib", "pyarrow", "CairoSVG", "opencv-contrib-python", "Flask", "gunicorn", "azure-storage-blob", "moviepy", "imgkit", "jupyter", "jupyterlab", "kivy", "PySide6-Addons"]
 jupyter = ["jupyter", "jupyterlab"]
 kivy = ["kivy"]
-logstag = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2"]
+logstag = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib"]
 moviepy = ["moviepy", "imgkit"]
 opencv = ["opencv-contrib-python"]
 svg = ["CairoSVG"]
+webstaag = ["requests"]
 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9 <3.12"
-content-hash = "837f46fb848949bd73e5657d05187e1c393a2237e00adae199dee76213372a6d"
+content-hash = "99a1142d27c023001c4613af8ad2a772d73422d1b0f98575e5837ce8941daaef"
 
 [metadata.files]
 alabaster = [

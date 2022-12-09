@@ -5,7 +5,6 @@ from threading import RLock
 import io
 import numpy as np
 import base64
-import requests
 from .data_stag_common import StagDataTypes, StagDataReturnTypes
 from .data_stag_vault import DataStagVault
 
@@ -481,6 +480,7 @@ class DataStagConnection:
             response = self.request_client.post("/run", json=command)
             json_data = response.get_json()
         else:
+            import requests
             response = requests.post(f"{self.target_url}/run", json=command)
             json_data = response.json()
         if json_data is not None and isinstance(json_data, list):

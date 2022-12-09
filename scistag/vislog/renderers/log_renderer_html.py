@@ -1,15 +1,15 @@
 """
-Defines the class :class:`VisualLogHtmlRenderer` which implements a log
+Defines the class :class:`HtmlLogRenderer` which implements a log
 renderer for HTML.
 """
 from __future__ import annotations
 
 from scistag.filestag import FileStag, FilePath
 from scistag.vislog.visual_log import MAIN_LOG
-from scistag.vislog.renderers.visual_log_renderer import VisualLogRenderer
+from scistag.vislog.renderers.log_renderer import LogRenderer
 
 
-class VisualLogHtmlRenderer(VisualLogRenderer):
+class HtmlLogRenderer(LogRenderer):
     """
     VisualLog plugin for creating HTML files
     """

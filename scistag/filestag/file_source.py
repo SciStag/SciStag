@@ -537,9 +537,9 @@ class FileSource:
     def __str__(self):
         result = self.__class__.__name__ + "\n"
         statistics = self.get_statistics()
-        from scistag.common.dict_helper import dict_to_bullet_list
+        from scistag.vislog.extensions.collection_logger import CollectionLogger
         if statistics is not None:
-            result += dict_to_bullet_list(statistics)
+            result += CollectionLogger.dict_to_bullet_list(statistics)
         result += f"* search-mask: {self.search_mask}"
         return result
 

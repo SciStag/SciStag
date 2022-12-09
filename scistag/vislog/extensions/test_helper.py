@@ -1,5 +1,5 @@
 """
-Defines the class :class:`VisualLogTestHelper` which helps creating
+Defines the class :class:`TestHelper` which helps creating
 regression tests using a VisualLog by either verifying MD5 hash constants or
 storing reference data on disk and comparing to it.
 """
@@ -17,14 +17,14 @@ from matplotlib import pyplot as plt
 from scistag.imagestag import Image, Canvas
 from scistag.plotstag import Figure, Plot
 from scistag.filestag import FileStag, FilePath
-from scistag.vislog.extensions.visual_log_builder_extension import \
-    VisualLogBuilderExtension
+from scistag.vislog.extensions.builder_extension import \
+    BuilderExtension
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
 
 
-class VisualLogTestHelper(VisualLogBuilderExtension):
+class TestHelper(BuilderExtension):
     """
     Defines helper functions to write VisualLog based regression and unit tests
     """

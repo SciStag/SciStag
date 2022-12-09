@@ -1,5 +1,5 @@
 """
-Tests the VisualImageLogger
+Tests the ImageLogger
 """
 
 import pytest

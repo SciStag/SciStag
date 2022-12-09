@@ -12,7 +12,6 @@ import time
 import os
 import tempfile
 import shutil
-import requests
 
 FROM_CACHE = "fromCache"
 "Defines if the file was loaded from the local disk cache"
@@ -228,6 +227,7 @@ def web_fetch(url: str, timeout_s: float = 10.0, max_cache_age=0.0,
         else:
             if out_response_details is not None:
                 out_response_details[FROM_CACHE] = False
+    import requests
     try:
         response = requests.get(url=url, timeout=timeout_s)
     except requests.exceptions.RequestException:

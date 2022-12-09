@@ -1,5 +1,5 @@
 """
-Defines the class :class:`VisualImageLogger` which helps storing images in
+Defines the class :class:`ImageLogger` which helps storing images in
 a VisualLog.
 """
 
@@ -11,8 +11,8 @@ import numpy as np
 from filetype import filetype
 from scistag.filestag import FilePath, FileStag
 from scistag.imagestag import Image, Canvas
-from scistag.vislog.extensions.visual_log_builder_extension import \
-    VisualLogBuilderExtension
+from scistag.vislog.extensions.builder_extension import \
+    BuilderExtension
 
 if TYPE_CHECKING:
     from scistag.imagestag import PixelFormat
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
 
 
-class VisualImageLogger(VisualLogBuilderExtension):
+class ImageLogger(BuilderExtension):
     """
     Helper class for storing images in a VisualLog
     """

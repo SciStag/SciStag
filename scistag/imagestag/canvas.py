@@ -162,16 +162,39 @@ class Canvas:
         self.offset = (self.offset[0] + offset[0], self.offset[1] + offset[1])
         return self
 
-    def transform(self, position: tuple | Pos2D) -> tuple[float, float]:
+    def transform_list(self, coordinates: list[Pos2D] | list[tuple]) -> \
+            list[tuple[float, float]]:
+        """
+        Transforms a list of points by the defined scaling and offset settings
+        of this canvas
+
+        :param coordinates: The coordinates to transform
+        :return: The transformed values
+        """
+        if len(coordinates) == 0:
+            return []
+        cleaned_coords: list[tuple[float, float]]
+        if isinstance(coordinates[0], Pos2D):
+            cleaned_coords = [coord.to_tuple() for coord in coordinates]
+        else:
+            cleaned_coords = coordinates
+        result = cleaned_coords
+        if not self.transformations_applied:  # nothing to do
+            return result
+
+        ox, oy = self.offset
+        return [(ox + coord[0], oy + coord[1]) for coord in cleaned_coords]
+
+    def transform(self, coord: tuple | Pos2D) -> tuple[float, float]:
         """
         Shifts given coordinates by this canvas' current drawing offset
 
-        :param position: The position
+        :param coord: The position or list of positions
         :return: The new position as tuple
         """
-        if isinstance(position, Pos2D):
-            return self.offset[0] + position.x, self.offset[1] + position.y
-        return self.offset[0] + position[0], self.offset[1] + position[1]
+        if isinstance(coord, Pos2D):
+            return self.offset[0] + coord.x, self.offset[1] + coord.y
+        return self.offset[0] + coord[0], self.offset[1] + coord[1]
 
     def transform_size(self, size: Size2D) -> Size2D:
         """
@@ -355,6 +378,7 @@ class Canvas:
         if outline_color is not None and isinstance(outline_color, tuple):
             outline_color = Color(outline_color)
         xy = self.transform(pos)
+        size = self.transform_size(size)
         x2y2 = (xy[0] + size.width - 1.0, xy[1] + size.height - 1.0)
         self.image_draw.rectangle(xy=(xy, x2y2),
                                   fill=color.to_int_rgba()
@@ -444,9 +468,9 @@ class Canvas:
         """
         if isinstance(coords, np.ndarray):
             coords = coords.astype(float).tolist()
-        if self.transformations_applied:
-            coords = [self.transform(coord) for coord in
-                      coords]
+        if len(coords) == 0:
+            return self
+        coords = self.transform_list(coords)
         coords = np.array(coords).flatten().tolist()
         pixel_format = PixelFormat.from_pil(self.target_image.mode)
         if color is not None:
