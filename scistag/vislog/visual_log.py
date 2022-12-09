@@ -15,21 +15,22 @@ from typing import TYPE_CHECKING, Callable, Union, Type, Literal
 from scistag.common import StagLock, Cache, StagApp
 from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Size2D, Size2DTypes
-from scistag.vislog.visual_log_service import VisualLogService
+from scistag.vislog.server.visual_log_service import VisualLogService
 from scistag.webstag.web_helper import WebHelper
 from scistag.logstag.console_stag import Console
-from .sub_log import SubLog, SubLogLock
+from scistag.vislog.common.sub_log import SubLog, SubLogLock
 
 if TYPE_CHECKING:
     from scistag.webstag.server import WebStagServer
     from scistag.webstag.server import WebStagService
-    from .visual_log_renderer import VisualLogRenderer
-    from .visual_log_renderer_html import VisualLogHtmlRenderer
-    from .widgets.log_widget import LogWidget
-    from .widgets.log_button import LogButton
-    from .visual_log_builder import VisualLogBuilder
-    from .visual_log_statistics import VisualLogStatistics
-    from scistag.vislog.log_event import LogEvent
+    from scistag.vislog.renderers.visual_log_renderer import VisualLogRenderer
+    from scistag.vislog.renderers.visual_log_renderer_html import \
+        VisualLogHtmlRenderer
+    from scistag.vislog.widgets.log_widget import LogWidget
+    from scistag.vislog.widgets.log_button import LogButton
+    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.common import VisualLogStatistics
+    from scistag.vislog.widgets.log_event import LogEvent
 
 # Error messages
 TABLE_PIPE = "|"
@@ -51,6 +52,20 @@ _CONTINUOUS_REQUIRED_BG_THREAD = "To update the log via this method " \
                                  "you have to set 'mt' to True " \
                                  "so the server can run in a " \
                                  "background thread."
+
+_ERROR_NO_APP_AUTO_RELOAD = "Auto-reloading is not supported " \
+                            "for apps as of now, please use " \
+                            "a browser for testing and " \
+                            "switch to app mode for " \
+                            "deployment w/o autoreload."
+
+_ERROR_INSTALL_CUTE = "Please install PySide 6 to run " \
+                      "VisualLog " \
+                      "as stand-alone application. You can do " \
+                      "so via install PySide6-components or " \
+                      "by adding cutestag as extra to SciStag, " \
+                      "e.g. " \
+                      "pip install scistag[common,cutestag]"
 
 LOG_EVENT_CACHE_NAME = "__logEvents"
 "Name of the cache entry in which the log events are stored"
@@ -318,7 +333,8 @@ class VisualLog:
         The current log limit (maximum number of rows before starting deleting
         the oldest ones)
         """
-        from .visual_log_renderer_html import VisualLogHtmlRenderer
+        from scistag.vislog.renderers.visual_log_renderer_html import \
+            VisualLogHtmlRenderer
         self._renderers: dict[str, "VisualLogRenderer"] = {
             HTML: VisualLogHtmlRenderer(title=self._title)}
         "The renderers for the single supported formats"
@@ -1012,7 +1028,7 @@ class VisualLog:
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
             self._auto_reload = True
-            from scistag.vislog.visual_log_autoreloader import \
+            from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
                 VisualLogAutoReloader
             if continuous:
                 raise NotImplementedError(
@@ -1179,7 +1195,7 @@ class VisualLog:
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
             self._auto_reload = True
-            from scistag.vislog.visual_log_autoreloader import \
+            from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
                 VisualLogAutoReloader
             if continuous:
                 raise NotImplementedError(
@@ -1275,23 +1291,13 @@ class VisualLog:
             if self._app == CUTE_APP:
                 from scistag.cutestag import cute_available
                 if not cute_available():
-                    raise RuntimeError("Please install PySide 6 to run "
-                                       "VisualLog "
-                                       "as stand-alone application. You can do "
-                                       "so via install PySide6-components or "
-                                       "by adding cutestag as extra to SciStag, "
-                                       "e.g. "
-                                       "pip install scistag[common,cutestag]")
+                    raise RuntimeError(_ERROR_INSTALL_CUTE)
                 if self._auto_reload:
-                    raise NotImplementedError("Auto-reloading is not supported "
-                                              "for apps as of now, please use "
-                                              "a browser for testing and "
-                                              "switch to app mode for "
-                                              "deployment w/o autoreload.")
+                    raise NotImplementedError(_ERROR_NO_APP_AUTO_RELOAD)
                 from scistag.cutestag.browser import CuteBrowserApp
                 app = CuteBrowserApp(initial_url=url)
-                from .visual_log_background_handler import \
-                    VisualLogBackgroundHandler
+                from scistag.vislog.common.visual_log_background_handler \
+                    import VisualLogBackgroundHandler
                 bg_handler = VisualLogBackgroundHandler(self)
                 bg_handler.start()
                 if not self.testing:
@@ -1440,7 +1446,8 @@ class VisualLog:
         auto_reload_cache = None
         if auto_reload:  # if auto-reloading is enabled try to restore cache
             # check if there is a valid, prior cache available
-            from .visual_log_autoreloader import VisualLogAutoReloader
+            from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
+                VisualLogAutoReloader
             auto_reload_cache = VisualLogAutoReloader.get_cache_backup()
             if auto_reload_cache is not None and \
                     auto_reload_cache.version != cache_version:
@@ -1545,7 +1552,7 @@ class VisualLog:
             - upTime - How long is the log being updated?
         """
 
-        from scistag.vislog.visual_log_statistics import \
+        from scistag.vislog.common.visual_log_statistics import \
             VisualLogStatistics
         return VisualLogStatistics(update_counter=self._total_update_counter,
                                    update_rate=self._update_rate,
@@ -1582,7 +1589,7 @@ class VisualLog:
         """
         if StagApp.is_main(2):
             return True
-        from scistag.vislog.visual_log_autoreloader import \
+        from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
             VisualLogAutoReloader
         return VisualLogAutoReloader.is_main(2)
 

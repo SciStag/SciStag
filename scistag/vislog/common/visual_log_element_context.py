@@ -38,7 +38,7 @@ class VisualLogElementContext:
         if self._closed:
             return
         self._closed = True
-        from . import VisualLog
+        from scistag.vislog import VisualLog
         log: VisualLog = self.builder.target_log
         for key, value in self.closing_code.items():
             if key in log.log_formats:

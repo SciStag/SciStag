@@ -36,7 +36,7 @@ class LogButton(LogWidget):
         super().__init__(name=name, log=log)
         self.caption = caption
         "The buttons caption"
-        from scistag.vislog.log_event import LogEvent
+        from scistag.vislog.widgets.log_event import LogEvent
         self.on_click: Union[Callable[[LogEvent], None], None] = on_click
 
     def write(self):

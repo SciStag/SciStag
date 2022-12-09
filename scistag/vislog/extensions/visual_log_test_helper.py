@@ -17,12 +17,14 @@ from matplotlib import pyplot as plt
 from scistag.imagestag import Image, Canvas
 from scistag.plotstag import Figure, Plot
 from scistag.filestag import FileStag, FilePath
+from scistag.vislog.extensions.visual_log_builder_extension import \
+    VisualLogBuilderExtension
 
 if TYPE_CHECKING:
-    from .visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import VisualLogBuilder
 
 
-class VisualLogTestHelper:
+class VisualLogTestHelper(VisualLogBuilderExtension):
     """
     Defines helper functions to write VisualLog based regression and unit tests
     """
@@ -32,7 +34,7 @@ class VisualLogTestHelper:
         :param builder: The actual logging writer object we use to write
             the document
         """
-        self.builder: "VisualLogBuilder" = builder
+        super().__init__(builder)
         self.checkpoint_backups = []
         "Data from the last checkpoints"
 

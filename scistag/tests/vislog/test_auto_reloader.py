@@ -5,7 +5,8 @@ import os.path
 import time
 from threading import Thread
 
-from scistag.vislog.visual_log_autoreloader import VisualLogAutoReloader
+from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
+    VisualLogAutoReloader
 
 
 class AutoReloadTestThread(Thread):

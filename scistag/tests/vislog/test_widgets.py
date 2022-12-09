@@ -3,7 +3,7 @@ Tests the log basic widgets
 """
 
 from scistag.vislog import VisualLog
-from scistag.vislog.log_event import LogEvent
+from scistag.vislog.widgets.log_event import LogEvent
 from scistag.vislog.widgets.log_button import LogButton, CLICK_EVENT_TYPE
 
 

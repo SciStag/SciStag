@@ -25,8 +25,8 @@ from scistag.plotstag import Figure, Plot, MPHelper
 MAX_NP_ARRAY_SIZE = 100
 
 if TYPE_CHECKING:
-    from scistag.vislog.pyplot_log_context import PyPlotLogContext
-    from scistag.vislog.visual_log_markdown_builder import \
+    from scistag.vislog.extensions.pyplot_log_context import PyPlotLogContext
+    from scistag.vislog.extensions.visual_log_markdown_builder import \
         VisualMarkdownBuilderExtension
     from matplotlib import pyplot as plt
     import pandas as pd
@@ -68,33 +68,35 @@ class VisualLogBuilder:
         any of these files changes the log should be rebuild.
         """
         "The main logging target"
-        from .visual_log_test_helper import VisualLogTestHelper
+        from .extensions.visual_log_test_helper import VisualLogTestHelper
         self.test = VisualLogTestHelper(self)
         """
         Helper class for adding regression tests to the log.
         """
-        from .visual_image_logger import VisualImageLogger
+        from .extensions.visual_image_logger import VisualImageLogger
         self.image = VisualImageLogger(self)
         """
         Helper object for adding images to the log
         
         Can also be called directly to add a simple image to the log.
         """
-        from .visual_log_table_builder import VisualLogTableBuilderExtension
+        from .extensions.visual_log_table_builder import \
+            VisualLogTableBuilderExtension
         self.table = VisualLogTableBuilderExtension(self)
         """
         Helper class for adding tables to the log.
         
         Can also be called directly to add a simple table to the log.
         """
-        from .visual_time_logger import VisualLogTimeLogger
+        from .extensions.visual_time_logger import VisualLogTimeLogger
         self.time = VisualLogTimeLogger(self)
         """
         Helper class for time measuring and logging times to the log
         """
-        from .visual_log_basic_logger import VisualLogBasicLogger
+        from .extensions.visual_log_basic_logger import VisualLogBasicLogger
         self.log = VisualLogBasicLogger(self)
-        from .visual_log_markdown_builder import VisualMarkdownBuilderExtension
+        from .extensions.visual_log_markdown_builder import \
+            VisualMarkdownBuilderExtension
         self._md: VisualMarkdownBuilderExtension | None = None
         """
         Markdown extension for VisualLog
@@ -384,7 +386,8 @@ class VisualLogBuilder:
         """
         Methods to add markdown content
         """
-        from .visual_log_markdown_builder import VisualMarkdownBuilderExtension
+        from .extensions.visual_log_markdown_builder import \
+            VisualMarkdownBuilderExtension
         if self._md is None:
             self._md = VisualMarkdownBuilderExtension(self)
         return self._md
@@ -559,7 +562,7 @@ class VisualLogBuilder:
 
 
         """
-        from scistag.vislog.pyplot_log_context import \
+        from scistag.vislog.extensions.pyplot_log_context import \
             PyPlotLogContext
         log_context = PyPlotLogContext(self,
                                        assertion_name=assertion_name,

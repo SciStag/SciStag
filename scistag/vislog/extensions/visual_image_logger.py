@@ -11,26 +11,27 @@ import numpy as np
 from filetype import filetype
 from scistag.filestag import FilePath, FileStag
 from scistag.imagestag import Image, Canvas
+from scistag.vislog.extensions.visual_log_builder_extension import \
+    VisualLogBuilderExtension
 
 if TYPE_CHECKING:
     from scistag.imagestag import PixelFormat
-    from .visual_log import VisualLog
-    from .visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log import VisualLog
+    from scistag.vislog.visual_log_builder import VisualLogBuilder
 
 
-class VisualImageLogger:
+class VisualImageLogger(VisualLogBuilderExtension):
     """
     Helper class for storing images in a VisualLog
     """
 
-    def __init__(self, log_builder: "VisualLogBuilder"):
+    def __init__(self, builder: "VisualLogBuilder"):
         """
-        :param log_builder: The log builder object we are logging with
+        :param builder: The log builder object we are logging with
         """
-        self.log: "VisualLog" = log_builder.target_log
+        super().__init__(builder)
+        self.log: "VisualLog" = builder.target_log
         "The log we are logging to"
-        self.builder: "VisualLogBuilder" = log_builder
-        "The log builder we are using to write data"
         self.show = self.__call__
 
     def __call__(self, source: Image | Canvas | str | bytes | np.ndarray,

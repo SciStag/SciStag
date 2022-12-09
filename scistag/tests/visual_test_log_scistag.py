@@ -25,7 +25,7 @@ class VisualTestLogSciStag(VisualTestLog):
              target path and test name
         :param params: Advanced parameters, see :class:`VisualLog`
         """
-        log_images = ConfigStag.get("testConfig.logImages", False) == True
+        log_images = bool(ConfigStag.get("testConfig.logImages", False))
         super().__init__(test_filename=test_filename,
                          log_images=log_images,
                          **params)

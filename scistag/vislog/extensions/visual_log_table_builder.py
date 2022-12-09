@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Union, Callable
 
 import numpy as np
 from pandas import DataFrame, Series
-from scistag.vislog.visual_log_element_context import \
+from scistag.vislog.common.visual_log_element_context import \
     VisualLogElementContext
 
 from scistag.imagestag import Image
@@ -17,7 +17,7 @@ from scistag.plotstag import Figure
 from . import VisualLogBuilderExtension
 
 if TYPE_CHECKING:
-    from .visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import VisualLogBuilder
 
 ColumnContent = Union[str, int, float, Callable, Image, Figure,
                       np.ndarray, DataFrame, Series, dict, list]
