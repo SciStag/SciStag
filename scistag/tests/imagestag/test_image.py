@@ -8,7 +8,7 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 
-from scistag.imagestag import Image, ImsFramework, Colors, PixelFormat
+from scistag.imagestag import Image, ImsFramework, Colors, PixelFormat, Canvas
 import pytest
 
 from scistag.common.test_data import TestConstants
@@ -147,7 +147,7 @@ def test_resize_ext(stag_image_data):
     max_width = image.resized_ext(max_size=(128, None))
     assert max_width.width == 128 and max_width.height != 128
     max_height = image.resized_ext(max_size=(None, 128))
-    assert max_height.height == 128 and max_width != 128
+    assert max_height.height == 128 and max_width.width == 128
     with pytest.raises(ValueError):
         image.resized_ext(max_size=(None, None))
     assert mean_max_size == pytest.approx(120.6, 0.05)
@@ -292,6 +292,9 @@ def test_conversion(stag_image_data):
     repr_png = image._repr_png_()
     assert repr_png == png
     reloaded = Image(png)
+    test_canvas = Canvas(size=(50, 50))
+    image = test_canvas.load_image(png)
+    assert image == reloaded
     assert np.all(image.get_pixels() == reloaded.get_pixels())
 
     cv_image = Image(image.get_pixels(), pixel_format=PixelFormat.RGB,
@@ -407,3 +410,14 @@ def test_damaged(stag_image_data):
         Image(b"12345", framework=ImsFramework.RAW)
     with pytest.raises(ValueError):
         Image(b"12345", framework=ImsFramework.CV)
+
+
+@pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
+def test_compare(stag_image_data):
+    stag = Image(stag_image_data)
+    stag_two = Image(stag_image_data)
+    assert stag == stag_two
+    stag.convert_to_raw()
+    assert stag == stag_two
+    emoji = render_emoji("deer", height=128)
+    assert not emoji == stag

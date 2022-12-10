@@ -5,8 +5,6 @@ for storage target containers.
 
 from __future__ import annotations
 
-import os
-
 from scistag.filestag import FilePath
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
     ZIP_SOURCE_PROTOCOL, AZURE_DEFAULT_ENDPOINTS_HEADER
@@ -18,7 +16,6 @@ class FileStorageOptions:
 
     Not yet defined.
     """
-    pass
 
 
 class FileSink:
@@ -120,7 +117,7 @@ class FileSink:
             raise AssertionError("Tried to close FileSink twice")
         self._closed = True
 
-    def get_value(self) -> bytes:
+    def get_value(self) -> bytes | None:
         """
         Returns the sink's content as single bytes string.
 

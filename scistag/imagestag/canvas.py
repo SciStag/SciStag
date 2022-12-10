@@ -36,7 +36,8 @@ class CanvasState:
     """
     offset: tuple[float, float] = (0.0, 0.0)
     "The offset in pixels by which all content shall be moved"
-    clipping: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
+    clipping: tuple[tuple[float, float], tuple[float, float]] = (
+        (0.0, 0.0), (0.0, 0.0))
     """
     The bounding in pixels to which the painting shall be limited
     (if supported by the function
@@ -80,8 +81,8 @@ class Canvas:
         "The canvas' size in pixels"
         self.offset = (0, 0)
         """The current painting offset in pixels"""
-        self.clip_region: tuple[float, float, float, float] = (
-            0, 0, self.width, self.height)
+        self.clip_region: tuple[tuple[float, float], tuple[float, float]] = (
+            (0, 0), (self.width, self.height))
         """The min and max x y position valid for painting. Note that this is 
         not respected by many paint commands but shall just help skipping 
         irrelevant geometries completely."""
@@ -94,21 +95,16 @@ class Canvas:
         """
         self.target_image: PIL.Image
         "The image into which the canvas will paint"
-        if self.framework == ImsFramework.PIL:
-            if target_image is not None:
-                self.target_image = target_image.get_handle()
-                assert isinstance(self.target_image, PIL.Image.Image)
-            else:
-                img_format = PixelFormat(
-                    pixel_format).to_pil()
-                if pixel_format is None:
-                    raise NotImplemented(f"{pixel_format} not supported")
-                self.target_image = \
-                    PIL.Image.new(img_format, (self.width, self.height),
-                                  color=default_color.to_int_rgba())
-            self.image_draw = PIL.ImageDraw.ImageDraw(self.target_image)
+        if target_image is not None:
+            self.target_image = target_image.get_handle()
+            assert isinstance(self.target_image, PIL.Image.Image)
         else:
-            raise NotImplemented
+            img_format = PixelFormat(
+                pixel_format).to_pil()
+            self.target_image = \
+                PIL.Image.new(img_format, (self.width, self.height),
+                              color=default_color.to_int_rgba())
+        self.image_draw = PIL.ImageDraw.ImageDraw(self.target_image)
 
     def __setattr__(self, key, value):
         if "image_draw" in self.__dict__:
@@ -220,17 +216,19 @@ class Canvas:
         :param size: The width and height of the painting region
         """
         self.offset = (self.offset[0] + offset[0], self.offset[1] + offset[1])
-        self.clip_region = (max(self.offset[0], self.clip_region[0]),
-                            max(self.offset[1], self.clip_region[1]),
-                            min(self.offset[0] + size[0], self.clip_region[2]),
-                            min(self.offset[1] + size[1], self.clip_region[3]))
+        self.clip_region = ((max(self.offset[0], self.clip_region[0][0]),
+                             max(self.offset[1], self.clip_region[0][1])),
+                            (min(self.offset[0] + size[0],
+                                 self.clip_region[1][0]),
+                             min(self.offset[1] + size[1],
+                                 self.clip_region[1][1])))
         self.clip_region = (
-            min(self.clip_region[0], self.clip_region[2]),
-            # x/y should be <= x2/y2
-            min(self.clip_region[1], self.clip_region[3]),
-            max(self.clip_region[0], self.clip_region[2]),
-            # x2/y2 should be >= x/y
-            max(self.clip_region[1], self.clip_region[3]))
+            (min(self.clip_region[0][0], self.clip_region[1][0]),
+             # x/y should be <= x2/y2
+             min(self.clip_region[0][1], self.clip_region[1][1])),
+            (max(self.clip_region[0][0], self.clip_region[1][0]),
+             # x2/y2 should be >= x/y
+             max(self.clip_region[0][1], self.clip_region[1][1])))
         return self
 
     def clear(self, color: ColorTypes = Colors.BLACK) -> Canvas:

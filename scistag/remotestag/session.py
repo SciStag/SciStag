@@ -3,12 +3,13 @@ from typing import TYPE_CHECKING, Union
 
 from pydantic import BaseModel
 
-if TYPE_CHECKING:
-    from scistag.slidestag.slide_application import SlideApp
 from threading import RLock
 import time
 import re
 from scistag.datastag.data_stag_connection import DataStagConnection
+
+if TYPE_CHECKING:
+    from scistag.slidestag.slide_application import SlideApp
 
 
 class SessionConfig(BaseModel):

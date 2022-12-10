@@ -4,6 +4,7 @@ Tests the functionality of the web_fetch method and the WebCache class
 import os
 import time
 import uuid
+from unittest import mock
 
 import pytest
 
@@ -28,6 +29,8 @@ def test_web_fetch_and_cache(tmp_path):
     """
     Tests the web_fetch method
     """
+    WebCache.set_app_name("scistag")
+
     homepage = web_fetch(URL, max_cache_age=0.5)
     assert homepage is not None and len(homepage) > 0
     # Verify data is in the cache now
@@ -56,3 +59,25 @@ def test_web_fetch_and_cache(tmp_path):
     web_fetch(URL, filename=out_filename)
     assert os.path.exists(out_filename)
     assert os.path.getsize(out_filename) == len(stag_data)
+
+    def open_mock(*args, **kwargs):
+        raise FileNotFoundError("123")
+
+    WebCache.store("http://testdata", b"123")
+    with pytest.raises(FileNotFoundError):
+        with mock.patch("builtins.open", new_callable=open_mock):
+            WebCache.fetch("http://testdata", 123)
+
+    max_size = WebCache.max_cache_size
+    WebCache.max_cache_size = 0
+    with pytest.raises(FileNotFoundError):
+        with mock.patch("os.listdir", new_callable=open_mock):
+            WebCache.cleanup()
+    WebCache.max_cache_size = max_size
+
+    cache_name = WebCache.app_name
+    WebCache.set_app_name("testcache")
+    with pytest.raises(FileNotFoundError):
+        with mock.patch("shutil.rmtree", new_callable=open_mock):
+            WebCache.flush()
+    WebCache.set_app_name(cache_name)

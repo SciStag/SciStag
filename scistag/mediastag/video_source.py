@@ -1,7 +1,13 @@
+"""
+Implements the class :class:`VideoSource` which defines an abstract layer to
+a video source such as a webcam or a movie.
+"""
+
 from __future__ import annotations
 import time
 
-from scistag.imagestag import Image, ImageFilter
+from scistag.imagestag.image import Image
+from scistag.imagestag.image_filter import ImageFilter
 
 
 class VideoSource:

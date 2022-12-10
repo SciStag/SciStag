@@ -45,9 +45,9 @@ class LiveCameraDemo(VisualLogBuilder):
 
 
 if VisualLog.is_main():
-    frame_rate = 60.0  # update as fast as possible
+    FRAME_RATE = 60.0  # update as fast as possible
     test_log = VisualLog("Webcam Demo",
-                         refresh_time_s=1.0 / frame_rate,
+                         refresh_time_s=1.0 / FRAME_RATE,
                          start_browser=True,
                          image_format=("jpg", 80))
     test_log.run_server(continuous=True,  # update continuously

@@ -19,7 +19,7 @@ class TextTreeNode(TreeNode):
     to build a list of bullet points in a text document.
     """
 
-    def __init__(self, text: str, *args, **kwargs):
+    def __init__(self, text: str = "", *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.text = text
         "The text which shall be displayed in the output tree"

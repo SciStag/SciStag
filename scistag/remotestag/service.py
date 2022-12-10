@@ -167,7 +167,6 @@ class RemoteService:
         If this service is thread bound it's guaranteed to be executed on the
          later execution thread.
         """
-        pass
 
     def deinitialize(self):
         """
@@ -176,4 +175,3 @@ class RemoteService:
         If this service is thread bound it's guaranteed to be
         executed on the execution thread.
         """
-        pass

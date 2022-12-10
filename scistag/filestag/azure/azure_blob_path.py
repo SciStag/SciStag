@@ -130,6 +130,11 @@ class AzureBlobPath(BaseModel):
         return url, "", ""
 
     def get_connection_string(self) -> str:
+        """
+        Returns the connection string to create a BlobServiceClient
+
+        :return: The connection credentials
+        """
         epp = self.default_endpoints_protocol
         if self.sas_url is not None:
             return self.sas_url

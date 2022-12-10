@@ -1,3 +1,8 @@
+"""
+Implements the class :class:`RemoteFunction` which defines a function which
+can execute work load in the background and asynchronously.
+"""
+
 from __future__ import annotations
 import abc
 

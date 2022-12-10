@@ -12,7 +12,7 @@ from scistag.tests import TestConstants
 
 
 def main():
-    cv = get_opencv()
+    opencv = get_opencv()
     root = Tk()
     root.title("ImageStag + WebStag demo")
     # fetch image from the web
@@ -22,7 +22,9 @@ def main():
     panel = Label(root, image=img)
     panel.pack(side="top", fill="both", expand="yes")
     # convert image to gray scale and show it
-    gray_scale = Image(cv.cvtColor(image.get_pixels(desired_format=PixelFormat.BGR), cv.COLOR_BGR2GRAY))
+    gray_scale = Image(
+        opencv.cvtColor(image.get_pixels(desired_format=PixelFormat.BGR),
+                        opencv.COLOR_BGR2GRAY))
     img2 = ImageTk.PhotoImage(gray_scale.to_pil())
     panel = Label(root, image=img2)
     panel.pack(side="top", fill="both", expand="yes")

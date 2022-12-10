@@ -19,6 +19,8 @@ def test_font_bounding():
     text_off = (128, 128)
     text = "Hello World!"
     canvas = Canvas(size=(256, 256))
+    font_small = canvas.get_default_font(size=13)
+    assert font_small.size == 13
     font = canvas.get_default_font()
     canvas.text(pos=text_off, text=text, color=Colors.RED, font=font,
                 _show_formatting=True)

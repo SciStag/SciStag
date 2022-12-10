@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from typing import Union, TYPE_CHECKING
 
-import scistag.tests
 from scistag.filestag import FileSink, FileStorageOptions
 from scistag.filestag.azure.azure_blob_path import AzureBlobPath
 from scistag.filestag.azure.azure_storage_file_source import \

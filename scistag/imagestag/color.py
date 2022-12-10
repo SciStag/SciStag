@@ -280,7 +280,7 @@ class Color:
             hue = (60.0 * ((g - b) / val_range) + 360.0) % 360.0
         elif max_val == g:
             hue = (60.0 * ((b - r) / val_range) + 120.0) % 360.0
-        elif max_val == b:
+        else:  # max_val == b:
             hue = (60.0 * ((r - g) / val_range) + 240.0) % 360.0
         if max_val == 0.0:
             saturation = 0.0
@@ -298,7 +298,8 @@ class Color:
         :return: The hue saturation and value as int tuple
         """
         h, s, v = self.to_hsv()
-        return int(round(h / 360. * 255)), int(round(s*255)), int(round(v*255))
+        return int(round(h / 360. * 255)), int(round(s * 255)), int(
+            round(v * 255))
 
     def to_hex(self) -> str:
         """

@@ -21,6 +21,11 @@ class AddonCli:
         pass
 
     def main(self, arguments):
+        """
+        Main entry point for the addon management
+
+        :param arguments: The command line arguments
+        """
         parser = argparse.ArgumentParser(
             prog="scistag",
             description="Installs or removes an optional add-on",

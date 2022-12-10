@@ -1,9 +1,9 @@
 from __future__ import annotations
+import time
 from threading import RLock
 import uuid
 import base64
 from .session import Session
-import time
 
 
 class SessionHandler:
@@ -28,8 +28,7 @@ class SessionHandler:
                 if session.unloaded:
                     return None
                 return session
-            else:
-                return None
+            return None
 
     def get_session_by_guest_id(self, guest_id: str) -> Session | None:
         """
@@ -64,7 +63,7 @@ class SessionHandler:
         """
         cur_time = time.time()
         with self.session_lock:
-            sessions = [element for element in self.sessions.values()]
+            sessions = list(self.sessions.values())
         garbage = []
         for session in sessions:
             with session.lock:

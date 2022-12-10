@@ -8,8 +8,14 @@ from scistag.vislog import VisualLog, VisualLogBuilder
 
 
 class MyPage(VisualLogBuilder):
+    """
+    A basic landing page
+    """
 
     def build(self):
+        """
+        Builds the page's content
+        """
         self.md.embed("./embed_doc.md")
         self.md("# Test")
 

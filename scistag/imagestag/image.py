@@ -881,5 +881,13 @@ class Image(ImageBase):
         """
         return hashlib.md5(self.to_pil().tobytes()).hexdigest()
 
+    def __eq__(self, other: Image):
+        if (self.framework == ImsFramework.PIL and
+                other.framework == ImsFramework.PIL):
+            return self._pil_handle == other._pil_handle
+        if self.pixel_format != other.pixel_format:
+            return False
+        return np.all(self.get_pixels() == other.get_pixels())
+
 
 __all__ = ["Image", "ImageSourceTypes"]

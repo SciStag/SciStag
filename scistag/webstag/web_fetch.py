@@ -190,7 +190,7 @@ def web_fetch(url: str, timeout_s: float = 10.0, max_cache_age=0.0,
               filename: str | None = None,
               out_response_details: dict | None = None,
               all_codes=False,
-              **params) -> bytes | None:
+              **_) -> bytes | None:
     """
     Fetches a file from the web via HTTP GET
 
@@ -209,7 +209,6 @@ def web_fetch(url: str, timeout_s: float = 10.0, max_cache_age=0.0,
         * storedInCache - Defines if the file was added to the cache
     :param all_codes: Defines if all http return codes shall be accepted.
         Pass a dictionary to response_details for the details.
-    :param params: Advanced parameters
     :return: The file's content if available and not timed out, otherwise None
     """
     from_cache = False

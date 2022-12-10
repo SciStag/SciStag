@@ -26,7 +26,7 @@ class VideoSourceMovie(VideoSource):
         self.moviepy: "VideoFileClip" = None
         media_paths = [""] if media_paths is None else media_paths
         for path in media_paths:
-            cur_path = f"{path}/{filename}" if len(path) else filename
+            cur_path = f"{path}/{filename}" if len(path)>0 else filename
             if os.path.exists(cur_path):
                 valid_path = cur_path
         if valid_path is not None:
