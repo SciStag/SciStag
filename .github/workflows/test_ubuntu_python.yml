@@ -31,7 +31,6 @@ jobs:
           SCISTAG_FULL_TEST: 1
       - name: Coveralls GitHub Action
         run: |
-          pip install coveralls
-          coveralls --service=github
+          poetry run coveralls --service=github
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

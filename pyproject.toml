@@ -97,6 +97,7 @@ pytest-mock = "^3.7.0"
 pytest-order = "^1.0.1"
 pytest-xdist = "^2.5.0"
 pre-commit = "^2.20.0"
+coveralls = "^3.3.1"
 
 [tool.poetry.group.docu]
 optional = true
