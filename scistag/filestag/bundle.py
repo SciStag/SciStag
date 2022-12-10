@@ -242,13 +242,12 @@ class Bundle:
             st = bundle_info.source_type
             if st == DICT:  # just a dict? we're done
                 return result
-            elif st == LIST:
+            if st == LIST:
                 return result_elements
-            elif st == TUPLE:
+            if st == TUPLE:
                 return tuple(result_elements)
-            else:
-                raise NotImplementedError(
-                    f"The return type {st} is not supported")
+            raise NotImplementedError(
+                f"The return type {st} is not supported")
 
     @classmethod
     def to_bytes(cls, element: Any, options: BundlingOptions) -> \

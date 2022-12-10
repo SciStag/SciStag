@@ -1,6 +1,6 @@
 from __future__ import annotations
 from threading import Thread, Event, RLock
-from typing import Callable, TYPE_CHECKING
+from typing import Callable
 import abc
 
 import scistag.imagestag

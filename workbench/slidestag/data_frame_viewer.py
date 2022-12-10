@@ -37,7 +37,7 @@ class DataFrameViewer(Widget):
         :param parameters: The creation parameters. Adding>
         * df = The dataframe
         * tableWidth = The desired table width. auto by default.
-        * htmlOptions = Advanced HTML options. See HtmlRenderer. No effect if HTML rendering is not used.
+        * htmlOptions = Advanced HTML options. See HtmlLogRenderer. No effect if HTML rendering is not used.
         * showIndex = Defines if the index shall be shown
         * tableStyle = The table style. See PandasRenderer
         * fontSize = The font size

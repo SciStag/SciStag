@@ -4,6 +4,7 @@ Tests the :class:`FileSource` class.
 With the :class:`FileSource` class you can iterate through directories, archives or cloud storage sources
 file by file with a minimum of code.
 """
+import hashlib
 import os.path
 import shutil
 import time
@@ -221,9 +222,13 @@ def test_statistics():
     vl.sub_test("Testing get_statistics() and __str__ casting")
     test_source = FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
                                          fetch_file_list=True)
-    statistics = str(test_source)
+    statistics_str = str(test_source)
+    assert hashlib.md5(
+        statistics_str.encode(
+            "utf-8")).hexdigest() == "dc94728e1ed121e8f9a7e434b8ccf264"
+    statistics = test_source.get_statistics()
     vl.test.assert_val("essential_archive_statistics", statistics,
-                       hash_val="dcc44322ca043dff16eb57ce972e10b7")
+                       hash_val="1877a538d0b9ebdc674841243fc27b35")
     list = test_source.file_list
     assert len(list) == 3706
     # statistics twice

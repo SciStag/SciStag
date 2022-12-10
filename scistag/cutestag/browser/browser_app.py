@@ -17,7 +17,6 @@ from scistag.imagestag import Size2D
 DEFAULT_URL = "https://github.com/SciStag/SciStag#readme"
 _UNIT_TESTING = "PYTEST_CURRENT_TEST" in os.environ
 
-from PySide6.QtWidgets import (QApplication, QMainWindow)
 from PySide6.QtCore import QUrl, QLoggingCategory
 from PySide6.QtWidgets import (QApplication, QMainWindow)
 from PySide6.QtWebEngineWidgets import QWebEngineView

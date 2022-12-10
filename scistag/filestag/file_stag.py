@@ -100,14 +100,12 @@ class FileStag:
     @classmethod
     def save(cls,
              target: FileTargetTypes,
-             data: bytes, **params) -> bool:
+             data: bytes, **_) -> bool:
         """
         Saves data to a file
 
         :param target: The file's target name, see :meth:`load_file`.
         :param data: The data to be stored
-        :param params: The advanced storage parameters, depending on the
-            type of storage, such as timeout_s for file's stored via network.
         :return: True on success
         """
         if data is None:

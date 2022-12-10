@@ -72,7 +72,7 @@ def test_add_and_links():
         vl.add(Color(22, 33, 44))
     with pytest.raises(ValueError):
         vl.add(b"12345")
-    vl.test.assert_cp_diff(hash_val='dbee28561898b78b5ddc19ca55b18878')
+    vl.test.assert_cp_diff(hash_val='d46775dc24d6c892a989c1e2481a7887')
     vl.test.checkpoint("log.link_adv")
     vl.link("Multiline\nLink", "https://github.com/scistag/scistag")
     vl.test.assert_cp_diff(hash_val='9ebcc1aada224b97a34d223ae5da4875')

@@ -1,24 +1,19 @@
 """
-Defines VisualLogTimeLogger which provides functions for timing the performance
+Defines TimeLogger which provides functions for timing the performance
 and timestamp in a log.
 """
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Union, Callable
 
-import numpy as np
-from pandas import DataFrame, Series
-from scistag.vislog.visual_log_element_context import \
-    VisualLogElementContext
-
-from scistag.imagestag import Image
-from scistag.plotstag import Figure
+from scistag.vislog.extensions.builder_extension import \
+    BuilderExtension
 
 if TYPE_CHECKING:
-    from .visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import VisualLogBuilder
 
 
-class VisualLogTimeLogger:
+class TimeLogger(BuilderExtension):
     """
     Helper class for logging time stamps and performance estimations to a log.
     """
@@ -27,7 +22,7 @@ class VisualLogTimeLogger:
         """
         :param builder: The builder object with which we write to the log
         """
-        self.builder: "VisualLogBuilder" = builder
+        super().__init__(builder)
         self._log = self.builder.target_log
         self.log = self.__call__
 

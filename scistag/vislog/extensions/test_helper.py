@@ -1,5 +1,5 @@
 """
-Defines the class :class:`VisualLogTestHelper` which helps creating
+Defines the class :class:`TestHelper` which helps creating
 regression tests using a VisualLog by either verifying MD5 hash constants or
 storing reference data on disk and comparing to it.
 """
@@ -17,12 +17,14 @@ from matplotlib import pyplot as plt
 from scistag.imagestag import Image, Canvas
 from scistag.plotstag import Figure, Plot
 from scistag.filestag import FileStag, FilePath
+from scistag.vislog.extensions.builder_extension import \
+    BuilderExtension
 
 if TYPE_CHECKING:
-    from .visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import VisualLogBuilder
 
 
-class VisualLogTestHelper:
+class TestHelper(BuilderExtension):
     """
     Defines helper functions to write VisualLog based regression and unit tests
     """
@@ -32,7 +34,7 @@ class VisualLogTestHelper:
         :param builder: The actual logging writer object we use to write
             the document
         """
-        self.builder: "VisualLogBuilder" = builder
+        super().__init__(builder)
         self.checkpoint_backups = []
         "Data from the last checkpoints"
 
@@ -244,8 +246,8 @@ class VisualLogTestHelper:
             return
             # dict or list
         if isinstance(data, (list, dict, str)):
-            self.builder.log(
-                str(data))  # no beautiful logging supported yet
+            self.builder.collection(
+                data)  # no beautiful logging supported yet
             import json
             data = json.dumps(data).encode("utf-8")
         if data is None or not isinstance(data, bytes):

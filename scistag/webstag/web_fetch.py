@@ -12,7 +12,6 @@ import time
 import os
 import tempfile
 import shutil
-import requests
 
 FROM_CACHE = "fromCache"
 "Defines if the file was loaded from the local disk cache"
@@ -69,6 +68,7 @@ class WebCache:
         with cls.lock:
             cls.app_name = name
             cls.cache_dir = tempfile.tempdir + f"/scistag/{name}/"
+            os.makedirs(cls.cache_dir, exist_ok=True)
             cls.cleanup()
 
     @classmethod
@@ -191,7 +191,7 @@ def web_fetch(url: str, timeout_s: float = 10.0, max_cache_age=0.0,
               filename: str | None = None,
               out_response_details: dict | None = None,
               all_codes=False,
-              **params) -> bytes | None:
+              **_) -> bytes | None:
     """
     Fetches a file from the web via HTTP GET
 
@@ -210,7 +210,6 @@ def web_fetch(url: str, timeout_s: float = 10.0, max_cache_age=0.0,
         * storedInCache - Defines if the file was added to the cache
     :param all_codes: Defines if all http return codes shall be accepted.
         Pass a dictionary to response_details for the details.
-    :param params: Advanced parameters
     :return: The file's content if available and not timed out, otherwise None
     """
     from_cache = False
@@ -228,6 +227,7 @@ def web_fetch(url: str, timeout_s: float = 10.0, max_cache_age=0.0,
         else:
             if out_response_details is not None:
                 out_response_details[FROM_CACHE] = False
+    import requests
     try:
         response = requests.get(url=url, timeout=timeout_s)
     except requests.exceptions.RequestException:

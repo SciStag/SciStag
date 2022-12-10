@@ -22,15 +22,15 @@ jobs:
           PYTHON_KEYRING_BACKEND: keyring.backends.null.Keyring
       - run: |
           poetry run coverage run -m pytest ./scistag/tests
-          poetry run coverage lcov -i
+          poetry run coverage report
         env:
           AZ_TEST_SOURCE_KEY: "${{ secrets.AZ_TEST_SOURCE_KEY }}"
           AZ_TEST_SOURCE_SAS: "${{ secrets.AZ_TEST_SOURCE_SAS }}"
           AZ_TEST_SOURCE_SAS_INV: "${{ secrets.AZ_TEST_SOURCE_SAS_INV }}"
           TEST_RELEASE: 1
           SCISTAG_FULL_TEST: 1
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: coverage.lcov
+      - name: Coveralls GitHub Action
+        run: |
+          poetry run coveralls --service=github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

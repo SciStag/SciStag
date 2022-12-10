@@ -41,6 +41,8 @@ class PixelFormat(IntEnum):
                            "bgr": cls.BGR,
                            "bgra": cls.BGRA}
 
+        if value is None:
+            return None
         value: str
         lower_value = value.lower()
         if lower_value in Definitions.short_codes:

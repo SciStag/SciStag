@@ -19,6 +19,7 @@ from typing import Callable, Any, TYPE_CHECKING, Union
 
 from pydantic import BaseModel, SecretStr
 
+from scistag.common.trees.text_tree import TextTree
 from scistag.filestag.bundle import Bundle
 from scistag.filestag.file_source_iterator import FileSourceIterator, \
     FileIterationData, FilterCallback
@@ -169,7 +170,7 @@ class FileSource:
         """
         self.max_file_count = max_file_count
         """
-        The maximum number of files to process. (excluding the impact of 
+        The maximum number of files to process. (excluding the impact of
         :attr:`index_filter`
         """
         self.is_closed = False
@@ -315,7 +316,7 @@ class FileSource:
                 "\\")) and source.endswith(".zip"):
             from scistag.filestag.sources.file_source_zip import FileSourceZip
             return FileSourceZip(source=source, **params)
-        if source.__contains__("://"):
+        if "://" in source:
             raise NotImplementedError("Unknown protocol for FileSource")
         from scistag.filestag.sources.file_source_disk import FileSourceDisk
         return FileSourceDisk(path=source, **params)
@@ -346,12 +347,12 @@ class FileSource:
         stream = io.BytesIO()
         for cur_file in self.file_list:
             stream.write(
-                cur_file.filename.__hash__().to_bytes(8, "little", signed=True))
+                hash(cur_file.filename).to_bytes(8, "little", signed=True))
             stream.write(cur_file.file_size.to_bytes(8, "little", signed=True))
             stream.write(
-                cur_file.created.__hash__().to_bytes(8, "little", signed=True))
+                hash(cur_file.created).to_bytes(8, "little", signed=True))
             stream.write(
-                cur_file.modified.__hash__().to_bytes(8, "little", signed=True))
+                hash(cur_file.modified).to_bytes(8, "little", signed=True))
             if max_content_size > 0 and cur_file.file_size <= max_content_size:
                 stream.write(
                     md5(self.fetch(cur_file.filename)).hexdigest().encode(
@@ -407,9 +408,10 @@ class FileSource:
             If -1 is passed the version is ignored.
         :return: The encoded file list
         """
-        df = self.get_file_list_as_df()
+        dataframe = self.get_file_list_as_df()
         data = Bundle.bundle(
-            {"version": 1, "data": df, CACHE_VERSION: version}, compression=0)
+            {"version": 1, "data": dataframe, CACHE_VERSION: version},
+            compression=0)
         return data
 
     def load_file_list(self, source: bytes | str, version: int = -1) -> bool:
@@ -537,9 +539,8 @@ class FileSource:
     def __str__(self):
         result = self.__class__.__name__ + "\n"
         statistics = self.get_statistics()
-        from scistag.common.dict_helper import dict_to_bullet_list
         if statistics is not None:
-            result += dict_to_bullet_list(statistics)
+            result += "\n" + str(TextTree.from_collection(statistics))
         result += f"* search-mask: {self.search_mask}"
         return result
 
@@ -789,7 +790,7 @@ class FileSource:
         self._file_list = new_list
         if self.sorting_callback is not None and may_sort:  # apply sorting
             self._file_list = sorted(self._file_list, key=self.sorting_callback)
-        self._file_set = set([element.filename for element in new_list])
+        self._file_set = {element.filename for element in new_list}
         self._statistics = None
 
     def reduce_file_list(self) -> list[FileListEntry] | None:
@@ -891,7 +892,6 @@ class FileSource:
         :param force: Enforce an update of the file list, even if it was created
             before already
         """
-        pass
 
     def _create_file_list_int(self, no_cache: bool = False):
         """

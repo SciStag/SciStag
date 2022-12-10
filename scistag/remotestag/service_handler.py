@@ -1,3 +1,8 @@
+"""
+Implements the class :clasS:`RemoteServiceHandler` which helps with the
+execution of workload in background threads or on remote nodes.
+"""
+
 from __future__ import annotations
 from threading import RLock
 from .service_worker import RemoteWorker

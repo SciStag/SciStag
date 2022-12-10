@@ -22,14 +22,14 @@ from scistag.vislog.visual_log import VisualLog, MD, TXT, HTML, \
     TABLE_PIPE
 from scistag.plotstag import Figure, Plot, MPHelper
 
-MAX_NP_ARRAY_SIZE = 100
-
 if TYPE_CHECKING:
-    from scistag.vislog.pyplot_log_context import PyPlotLogContext
-    from scistag.vislog.visual_log_markdown_builder import \
-        VisualMarkdownBuilderExtension
-    from matplotlib import pyplot as plt
     import pandas as pd
+    from matplotlib import pyplot as plt
+    from scistag.vislog.extensions.pyplot_log_context import PyPlotLogContext
+    from scistag.vislog.extensions.markdown_logger import MarkdownLogger
+    from scistag.vislog.extensions.pandas_logger import PandasLogger
+    from scistag.vislog.extensions.numpy_logger import NumpyLogger
+    from scistag.vislog.extensions.collection_logger import CollectionLogger
 
 LogableContent = Union[str, float, int, bool, np.ndarray,
                        "pd.DataFrame", "pd.Series", list, dict, Image, Figure]
@@ -68,36 +68,48 @@ class VisualLogBuilder:
         any of these files changes the log should be rebuild.
         """
         "The main logging target"
-        from .visual_log_test_helper import VisualLogTestHelper
-        self.test = VisualLogTestHelper(self)
+        from .extensions.test_helper import TestHelper
+        self.test = TestHelper(self)
         """
         Helper class for adding regression tests to the log.
         """
-        from .visual_image_logger import VisualImageLogger
-        self.image = VisualImageLogger(self)
+        from .extensions.image_logger import ImageLogger
+        self.image = ImageLogger(self)
         """
         Helper object for adding images to the log
         
         Can also be called directly to add a simple image to the log.
         """
-        from .visual_log_table_builder import VisualLogTableBuilderExtension
-        self.table = VisualLogTableBuilderExtension(self)
+        from .extensions.table_logger import \
+            TableLogger
+        self.table = TableLogger(self)
         """
         Helper class for adding tables to the log.
         
         Can also be called directly to add a simple table to the log.
         """
-        from .visual_time_logger import VisualLogTimeLogger
-        self.time = VisualLogTimeLogger(self)
+        from .extensions.time_logger import TimeLogger
+        self.time = TimeLogger(self)
         """
         Helper class for time measuring and logging times to the log
         """
-        from .visual_log_basic_logger import VisualLogBasicLogger
-        self.log = VisualLogBasicLogger(self)
-        from .visual_log_markdown_builder import VisualMarkdownBuilderExtension
-        self._md: VisualMarkdownBuilderExtension | None = None
+        from .extensions.basic_logger import BasicLogger
+        self.log = BasicLogger(self)
+        self._md: Union["MarkdownLogger", None] = None
         """
-        Markdown extension for VisualLog
+        Markdown extension
+        """
+        self._pd: Union["PandasLogger", None] = None
+        """
+        Pandas extension for logging DataFrames and DataSeries
+        """
+        self._np: Union["NumpyLogger", None] = None
+        """
+        Numpy extension for logging numpy matrices and vectors 
+        """
+        self._collection: Union["CollectionLogger", None] = None
+        """
+        Extension to log lists and dictionaries
         """
 
     def build(self):
@@ -214,7 +226,7 @@ class VisualLogBuilder:
         # pandas content frame
         import pandas as pd
         if isinstance(content, (pd.DataFrame, pd.Series)):
-            self.df(content)
+            self.pd(content)
             return self
         # numpy array
         if isinstance(content, np.ndarray):
@@ -225,7 +237,7 @@ class VisualLogBuilder:
             return self
             # dict or list
         if isinstance(content, (list, dict)):
-            self.log_dict(content)
+            self.collection.log(content)
             return self
         self.log(str(content))
         if content is None or not isinstance(content, bytes):
@@ -380,14 +392,45 @@ class VisualLogBuilder:
         return self
 
     @property
-    def md(self) -> "VisualMarkdownBuilderExtension":
+    def md(self) -> "MarkdownLogger":
         """
         Methods to add markdown content
         """
-        from .visual_log_markdown_builder import VisualMarkdownBuilderExtension
+        from .extensions.markdown_logger import \
+            MarkdownLogger
         if self._md is None:
-            self._md = VisualMarkdownBuilderExtension(self)
+            self._md = MarkdownLogger(self)
         return self._md
+
+    @property
+    def pd(self) -> "PandasLogger":
+        """
+        Methods to add Pandas content such as DataFrames and DataSeries
+        """
+        from .extensions.pandas_logger import PandasLogger
+        if self._pd is None:
+            self._pd = PandasLogger(self)
+        return self._pd
+
+    @property
+    def np(self) -> "NumpyLogger":
+        """
+        Methods to add Numpy data to the log such as matrices and vectors
+        """
+        from .extensions.numpy_logger import NumpyLogger
+        if self._np is None:
+            self._np = NumpyLogger(self)
+        return self._np
+
+    @property
+    def collection(self) -> "CollectionLogger":
+        """
+        Methods to add dictionaries and lists to the log
+        """
+        from .extensions.collection_logger import CollectionLogger
+        if self._collection is None:
+            self._collection = CollectionLogger(self)
+        return self._collection
 
     def code(self, code: str) -> VisualLogBuilder:
         """
@@ -430,76 +473,6 @@ class VisualLogBuilder:
                     ["Uptime",
                      f"{statistics.uptime:0.2f} seconds"]],
                    index=True)
-
-    def df(self, df: "pd.DataFrame", name: str | None = None,
-           index: bool = True):
-        """
-        Adds a dataframe to the log
-
-        :param name: The dataframe's name
-        :param df: The data frame
-        :param index: Defines if the index shall be printed
-        """
-        if name is None:
-            name = "dataframe"
-        if self.target_log.use_pretty_html_table:
-            try:
-                import pretty_html_table
-                html_code = \
-                    pretty_html_table. \
-                        build_table(df,
-                                    self.target_log.html_table_style,
-                                    index=index)
-            # pragma: no-cover
-            except ModuleNotFoundError:
-                html_code = df.to_html(index=index)
-        else:
-            html_code = df.to_html(index=index)
-        self.add_html(html_code + "\n")
-        if self.target_log.use_tabulate:
-            try:
-                import tabulate
-                md_table = \
-                    df.to_markdown(index=index,
-                                   tablefmt=self.target_log.md_table_format)
-                self.add_md(md_table)
-                self.add_txt(
-                    df.to_markdown(index=index,
-                                   tablefmt=self.target_log.txt_table_format) +
-                    "\n")
-                return
-            # pragma: no-cover
-            except ModuleNotFoundError:
-                pass
-        else:
-            string_table = df.to_string(index=index) + "\n"
-            if self.target_log.markdown_html:
-                self.add_md(html_code)
-            else:
-                self.add_md(string_table)
-            self.add_txt(string_table)
-        self.target_log.clip_logs()
-
-    def np(self, data: np.ndarray, max_digits=2):
-        """
-        Adds a numpy matrix or vector to the log
-
-        :param data: The data frame
-        :param max_digits: The number of digits with which the numbers shall be
-            formatted.
-        """
-        if len(data.shape) >= 3:
-            raise ValueError("Too many dimensions")
-        if len(data.shape) == 1:
-            data = [[f"{round(element, max_digits)}" for element in data]]
-        else:
-            if (data.shape[0] > MAX_NP_ARRAY_SIZE or
-                    data.shape[1] > MAX_NP_ARRAY_SIZE):
-                raise ValueError("Data too large")
-            data = [[f"{round(element, max_digits)}" for element in row] for row
-                    in
-                    data]
-        self.table(data)
 
     def figure(self, figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
                name: str | None = None,
@@ -559,42 +532,12 @@ class VisualLogBuilder:
 
 
         """
-        from scistag.vislog.pyplot_log_context import \
+        from scistag.vislog.extensions.pyplot_log_context import \
             PyPlotLogContext
         log_context = PyPlotLogContext(self,
                                        assertion_name=assertion_name,
                                        assertion_hash=assertion_hash)
         return log_context
-
-    def log_dict(self, dict_or_list: dict | list):
-        """
-        Logs a dictionary or a list.
-
-        The data needs to be JSON compatible so can contain further nested
-        diotionaries, lists, floats, booleans or integers but no more
-        complex types.
-
-        :param dict_or_list: The dictionary or list
-        """
-        from scistag.common.dict_helper import dict_to_bullet_list
-        dict_tree = dict_to_bullet_list(dict_or_list, level=0, bold=True)
-        self.md(dict_tree, exclude_targets={'txt'})
-        if self.target_log.txt_export:
-            dict_tree_txt = dict_to_bullet_list(dict_or_list, level=0,
-                                                bold=False)
-            self.add_txt(dict_tree_txt)
-
-    def log_list(self, list_data: list):
-        """
-        Logs a list (just for convenience), forwards to log_dict.
-
-        The data needs to be JSON compatible so can contain further nested
-        diotionaries, lists, floats, booleans or integers but no more
-        complex types.
-
-        :param list_data: The list to log
-        """
-        self.log_dict(list_data)
 
     @staticmethod
     def get_hashed_filename(name):

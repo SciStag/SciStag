@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class LogEvent:
+class LEvent:
     """
     Defines a single event raised by an interactive log page
     """

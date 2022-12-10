@@ -5,13 +5,13 @@ or activity indicator to a VisualLiveLog.
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from scistag.vislog.widgets.log_widget import LogWidget
+from scistag.vislog.widgets.log_widget import LWidget
 
 if TYPE_CHECKING:
     from scistag.vislog import VisualLiveLog
 
 
-class LogProgress(LogWidget):
+class LProgress(LWidget):
     """
     Displays a progress bar in the VisualLiveLog
     """

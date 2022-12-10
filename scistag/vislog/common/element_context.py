@@ -1,5 +1,5 @@
 """
-Defines the class :class:`VisualLogElementContext` which helps storing
+Defines the class :class:`ElementContext` which helps storing
 nested HTML components such as tables or divs in a document using Python
 contexts.
 """
@@ -9,7 +9,7 @@ from __future__ import annotations
 from scistag.vislog import VisualLogBuilder
 
 
-class VisualLogElementContext:
+class ElementContext:
     """
     Defines a context which helps to dynamically fill advanced components
     such as HTML tables or divs with content.
@@ -38,7 +38,7 @@ class VisualLogElementContext:
         if self._closed:
             return
         self._closed = True
-        from . import VisualLog
+        from scistag.vislog import VisualLog
         log: VisualLog = self.builder.target_log
         for key, value in self.closing_code.items():
             if key in log.log_formats:

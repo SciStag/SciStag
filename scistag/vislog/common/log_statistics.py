@@ -1,5 +1,5 @@
 """
-Defines the class :class:`VisualLogStatistics` which provides details about the
+Defines the class :class:`LogStatistics` which provides details about the
 logs health and performance.
 """
 
@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class VisualLogStatistics:
+class LogStatistics:
     """
     Provides information about the VisualLog's health and performance
     """

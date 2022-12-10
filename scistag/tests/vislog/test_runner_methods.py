@@ -6,9 +6,8 @@ from threading import Thread
 from unittest import mock
 
 from scistag.vislog import VisualLog, VisualLogBuilder
-from scistag.vislog.log_event import LogEvent
-from scistag.vislog.visual_log_autoreloader import VisualLogAutoReloader
-from scistag.vislog.widgets.log_button import LogButton, CLICK_EVENT_TYPE
+from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
+    VisualLogAutoReloader
 
 
 def test_log_runner_basics():

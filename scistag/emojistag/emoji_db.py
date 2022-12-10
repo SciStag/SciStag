@@ -241,13 +241,29 @@ class EmojiDb:
         Tries to read the SVG of an emoji from the database
 
         :param sequence: The unicode sequence, e.g. ["1f98c"] for a stag
-        :return: The SVG data on success, otherwise None
+        :return: The PNG data on success, otherwise None
         """
         lower_cased = [element.lower() for element in sequence]
         combined = "_".join(lower_cased)
         edp = get_edp()
         emoji_path = edp + f"images/noto/cpngs/emoji_u{combined}.png"
         return FileStag.load(emoji_path)
+
+    @classmethod
+    def png_exists(cls,
+                   sequence: list[str]) -> bool:
+        """
+        Returns if a PNG graphic for given emoji does exist in the local
+        archive.
+
+        :param sequence: The unicode sequence, e.g. ["1f98c"] for a stag
+        :return: True if the PNG does exist.
+        """
+        lower_cased = [element.lower() for element in sequence]
+        combined = "_".join(lower_cased)
+        edp = get_edp()
+        emoji_path = edp + f"images/noto/cpngs/emoji_u{combined}.png"
+        return FileStag.exists(emoji_path)
 
     @classmethod
     def get_details(cls, sequence: list[str]) -> EmojiInfo | None:
@@ -315,24 +331,33 @@ class EmojiDb:
         return sorted(filtered_list, key=lambda element: element.name)
 
     @classmethod
-    def find_emojis_by_name(cls, name_mask: str, md: bool = False):
+    def find_emojis_by_name(cls,
+                            name_mask: str,
+                            md: bool = False,
+                            find_all: bool = False):
         """
         Returns all emojis which match the defined search pattern
 
         :param name_mask: The name mask to search for, e.g *sun*
         :param md: Defines if the GitHub markdown db name shall be used instead
             of the full unicode name list.
+        :param find_all: Defines if all emojis shall be returned, even when no
+            graphic for them exists.
         :return: A list of all matching Emojis
         """
         main_dict = cls._get_main_dict()
         if md:
-            return [EmojiInfo.parse_obj(element) for element in
-                    main_dict.values() if
-                    fnmatch(element.get('markdownName', ""), name_mask)]
+            result = [EmojiInfo.parse_obj(element) for element in
+                      main_dict.values() if
+                      fnmatch(element.get('markdownName', ""), name_mask)]
         else:
-            return [EmojiInfo.parse_obj(element) for element in
-                    main_dict.values() if
-                    fnmatch(element['name'], name_mask)]
+            result = [EmojiInfo.parse_obj(element) for element in
+                      main_dict.values() if
+                      fnmatch(element['name'], name_mask)]
+        if not find_all:
+            result = [element for element in result if
+                      cls.png_exists(element.sequence)]
+        return result
 
     @classmethod
     def __getitem__(cls, key: str) -> EmojiInfo | None:

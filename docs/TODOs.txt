@@ -1,26 +1,32 @@
-Goals v0.0.4 - November 2022
--------------------------------
-- Refactoring the Widget class to minimize amount of getter and setter methods and to remove the cryptic params
-  parameter for init methods.
-- Buttons, Sliders, Progress bars as Widgets
-- Granting access to Material Design icons
+-- TODO NOTES --
 
-Goals v0.0.3 - October 2022
--------------------------------
-- Advanced support for FileSinks in zip archives & Azure
+- BUG: CollectionLogger.log does not correctly log lists nested in lists
+- Move VisualLog options to separate class, further extract elements
+- Allow VisuaLog to exchange single parts of a page rather than the whole page
+- Switching to Black for code formatting
+- Evaluation of integration of mypy
 - Effective logging and access for logs on virtual machines
 - Providing access to the system's health status via the VisualLog server
 - Providing time measurement and assumed process finishing in VirtualLog
 - Add timestamps to log entries for a better overview
 - Storing intermediate VisualLog reports in the cloud
-- Unit test coverage of >80%
-- Finalization of Emoji support
-
-# Goals v0.0.2 - Sep 2022
--------------------------
-- Making scistag independent of CairoSVG while keeping at least standard support for Emoji rendering
-- Adding the possibility to compress and store Images in scikit.imagestag.Image
-- Setting up linting
-- Setting up coverage tests
-- Setting up basic documentation generator
-- Setting up CI/CD on GitHub
+- Allow direct downloads to disk from any file source
+- Possibility of passing a stream to Image constructor
+- rework of image filters
+- Check nunpy array type when creating images.
+- FileStag save always overwrites, add check
+- Logging for process information and system info
+- Whem starting VisualLog with autoreload no server is available while the log is being build. Also no progress is available when reloading.
+- Catching VisualLog build assertions and storing them on a server if a process crashes
+- Allow to cache FileSources from zip completely in memory
+- Cleaner Zip FileSink instead of ://
+- Parameters for VisualLog's builder constructor if a class was passed
+- FilePath.get_size
+- Missing UT for bundling and unbundling bytes
+- Bundling of images
+- Possibility to receive directory names from FileSource
+- VisualLogBuilder.create and insert backup unit tests
+- Should .stscache always be created in the log dir, even if its temporary?
+- Test for creating Color from HSV
+- Granting access to Material Design icons
+- Fast histogram visualization via PlotStag

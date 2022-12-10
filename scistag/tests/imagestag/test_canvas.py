@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from scistag.tests.visual_test_log_scistag import VisualTestLogSciStag
-from scistag.imagestag import Colors, Color, Size2D
+from scistag.imagestag import Colors, Color, Size2D, Pos2D
 from scistag.imagestag.canvas import Canvas
 
 from . import vl, skip_imagestag
@@ -22,6 +22,15 @@ def test_canvas():
     canvas = Canvas(size=(300, 256))
     assert canvas.width == 300 and canvas.height == 256
     assert canvas.size == (300, 256)
+    assert canvas.transform_list([]) == []
+    assert canvas.transform_list([Pos2D(123, 456)]) == [(123, 456)]
+    assert canvas.transform_list([(123, 456)]) == [(123, 456)]
+    with pytest.raises(RuntimeError):
+        canvas.width = 123
+    with pytest.raises(ValueError):
+        _ = Canvas(size=None, target_image=None)
+    with pytest.raises(ValueError):
+        _ = Canvas(size=(300, 256), pixel_format=None)
 
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
@@ -156,6 +165,8 @@ def test_draw_polygon_fill_outline_concave():
     canvas = Canvas(size=(128, 128), default_color=Colors.BLACK)
     canvas.add_offset_shift((15, 15))
     polygon = np.array([(20, 20), (80, 30), (90, 90), (60, 70), (30, 100)])
+    canvas.polygon([], color=Colors.RED, outline_color=Colors.WHITE,
+                   outline_width=8)
     canvas.polygon(polygon, color=Colors.RED, outline_color=Colors.WHITE,
                    outline_width=8)
     hash_val = "7b68caffba93580e75f3079dd0e959bf"
@@ -210,3 +221,21 @@ def test_draw_circles():
                   outline_width=3)
     hash_val = "751338bf0aeebf031e19c2cf7eba0a2e"
     vl.test.assert_image("ellipse_outline", canvas, hash_val)
+    with pytest.raises(ValueError):
+        canvas.circle((70, 70), size=None, outline_color=Colors.BLUE,
+                      outline_width=3)
+    with pytest.raises(ValueError):
+        canvas.circle((70, 70), size=Size2D(80, 40), radius=40,
+                      outline_color=Colors.BLUE,
+                      outline_width=3)
+
+
+@pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
+def test_clip():
+    """
+    Test clipping
+    """
+    canvas = Canvas(size=(128, 128), default_color=Colors.BLACK)
+    assert canvas.clip((50, 50), (60, 65)) == canvas
+    assert canvas.offset == (50, 50)
+    assert canvas.clip_region == ((50, 50), (110, 115))

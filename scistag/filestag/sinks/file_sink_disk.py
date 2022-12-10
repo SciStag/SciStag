@@ -34,3 +34,6 @@ class FileSinkDisk(FileSink):
         if not overwrite and FilePath.exists(filename):
             return False
         return FileStag.save(filename, data)
+
+    def get_value(self) -> bytes:
+        return None

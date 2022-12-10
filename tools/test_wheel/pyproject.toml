@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "TestSciStagWheel"
-version = "0.0.3"
+version = "0.7.5"
 description = "Test's the installation of the SciStag wheel and executes all unit tests"
 authors = ["Michael Ikemann"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.9"
-scistag = { path = "../../dist/scistag-0.0.3-py3-none-any.whl", extras = ["full"] }
+python = ">=3.9 <3.12"
+scistag = { path = "../../dist/scistag-0.7.5-py3-none-any.whl", extras = ["full"] }
 
 
 [tool.poetry.dev-dependencies]

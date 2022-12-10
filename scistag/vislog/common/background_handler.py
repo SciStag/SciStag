@@ -1,5 +1,5 @@
 """
-:class:`VisualLogBackgroundHandler` runs the execution logic of a VisualLog
+:class:`BackgroundHandler` runs the execution logic of a VisualLog
 based application in a background thread so a UI application such as Qt may
 use the main thread.
 """
@@ -8,7 +8,7 @@ from scistag.common.mt import ManagedThread
 from scistag.vislog import VisualLog
 
 
-class VisualLogBackgroundHandler(ManagedThread):
+class BackgroundHandler(ManagedThread):
     """
     Executes the updating logic of a VisualLog app in the background
     """

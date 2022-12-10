@@ -1,23 +1,23 @@
 """
-Implements the class :class:`LogButton` which allows the user to add an
+Implements the class :class:`LButton` which allows the user to add an
 interaction button to a log.
 """
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Union
 
-from scistag.vislog.widgets.log_widget import LogWidget
+from scistag.vislog.widgets.log_widget import LWidget
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log import VisualLog
-    from scistag.vislog.log_event import LogEvent
+    from scistag.vislog.widgets.log_event import LEvent
 
 CLICK_EVENT_TYPE = "click"
 "Defines an event which is risen by a button click"
 
 
-class LogButton(LogWidget):
+class LButton(LWidget):
     """
-    The LogButton adds a button the log which upon click triggers it's
+    The LButton adds a button the log which upon click triggers it's
     click event.
     """
 
@@ -36,8 +36,8 @@ class LogButton(LogWidget):
         super().__init__(name=name, log=log)
         self.caption = caption
         "The buttons caption"
-        from scistag.vislog.log_event import LogEvent
-        self.on_click: Union[Callable[[LogEvent], None], None] = on_click
+        from scistag.vislog.widgets.log_event import LEvent
+        self.on_click: Union[Callable[[LEvent], None], None] = on_click
 
     def write(self):
         html = \
@@ -46,7 +46,7 @@ class LogButton(LogWidget):
             """
         self.log.default_builder.html(html)
 
-    def handle_event(self, event: "LogEvent"):
+    def handle_event(self, event: "LEvent"):
         if event.event_type == CLICK_EVENT_TYPE:
             if self.on_click is not None:
                 self.on_click(event)

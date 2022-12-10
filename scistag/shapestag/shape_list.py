@@ -8,6 +8,10 @@ from scistag.shapestag import Shape
 
 
 class ShapeList(Shape):
+    """
+    A collection of shapes
+    """
+
     def __init__(self):
         super().__init__()
 

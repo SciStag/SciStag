@@ -1,5 +1,5 @@
 """
-Defines VisualLogBasicLogger which provides functions for classic logging
+Defines BasicLogger which provides functions for classic logging
 with info, warning, error etc.
 """
 
@@ -7,12 +7,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from scistag.logstag import LogLevel
+from scistag.vislog.extensions.builder_extension import \
+    BuilderExtension
 
 if TYPE_CHECKING:
-    from .visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import VisualLogBuilder
 
 
-class VisualLogBasicLogger:
+class BasicLogger(BuilderExtension):
     """
     Helper class for classic logging via info, debug, warning etc.
     """
@@ -21,7 +23,7 @@ class VisualLogBasicLogger:
         """
         :param builder: The builder object with which we write to the log
         """
-        self.builder: "VisualLogBuilder" = builder
+        super().__init__(builder)
         self._log = self.builder.target_log
         self.log = self.__call__
         self.level_tag = {LogLevel.INFO: "[INFO]",
@@ -60,7 +62,7 @@ class VisualLogBasicLogger:
                 cur_table = None
 
         for line in lines:
-            from .visual_log import TABLE_PIPE
+            from scistag.vislog.visual_log import TABLE_PIPE
             if line.startswith(TABLE_PIPE):
                 if len(common_block) > 0:
                     self.log(common_block, level=level)
