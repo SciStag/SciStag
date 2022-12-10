@@ -42,6 +42,16 @@ class LogRenderer:
         self.footer_rendered: bytes = b""
         "The encoded and rendered footer"
 
+    def get_rendering_variables(self):
+        """
+        Returns the variables use to render the templates
+
+        :return: A dictionary with all variables
+        """
+        import scistag
+        return {"title": self.title,
+                "scistag_version": scistag.__version__}
+
     def set_sub_logs(self, sub_logs):
         """
         Sets the new list of sub logs to be integrated
@@ -64,7 +74,7 @@ class LogRenderer:
         environment = jinja2.Environment()
         template = environment.from_string(self.body_template)
         self.body_template_rendered = \
-            template.render(**params)
+            template.render(**self.get_rendering_variables(), **params)
         self.build_body_pieces()
 
     def set_header_template(self, template: str, **params):
@@ -79,7 +89,8 @@ class LogRenderer:
         environment = jinja2.Environment()
         template = environment.from_string(self.header_template)
         self.header_rendered = \
-            template.render(title=self.title, **params).encode("utf-8")
+            template.render(**self.get_rendering_variables(), **params).encode(
+                "utf-8")
 
     def set_footer_template(self, template: str, **params):
         """
@@ -93,7 +104,8 @@ class LogRenderer:
         environment = jinja2.Environment()
         template = environment.from_string(self.footer_template)
         self.footer_rendered = \
-            template.render(title=self.title, **params).encode("utf-8")
+            template.render(**self.get_rendering_variables(), **params).encode(
+                "utf-8")
 
     def build_body_pieces(self):
         """

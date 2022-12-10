@@ -19,6 +19,7 @@ from typing import Callable, Any, TYPE_CHECKING, Union
 
 from pydantic import BaseModel, SecretStr
 
+from scistag.common.trees.text_tree import TextTree
 from scistag.filestag.bundle import Bundle
 from scistag.filestag.file_source_iterator import FileSourceIterator, \
     FileIterationData, FilterCallback
@@ -539,7 +540,7 @@ class FileSource:
         statistics = self.get_statistics()
         from scistag.vislog.extensions.collection_logger import CollectionLogger
         if statistics is not None:
-            result += CollectionLogger.dict_to_bullet_list(statistics)
+            result += "\n" + str(TextTree.from_collection(statistics))
         result += f"* search-mask: {self.search_mask}"
         return result
 

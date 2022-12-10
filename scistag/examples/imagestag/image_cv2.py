@@ -6,12 +6,13 @@ classic OpenCv2 filter
 
 from tkinter import Tk, Label
 from PIL import ImageTk
-from scistag.imagestag import Image, PixelFormat, cv
+from scistag.imagestag import Image, PixelFormat, get_opencv
 from scistag.webstag import web_fetch
 from scistag.tests import TestConstants
 
 
 def main():
+    cv = get_opencv()
     root = Tk()
     root.title("ImageStag + WebStag demo")
     # fetch image from the web

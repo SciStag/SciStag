@@ -169,7 +169,6 @@ class Color:
         """
         h /= 360.0
         if s == 0.0:
-            v *= 255
             return Color(v, v, v)
         i = int(h * 6.0)
         f = (h * 6.0) - i

@@ -103,7 +103,7 @@ def test_search():
     assert "deer" in [cur.name for cur in mammals]
 
     # search by name
-    results = EmojiDb.find_emojis_by_name("*sunglasses*")
+    results = EmojiDb.find_emojis_by_name("*sunglasses*", find_all=True)
     assert len(results) == 3
 
     # search by name in markdown

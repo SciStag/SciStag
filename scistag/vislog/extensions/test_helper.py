@@ -246,8 +246,8 @@ class TestHelper(BuilderExtension):
             return
             # dict or list
         if isinstance(data, (list, dict, str)):
-            self.builder.log(
-                str(data))  # no beautiful logging supported yet
+            self.builder.collection(
+                data)  # no beautiful logging supported yet
             import json
             data = json.dumps(data).encode("utf-8")
         if data is None or not isinstance(data, bytes):

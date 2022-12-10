@@ -4,7 +4,7 @@ Tests the color class
 import numpy as np
 import pytest
 
-from scistag.imagestag import Color, Colors
+from scistag.imagestag import Color, Colors, PixelFormat
 from . import skip_imagestag
 
 
@@ -58,6 +58,11 @@ def test_conversion_functions():
     Test advanced conversion functions
     """
     assert Color(244, 48, 29).to_int_hsv() == (4, 225, 244)
+    assert Color(40, 48, 240).to_int_hsv() == (168, 212, 240)
+    assert Color(0, 0, 0).to_int_hsv() == (0, 0, 0)
+    assert Color.from_hsv(168 / 255 * 360, 212 / 255, 240 / 255).to_int_rgb() \
+           == (40, 49, 240)
+    assert Color.from_hsv(50, 0.0, 0.5).to_int_rgb() == (128, 128, 128)
     h, s, v = Color(30, 98, 29).to_hsv()
     assert h == pytest.approx(119, 0.01)
     assert s == pytest.approx(0.7, 0.01)
@@ -69,3 +74,5 @@ def test_conversion_functions():
     assert Color(255, 44, 38).to_int_bgr() == (38, 44, 255)
     assert Color(255, 44, 38).to_int_bgra() == (38, 44, 255, 255)
     assert Color(255, 44, 38, 33).to_int_bgra() == (38, 44, 255, 33)
+    with pytest.raises(ValueError):
+        Color(255, 44, 38, 33).to_format(PixelFormat.UNSUPPORTED)

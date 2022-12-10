@@ -15,4 +15,4 @@ class MyPage(VisualLogBuilder):
 
 
 if VisualLog.is_main():
-    log = VisualLog(auto_reload=MyPage)
+    log = VisualLog(auto_reload=MyPage, start_browser=True)

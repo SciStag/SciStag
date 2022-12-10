@@ -1,4 +1,5 @@
-from scistag.imagestag.image_filter import ImageFilter, Image, IMAGE_FILTER_NAME
+from scistag.imagestag.image_filter import ImageFilter, Image, \
+    IMAGE_FILTER_IMAGE
 
 
 class GrayscaleFilter(ImageFilter):

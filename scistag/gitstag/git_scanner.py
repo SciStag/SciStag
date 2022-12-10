@@ -110,7 +110,7 @@ class GitScanner:
     def scan(self, path: str):
         """
         Executes a scan on given base directory. The results are stored in the member variables of this object
-        (.file_list, .total_size etc.)
+        (.file_list, .total_sub_node_count etc.)
         :param path: The repository base path
         """
         res_file_list = []
