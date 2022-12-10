@@ -68,6 +68,7 @@ class WebCache:
         with cls.lock:
             cls.app_name = name
             cls.cache_dir = tempfile.tempdir + f"/scistag/{name}/"
+            os.makedirs(cls.cache_dir, exist_ok=True)
             cls.cleanup()
 
     @classmethod
