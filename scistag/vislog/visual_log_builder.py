@@ -290,7 +290,7 @@ class VisualLogBuilder:
             else:
                 self.add_md(f"{text}\\")
             self.add_txt(text)
-        self.clip_logs()
+        self.handle_modified()
         return self
 
     def link(self, text: str, link: str) -> VisualLogBuilder:
@@ -312,7 +312,7 @@ class VisualLogBuilder:
             else:
                 self.add_md(f"{text}\\")
             self.add_txt(text)
-        self.clip_logs()
+        self.handle_modified()
         return self
 
     def br(self) -> VisualLogBuilder:
@@ -353,7 +353,7 @@ class VisualLogBuilder:
             character = "=" if level < 2 else "-"
             self.add_txt(character * len(text))
         self.add_txt("")
-        self.clip_logs()
+        self.handle_modified()
         return self
 
     def sub_x3(self, text: str) -> VisualLogBuilder:
@@ -404,7 +404,7 @@ class VisualLogBuilder:
         """
         self.add_md(code)
         self.add_html(code + "\n")
-        self.clip_logs()
+        self.handle_modified()
         return self
 
     @property
@@ -467,7 +467,7 @@ class VisualLogBuilder:
         )
         self.add_md(f"```\n{code}\n```")
         self.add_txt(code)
-        self.clip_logs()
+        self.handle_modified()
         return self
 
     @staticmethod
@@ -655,11 +655,11 @@ class VisualLogBuilder:
         """
         return self.target_log.write_txt(txt_code, console, md)
 
-    def clip_logs(self):
+    def handle_modified(self):
         """
-        Clips the logging files (e.g. if they are limited in length)
+        Is called when a new block of content has been inserted
         """
-        self.target_log.clip_logs()
+        self.target_log.handle_modified()
 
     def get_temp_path(self, relative: str | None = None) -> str:
         """

@@ -18,7 +18,6 @@ from scistag.imagestag import Size2D, Size2DTypes
 from scistag.vislog.server.visual_log_service import VisualLogService
 from scistag.webstag.web_helper import WebHelper
 from scistag.logstag.console_stag import Console
-from scistag.vislog.common.sub_log import SubLog, SubLogLock
 
 if TYPE_CHECKING:
     from scistag.webstag.server import WebStagServer
@@ -280,30 +279,22 @@ class VisualLog:
             max_fig_size = Size2D(max_fig_size)
         else:
             max_fig_size = Size2D(1024, 1024)
+        self._max_fig_size = max_fig_size
+        """
+        The maximum figure size
+        """
         "Defines the preview's width and height"
         self.default_stat_update_frequency = 1.0
         "The update frequency of the stats in seconds"
         self.log_formats = formats_out
         "Defines if text shall be logged"
         self.log_formats.add(CONSOLE)
-        self._log_stag: list[SubLog] = []
-        """
-        A stag for temporary switching log targets and to created 'nested"
-        logs.
-        """
-        self.sub_log_data: dict[str, dict[str, bytes]] = {}
-        """
-        Contains the content of each "sub log", see :meth:`begin_sub_log`.
-        """
         self._logs: dict[str, list[bytes]] = {
             element: [] for element in sorted(self.log_formats)
         }
         """
         Contains the log data for each output type
         """
-        self._log_stag.append(
-            SubLog(logs=self._logs, target="", max_fig_size=max_fig_size.to_int_tuple())
-        )
         self.continuous_write = continuous_write
         "If defined the output logs will be updated after every log"
         self.markdown_html = True
@@ -336,11 +327,6 @@ class VisualLog:
         "The name of the markdown file to which we shall save"
         self._consoles: list[Console] = []
         "Attached consoles to which the data shall be logged"
-        self._log_limit = -1
-        """
-        The current log limit (maximum number of rows before starting deleting
-        the oldest ones)
-        """
         from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
 
         self._renderers: dict[str, "LogRenderer"] = {
@@ -483,18 +469,6 @@ class VisualLog:
                 return None
             return FileStag.load(abs_filename)
 
-    def set_log_limit(self, limit: int):
-        """
-        Changes the maximum count of log rows for the current sub log.
-
-        If the number gets exceeded it will automatically start deleting the
-        oldest logs.
-
-        :param limit: The new limit. -1 = None
-        """
-        self._log_stag[-1].log_limit = limit
-        self._log_limit = limit
-
     def add_console(self, console: Console):
         """
         Adds an advanced console as target to the log
@@ -517,94 +491,13 @@ class VisualLog:
         """
         The maximum figure size in pixels
         """
-        return Size2D(self._log_stag[-1].max_fig_size)
+        return Size2D(self._max_fig_size)
 
-    def clip_logs(self):
+    def handle_modified(self):
         """
-        Checks if the log limited exceeded and clips old logs if necessary.
+        Is called when a new block of content has been inserted
         """
-        if self._log_limit != -1:
-            for key, elements in self._logs.items():
-                exc_elements = len(elements) - self._log_limit
-                if exc_elements > 0:
-                    self._logs[key] = elements[exc_elements:]
-
-    def begin_sub_log(
-        self, target: str, max_fig_size: Size2DTypes | None = None
-    ) -> SubLogLock:
-        """
-        Pushes the current log target to create a sub log.
-
-        You can call this method for the same target multiple
-        times so the logs get attached to each other.
-        When ever :meth:`end_sub_log` is called self.sub_log_data is updated
-        with all elements on the stack which participate towards the
-        same target. These can then (for example) be used to combine them
-        to a custom html or txt log via customizing the `get_body` function.
-
-        Usage:
-
-        ..  code-block: Python
-
-            with v.begin_sub_log():
-                ...
-
-        :param target: The sub log's name in which the content shall be stored.
-            See :attr:`sub_log_data`.
-        :param max_fig_size: Defines the maximum size of visual elements
-        """
-        if len(self._log_stag) > 100:
-            raise AssertionError(
-                "Maximum log stag depth exceeded, something "
-                "is likely wrong and you did not cleanly "
-                "leave the current update's section."
-            )
-        new_logs = {}
-        for key, value in self._logs.items():
-            new_logs[key] = []
-
-        if max_fig_size is not None:
-            if not isinstance(max_fig_size, Size2D):
-                max_fig_size = Size2D(max_fig_size)
-        else:
-            max_fig_size = Size2D(self._log_stag[0].max_fig_size)
-
-        self._log_stag.append(
-            SubLog(
-                logs=new_logs, target=target, max_fig_size=max_fig_size.to_int_tuple()
-            )
-        )
-        self._logs = new_logs
-        return SubLogLock(self)
-
-    def end_sub_log(self):
-        """
-        Ends a sub log, aggregates all logs which participated to the
-        current target and stores the content in sub_log_data[target] which
-        can then be used to customize def get_body()
-        """
-        if len(self._log_stag) == 1:
-            raise AssertionError(
-                "Tried to decrease log stag without remaining " "elements"
-            )
-        top_target = self._log_stag[-1].target
-        target_data = {}
-        # initialize empty data streams for each target type (md, html etc.)
-        for key, value in self._logs.items():
-            target_data[key] = b""
-        for element in self._log_stag:  # for all logs on the stag
-            if element.target == top_target:  # if it matches our target type
-                cur_logs = element.logs
-                # for all target types of this log
-                for target_type, target_log_list in cur_logs.items():
-                    new_data = b"".join(target_log_list)
-                    if len(new_data) >= 1:
-                        pass
-                    target_data[target_type] += new_data
-        self.sub_log_data[top_target] = target_data
-        self._log_stag.pop()
-        self._logs = self._log_stag[-1].logs  # restore previous log target
-        self._log_limit = self._log_stag[-1].log_limit  # restore log limi
+        pass
 
     def _provide_live_view(self):
         """
@@ -705,7 +598,7 @@ class VisualLog:
         :return: True if txt logging is enabled
         """
         for console in self._consoles:
-            if console.progressive and len(self._log_stag) == 1:
+            if console.progressive:
                 console.print(txt_code)
         self._logs[CONSOLE].append((txt_code + "\n").encode("ascii"))
         return True
@@ -741,9 +634,6 @@ class VisualLog:
 
         for cur_format in self.log_formats:
             sub_log_data = {MAIN_LOG: b"".join(self._logs[cur_format])}
-            for sl_key, sl_data in self.sub_log_data.items():
-                if cur_format in sl_data:
-                    sub_log_data[sl_key] = sl_data[cur_format]
 
             if cur_format == HTML:
                 body[cur_format] = self._renderers[HTML].build_body(sub_log_data)

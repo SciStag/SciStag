@@ -157,7 +157,7 @@ class BasicLogger(BuilderExtension):
             else:
                 self.builder.add_md(f"{md_lines}\n")
         self.builder.add_txt(text)
-        self.builder.clip_logs()
+        self.builder.handle_modified()
         return self.builder
 
     def info(self, *args, **kwargs) -> VisualLogBuilder:

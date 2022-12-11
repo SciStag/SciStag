@@ -203,12 +203,13 @@ def test_different_setups(_):
     assert log.image_format == "jpg" and log.image_quality == 80
     log.terminate()
     assert log._shall_terminate
-    log.set_log_limit(5)
-    assert log._log_limit == 5
-    assert log._log_stag[-1].log_limit == 5
-    for content_count in range(7):
-        log.default_builder.log("Test")
-    assert len(log._logs["html"]) < 6
+    # TODO New log limit test with new component based approach
+    #    log.set_log_limit(5)
+    #    assert log._log_limit == 5
+    #    assert log._log_stag[-1].log_limit == 5
+    #    for content_count in range(7):
+    #        log.default_builder.log("Test")
+    #    assert len(log._logs["html"]) < 6
 
     log: VisualLog = VisualLog(
         max_fig_size=(128, 128),
@@ -242,28 +243,6 @@ def test_static_file():
     )
     log.add_static_file("testFile.bin", "bHello world")
     assert log.get_file("testFile.bin") == "bHello world"
-
-
-@patch("builtins.print")
-def test_sub_logs(_):
-    log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, image_format=("jpg", 80)
-    )
-    log.default_builder.log("MainLog")
-    log.begin_sub_log("SubLogA")
-    log.default_builder.log("SubLogA")
-    log.end_sub_log()
-    log.begin_sub_log("SubLogB", max_fig_size=(128, 128))
-    log.default_builder.log("SubLogB")
-    log.end_sub_log()
-    log.finalize()
-    assert b"SubLogA" in log.sub_log_data["SubLogA"]["html"]
-    assert b"SubLogB" in log.sub_log_data["SubLogB"]["html"]
-    with pytest.raises(AssertionError):
-        log.end_sub_log()
-    with pytest.raises(AssertionError):
-        for x in range(101):
-            log.begin_sub_log("tooManyRecursions")
 
 
 def test_runner():

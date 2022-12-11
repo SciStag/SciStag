@@ -155,7 +155,7 @@ class ImageLogger(BuilderExtension):
             self.log.write_txt(f"Image: {alt_text}\n")
         else:
             self.log.write_txt(f"\n[IMAGE][{alt_text}]\n")
-        self.log.clip_logs()
+        self.log.handle_modified()
 
     def _insert_image_reference(
         self,

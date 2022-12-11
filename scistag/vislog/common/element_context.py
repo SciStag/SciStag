@@ -51,7 +51,7 @@ class ElementContext:
                     log.write_md(value)
                 elif key == TXT:
                     log.write_txt(value)
-        log.clip_logs()
+        log.handle_modified()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
