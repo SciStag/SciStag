@@ -541,7 +541,7 @@ class VisualLog:
         :param html_code: The html code
         :return: True if txt logging is enabled
         """
-        if HTML not in self._logs:
+        if HTML not in self.log_formats:
             return
         if isinstance(html_code, bytes):
             self._logs[HTML].append(html_code)
@@ -559,7 +559,7 @@ class VisualLog:
         :param no_break: If defined no line break will be added
         :return: True if txt logging is enabled
         """
-        if MD not in self._logs:
+        if MD not in self.log_formats:
             return
         new_text = md_code + ("" if no_break else "\n")
         self._logs[MD].append(new_text.encode("utf-8"))
@@ -581,7 +581,7 @@ class VisualLog:
             print(txt_code)
         if console and len(self._consoles):
             self._add_to_console(txt_code)
-        if md and MD in self._logs:
+        if md and MD in self.log_formats:
             self.write_md(txt_code)
         if TXT not in self._logs:
             return
@@ -633,10 +633,10 @@ class VisualLog:
             body[cur_format] = b"".join(log_entries)
 
         for cur_format in self.log_formats:
-            sub_log_data = {MAIN_LOG: b"".join(self._logs[cur_format])}
+            log_data = b"".join(self._logs[cur_format])
 
             if cur_format == HTML:
-                body[cur_format] = self._renderers[HTML].build_body(sub_log_data)
+                body[cur_format] = self._renderers[HTML].build_body(log_data)
         return body
 
     def flush(self):

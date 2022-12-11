@@ -371,7 +371,7 @@ def test_backup():
     vl.sub_test("inserting backups")
     vl.test.checkpoint("log.title")
     vl.insert_backup(backup)
-    vl.test.assert_cp_diff(hash_val="ce44db53fa376147f10abb4f5967a152")
+    vl.test.assert_cp_diff(hash_val="b4c6a2e280126abb4b4cd7361e2dd102")
 
 
 def test_start_browser():
