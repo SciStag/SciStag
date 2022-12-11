@@ -21,9 +21,11 @@ def is_azure_storage_source(source: str):
     :param source: The source string, e.g. DefaultEndpoints or an SAS URL
     :return: True if it is an Azure storage source
     """
-    return (source.startswith(AZURE_PROTOCOL_HEADER) or
-            source.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER) or
-            (source.startswith("http") and AZURE_SAS_URL_COMPONENT in source))
+    return (
+        source.startswith(AZURE_PROTOCOL_HEADER)
+        or source.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER)
+        or (source.startswith("http") and AZURE_SAS_URL_COMPONENT in source)
+    )
 
 
 ZIP_SOURCE_PROTOCOL = "zip://"

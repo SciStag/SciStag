@@ -19,8 +19,9 @@ def test_basics():
     assert shifting == (-1, -1)
     shifting = Anchor2D(Anchor2D.CENTER).get_position_shift((1.0, 1.0))
     assert shifting == (-0.5, -0.5)
-    pos = Anchor2D(Anchor2D.CENTER).shift_position(pos=Pos2D(4.0, 4.0),
-                                                   size=Size2D(9.0, 9.0))
+    pos = Anchor2D(Anchor2D.CENTER).shift_position(
+        pos=Pos2D(4.0, 4.0), size=Size2D(9.0, 9.0)
+    )
     assert pos == (-0.5, -0.5)
 
 

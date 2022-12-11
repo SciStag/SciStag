@@ -61,8 +61,7 @@ class VideoSourceCamera(VideoSource):
         "The camera's source as unique identifier"
         self.video_resolution = (1920, 1080)
 
-    def add_redirect(self, target: str | Callable[[float, Image], None],
-                     timeout_s=5.0):
+    def add_redirect(self, target: str | Callable[[float, Image], None], timeout_s=5.0):
         """
         Redirects the camera's data into a local or remote DataStag storage
 
@@ -75,9 +74,12 @@ class VideoSourceCamera(VideoSource):
         self.redirections.append((target, timeout_s))
         if isinstance(target, str):  # register local camera
             from ..datastag import DataStagConnection
+
             lc = DataStagConnection(local=True)
-            lc.set(target + self.LOCAL_CAMERA_STREAM_IDENTIFIER_TYPE,
-                   str(type(self)) + "/" + str(self.source))
+            lc.set(
+                target + self.LOCAL_CAMERA_STREAM_IDENTIFIER_TYPE,
+                str(type(self)) + "/" + str(self.source),
+            )
 
     @classmethod
     def get_local_camera(cls, source: int | str) -> str | None:
@@ -115,9 +117,11 @@ class VideoSourceCamera(VideoSource):
         :return: True if the camera was found
         """
         from ..datastag import DataStagConnection
+
         lc = DataStagConnection(local=True)
-        local_name = cls.get_local_camera_name(
-            source) + cls.LOCAL_CAMERA_STREAM_IDENTIFIER_TYPE
+        local_name = (
+            cls.get_local_camera_name(source) + cls.LOCAL_CAMERA_STREAM_IDENTIFIER_TYPE
+        )
         return lc.exists(local_name)
 
     def redirect_to_vault(self, index: int):
@@ -142,15 +146,19 @@ class VideoSourceCamera(VideoSource):
             element = entry[0]
             timeout = entry[1]
             if isinstance(element, str):
-                image = recent_image if isinstance(recent_image,
-                                                   scistag.imagestag.Image) \
+                image = (
+                    recent_image
+                    if isinstance(recent_image, scistag.imagestag.Image)
                     else Image(recent_image)
+                )
                 image: scistag.imagestag.Image
                 image_data = image.encode(filetype=".png")
                 from ..datastag import DataStagConnection
+
                 local_connection = DataStagConnection(local=True)
-                local_connection.set_ts(element, image_data, timeout_s=timeout,
-                                        timestamp=recent_timestamp)
+                local_connection.set_ts(
+                    element, image_data, timeout_s=timeout, timestamp=recent_timestamp
+                )
 
     def update_progress(self) -> bool:
         """
@@ -163,8 +171,9 @@ class VideoSourceCamera(VideoSource):
         new_ts, _ = self._get_image_int(self.last_update_timestamp)
         return old_ts != new_ts
 
-    def _get_image_int(self, timestamp: float | None = None) -> tuple[
-        float, Image | None]:
+    def _get_image_int(
+        self, timestamp: float | None = None
+    ) -> tuple[float, Image | None]:
         """
         Returns the most recent image and it's time stamp
 

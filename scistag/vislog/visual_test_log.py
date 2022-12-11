@@ -9,10 +9,7 @@ class VisualTestLog(VisualLog):
     Helper class for the visualization of unit test results
     """
 
-    def __init__(self,
-                 test_filename: str,
-                 log_images: bool = True,
-                 **params):
+    def __init__(self, test_filename: str, log_images: bool = True, **params):
         """
         :param test_filename: The name of the test file.
             From this the VisualTestLog automatically extracts the relative
@@ -23,15 +20,17 @@ class VisualTestLog(VisualLog):
         base_dir = os.path.dirname(__file__)
         cur_dir = os.path.dirname(test_filename)
         assert cur_dir in test_filename
-        rel_path = os.path.dirname(test_filename)[len(base_dir) + 1:]
+        rel_path = os.path.dirname(test_filename)[len(base_dir) + 1 :]
         target_dir = cur_dir + "/logs/"
         formats_out = params.pop("formats_out", {"html"})
-        super().__init__(target_dir=target_dir,
-                         title=f"test {rel_path}",
-                         formats_out=formats_out,
-                         ref_dir=cur_dir + "/refdata",
-                         log_to_disk=log_images,
-                         log_to_stdout=False,
-                         clear_target_dir=False,
-                         **params)
+        super().__init__(
+            target_dir=target_dir,
+            title=f"test {rel_path}",
+            formats_out=formats_out,
+            ref_dir=cur_dir + "/refdata",
+            log_to_disk=log_images,
+            log_to_stdout=False,
+            clear_target_dir=False,
+            **params,
+        )
         self.log_images = log_images

@@ -30,8 +30,7 @@ class RemoteFunction:
         self.full_identifier = f"{service_identifier}.{function_name}"
         self.service.register_function(self)
 
-    def wrap(self,
-             result_value: str | int | bool | float | bytes | np.ndarray):
+    def wrap(self, result_value: str | int | bool | float | bytes | np.ndarray):
         """
         Returns a dictionary wrapping a single result value
         :param result_value: The simple result value
@@ -39,8 +38,9 @@ class RemoteFunction:
         """
         return {self.RESULT_VALUE: result_value}
 
-    def unwrap(self, input_dict: dict) -> \
-        str | int | bool | float | bytes | np.ndarray | dict:
+    def unwrap(
+        self, input_dict: dict
+    ) -> str | int | bool | float | bytes | np.ndarray | dict:
         """
         Returns a dictionary wrapping a single result value
         :param input_dict: A dictionary

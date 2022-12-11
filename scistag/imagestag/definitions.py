@@ -23,6 +23,7 @@ class OpenCVHandler:
     """
     Keeps track of the current Open CV support state
     """
+
     available = True
     "Defines if OpenCV is available"
 
@@ -75,9 +76,7 @@ class ImsFramework(enum.Enum):
 
     @classmethod
     def _missing_(cls, value: object) -> Any:
-        missing_dict = {"PIL": cls.PIL,
-                        "RAW": cls.RAW,
-                        "CV": cls.CV}
+        missing_dict = {"PIL": cls.PIL, "RAW": cls.RAW, "CV": cls.CV}
         if value in missing_dict:
             return missing_dict[value]
         return None

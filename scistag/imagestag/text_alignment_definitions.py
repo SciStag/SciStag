@@ -34,16 +34,20 @@ class HTextAlignment(IntEnum):
         """
 
         class Definitions:
-            short_codes = {"l": HTextAlignment.LEFT,
-                           "c": HTextAlignment.CENTER,
-                           "r": HTextAlignment.RIGHT,
-                           "left": HTextAlignment.LEFT,
-                           "center": HTextAlignment.CENTER,
-                           "right": HTextAlignment.RIGHT}
+            short_codes = {
+                "l": HTextAlignment.LEFT,
+                "c": HTextAlignment.CENTER,
+                "r": HTextAlignment.RIGHT,
+                "left": HTextAlignment.LEFT,
+                "center": HTextAlignment.CENTER,
+                "right": HTextAlignment.RIGHT,
+            }
 
         if value not in Definitions.short_codes:
-            raise ValueError("Unknown horizontal alignment shortcode."
-                             "Valid codes are l, c, r, left, center, right")
+            raise ValueError(
+                "Unknown horizontal alignment shortcode."
+                "Valid codes are l, c, r, left, center, right"
+            )
         return Definitions.short_codes[value]
 
 
@@ -107,27 +111,32 @@ class VTextAlignment(IntEnum):
         """
 
         class Definitions:
-            short_codes = {"t": VTextAlignment.TOP,
-                           "c": VTextAlignment.CENTER,
-                           "rc": VTextAlignment.REAL_CENTER,
-                           "b": VTextAlignment.BOTTOM,
-                           "bl": VTextAlignment.BASELINE,
-                           "top": VTextAlignment.TOP,
-                           "center": VTextAlignment.CENTER,
-                           "realCenter": VTextAlignment.REAL_CENTER,
-                           "bottom": VTextAlignment.BOTTOM,
-                           "baseline": VTextAlignment.BASELINE}
+            short_codes = {
+                "t": VTextAlignment.TOP,
+                "c": VTextAlignment.CENTER,
+                "rc": VTextAlignment.REAL_CENTER,
+                "b": VTextAlignment.BOTTOM,
+                "bl": VTextAlignment.BASELINE,
+                "top": VTextAlignment.TOP,
+                "center": VTextAlignment.CENTER,
+                "realCenter": VTextAlignment.REAL_CENTER,
+                "bottom": VTextAlignment.BOTTOM,
+                "baseline": VTextAlignment.BASELINE,
+            }
 
         if value not in Definitions.short_codes:
-            raise ValueError("Unknown vertical alignment shortcode."
-                             "Valid codes are t, c, b, rc, bl,"
-                             "top, center, realCenter, bottom and "
-                             "baseline")
+            raise ValueError(
+                "Unknown vertical alignment shortcode."
+                "Valid codes are t, c, b, rc, bl,"
+                "top, center, realCenter, bottom and "
+                "baseline"
+            )
         return Definitions.short_codes[value]
 
 
-VTextAlignmentLiterals = Literal["t", "c", "rc", "b", "bl", "top", "center",
-                                 "realCenter", "bottom", "baseLine"]
+VTextAlignmentLiterals = Literal[
+    "t", "c", "rc", "b", "bl", "top", "center", "realCenter", "bottom", "baseLine"
+]
 "Literal alternative for passing a vertical text alignment"
 VTextAlignmentTypes = Union[VTextAlignment, VTextAlignmentLiterals]
 "Type definition of ways to define a vertical text alignment"

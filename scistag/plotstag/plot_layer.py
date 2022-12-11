@@ -17,6 +17,7 @@ class ValueRange1D:
     """
     Defines the value range on axis
     """
+
     min_Val: float = 0.0
     max_val: float = 0.0
 
@@ -46,8 +47,10 @@ class PlotLayer:
         "The fixed size. If specified the plot will try to enforce this size"
         self.size: Size2D = Size2D(100, 100)
         "The effective size of this layer in pixels"
-        self.value_range: PlotValueRange2D | PlotValueRange3D = \
-            (ValueRange1D(0.0, 0.0), ValueRange1D(0.0, 0.0))
+        self.value_range: PlotValueRange2D | PlotValueRange3D = (
+            ValueRange1D(0.0, 0.0),
+            ValueRange1D(0.0, 0.0),
+        )
         "The range of the values stored in this layer"
         self.needs_clipping = False
         """
@@ -55,8 +58,9 @@ class PlotLayer:
         not be guaranteed that all elements will be painted precisely inside.
         """
 
-    def update_layout(self, desired_size: Size2D | None = None,
-                      forced_size: Size2D | None = None):
+    def update_layout(
+        self, desired_size: Size2D | None = None, forced_size: Size2D | None = None
+    ):
         """
         Updates the layout (especially .size) with the size foreseen by the plot
         :param desired_size: The proposed size by the plot

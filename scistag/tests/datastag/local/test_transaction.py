@@ -59,4 +59,3 @@ def test_transaction(vault_connections, connections=None):
         assert connection.get("staTestValue") == 456
         assert connection.get("staBranch.otherValue") == 456
         it.join()
-

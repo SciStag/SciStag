@@ -14,12 +14,14 @@ class FormattedText:
     in the future also multi-format texts.
     """
 
-    def __init__(self,
-                 text: str,
-                 font: Font,
-                 h_align: HTextAlignment = HTextAlignment.LEFT,
-                 v_align: VTextAlignment = VTextAlignment.TOP,
-                 line_spacing: int = 0):
+    def __init__(
+        self,
+        text: str,
+        font: Font,
+        h_align: HTextAlignment = HTextAlignment.LEFT,
+        v_align: VTextAlignment = VTextAlignment.TOP,
+        line_spacing: int = 0,
+    ):
         """
         :param text: The text to be verified
         :param font: The font to be used
@@ -37,8 +39,9 @@ class FormattedText:
         font_handle = font.get_handle()
         self.line_spacing = line_spacing
         "The additional space between each line in pixels"
-        self.element_widths = [font_handle.getbbox(element)[2] for element in
-                               self.text_elements]
+        self.element_widths = [
+            font_handle.getbbox(element)[2] for element in self.text_elements
+        ]
         "Contains the width of every single text element"
         self.width = width = max(self.element_widths)
         "The text's width in pixels"

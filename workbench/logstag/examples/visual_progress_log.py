@@ -4,7 +4,7 @@ from scistag.vislog import VisualLog
 from scistag.logstag.console_stag import Console
 from scistag.mediastag.camera_cv2 import CameraCv2
 
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 plt.plot([5, 4])

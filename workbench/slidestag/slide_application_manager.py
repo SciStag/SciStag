@@ -9,6 +9,7 @@ class SlideAppManager:
     """
     Managed the applications
     """
+
     shared_app_manager: SlideAppManager = None
 
     def __init__(self):
@@ -26,8 +27,7 @@ class SlideAppManager:
         """
         with self.lock:
             if application.app_name in self.registered_applications:
-                if self.registered_applications[
-                    application.app_name] == application:
+                if self.registered_applications[application.app_name] == application:
                     return
                 raise Exception("Application name already registered")
             self.registered_applications[application.app_name] = application
@@ -42,8 +42,9 @@ class SlideAppManager:
         with self.lock:
             return app_name in self.registered_applications
 
-    def create_session(self, app_name: str, config: dict | None = None,
-                       register=True) -> Session | None:
+    def create_session(
+        self, app_name: str, config: dict | None = None, register=True
+    ) -> Session | None:
         """
         Creates a new instance of a given application type and registers it in
         the session handler
@@ -65,7 +66,7 @@ class SlideAppManager:
             config[Session.SESSION_ID] = session_id
         config[Session.PERMISSIONS] = {
             SlideSession.PERMISSION_INPUT: False,
-            SlideSession.PERMISSION_WEBCAM: False
+            SlideSession.PERMISSION_WEBCAM: False,
         }
         session = app.prepare_session_int(config)
         if register:

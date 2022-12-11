@@ -38,8 +38,8 @@ class VisualLogService:
         event_type = params.pop("type", "")
         if len(event_name):
             from scistag.vislog.log_event import LogEvent
-            self.log.add_event(LogEvent(name=event_name,
-                                        event_type=event_type))
+
+            self.log.add_event(LogEvent(name=event_name, event_type=event_type))
             return "OK"
         return "Bad request", 400
 

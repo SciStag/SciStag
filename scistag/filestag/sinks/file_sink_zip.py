@@ -28,15 +28,19 @@ class FileSinkZip(ArchiveFileSinkProto):
         :param params: Additional initializer parameters. See :class:`FileSink`.
         """
         from scistag.filestag import MemoryZip
+
         super().__init__(target=target, **params)
         comp_level = min(max((compression // 10), 0), 9)
-        comp_method = (zipfile.ZIP_STORED if comp_level == 0 else
-                       zipfile.ZIP_DEFLATED)
-        self.archive = MemoryZip(compresslevel=comp_level,
-                                 compression=comp_method)
+        comp_method = zipfile.ZIP_STORED if comp_level == 0 else zipfile.ZIP_DEFLATED
+        self.archive = MemoryZip(compresslevel=comp_level, compression=comp_method)
 
-    def _store_int(self, filename: str, data: bytes, overwrite: bool,
-                   options: FileStorageOptions | None = None) -> bool:
+    def _store_int(
+        self,
+        filename: str,
+        data: bytes,
+        overwrite: bool,
+        options: FileStorageOptions | None = None,
+    ) -> bool:
         if not overwrite and filename in self.archive.namelist():
             return False
         self.archive.writestr(filename, data)

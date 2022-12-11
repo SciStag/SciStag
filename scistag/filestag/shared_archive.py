@@ -69,9 +69,11 @@ class SharedArchive:
         :return: The list of found elements
         """
         with self.access_lock:
-            elements = [element.filename for element in self.zip_file.filelist
-                        if
-                        fnmatch.fnmatch(element.filename, name_filter)]
+            elements = [
+                element.filename
+                for element in self.zip_file.filelist
+                if fnmatch.fnmatch(element.filename, name_filter)
+            ]
             return elements
 
     def exists(self, name: str) -> bool:
@@ -97,8 +99,9 @@ class SharedArchive:
             return self.zip_file.open(name, "r").read()
 
     @classmethod
-    def register(cls, source: str | bytes, identifier: str,
-                 cache=False) -> "SharedArchive":
+    def register(
+        cls, source: str | bytes, identifier: str, cache=False
+    ) -> "SharedArchive":
         """
         Registers a new archive.
 
@@ -116,8 +119,7 @@ class SharedArchive:
             return new_archive
 
     @classmethod
-    def exists_at_source(cls, identifier: str,
-                         filename: str | None = None) -> bool:
+    def exists_at_source(cls, identifier: str, filename: str | None = None) -> bool:
         """
         Returns if given file exists
 
@@ -129,8 +131,7 @@ class SharedArchive:
         """
         archive: SharedArchive | None = None
         if identifier.startswith(ZIP_SOURCE_PROTOCOL):
-            identifier, filename = cls._split_identifier_and_filename(
-                identifier)
+            identifier, filename = cls._split_identifier_and_filename(identifier)
             if identifier.endswith(".zip"):
                 return cls.check_in_zip_direct(identifier, filename)
         with cls.access_lock:
@@ -142,8 +143,7 @@ class SharedArchive:
         return archive.exists(filename)
 
     @classmethod
-    def load_file(cls, identifier: str,
-                  filename: str | None = None) -> bytes | None:
+    def load_file(cls, identifier: str, filename: str | None = None) -> bytes | None:
         """
         Loads a file by filename
 
@@ -156,8 +156,7 @@ class SharedArchive:
         """
         archive: SharedArchive | None = None
         if identifier.startswith(ZIP_SOURCE_PROTOCOL):
-            identifier, filename = cls._split_identifier_and_filename(
-                identifier)
+            identifier, filename = cls._split_identifier_and_filename(identifier)
             if identifier.endswith(".zip"):
                 return cls.load_file_from_zip_direct(identifier, filename)
         with cls.access_lock:
@@ -169,8 +168,9 @@ class SharedArchive:
         return archive.read_file(filename)
 
     @classmethod
-    def scan(cls, identifier: str, name_filter: str = "*",
-             long_identifier=True) -> list[str]:
+    def scan(
+        cls, identifier: str, name_filter: str = "*", long_identifier=True
+    ) -> list[str]:
         """
         Scans an archive for a given file mask to search for files of a specific
         type
@@ -184,7 +184,7 @@ class SharedArchive:
         :return: All file in given archive matching the mask
         """
         if identifier.startswith(ZIP_SOURCE_PROTOCOL):
-            identifier = identifier[len(ZIP_SOURCE_PROTOCOL):]
+            identifier = identifier[len(ZIP_SOURCE_PROTOCOL) :]
             identifier = identifier.lstrip("@").rstrip("/")
         archive: SharedArchive | None = None
         with cls.access_lock:
@@ -195,8 +195,9 @@ class SharedArchive:
         archive: SharedArchive
         results = archive.find_files(name_filter)
         if long_identifier:
-            results = [f"{ZIP_SOURCE_PROTOCOL}@{identifier}/{element}" for
-                       element in results]
+            results = [
+                f"{ZIP_SOURCE_PROTOCOL}@{identifier}/{element}" for element in results
+            ]
         return results
 
     @classmethod
@@ -215,8 +216,7 @@ class SharedArchive:
         return False
 
     @classmethod
-    def unload(cls, filename: str | None = None,
-               identifier: str | None = None) -> bool:
+    def unload(cls, filename: str | None = None, identifier: str | None = None) -> bool:
         """
         Unloads a zip file, e.g. if it's uninstalled
 
@@ -228,8 +228,12 @@ class SharedArchive:
         with cls.access_lock:
             for cur_identifier, archive in cls.archives.items():
                 archive: SharedArchive
-                if filename is not None and filename == archive.filename or \
-                        identifier is not None and cur_identifier == identifier:
+                if (
+                    filename is not None
+                    and filename == archive.filename
+                    or identifier is not None
+                    and cur_identifier == identifier
+                ):
                     cls.archives[cur_identifier].close()
                     del cls.archives[cur_identifier]
                     return True
@@ -267,22 +271,22 @@ class SharedArchive:
         :param identifier: The provided identifier
         :return: identifier or filename of zip file, filename within the archive
         """
-        identifier = identifier[len(ZIP_SOURCE_PROTOCOL):]
+        identifier = identifier[len(ZIP_SOURCE_PROTOCOL) :]
         if not identifier.startswith("@"):
             identifier_elements = identifier.split(".zip/")
             if len(identifier_elements) < 2:
                 raise ValueError(
                     "You need to pass the zip's filename followed by a slash "
                     "and the name of the"
-                    "file within the zip archive.")
+                    "file within the zip archive."
+                )
             archive_name, filename_in_zip = identifier_elements[0:2]
             archive_name += ".zip"
             return archive_name, filename_in_zip
         if "/" not in identifier:
-            raise ValueError(
-                "No filename provided. Form: zip://@identifier/filename")
+            raise ValueError("No filename provided. Form: zip://@identifier/filename")
         slash_index = identifier.index("/")
-        filename = identifier[slash_index + 1:].lstrip("/")
+        filename = identifier[slash_index + 1 :].lstrip("/")
         identifier = identifier[1:slash_index]
         return identifier, filename
 

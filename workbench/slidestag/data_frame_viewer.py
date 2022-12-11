@@ -50,12 +50,13 @@ class DataFrameViewer(Widget):
             self._df = pd.DataFrame()
         self._table_width = parameters.get(self.TABLE_WIDTH, "auto")
         self._show_index: bool = parameters.get(self.SHOW_INDEX, False)
-        self._table_style: str = parameters.get(self.TABLE_STYLE, 'blue_light')
+        self._table_style: str = parameters.get(self.TABLE_STYLE, "blue_light")
         self._font_size: str = parameters.get(self.FONT_SIZE, "20pt")
         self._auto_size: bool = parameters.get(self.AUTO_SIZE, True)
         self._max_rows: int = parameters.get(self.MAX_ROWS, 20)
-        self._font_family: str = parameters.get(self.FONT_FAMILY,
-                                                "Century Gothic, sans-serif")
+        self._font_family: str = parameters.get(
+            self.FONT_FAMILY, "Century Gothic, sans-serif"
+        )
         self._text_align: str = parameters.get(self.TEXT_ALIGN, "left")
         self._html_options = parameters.get(self.HTML_OPTIONS, None)
         self.image: Image | None = None
@@ -81,16 +82,17 @@ class DataFrameViewer(Widget):
         :return: The new image
         """
         df = self._df
-        if self._max_rows != -1 and len(
-                df) > self._max_rows:  # clip table if desired
-            df = df.iloc[0:self._max_rows]
-        pandas_renderer = PandasRenderer(df=df,
-                                         show_index=self._show_index,
-                                         style=self._table_style,
-                                         width=self._table_width,
-                                         font_size=self._font_size,
-                                         font_family=self._font_family,
-                                         text_align=self._text_align)
+        if self._max_rows != -1 and len(df) > self._max_rows:  # clip table if desired
+            df = df.iloc[0 : self._max_rows]
+        pandas_renderer = PandasRenderer(
+            df=df,
+            show_index=self._show_index,
+            style=self._table_style,
+            width=self._table_width,
+            font_size=self._font_size,
+            font_family=self._font_family,
+            text_align=self._text_align,
+        )
         result = pandas_renderer.render()
         if self._auto_size:
             if result.get_size() != self.size():
@@ -100,8 +102,7 @@ class DataFrameViewer(Widget):
     def handle_paint(self, event: PaintEvent) -> bool:
         if not super().handle_paint(event):
             return False
-        self.image = self.temp_cache.temp_cache("tableImage", None,
-                                                self._update_image)
+        self.image = self.temp_cache.temp_cache("tableImage", None, self._update_image)
         event.canvas.draw_image(self.image, (0, 0))
         return True
 

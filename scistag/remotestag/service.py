@@ -86,7 +86,8 @@ class RemoteService:
         with self._lock:
             if self._started:
                 raise Exception(
-                    "Service already started, can not register additional functions.")
+                    "Service already started, can not register additional functions."
+                )
             function_identifier = function.get_full_identifier()
             if function_identifier in self._functions:
                 return False
@@ -105,15 +106,17 @@ class RemoteService:
         with self._lock:
             if self._started:
                 raise Exception(
-                    "Service already started, can not register additional functions.")
+                    "Service already started, can not register additional functions."
+                )
             name = f"{self._identifier}.{name}"
             if name in self._functions:
                 return False
             self._functions[name] = callback
             return True
 
-    def run_task(self, function_name: str, parameters: RemoteParameterTypes,
-                 unwrap=False) -> RemoteReturnTypes:
+    def run_task(
+        self, function_name: str, parameters: RemoteParameterTypes, unwrap=False
+    ) -> RemoteReturnTypes:
         """
         Executes a task
 

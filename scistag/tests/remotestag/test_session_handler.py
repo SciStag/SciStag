@@ -29,8 +29,7 @@ def test_session_handler():
     SessionHandler.shared_handler.register_session(session)
 
     assert SessionHandler.shared_handler.get_session(session_id) == session
-    assert SessionHandler.shared_handler.get_session_by_guest_id(
-        guest_id) == session
+    assert SessionHandler.shared_handler.get_session_by_guest_id(guest_id) == session
     assert SessionHandler.shared_handler.get_session_by_guest_id("123") is None
 
     session.session_timeout = None

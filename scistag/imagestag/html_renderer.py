@@ -72,20 +72,19 @@ class HtmlRenderer:
         options = options if options is not None else {}
         quality = options.get("quality", 100)
         transparent = options.get("transparent", False)
-        background_color = \
-            options.get("backgroundColor",
-                        Color(1.0, 1.0, 1.0, 0.0 if transparent else 1.0))
+        background_color = options.get(
+            "backgroundColor", Color(1.0, 1.0, 1.0, 0.0 if transparent else 1.0)
+        )
         if not transparent and background_color.to_rgba()[3] < 1.0:
             transparent = True
-        image_format = options.get("format",
-                                   "bmp" if not transparent else "png")
+        image_format = options.get("format", "bmp" if not transparent else "png")
         red, green, blue, alpha = background_color.to_int_rgba()
-        bg_color = f'rgba({red},{green},{blue},{alpha / 255})'
+        bg_color = f"rgba({red},{green},{blue},{alpha / 255})"
         html_data = self._generate_html(bg_color, options)
-        html_options = {"format": image_format, "quality": quality,
-                        "quiet": None}
+        html_options = {"format": image_format, "quality": quality, "quiet": None}
         trim_width, trim_height = options.get("trimWidth", True), options.get(
-            "trimHeight", False)
+            "trimHeight", False
+        )
         if "width" in options:
             html_options["width"] = options["width"]
         if "height" in options:
@@ -95,15 +94,19 @@ class HtmlRenderer:
         image = from_string(html_data, False, options=html_options)
         pil_image = PIL.Image.open(io.BytesIO(image))
         if trim_width or trim_height:
-            image = self._trim(np.array(pil_image), transparent=transparent,
-                               trim_width=trim_width,
-                               trim_height=trim_height)
+            image = self._trim(
+                np.array(pil_image),
+                transparent=transparent,
+                trim_width=trim_width,
+                trim_height=trim_height,
+            )
             return Image(image)
         return Image(pil_image)
 
     @staticmethod
-    def _trim(image: np.ndarray, transparent: bool, trim_width=True,
-              trim_height=False) -> np.ndarray:
+    def _trim(
+        image: np.ndarray, transparent: bool, trim_width=True, trim_height=False
+    ) -> np.ndarray:
         """
         Searches for the first and last non-empty rows and columns and reduces
         the image to the valid pixels.
@@ -124,24 +127,24 @@ class HtmlRenderer:
         row_sums = np.sum(alpha_channel, axis=1)
         col_sums = np.sum(alpha_channel, axis=0)
         if trim_height:
-            row_mismatch = np.where(
-                row_sums != alpha_channel.shape[1] * search_value)
+            row_mismatch = np.where(row_sums != alpha_channel.shape[1] * search_value)
             first_row = row_mismatch[0][0] if len(row_mismatch) != 0 else 0
-            last_row = row_mismatch[0][-1] if len(row_mismatch) != 0 else \
-                image.shape[1] - 1
+            last_row = (
+                row_mismatch[0][-1] if len(row_mismatch) != 0 else image.shape[1] - 1
+            )
         else:
             first_row = 0
             last_row = image.shape[0] - 1
         if trim_width:
-            col_mismatch = np.where(
-                col_sums != alpha_channel.shape[0] * search_value)
+            col_mismatch = np.where(col_sums != alpha_channel.shape[0] * search_value)
             first_col = col_mismatch[0][0] if len(col_mismatch) != 0 else 0
-            last_col = col_mismatch[0][-1] if len(col_mismatch) != 0 else \
-                image.shape[0] - 1
+            last_col = (
+                col_mismatch[0][-1] if len(col_mismatch) != 0 else image.shape[0] - 1
+            )
         else:
             first_col = 0
             last_col = image.shape[1] - 1
-        return image[first_row:last_row + 1, first_col:last_col + 1, :]
+        return image[first_row : last_row + 1, first_col : last_col + 1, :]
 
     @staticmethod
     def _generate_html(bg_color, options):
@@ -159,11 +162,12 @@ class HtmlRenderer:
             html_data = html
         else:
             style = options.get("style", "")
-            html_data = f'<html><style>{style}</style>'
+            html_data = f"<html><style>{style}</style>"
             if body.startswith("<body>"):
                 html_data += body + "</html>"
             else:
-                html_data += f'<body style="padding:0;margin:0;' \
-                             f'background-color:{bg_color};">' + body + \
-                             '</body></html>'
+                html_data += (
+                    f'<body style="padding:0;margin:0;'
+                    f'background-color:{bg_color};">' + body + "</body></html>"
+                )
         return html_data

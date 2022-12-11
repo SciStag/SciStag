@@ -6,8 +6,7 @@ and timestamp in a log.
 from __future__ import annotations
 from typing import TYPE_CHECKING, Union, Callable
 
-from scistag.vislog.extensions.builder_extension import \
-    BuilderExtension
+from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
@@ -35,6 +34,7 @@ class TimeLogger(BuilderExtension):
         :return: The builder
         """
         from datetime import datetime
+
         dt_object = datetime.now()
         cur_time = f"{str(dt_object.date())} {str(dt_object.time())}"
         elements = [cur_time]

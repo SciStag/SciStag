@@ -49,8 +49,8 @@ def get_test_data(name: str) -> bytes | None:
     if name not in TEST_DATA_URLS:
         return None
     from scistag.webstag import web_fetch
-    data = web_fetch(TEST_DATA_URLS[name],
-                     max_cache_age=TEST_DATA_CACHE_AGE)
+
+    data = web_fetch(TEST_DATA_URLS[name], max_cache_age=TEST_DATA_CACHE_AGE)
     return data
 
 
@@ -64,6 +64,7 @@ def get_test_image(name: str) -> Union["Image", None]:
     :return: The image
     """
     from scistag.imagestag import Image
+
     test_data = get_test_data(name)
     if test_data is None:
         return None

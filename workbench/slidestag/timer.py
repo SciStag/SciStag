@@ -11,7 +11,7 @@ class TimerEvent(WidgetEvent):
     A timer event
     """
 
-    def __init__(self, timer: 'Timer', prev_time: float, new_time: float):
+    def __init__(self, timer: "Timer", prev_time: float, new_time: float):
         """
         Initializer
         :param timer: The timer which triggered the event
@@ -29,8 +29,13 @@ class Timer:
     Defines a timer instance which is triggered in definable intervals
     """
 
-    def __init__(self, widget: Widget, interval_s: float = 1.0,
-                 repeat: bool = True, pause_on_unload=True):
+    def __init__(
+        self,
+        widget: Widget,
+        interval_s: float = 1.0,
+        repeat: bool = True,
+        pause_on_unload=True,
+    ):
         self.widget = widget
         "The owning widget"
 

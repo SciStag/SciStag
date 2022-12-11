@@ -8,8 +8,7 @@ import scistag.tests
 from scistag.common import ConfigStag
 from scistag.filestag import FileSource
 from scistag.filestag.azure.azure_blob_path import AzureBlobPath
-from scistag.filestag.azure.azure_storage_file_source import \
-    AzureStorageFileSource
+from scistag.filestag.azure.azure_storage_file_source import AzureStorageFileSource
 from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER
 from scistag.webstag import web_fetch
 
@@ -22,10 +21,11 @@ ROBOTO_FONT_SIZE = 2054916
 ROBOTO_FONT_COUNT = 13
 "The number of fonts assumed on the server"
 
-connection_string = \
-    "azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;" \
-    "AccountKey={{env.AZ_TEST_SOURCE_KEY}};EndpointSuffix=" \
+connection_string = (
+    "azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;"
+    "AccountKey={{env.AZ_TEST_SOURCE_KEY}};EndpointSuffix="
     "core.windows.net/testsource"
+)
 """
 Test storage
 """
@@ -47,16 +47,17 @@ def test_iteration():
     :return:
     """
     # test pre-fetch
-    azure_source = FileSource.from_source(connection_string + "/fonts",
-                                          fetch_file_list=True)
+    azure_source = FileSource.from_source(
+        connection_string + "/fonts", fetch_file_list=True
+    )
     assert len(azure_source._file_list) == TOTAL_FONT_COUNT
     assert azure_source.exists("Roboto/Roboto-Black.ttf")
     assert not azure_source.exists("Roboto/Roboto-BlackX2.ttf")
 
     # test dynamic iteration
-    azure_source = FileSource.from_source(connection_string,
-                                          fetch_file_list=False,
-                                          max_file_count=30)
+    azure_source = FileSource.from_source(
+        connection_string, fetch_file_list=False, max_file_count=30
+    )
     count = 0
     size = 0
     for element in azure_source:
@@ -70,13 +71,15 @@ def test_prefix():
     """
     Testing prefix filtering
     """
-    azure_source = FileSource.from_source(connection_string + "/fonts/Roboto",
-                                          fetch_file_list=True)
+    azure_source = FileSource.from_source(
+        connection_string + "/fonts/Roboto", fetch_file_list=True
+    )
     assert len(azure_source._file_list) == ROBOTO_FONT_COUNT
     data_size = 0
     file_count = 0
-    with FileSource.from_source(connection_string + "/fonts/Roboto",
-                                search_mask="*.ttf") as font_source:
+    with FileSource.from_source(
+        connection_string + "/fonts/Roboto", search_mask="*.ttf"
+    ) as font_source:
         for element in font_source:
             data_size += len(element.data)
             file_count += 1
@@ -88,11 +91,9 @@ def test_no_recursion():
     """
     Tests that recursion can be suppressed
     """
-    fs = FileSource.from_source(connection_string + "/data",
-                                recursive=True)
+    fs = FileSource.from_source(connection_string + "/data", recursive=True)
     assert len(fs) == 4
-    fs = FileSource.from_source(connection_string + "/data",
-                                recursive=False)
+    fs = FileSource.from_source(connection_string + "/data", recursive=False)
     assert len(fs) == 0
 
 
@@ -117,8 +118,9 @@ def test_basics():
     azure_source.close()
     azure_source.close()
     # don't list files, invalid files should not be provided though
-    azure_source = FileSource.from_source(connection_string + "/fonts/Roboto",
-                                          fetch_file_list=False)
+    azure_source = FileSource.from_source(
+        connection_string + "/fonts/Roboto", fetch_file_list=False
+    )
     assert not azure_source.exists("LICENSE.md")
     azure_source.close()
 
@@ -128,34 +130,38 @@ def test_tags():
     """
     Test the tag search functionality
     """
-    azure_source = AzureStorageFileSource(connection_string,
-                                          tag_filter="licenseFile = 'SciStag'",
-                                          fetch_file_list=True)
+    azure_source = AzureStorageFileSource(
+        connection_string, tag_filter="licenseFile = 'SciStag'", fetch_file_list=True
+    )
     assert len(azure_source._file_list) == 1
-    azure_source = AzureStorageFileSource(connection_string,
-                                          tag_filter="licenseFile = 'SciStag'",
-                                          fetch_file_list=False)
+    azure_source = AzureStorageFileSource(
+        connection_string, tag_filter="licenseFile = 'SciStag'", fetch_file_list=False
+    )
     file_count = 0
     for _ in azure_source:
         file_count += 1
     assert file_count == 1
 
-    azure_source = AzureStorageFileSource(connection_string + "/fonts",
-                                          tag_filter="licenseFile = 'Roboto'",
-                                          fetch_file_list=True)
+    azure_source = AzureStorageFileSource(
+        connection_string + "/fonts",
+        tag_filter="licenseFile = 'Roboto'",
+        fetch_file_list=True,
+    )
     assert len(azure_source._file_list) == 1
     # filter prefix and tag without prefetch
-    azure_source = AzureStorageFileSource(connection_string + "/fonts",
-                                          tag_filter="licenseFile = 'SciStag'",
-                                          fetch_file_list=False)
+    azure_source = AzureStorageFileSource(
+        connection_string + "/fonts",
+        tag_filter="licenseFile = 'SciStag'",
+        fetch_file_list=False,
+    )
     counter = 0
     for _ in azure_source:
         counter += 1
     assert counter == 0
     # filter prefix and tag without prefetch
-    azure_source = AzureStorageFileSource(connection_string,
-                                          tag_filter="licenseFile = 'SciStag'",
-                                          fetch_file_list=False)
+    azure_source = AzureStorageFileSource(
+        connection_string, tag_filter="licenseFile = 'SciStag'", fetch_file_list=False
+    )
     counter = 0
     for _ in azure_source:
         counter += 1
@@ -167,9 +173,11 @@ def test_tags_with_path():
     Search for elements with tag in a search path
     """
     # filter prefix and tag with prefetch
-    azure_source = AzureStorageFileSource(connection_string + "/fonts",
-                                          tag_filter="licenseFile = 'SciStag'",
-                                          fetch_file_list=True)
+    azure_source = AzureStorageFileSource(
+        connection_string + "/fonts",
+        tag_filter="licenseFile = 'SciStag'",
+        fetch_file_list=True,
+    )
     azure_source.handle_fetch_file_list()
     counter = 0
     for _ in azure_source:
@@ -183,34 +191,36 @@ def test_conn_string():
     Tests different elements of the connection string
     """
     # just connection string
-    conn_string = \
-        "DefaultEndpointsProtocol=https;AccountName=123;AccountKey=456;EndpointSuffix=core.windows.net"
+    conn_string = "DefaultEndpointsProtocol=https;AccountName=123;AccountKey=456;EndpointSuffix=core.windows.net"
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}"
     elements = AzureBlobPath.split_azure_url(full_url)
-    assert elements[0] == conn_string and elements[1] == "" and elements[
-        2] == ""
+    assert elements[0] == conn_string and elements[1] == "" and elements[2] == ""
     # connection string and container name
     container = "testData"
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}"
     elements = AzureBlobPath.split_azure_url(full_url)
-    assert elements[0] == conn_string and elements[1] == container and elements[
-        2] == ""
+    assert elements[0] == conn_string and elements[1] == container and elements[2] == ""
     # connection string and container name and unnecessary slash
     container = "testData"
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/"
     elements = AzureBlobPath.split_azure_url(full_url)
-    assert elements[0] == conn_string and elements[1] == container and elements[
-        2] == ""
+    assert elements[0] == conn_string and elements[1] == container and elements[2] == ""
     prefix = "subPath"
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/{prefix}"
     elements = AzureBlobPath.split_azure_url(full_url)
-    assert elements[0] == conn_string and elements[1] == container and elements[
-        2] == prefix
+    assert (
+        elements[0] == conn_string
+        and elements[1] == container
+        and elements[2] == prefix
+    )
     # prefix and unnecessary slash
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/{prefix}/"
     elements = AzureBlobPath.split_azure_url(full_url)
-    assert elements[0] == conn_string and elements[1] == container and elements[
-        2] == prefix
+    assert (
+        elements[0] == conn_string
+        and elements[1] == container
+        and elements[2] == prefix
+    )
     # verify connection string parsing
     path = AzureBlobPath.from_string(conn_string)
     assert path.account_name == "123"
@@ -225,8 +235,8 @@ def test_sas_creation():
     """
 
     azure_source: AzureStorageFileSource | None = FileSource.from_source(
-        connection_string + "/fonts",
-        fetch_file_list=True)
+        connection_string + "/fonts", fetch_file_list=True
+    )
     assert len(azure_source._file_list) == TOTAL_FONT_COUNT
     assert azure_source.exists("Roboto/Roboto-Black.ttf")
     test_file = "Roboto/Roboto-Black.ttf"
@@ -239,8 +249,7 @@ def test_sas_creation():
     # compare
     assert len(blob_data) == len(rest_data)
     assert blob_data == rest_data
-    sas_data = web_fetch(
-        azure_source.get_absolute("Roboto/Roboto-Black.ttf"))
+    sas_data = web_fetch(azure_source.get_absolute("Roboto/Roboto-Black.ttf"))
     assert sas_data == blob_data
 
 
@@ -250,6 +259,5 @@ def test_sas_listing():
     """
     with pytest.raises(ValueError):
         source = FileSource.from_source(test_source_sas_inv)
-    source = FileSource.from_source(test_source_sas,
-                                    search_path="fonts")
+    source = FileSource.from_source(test_source_sas, search_path="fonts")
     assert len(source.file_list) == 20

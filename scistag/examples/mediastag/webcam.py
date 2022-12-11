@@ -8,7 +8,6 @@ from scistag.mediastag.camera_cv2 import CameraCv2
 
 
 class WebCamDemo:
-
     def __init__(self):
         self.root = Tk()
         self.root.title("Example for using the camera via OpenCV")

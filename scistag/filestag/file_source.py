@@ -21,8 +21,11 @@ from pydantic import BaseModel, SecretStr
 
 from scistag.common.trees.text_tree import TextTree
 from scistag.filestag.bundle import Bundle
-from scistag.filestag.file_source_iterator import FileSourceIterator, \
-    FileIterationData, FilterCallback
+from scistag.filestag.file_source_iterator import (
+    FileSourceIterator,
+    FileIterationData,
+    FilterCallback,
+)
 from scistag.filestag.protocols import is_azure_storage_source
 from scistag.filestag.file_stag import FileStag
 
@@ -70,6 +73,7 @@ class FileListEntry(BaseModel):
     """
     Defines a single entry in the file list
     """
+
     filename: str
     "The file's name"
     file_size: int = 0
@@ -84,6 +88,7 @@ class FileListModel(BaseModel):
     """
     Defines a list of files storable in a database
     """
+
     user_version = 1
     """
     The user definable version number. If the version of the stored data does
@@ -110,18 +115,20 @@ class FileSource:
     """
 
     # noinspection PyUnusedLocal
-    def __init__(self, search_mask: str = "*",
-                 search_path: str = "",
-                 recursive: bool = True,
-                 filter_callback: FilterCallback | None = None,
-                 index_filter: tuple[int, int] | None = None,
-                 fetch_file_list: bool = True,
-                 max_file_count: int = -1,
-                 file_list_name: str | tuple[str, int] | None = None,
-                 max_web_cache_age: float = 0.0,
-                 dont_load=False,
-                 sorting_callback: Callable[
-                                       [FileListEntry], Any] | None = None):
+    def __init__(
+        self,
+        search_mask: str = "*",
+        search_path: str = "",
+        recursive: bool = True,
+        filter_callback: FilterCallback | None = None,
+        index_filter: tuple[int, int] | None = None,
+        fetch_file_list: bool = True,
+        max_file_count: int = -1,
+        file_list_name: str | tuple[str, int] | None = None,
+        max_web_cache_age: float = 0.0,
+        dont_load=False,
+        sorting_callback: Callable[[FileListEntry], Any] | None = None,
+    ):
         """
         For a detailed parameter description see :meth:`from_path`
         """
@@ -191,8 +198,9 @@ class FileSource:
         """
         self.sorting_callback = sorting_callback
         if sorting_callback is not None and not fetch_file_list:
-            raise ValueError("Sorting is only supported in combination w/"
-                             " fetch_file_list=True")
+            raise ValueError(
+                "Sorting is only supported in combination w/" " fetch_file_list=True"
+            )
         """
         A function to be called (and pass into sorted) to sort the file list
         before it's stored.
@@ -207,19 +215,20 @@ class FileSource:
         self.download_all = self.copy_to
 
     @staticmethod
-    def from_source(source: str | bytes | SecretStr,
-                    search_mask: str = "*",
-                    search_path: str = "",
-                    recursive: bool = True,
-                    filter_callback: FilterCallback | None = None,
-                    sorting_callback: \
-                            Callable[[FileListEntry], Any] | None = None,
-                    index_filter: tuple[int, int] | None = None,
-                    fetch_file_list: bool = True,
-                    max_file_count: int = -1,
-                    file_list_name: str | tuple[str, int] | None = None,
-                    max_web_cache_age: float = 0.0,
-                    dont_load=False) -> FileSource | None:
+    def from_source(
+        source: str | bytes | SecretStr,
+        search_mask: str = "*",
+        search_path: str = "",
+        recursive: bool = True,
+        filter_callback: FilterCallback | None = None,
+        sorting_callback: Callable[[FileListEntry], Any] | None = None,
+        index_filter: tuple[int, int] | None = None,
+        fetch_file_list: bool = True,
+        max_file_count: int = -1,
+        file_list_name: str | tuple[str, int] | None = None,
+        max_web_cache_age: float = 0.0,
+        dont_load=False,
+    ) -> FileSource | None:
         """
         Auto-detects the required FileSource implementation for a given source
         path
@@ -292,33 +301,41 @@ class FileSource:
         :return: The FileSource implementation for your path. None if the path
             can not be identified.
         """
-        params = {"search_mask": search_mask,
-                  "search_path": search_path,
-                  "recursive": recursive,
-                  "filter_callback": filter_callback,
-                  "index_filter": index_filter,
-                  "fetch_file_list": fetch_file_list,
-                  "file_list_name": file_list_name,
-                  "max_web_cache_age": max_web_cache_age,
-                  "max_file_count": max_file_count,
-                  "sorting_callback": sorting_callback,
-                  "dont_load": dont_load}
+        params = {
+            "search_mask": search_mask,
+            "search_path": search_path,
+            "recursive": recursive,
+            "filter_callback": filter_callback,
+            "index_filter": index_filter,
+            "fetch_file_list": fetch_file_list,
+            "file_list_name": file_list_name,
+            "max_web_cache_age": max_web_cache_age,
+            "max_file_count": max_file_count,
+            "sorting_callback": sorting_callback,
+            "dont_load": dont_load,
+        }
         if isinstance(source, SecretStr):
             source = source.get_secret_value()
         if isinstance(source, bytes):
             from scistag.filestag.sources.file_source_zip import FileSourceZip
+
             return FileSourceZip(source=source, **params)
         if is_azure_storage_source(source):
-            from scistag.filestag.azure.azure_storage_file_source import \
-                AzureStorageFileSource
+            from scistag.filestag.azure.azure_storage_file_source import (
+                AzureStorageFileSource,
+            )
+
             return AzureStorageFileSource(source=source, **params)
-        if not (source.endswith("/") or source.endswith(
-                "\\")) and source.endswith(".zip"):
+        if not (source.endswith("/") or source.endswith("\\")) and source.endswith(
+            ".zip"
+        ):
             from scistag.filestag.sources.file_source_zip import FileSourceZip
+
             return FileSourceZip(source=source, **params)
         if "://" in source:
             raise NotImplementedError("Unknown protocol for FileSource")
         from scistag.filestag.sources.file_source_disk import FileSourceDisk
+
         return FileSourceDisk(path=source, **params)
 
     def refresh(self):
@@ -346,17 +363,14 @@ class FileSource:
         """
         stream = io.BytesIO()
         for cur_file in self.file_list:
-            stream.write(
-                hash(cur_file.filename).to_bytes(8, "little", signed=True))
+            stream.write(hash(cur_file.filename).to_bytes(8, "little", signed=True))
             stream.write(cur_file.file_size.to_bytes(8, "little", signed=True))
-            stream.write(
-                hash(cur_file.created).to_bytes(8, "little", signed=True))
-            stream.write(
-                hash(cur_file.modified).to_bytes(8, "little", signed=True))
+            stream.write(hash(cur_file.created).to_bytes(8, "little", signed=True))
+            stream.write(hash(cur_file.modified).to_bytes(8, "little", signed=True))
             if max_content_size > 0 and cur_file.file_size <= max_content_size:
                 stream.write(
-                    md5(self.fetch(cur_file.filename)).hexdigest().encode(
-                        "utf-8"))
+                    md5(self.fetch(cur_file.filename)).hexdigest().encode("utf-8")
+                )
         return md5(stream.getvalue()).hexdigest()
 
     def __hash__(self):
@@ -396,6 +410,7 @@ class FileSource:
         """
         file_list = [entry.dict() for entry in self._file_list]
         import pandas as pd
+
         return pd.DataFrame(file_list)
 
     def encode_file_list(self, version: int = -1) -> bytes:
@@ -410,8 +425,8 @@ class FileSource:
         """
         dataframe = self.get_file_list_as_df()
         data = Bundle.bundle(
-            {"version": 1, "data": dataframe, CACHE_VERSION: version},
-            compression=0)
+            {"version": 1, "data": dataframe, CACHE_VERSION: version}, compression=0
+        )
         return data
 
     def load_file_list(self, source: bytes | str, version: int = -1) -> bool:
@@ -434,12 +449,15 @@ class FileSource:
         assert isinstance(data, dict) and data.get("version") == 1
         if version != -1 and data.get(CACHE_VERSION, -1) != version:
             return False
-        df: "pd.DataFrame" = data['data']
+        df: "pd.DataFrame" = data["data"]
         key_list = df.columns.to_list()
-        self.update_file_list([
-            FileListEntry.parse_obj(dict(zip(key_list, cur_element))) for
-            cur_element in df.itertuples(index=False, name=None)
-        ], may_sort=False)
+        self.update_file_list(
+            [
+                FileListEntry.parse_obj(dict(zip(key_list, cur_element)))
+                for cur_element in df.itertuples(index=False, name=None)
+            ],
+            may_sort=False,
+        )
         return True
 
     def save_file_list(self, target: str, version: int = -1):
@@ -468,15 +486,16 @@ class FileSource:
             "FileListEntry"s with all details or a list of filenames
         """
         if len(new_list) and isinstance(new_list[0], str):
-            lst = [FileListEntry(filename=element, file_size=-1) for element in
-                   new_list]
+            lst = [
+                FileListEntry(filename=element, file_size=-1) for element in new_list
+            ]
         else:
             lst = new_list
         self.update_file_list(lst)
 
-    def get_absolute(self, filename: str,
-                     options: FileSourcePathOptions | None = None) -> \
-            str | None:
+    def get_absolute(
+        self, filename: str, options: FileSourcePathOptions | None = None
+    ) -> str | None:
         """
         Returns the full path to the resource if possible, e.g. the absolute
         path to a file on disk in case of an FileSourceDisk element.
@@ -520,20 +539,25 @@ class FileSource:
         file_extension_list = sorted(
             list(file_type_counter.keys()),
             reverse=True,
-            key=lambda x: file_type_counter[x])
-        sorted_keys = sorted(file_type_counter.keys(),
-                             reverse=True,
-                             key=lambda x: file_type_counter[x])
+            key=lambda x: file_type_counter[x],
+        )
+        sorted_keys = sorted(
+            file_type_counter.keys(), reverse=True, key=lambda x: file_type_counter[x]
+        )
         ext_details = {
             key: {
                 "totalFileSizeMb": size_by_filetype[key] / 1000000.0,
-                "totalFileCount": file_type_counter[key]} for key in
-            sorted_keys}
-        self._statistics = {"totalFileCount": len(self._file_list),
-                            "totalFileSizeMb": total_size / 1000000,
-                            "totalDirs": len(dir_names),
-                            "fileExtensions": file_extension_list,
-                            "extensionDetails": ext_details}
+                "totalFileCount": file_type_counter[key],
+            }
+            for key in sorted_keys
+        }
+        self._statistics = {
+            "totalFileCount": len(self._file_list),
+            "totalFileSizeMb": total_size / 1000000,
+            "totalDirs": len(dir_names),
+            "fileExtensions": file_extension_list,
+            "extensionDetails": ext_details,
+        }
         return self._statistics
 
     def __str__(self):
@@ -622,10 +646,10 @@ class FileSource:
         :return: The file's content on success, None otherwise
         """
         from scistag.webstag import WebCache
+
         if self.max_web_cache_age != 0:  # try to fetch data if cache is on
             unique_name = self._get_source_identifier() + "/" + filename
-            data = WebCache.fetch(unique_name,
-                                  max_age=self.max_web_cache_age)
+            data = WebCache.fetch(unique_name, max_age=self.max_web_cache_age)
             if data is not None:
                 return data
         result = self._read_file_int(filename)
@@ -648,13 +672,18 @@ class FileSource:
             return filename in self._file_set
         raise NotImplementedError("Missing implementation for exists method")
 
-    def copy(self, filename: str, target_name: str, overwrite=True,
-             sink: Union["FileSink", None] = None,
-             on_fetch: Callable[[str], None] | None = None,
-             on_fetch_done: Callable[[str, int], None] | None = None,
-             on_stored: Callable[[str, int], None] | None = None,
-             on_error: Callable[[str, str], None] | None = None,
-             on_skip: Callable[[str], None] | None = None) -> bool:
+    def copy(
+        self,
+        filename: str,
+        target_name: str,
+        overwrite=True,
+        sink: Union["FileSink", None] = None,
+        on_fetch: Callable[[str], None] | None = None,
+        on_fetch_done: Callable[[str, int], None] | None = None,
+        on_stored: Callable[[str, int], None] | None = None,
+        on_error: Callable[[str, str], None] | None = None,
+        on_skip: Callable[[str], None] | None = None,
+    ) -> bool:
         """
         Copies a file from this FileSource to a FileStag compatible target
         path.
@@ -697,9 +726,12 @@ class FileSource:
                 on_error(filename, f"Could not store {filename}")
         return result
 
-    def copy_to(self, target: Union["FileSink", str],
-                error_log: list[str] | None = None,
-                overwrite=True) -> bool:
+    def copy_to(
+        self,
+        target: Union["FileSink", str],
+        error_log: list[str] | None = None,
+        overwrite=True,
+    ) -> bool:
         """
         Copies the whole content of this FileSource to a defined target which
         can either be a FileSink or a local directory.
@@ -713,16 +745,16 @@ class FileSource:
         if error_log is None:
             error_log = []
         from scistag.filestag.file_sink import FileSink
+
         if isinstance(target, FileSink):
             for cur_file in self:
                 if cur_file.data is None:
-                    error_log.append(
-                        f"Could not load file {cur_file.filename}")
+                    error_log.append(f"Could not load file {cur_file.filename}")
                     continue
-                if not target.store(cur_file.filename, cur_file.data,
-                                    overwrite=overwrite):
-                    error_log.append(
-                        f"Could not store file {cur_file.filename}")
+                if not target.store(
+                    cur_file.filename, cur_file.data, overwrite=overwrite
+                ):
+                    error_log.append(f"Could not store file {cur_file.filename}")
         else:
             if overwrite or self._file_list is None:
                 self._copy_to_local_iterator(target, overwrite, error_log)
@@ -730,8 +762,9 @@ class FileSource:
                 self._copy_to_local_file_list(target, overwrite, error_log)
         return len(error_log) == 0
 
-    def _copy_to_local_file_list(self, target: str, overwrite: bool,
-                                 error_log: list[str]):
+    def _copy_to_local_file_list(
+        self, target: str, overwrite: bool, error_log: list[str]
+    ):
         """
         Copies to a local directory known the files in advance, so we can
         skip already existing files.
@@ -748,13 +781,10 @@ class FileSource:
                 continue
             cur_file_data = self.fetch(cur_file.filename)
             if cur_file_data is None:
-                error_log.append(
-                    f"Could not load file {cur_file.filename}")
+                error_log.append(f"Could not load file {cur_file.filename}")
                 continue
-            if not FileStag.save(target_name, cur_file_data,
-                                 overwrite=overwrite):
-                error_log.append(
-                    f"Could not store file {cur_file.filename}")
+            if not FileStag.save(target_name, cur_file_data, overwrite=overwrite):
+                error_log.append(f"Could not store file {cur_file.filename}")
 
     def _copy_to_local_iterator(self, target, overwrite, error_log):
         """
@@ -767,16 +797,13 @@ class FileSource:
         """
         for cur_file in self:
             if cur_file.data is None:
-                error_log.append(
-                    f"Could not load file {cur_file.filename}")
+                error_log.append(f"Could not load file {cur_file.filename}")
                 continue
             target_name = target + "/" + cur_file.filename
             rel_path = os.path.dirname(target_name)
             os.makedirs(rel_path, exist_ok=True)
-            if not FileStag.save(target_name, cur_file.data,
-                                 overwrite=overwrite):
-                error_log.append(
-                    f"Could not store file {cur_file.filename}")
+            if not FileStag.save(target_name, cur_file.data, overwrite=overwrite):
+                error_log.append(f"Could not store file {cur_file.filename}")
 
     def update_file_list(self, new_list: list[FileListEntry], may_sort=True):
         """
@@ -812,17 +839,15 @@ class FileSource:
         output_filenames = []
         cleaned_list = []
         for index, element in enumerate(self._file_list):
-            file_info = FileIterationData(self, index,
-                                          element=element)
+            file_info = FileIterationData(self, index, element=element)
             new_filename = self.handle_skip_check(file_info)
             if new_filename is None:
                 continue
             cleaned_list.append(element)
             output_filenames.append(new_filename)
-        if self.max_file_count != -1 and len(
-                cleaned_list) > self.max_file_count:
-            cleaned_list = cleaned_list[0:self.max_file_count]
-            output_filenames = output_filenames[0:self.max_file_count]
+        if self.max_file_count != -1 and len(cleaned_list) > self.max_file_count:
+            cleaned_list = cleaned_list[0 : self.max_file_count]
+            output_filenames = output_filenames[0 : self.max_file_count]
         self.output_filename_list = output_filenames
         self.update_file_list(cleaned_list)
         self.max_file_count = -1
@@ -830,8 +855,7 @@ class FileSource:
         self.filter_callback = None
         return self._file_list
 
-    def handle_next(self,
-                    iterator: FileSourceIterator) -> FileSourceElement | None:
+    def handle_next(self, iterator: FileSourceIterator) -> FileSourceElement | None:
         """
         Returns the next available element
 
@@ -839,8 +863,10 @@ class FileSource:
             processing
         :return: The next file object if available
         """
-        if (self.max_file_count != -1 and
-                iterator.processed_file_count >= self.max_file_count):
+        if (
+            self.max_file_count != -1
+            and iterator.processed_file_count >= self.max_file_count
+        ):
             raise StopIteration
         while True:
             next_entry = self.handle_get_next_entry(iterator)
@@ -851,17 +877,17 @@ class FileSource:
                 target_name = self.output_filename_list[iterator.file_index - 1]
             else:
                 target_name = self.handle_skip_check(
-                    FileIterationData(self, iterator.file_index - 1,
-                                      element=next_entry))
+                    FileIterationData(self, iterator.file_index - 1, element=next_entry)
+                )
             # continue if just the current file is skipped
             if target_name is not None:
                 break
-        data = self.fetch(
-            next_entry.filename) if not self.dont_load else None
+        data = self.fetch(next_entry.filename) if not self.dont_load else None
         return self.handle_provide_result(iterator, target_name, data)
 
-    def handle_get_next_entry(self, iterator: "FileSourceIterator") -> \
-            FileListEntry | None:
+    def handle_get_next_entry(
+        self, iterator: "FileSourceIterator"
+    ) -> FileListEntry | None:
         """
         Returns the FileListEntry containing all information about the next file
         to be processed.
@@ -905,13 +931,13 @@ class FileSource:
         """
         loaded = False
         if self._file_list_name is not None and not no_cache:
-            loaded = self.load_file_list(self._file_list_name,
-                                         version=self._file_list_version)
+            loaded = self.load_file_list(
+                self._file_list_name, version=self._file_list_version
+            )
         if not loaded:
             self.handle_fetch_file_list()
         if not loaded and self._file_list_name is not None:
-            self.save_file_list(self._file_list_name,
-                                version=self._file_list_version)
+            self.save_file_list(self._file_list_name, version=self._file_list_version)
 
     def handle_file_list_filter(self, entry: FileListEntry) -> bool:
         """
@@ -946,8 +972,7 @@ class FileSource:
         """
         filename = file_info.element.filename
         if self.index_filter is not None:
-            if (file_info.file_index % self.index_filter[0] !=
-                    self.index_filter[1]):
+            if file_info.file_index % self.index_filter[0] != self.index_filter[1]:
                 return None
         if self.filter_callback is not None:
             result = self.filter_callback(file_info)
@@ -961,8 +986,9 @@ class FileSource:
         return filename
 
     # noinspection PyMethodMayBeStatic
-    def handle_provide_result(self, iterator: FileSourceIterator, filename: str,
-                              data: bytes) -> FileSourceElement:
+    def handle_provide_result(
+        self, iterator: FileSourceIterator, filename: str, data: bytes
+    ) -> FileSourceElement:
         """
         Provides the file result for the current iterator index
 

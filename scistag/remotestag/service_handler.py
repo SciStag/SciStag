@@ -40,7 +40,8 @@ class RemoteServiceHandler:
         with self._lock:
             if self._started:
                 raise Exception(
-                    "Can not register new services once the service handler was started.")
+                    "Can not register new services once the service handler was started."
+                )
             if identifier in self._services:
                 return False
             self._services[identifier] = service
@@ -86,8 +87,9 @@ class RemoteServiceHandler:
         with self._lock:
             return len(self._in_progress)
 
-    def execute_async(self, identifier: str, parameters: RemoteParameterTypes,
-                      timeout_s: float = -1.0) -> RemoteTask:
+    def execute_async(
+        self, identifier: str, parameters: RemoteParameterTypes, timeout_s: float = -1.0
+    ) -> RemoteTask:
         """
         Initiates the asynchronous execution of a function
         :param identifier: The function's identifier
@@ -108,9 +110,13 @@ class RemoteServiceHandler:
         with self._lock:
             self._call_counter += 1
             new_id = self._call_counter
-            task = RemoteTask(new_id, service=service_found,
-                              target_function=identifier, parameters=parameters,
-                              timeout_s=timeout_s)
+            task = RemoteTask(
+                new_id,
+                service=service_found,
+                target_function=identifier,
+                parameters=parameters,
+                timeout_s=timeout_s,
+            )
             self._todo.append(task)
         identifier = service_found.get_identifier()
         for worker in self._workers:

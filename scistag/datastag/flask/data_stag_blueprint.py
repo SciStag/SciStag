@@ -11,10 +11,14 @@ class DataStagService(Blueprint):
         """
         Initializer
         """
-        super().__init__("DataStag", __name__, template_folder="./templates",
-                         static_folder="./static")
+        super().__init__(
+            "DataStag",
+            __name__,
+            template_folder="./templates",
+            static_folder="./static",
+        )
         self.command_handler = DataStagCommandHandler(local=True)
-        'The wrapper from http commands to vault commands'
+        "The wrapper from http commands to vault commands"
 
 
 data_stag_service = DataStagService()
@@ -29,11 +33,11 @@ def handle_run():
     try:
         json_data = request.get_json()
         if json_data is not None:
-            result = data_stag_service.command_handler.handle_command_data(
-                json_data)
+            result = data_stag_service.command_handler.handle_command_data(json_data)
             return jsonify(result)
         current_app.logger.error("No data provided to DataStag call")
         return jsonify({})
     except:
         current_app.logger.error(
-            "An error occurred during the execution of a DataStag request")
+            "An error occurred during the execution of a DataStag request"
+        )

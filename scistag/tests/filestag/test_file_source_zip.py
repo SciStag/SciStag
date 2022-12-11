@@ -25,8 +25,9 @@ def test_zip_source_prefetched():
     Test general functionality with pre-fetched file list
     """
     get_edp()  # guarantee availability of essential data zip
-    with FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
-                                fetch_file_list=True) as test_source:
+    with FileSource.from_source(
+        ESSENTIAL_DATA_ARCHIVE_NAME, fetch_file_list=True
+    ) as test_source:
         test_source.handle_fetch_file_list()  # as a test
         assert len(test_source._file_list) == TEST_ARCHIVE_FILE_COUNT
         assert test_source.exists("README.md")
@@ -46,8 +47,9 @@ def test_zip_source_dynamic():
     """
     Test directly iterating all files without pre-fetch
     """
-    with FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
-                                fetch_file_list=False) as test_source:
+    with FileSource.from_source(
+        ESSENTIAL_DATA_ARCHIVE_NAME, fetch_file_list=False
+    ) as test_source:
         assert test_source._file_list is None
 
         assert test_source.exists("README.md")
@@ -88,8 +90,9 @@ def test_dynamic_filtering():
     Test using a memory zip
     """
     zip_data = FileStag.load(ESSENTIAL_DATA_ARCHIVE_NAME)
-    with FileSource.from_source(zip_data, search_mask="*.png",
-                                fetch_file_list=False) as test_source:
+    with FileSource.from_source(
+        zip_data, search_mask="*.png", fetch_file_list=False
+    ) as test_source:
         assert test_source._file_list is None
         files_handled = 0
         total_data = 0
@@ -105,9 +108,9 @@ def test_zip_source_filtering():
     """
     Test basic filtering
     """
-    with FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
-                                fetch_file_list=True,
-                                recursive=False) as test_source:
+    with FileSource.from_source(
+        ESSENTIAL_DATA_ARCHIVE_NAME, fetch_file_list=True, recursive=False
+    ) as test_source:
         assert len(test_source._file_list) == 2
 
 
@@ -115,6 +118,7 @@ def test_file_stag_protocol():
     """
     Tests if files can also be loaded via the FileStag protocol, e.g. a zip in a zip
     """
-    with FileSource.from_source("file://" + ESSENTIAL_DATA_ARCHIVE_NAME,
-                                fetch_file_list=True) as test_source:
+    with FileSource.from_source(
+        "file://" + ESSENTIAL_DATA_ARCHIVE_NAME, fetch_file_list=True
+    ) as test_source:
         assert len(test_source._file_list) == TEST_ARCHIVE_FILE_COUNT

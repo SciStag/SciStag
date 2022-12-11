@@ -26,13 +26,20 @@ class AWidget(Component):
         "(read-only). A widget's parent widget"
         self.properties = self.PROPERTIES
 
-    PROPERTIES = {"x": {"info": "A widget's x coordinate in pixels", "type": float},
-                  "y": {"info": "A widget's y coordinate in pixels", "type": float},
-                  "position": {"info": "A widget's position in pixels, relative to it's parents upper left coordinate",
-                               "type": tuple[float, float]},
-                  "size": {"info": "A widget's size in pixels", "type": tuple[float, float]},
-                  "parent": {"info": "A widget's parent widget", "type": "AWidget", "readOnly": True}
-                  } | Component.PROPERTIES
+    PROPERTIES = {
+        "x": {"info": "A widget's x coordinate in pixels", "type": float},
+        "y": {"info": "A widget's y coordinate in pixels", "type": float},
+        "position": {
+            "info": "A widget's position in pixels, relative to it's parents upper left coordinate",
+            "type": tuple[float, float],
+        },
+        "size": {"info": "A widget's size in pixels", "type": tuple[float, float]},
+        "parent": {
+            "info": "A widget's parent widget",
+            "type": "AWidget",
+            "readOnly": True,
+        },
+    } | Component.PROPERTIES
 
     def set_x(self, value):
         """
@@ -54,9 +61,9 @@ class AWidget(Component):
         :param value: The new value in pixels
         """
         value = float(value[0]), float(value[1])
-        self.__dict__['position'] = value
-        self.__dict__['x'] = value[0]
-        self.__dict__['y'] = value[1]
+        self.__dict__["position"] = value
+        self.__dict__["x"] = value[0]
+        self.__dict__["y"] = value[1]
 
 
 def test_properties():
@@ -96,8 +103,8 @@ class CacheTestClass(Component):
             super().handle_load()
         self.temp_data = "Some dynamic loaded data"
         assert self.get_is_loading()
-        self["db"] = pd.DataFrame(columns=['a', 'b'])
-        self["otherDb"] = pd.DataFrame(columns=['a', 'b'])
+        self["db"] = pd.DataFrame(columns=["a", "b"])
+        self["otherDb"] = pd.DataFrame(columns=["a", "b"])
         with pytest.raises(ValueError):
             self[".someValue"] = 1
 
@@ -114,7 +121,7 @@ def test_cache():
     assert "db" not in test_object
     test_object.load()
     assert "db" in test_object  # test __contains__
-    my_db = test_object['db']  # test __getitem__
+    my_db = test_object["db"]  # test __getitem__
     assert my_db is not None
     assert isinstance(my_db, pd.DataFrame)
     assert "otherDb" in test_object

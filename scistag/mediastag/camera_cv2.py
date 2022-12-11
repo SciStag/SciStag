@@ -27,10 +27,10 @@ class CameraCv2(VideoSourceCamera):
 
     def handle_initialize_camera(self):
         from scistag.imagestag import get_opencv
+
         cv = get_opencv()
         if cv is None:
-            raise NotImplementedError(
-                "OpenCV not installed. See optional packages.")
+            raise NotImplementedError("OpenCV not installed. See optional packages.")
         if isinstance(self.source, str):
             # if a full pipeline is defined, connect via gstreamer
             self.handle = cv.VideoCapture(self.source, cv.CAP_GSTREAMER)

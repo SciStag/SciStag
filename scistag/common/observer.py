@@ -43,8 +43,10 @@ class Observer:
         :return: The hash value
         """
         cur_time = time.time()
-        if (self.last_update is None or
-                cur_time > self.last_update + self.refresh_time_s):
+        if (
+            self.last_update is None
+            or cur_time > self.last_update + self.refresh_time_s
+        ):
             self._last_hash = self.hash_int()
             self.last_update = cur_time
         return self._last_hash
@@ -58,8 +60,9 @@ class ObserverList(Observer):
     content and so it's hash value.
     """
 
-    def __init__(self, observers: list[Observer] | None = None,
-                 refresh_time_s: float = 1.0):
+    def __init__(
+        self, observers: list[Observer] | None = None, refresh_time_s: float = 1.0
+    ):
         """
         :param observers: The list of observers we shall combine
         :param refresh_time_s: The minimum time gap between a refresh

@@ -12,7 +12,7 @@ from scistag.slidestag.window import Window
 from scistag.slidestag.slide_manager import SlideManager
 from scistag.slidestag.event_router import EventRouter
 
-MainLoopHookCallback = Callable[['Timer'], None]
+MainLoopHookCallback = Callable[["Timer"], None]
 "Type definitions for functions which can register as callback"
 
 SLIDE_BASE_DPI = 96.0
@@ -93,7 +93,7 @@ class SlideSession(Session):
         "The slide manager (screen manager)"
         self.last_main_loop_time = time.time()
         "Time of the last main loop execution"
-        self._main_loop_hooks: dict['Timer', MainLoopHookCallback] = {}
+        self._main_loop_hooks: dict["Timer", MainLoopHookCallback] = {}
         "Main loop hooks"
         self._event_router = EventRouter(self)
         "The event handler"
@@ -118,13 +118,12 @@ class SlideSession(Session):
         slide manager.
         """
         self.update_config()
-        window_parameters = {'width': self.resolution[0],
-                             'height': self.resolution[1]}
+        window_parameters = {"width": self.resolution[0], "height": self.resolution[1]}
         self._root_window = Window(session=self, parameters=window_parameters)
-        slider_parameters = {'width': self.resolution[0],
-                             'height': self.resolution[1]}
-        self._slide_manager = SlideManager(parent=self._root_window,
-                                           parameters=slider_parameters)
+        slider_parameters = {"width": self.resolution[0], "height": self.resolution[1]}
+        self._slide_manager = SlideManager(
+            parent=self._root_window, parameters=slider_parameters
+        )
 
     def run(self):
         """
@@ -140,9 +139,11 @@ class SlideSession(Session):
         """
         self._config = super().update_config()
         self._config[SlideSession.PERMISSIONS][
-            SlideSession.PERMISSION_WEBCAM] = self.camera_support
+            SlideSession.PERMISSION_WEBCAM
+        ] = self.camera_support
         self._config[SlideSession.PERMISSIONS][
-            SlideSession.PERMISSION_INPUT] = self.input_support
+            SlideSession.PERMISSION_INPUT
+        ] = self.input_support
         return self._config
 
     def add_media_path(self, path: str):
@@ -182,6 +183,7 @@ class SlideSession(Session):
         if self.guest_id is not None:
             return
         from scistag.remotestag.session_handler import SessionHandler
+
         self.guest_id = SessionHandler.create_session_id()
 
     def handle_main_loop(self):
@@ -206,8 +208,7 @@ class SlideSession(Session):
         if handled:
             return
         if user_data_name == self.USER_DATA_CLIENT_EVENTS:
-            events = json.load(io.BytesIO(data)) if isinstance(data,
-                                                               bytes) else data
+            events = json.load(io.BytesIO(data)) if isinstance(data, bytes) else data
             self._event_router.handle_raw_events(events)
             return True
         return False
@@ -245,8 +246,7 @@ class SlideSession(Session):
         :return: An image of the current scene
         """
         width, height = self.resolution
-        canvas = Canvas(size=(width, height),
-                        default_color=self.background_color)
+        canvas = Canvas(size=(width, height), default_color=self.background_color)
         self._root_window.update_layout()
         self.render(canvas, config)
         return canvas
@@ -260,12 +260,16 @@ class SlideSession(Session):
         """
         if self.is_remote_session:
             if self.camera_support:
-                return self.user_data_root_path + \
-                       self.USER_DATA_CAMERA_BASE_NAME + f"{index:02d}"
+                return (
+                    self.user_data_root_path
+                    + self.USER_DATA_CAMERA_BASE_NAME
+                    + f"{index:02d}"
+                )
             else:
                 return None
         else:
             from scistag.mediastag.video_source_camera import VideoSourceCamera
+
             return VideoSourceCamera.get_local_camera(index)
 
     def get_needs_camera(self) -> bool:
@@ -275,9 +279,11 @@ class SlideSession(Session):
         :return: True if the camera data is used
         """
         from scistag.slidestag.slide import Slide
+
         if self._slide_manager.get_current() is not None:
             return self._slide_manager.get_current().slide_flags.get(
-                Slide.SLIDE_FLAG_NEEDS_USER_CAMERA, False)
+                Slide.SLIDE_FLAG_NEEDS_USER_CAMERA, False
+            )
         return False
 
     def render(self, canvas: Canvas, config: dict):
@@ -297,8 +303,9 @@ class SlideSession(Session):
         :param canvas: The canvas' to convert to an image
         :return: The byte stream of the image in the target format
         """
-        ret = canvas.to_image().encode(filetype=self.stream_filetype,
-                                       quality=self.stream_compression)
+        ret = canvas.to_image().encode(
+            filetype=self.stream_filetype, quality=self.stream_compression
+        )
         return ret
 
     def handle_load(self) -> None:

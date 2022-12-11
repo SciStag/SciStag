@@ -7,8 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from scistag.logstag import LogLevel
-from scistag.vislog.extensions.builder_extension import \
-    BuilderExtension
+from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
@@ -26,16 +25,20 @@ class BasicLogger(BuilderExtension):
         super().__init__(builder)
         self._log = self.builder.target_log
         self.log = self.__call__
-        self.level_tag = {LogLevel.INFO: "[INFO]",
-                          LogLevel.DEBUG: "[DEBUG]",
-                          LogLevel.WARNING: "[WARNING]",
-                          LogLevel.ERROR: '[ERROR]',
-                          LogLevel.CRITICAL: "[CRITICAL]"}
+        self.level_tag = {
+            LogLevel.INFO: "[INFO]",
+            LogLevel.DEBUG: "[DEBUG]",
+            LogLevel.WARNING: "[WARNING]",
+            LogLevel.ERROR: "[ERROR]",
+            LogLevel.CRITICAL: "[CRITICAL]",
+        }
         "Tags to be added in front of the single log levels"
-        self.level_color = {LogLevel.DEBUG: "blue",
-                            LogLevel.WARNING: "#999900",
-                            LogLevel.ERROR: "red",
-                            LogLevel.CRITICAL: "purple"}
+        self.level_color = {
+            LogLevel.DEBUG: "blue",
+            LogLevel.WARNING: "#999900",
+            LogLevel.ERROR: "red",
+            LogLevel.CRITICAL: "purple",
+        }
         "Colors for the single log levels"
 
     def _log_advanced(self, text, level: LogLevel) -> VisualLogBuilder:
@@ -63,14 +66,16 @@ class BasicLogger(BuilderExtension):
 
         for line in lines:
             from scistag.vislog.visual_log import TABLE_PIPE
+
             if line.startswith(TABLE_PIPE):
                 if len(common_block) > 0:
                     self.log(common_block, level=level)
                     common_block = ""
                 if cur_table is None:
                     cur_table = []
-                elements = [element.lstrip(" ").rstrip(" ") for element in
-                            line.split("|")]
+                elements = [
+                    element.lstrip(" ").rstrip(" ") for element in line.split("|")
+                ]
                 if len(elements) > 2:
                     elements = elements[1:-1]
                 cur_table.append(elements)
@@ -83,10 +88,14 @@ class BasicLogger(BuilderExtension):
             self.log(common_block, level=level)
         return self.builder
 
-    def __call__(self, *args: Any, level: LogLevel | str | None = None,
-                 detect_objects: bool = False,
-                 no_break: bool = False,
-                 space: str = " ") -> VisualLogBuilder:
+    def __call__(
+        self,
+        *args: Any,
+        level: LogLevel | str | None = None,
+        detect_objects: bool = False,
+        no_break: bool = False,
+        space: str = " ",
+    ) -> VisualLogBuilder:
         """
         Adds a log text to the log
 
@@ -108,6 +117,7 @@ class BasicLogger(BuilderExtension):
             elements = [str(element) for element in args]
             text = space.join(elements)
         from scistag.vislog.visual_log import TABLE_PIPE
+
         if detect_objects and TABLE_PIPE in text:
             self._log_advanced(text, level)
             return self.builder
@@ -119,13 +129,15 @@ class BasicLogger(BuilderExtension):
         if level in self.level_color:
             self.builder.add_html(
                 f'<p class="logtext" style="color:{self.level_color[level]}">'
-                f'{self.builder.html_linebreaks(escaped_text)}</p>'
-                f'<br>\n\n')
+                f"{self.builder.html_linebreaks(escaped_text)}</p>"
+                f"<br>\n\n"
+            )
         else:
             self.builder.add_html(
                 f'<p class="logtext">'
-                f'{self.builder.html_linebreaks(escaped_text)}</p>'
-                f'<br>\n\n')
+                f"{self.builder.html_linebreaks(escaped_text)}</p>"
+                f"<br>\n\n"
+            )
 
         md_lines = md_text.split("\n")
         if self._log.markdown_html and level is not None:
@@ -133,11 +145,10 @@ class BasicLogger(BuilderExtension):
             if level in self.level_color:
                 self.builder.add_md(
                     f'<span style="color:{self.level_color[level]}">{md_lines}'
-                    f'</span>\n')
+                    f"</span>\n"
+                )
             else:
-                self.builder.add_md(
-                    f'<span>'
-                    f'</span>')
+                self.builder.add_md(f"<span>" f"</span>")
 
         else:
             md_lines = "\n\n".join(md_lines)

@@ -37,13 +37,15 @@ class EmojiRenderer:
         return EmojiDb.get_svg_support()
 
     @classmethod
-    def render_emoji(cls,
-                     identifier: str | list[str],
-                     size: int | None | Size2DTypes = None,
-                     width: float = None,
-                     height: float = None,
-                     bg_color: ColorTypes | None = None,
-                     quality: int = 90) -> Image | None:
+    def render_emoji(
+        cls,
+        identifier: str | list[str],
+        size: int | None | Size2DTypes = None,
+        width: float = None,
+        height: float = None,
+        bg_color: ColorTypes | None = None,
+        quality: int = 90,
+    ) -> Image | None:
         """
         Tries to read an emoji and render it to a transparent image
 
@@ -74,8 +76,9 @@ class EmojiRenderer:
             used.
         :return: The SVG data on success, otherwise None
         """
-        svg_renderer_available = svg.SvgRenderer.available() and quality >= \
-                                 MINIMUM_SVG_RENDERING_QUALITY
+        svg_renderer_available = (
+            svg.SvgRenderer.available() and quality >= MINIMUM_SVG_RENDERING_QUALITY
+        )
 
         sequence = EmojiDb.get_character_sequence(identifier)
         # compute size
@@ -91,8 +94,9 @@ class EmojiRenderer:
                 size = size.to_int_tuple()
         else:
             if width is not None or height is not None:
-                raise ValueError("Can not pass size and width or height at "
-                                 "the same time.")
+                raise ValueError(
+                    "Can not pass size and width or height at " "the same time."
+                )
             if isinstance(size, (int, float)):
                 size = round(int(size)), round(int(size))
             else:
@@ -102,23 +106,24 @@ class EmojiRenderer:
         is_default_size = size == EMOJI_DEFAULT_SIZE.to_int_tuple()
         # prefer lanczos instead of rendering when emoji is anyway very small
         very_small = size[0] <= 68 and size[1] <= 64
-        if svg_renderer_available and ((not is_default_size and not very_small)
-                                       or quality >= ENFORCE_SVG_QUALITY):
+        if svg_renderer_available and (
+            (not is_default_size and not very_small) or quality >= ENFORCE_SVG_QUALITY
+        ):
             svg_data = EmojiDb.get_svg(sequence=sequence)
         png_data = None
         if not svg_data:
             png_data = EmojiDb.get_png(sequence)
         if svg_data is not None:
-            image = svg.SvgRenderer.render(svg_data, size[0], size[1],
-                                           bg_color=bg_color)
+            image = svg.SvgRenderer.render(
+                svg_data, size[0], size[1], bg_color=bg_color
+            )
             if image is not None:
                 return image
         if png_data is not None:
             image = Image(png_data)
             if bg_color is not None:  # insert background color if desired
                 bg_color = Color(bg_color)
-                canvas = Canvas(size=image.get_size(),
-                                default_color=bg_color)
+                canvas = Canvas(size=image.get_size(), default_color=bg_color)
                 canvas.draw_image(image, pos=(0, 0)).to_image()
                 image = canvas.to_image()
             image.resize(size)
@@ -126,12 +131,14 @@ class EmojiRenderer:
         return None
 
 
-def render_emoji(identifier: str | list[str],
-                 size: int | None | Size2DTypes = None,
-                 width: float = None,
-                 height: float = None,
-                 bg_color: ColorTypes | None = None,
-                 quality: int = 90) -> Image | None:
+def render_emoji(
+    identifier: str | list[str],
+    size: int | None | Size2DTypes = None,
+    width: float = None,
+    height: float = None,
+    bg_color: ColorTypes | None = None,
+    quality: int = 90,
+) -> Image | None:
     """
     Tries to read an emoji and render it to a transparent image
 
@@ -160,9 +167,11 @@ def render_emoji(identifier: str | list[str],
         If a very small value is passed (<50) SVG rendering will never be used.
     :return: The emoji as image.
     """
-    return EmojiRenderer.render_emoji(identifier,
-                                      size=size,
-                                      width=width,
-                                      height=height,
-                                      bg_color=bg_color,
-                                      quality=quality)
+    return EmojiRenderer.render_emoji(
+        identifier,
+        size=size,
+        width=width,
+        height=height,
+        bg_color=bg_color,
+        quality=quality,
+    )

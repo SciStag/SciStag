@@ -28,8 +28,12 @@ class Size2D:
     height: float
     "The height in pixels"
 
-    def __init__(self, value: Size2DTypes | float | None = None,
-                 height: float | None = None, width: float | None = None):
+    def __init__(
+        self,
+        value: Size2DTypes | float | None = None,
+        height: float | None = None,
+        width: float | None = None,
+    ):
         """
         :param value: The initial width and height as tuple, a Size2D object
         or the width.

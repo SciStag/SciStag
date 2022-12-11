@@ -51,6 +51,7 @@ class FileIterationData:
     """
     Provides the data to filter single file entries
     """
+
     file_source: "FileSource"
     "The :class:`FileSource` object for which the decision is made"
     file_index: int

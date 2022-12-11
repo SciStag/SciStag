@@ -186,12 +186,16 @@ class WebCache:
             os.makedirs(cls.cache_dir, exist_ok=True)
 
 
-def web_fetch(url: str, timeout_s: float = 10.0, max_cache_age=0.0,
-              cache: bool | None = None,
-              filename: str | None = None,
-              out_response_details: dict | None = None,
-              all_codes=False,
-              **_) -> bytes | None:
+def web_fetch(
+    url: str,
+    timeout_s: float = 10.0,
+    max_cache_age=0.0,
+    cache: bool | None = None,
+    filename: str | None = None,
+    out_response_details: dict | None = None,
+    all_codes=False,
+    **_,
+) -> bytes | None:
     """
     Fetches a file from the web via HTTP GET
 
@@ -228,6 +232,7 @@ def web_fetch(url: str, timeout_s: float = 10.0, max_cache_age=0.0,
             if out_response_details is not None:
                 out_response_details[FROM_CACHE] = False
     import requests
+
     try:
         response = requests.get(url=url, timeout=timeout_s)
     except requests.exceptions.RequestException:
@@ -247,6 +252,12 @@ def web_fetch(url: str, timeout_s: float = 10.0, max_cache_age=0.0,
     return response.content
 
 
-__all__ = ["web_fetch", "WebCache", "FROM_CACHE", "STATUS_CODE", "HEADERS",
-           "STORED_IN_CACHE"]
+__all__ = [
+    "web_fetch",
+    "WebCache",
+    "FROM_CACHE",
+    "STATUS_CODE",
+    "HEADERS",
+    "STORED_IN_CACHE",
+]
 "Exported symbols"

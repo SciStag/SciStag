@@ -26,13 +26,11 @@ def test_scan():
     """
     base_dir = os.path.normpath(os.path.dirname(__file__) + "/..")
 
-    source = FileSource.from_source(base_dir, recursive=False,
-                                    fetch_file_list=True)
+    source = FileSource.from_source(base_dir, recursive=False, fetch_file_list=True)
     assert len(source._file_list) >= 1
     assert len(source._file_list) < 20
 
-    source = FileSource.from_source(base_dir, recursive=True,
-                                    fetch_file_list=True)
+    source = FileSource.from_source(base_dir, recursive=True, fetch_file_list=True)
     assert len(source._file_list) >= 90
     assert len(source._file_list) < 550
 
@@ -42,8 +40,9 @@ def test_iteration():
     Tests the iteration through a list of files
     """
     base_dir = os.path.normpath(os.path.dirname(__file__) + "/../filestag")
-    source = FileSource.from_source(base_dir, recursive=True,
-                                    fetch_file_list=True, search_mask="*.py")
+    source = FileSource.from_source(
+        base_dir, recursive=True, fetch_file_list=True, search_mask="*.py"
+    )
     assert len(source._file_list) >= 3
     assert len(source._file_list) < 20
 
@@ -62,8 +61,9 @@ def test_context():
     Tests entering and leaving the context
     """
     base_dir = os.path.normpath(os.path.dirname(__file__) + "/../filestag")
-    source = FileSource.from_source(base_dir, recursive=True,
-                                    fetch_file_list=True, search_mask="*.py")
+    source = FileSource.from_source(
+        base_dir, recursive=True, fetch_file_list=True, search_mask="*.py"
+    )
     assert not source.is_closed
     with source:
         pass
@@ -79,17 +79,20 @@ def test_sharing():
     helper_count = 3
 
     base_dir = os.path.normpath(os.path.dirname(__file__) + "/..")
-    full_list = FileSource.from_source(base_dir, fetch_file_list=True,
-                                       search_mask="*.py")._file_list
+    full_list = FileSource.from_source(
+        base_dir, fetch_file_list=True, search_mask="*.py"
+    )._file_list
     full_set = set([element.filename for element in full_list])
 
     prior_set = set()
     # verify file list pre-fetch with skip
     for sub_index in range(helper_count):
-        part_list = FileSource.from_source(base_dir, fetch_file_list=True,
-                                           index_filter=(
-                                               helper_count, sub_index),
-                                           search_mask="*.py").reduce_file_list()
+        part_list = FileSource.from_source(
+            base_dir,
+            fetch_file_list=True,
+            index_filter=(helper_count, sub_index),
+            search_mask="*.py",
+        ).reduce_file_list()
         cur_set = set([element.filename for element in part_list])
         assert len(cur_set) > 0
         assert len(prior_set.intersection(cur_set)) == 0
@@ -100,9 +103,9 @@ def test_sharing():
     # verify iteration with skip
     prior_set = set()
     for sub_index in range(helper_count):
-        source = FileSource.from_source(base_dir,
-                                        index_filter=(helper_count, sub_index),
-                                        search_mask="*.py")
+        source = FileSource.from_source(
+            base_dir, index_filter=(helper_count, sub_index), search_mask="*.py"
+        )
         cur_set = set()
         for element in source:
             cur_set.add(element.filename)
@@ -114,9 +117,12 @@ def test_sharing():
     # verify iteration with pre_fetch
     comp_set = set()
     for sub_index in range(helper_count):
-        source = FileSource.from_source(base_dir, fetch_file_list=True,
-                                        index_filter=(helper_count, sub_index),
-                                        search_mask="*.py")
+        source = FileSource.from_source(
+            base_dir,
+            fetch_file_list=True,
+            index_filter=(helper_count, sub_index),
+            search_mask="*.py",
+        )
         cur_set = set()
         for element in source:
             cur_set.add(element.filename)
@@ -132,30 +138,36 @@ def test_sharing():
 
 def test_filtering():
     base_dir = os.path.normpath(os.path.dirname(__file__) + "/..")
-    full_list = FileSource.from_source(base_dir, fetch_file_list=True,
-                                       search_mask="*.py",
-                                       filter_callback=lambda
-                                           x: True)._file_list
+    full_list = FileSource.from_source(
+        base_dir,
+        fetch_file_list=True,
+        search_mask="*.py",
+        filter_callback=lambda x: True,
+    )._file_list
     assert len(full_list) > 23
     # limit to first five entries, response with True and None
-    five_element_list = \
-        FileSource.from_source(base_dir, fetch_file_list=True,
-                               search_mask="*.py",
-                               filter_callback=lambda
-                                   x: True if x.file_index < 5 else None).reduce_file_list()
+    five_element_list = FileSource.from_source(
+        base_dir,
+        fetch_file_list=True,
+        search_mask="*.py",
+        filter_callback=lambda x: True if x.file_index < 5 else None,
+    ).reduce_file_list()
     assert len(five_element_list) == 5
     # limit to first five entries, using boolean results
-    five_element_list = FileSource.from_source(base_dir, fetch_file_list=True,
-                                               search_mask="*.py",
-                                               filter_callback=lambda
-                                                   x: x.file_index < 5).reduce_file_list()
+    five_element_list = FileSource.from_source(
+        base_dir,
+        fetch_file_list=True,
+        search_mask="*.py",
+        filter_callback=lambda x: x.file_index < 5,
+    ).reduce_file_list()
     assert len(five_element_list) == 5
     # limit to first five, rename them
-    ren_source = FileSource.from_source(base_dir, fetch_file_list=True,
-                                        search_mask="*.py",
-                                        filter_callback=lambda
-                                            x: "renamed_" + os.path.basename(
-                                            x.element.filename))
+    ren_source = FileSource.from_source(
+        base_dir,
+        fetch_file_list=True,
+        search_mask="*.py",
+        filter_callback=lambda x: "renamed_" + os.path.basename(x.element.filename),
+    )
     ren_source.reduce_file_list()
     assert ren_source.output_filename_list[0].startswith("renamed_")
     name_list = []
@@ -164,15 +176,15 @@ def test_filtering():
             name_list.append(element.filename)
     assert name_list[0].startswith("renamed_")
     # test max_file_count using a file list
-    new_list = FileSource.from_source(base_dir, fetch_file_list=True,
-                                      search_mask="*.py",
-                                      max_file_count=5).reduce_file_list()
+    new_list = FileSource.from_source(
+        base_dir, fetch_file_list=True, search_mask="*.py", max_file_count=5
+    ).reduce_file_list()
     assert len(new_list) == 5 and new_list == five_element_list
     # test max_file_count using iterating
     element_count = 0
-    new_list = FileSource.from_source(base_dir, fetch_file_list=False,
-                                      search_mask="*.py",
-                                      max_file_count=10)
+    new_list = FileSource.from_source(
+        base_dir, fetch_file_list=False, search_mask="*.py", max_file_count=10
+    )
     assert source.exists("__init__.py")
     assert not source.exists("NotExisting.py")
     for _ in new_list:
@@ -185,16 +197,14 @@ def test_source_disk():
     Further FileSourceDisk tests
     """
     base_dir = os.path.normpath(os.path.dirname(__file__) + "/..")
-    source = FileSource.from_source(base_dir,
-                                    fetch_file_list=True, search_mask="*.py")
+    source = FileSource.from_source(base_dir, fetch_file_list=True, search_mask="*.py")
     source.handle_fetch_file_list()
     assert source.exists("__init__.py")
     assert not source.exists("NotExisting.py")
     with pytest.raises(FileNotFoundError):
         source.fetch("someNoneExistingFile.txt")
     abs_path = source.get_absolute("__index__.py")
-    assert abs_path == FilePath.absolute(
-        os.path.dirname(__file__) + "/../__index__.py")
+    assert abs_path == FilePath.absolute(os.path.dirname(__file__) + "/../__index__.py")
 
 
 def test_basic_functions():
@@ -220,22 +230,28 @@ def test_statistics():
     Tests the statistics creation
     """
     vl.sub_test("Testing get_statistics() and __str__ casting")
-    test_source = FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
-                                         fetch_file_list=True)
+    test_source = FileSource.from_source(
+        ESSENTIAL_DATA_ARCHIVE_NAME, fetch_file_list=True
+    )
     statistics_str = str(test_source)
-    assert hashlib.md5(
-        statistics_str.encode(
-            "utf-8")).hexdigest() == "dc94728e1ed121e8f9a7e434b8ccf264"
+    assert (
+        hashlib.md5(statistics_str.encode("utf-8")).hexdigest()
+        == "dc94728e1ed121e8f9a7e434b8ccf264"
+    )
     statistics = test_source.get_statistics()
-    vl.test.assert_val("essential_archive_statistics", statistics,
-                       hash_val="1877a538d0b9ebdc674841243fc27b35")
+    vl.test.assert_val(
+        "essential_archive_statistics",
+        statistics,
+        hash_val="1877a538d0b9ebdc674841243fc27b35",
+    )
     list = test_source.file_list
     assert len(list) == 3706
     # statistics twice
     assert test_source.get_statistics() is not None
     # no statistics
-    test_source = FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
-                                         fetch_file_list=False)
+    test_source = FileSource.from_source(
+        ESSENTIAL_DATA_ARCHIVE_NAME, fetch_file_list=False
+    )
     assert test_source.get_statistics() is None
     test_source.refresh()
     assert test_source.get_statistics() is not None
@@ -257,25 +273,23 @@ def test_file_list():
     fl_name = os.path.dirname(__file__) + "/temp/tflist.fin"
     FileStag.delete(fl_name)
     secret_path = SecretStr(test_dir)  # test usage of SecretStr
-    file_source = FileSource.from_source(secret_path,
-                                         fetch_file_list=True,
-                                         file_list_name=(fl_name, 1))
+    file_source = FileSource.from_source(
+        secret_path, fetch_file_list=True, file_list_name=(fl_name, 1)
+    )
     assert len(file_source.file_list) == 3
     assert len(file_source) == 3
     assert "a.bin" in file_source
     FileStag.save(test_dir + "d.bin", data=b"123")
-    file_source = FileSource.from_source(test_dir,
-                                         fetch_file_list=True,
-                                         file_list_name=(fl_name, 1))
+    file_source = FileSource.from_source(
+        test_dir, fetch_file_list=True, file_list_name=(fl_name, 1)
+    )
     assert len(file_source.file_list) == 3
     assert "d.bin" not in file_source
-    file_source = FileSource.from_source(test_dir,
-                                         fetch_file_list=True,
-                                         file_list_name=fl_name)
+    file_source = FileSource.from_source(
+        test_dir, fetch_file_list=True, file_list_name=fl_name
+    )
     assert len(file_source.file_list) == 3
-    FileSource.from_source(test_dir,
-                           fetch_file_list=True,
-                           file_list_name=(fl_name, 2))
+    FileSource.from_source(test_dir, fetch_file_list=True, file_list_name=(fl_name, 2))
 
 
 def test_hash(tmp_path):
@@ -317,9 +331,11 @@ def test_copy_to(tmp_path):
         shutil.rmtree(test_target)
     except FileNotFoundError:
         pass
-    source = FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
-                                    search_path="fonts/",
-                                    sorting_callback=lambda x: x.filename)
+    source = FileSource.from_source(
+        ESSENTIAL_DATA_ARCHIVE_NAME,
+        search_path="fonts/",
+        sorting_callback=lambda x: x.filename,
+    )
 
     assert len(source.file_list) == 20
     os.makedirs(test_target, exist_ok=True)
@@ -331,8 +347,7 @@ def test_copy_to(tmp_path):
         pass
     sink = FileSink.with_target(test_target)
     source.copy_to(sink)
-    assert len(
-        FileStag.load(test_target + "/Roboto/LICENSE.txt")) == 11560
+    assert len(FileStag.load(test_target + "/Roboto/LICENSE.txt")) == 11560
     copies = FileSource.from_source(test_target)
     assert len(copies.file_list) == len(source.file_list)
     try:
@@ -377,9 +392,11 @@ def test_copy_errors(tmp_path):
         shutil.rmtree(test_target)
     except FileNotFoundError:
         pass
-    source = FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
-                                    search_path="fonts/",
-                                    sorting_callback=lambda x: x.filename)
+    source = FileSource.from_source(
+        ESSENTIAL_DATA_ARCHIVE_NAME,
+        search_path="fonts/",
+        sorting_callback=lambda x: x.filename,
+    )
     assert len(source.file_list) == 20
     os.makedirs(test_target, exist_ok=True)
     source.copy("Roboto/LICENSE.txt", test_target + "/TestFile.txt")
@@ -405,8 +422,7 @@ def test_copy_errors(tmp_path):
         error_list = []
         source.copy_to(test_target, error_log=error_list, overwrite=False)
         assert len(error_list) > 0
-    with mock.patch("scistag.filestag.FileStag.save",
-                    lambda x, d, overwrite: False):
+    with mock.patch("scistag.filestag.FileStag.save", lambda x, d, overwrite: False):
         error_list = []
         source.copy_to(test_target, error_log=error_list, overwrite=False)
         assert len(error_list) > 0
@@ -434,15 +450,19 @@ def test_sorting():
     Tests the sorting functions
     """
     with pytest.raises(ValueError):
-        FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
-                               search_path="fonts/",
-                               sorting_callback=lambda x: x.filename,
-                               fetch_file_list=False)
-    source = FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
-                                    search_path="fonts/",
-                                    sorting_callback=lambda x: x.filename,
-                                    fetch_file_list=True)
-    assert source.file_list[0].filename == 'JetBrains Mono/AUTHORS.txt'
+        FileSource.from_source(
+            ESSENTIAL_DATA_ARCHIVE_NAME,
+            search_path="fonts/",
+            sorting_callback=lambda x: x.filename,
+            fetch_file_list=False,
+        )
+    source = FileSource.from_source(
+        ESSENTIAL_DATA_ARCHIVE_NAME,
+        search_path="fonts/",
+        sorting_callback=lambda x: x.filename,
+        fetch_file_list=True,
+    )
+    assert source.file_list[0].filename == "JetBrains Mono/AUTHORS.txt"
 
 
 def test_copy(tmp_path):
@@ -454,9 +474,11 @@ def test_copy(tmp_path):
         shutil.rmtree(test_target)
     except FileNotFoundError:
         pass
-    source = FileSource.from_source(ESSENTIAL_DATA_ARCHIVE_NAME,
-                                    search_path="fonts/",
-                                    sorting_callback=lambda x: x.filename)
+    source = FileSource.from_source(
+        ESSENTIAL_DATA_ARCHIVE_NAME,
+        search_path="fonts/",
+        sorting_callback=lambda x: x.filename,
+    )
     sink = FileSink.with_target(test_target)
     fetched = False
 
@@ -492,22 +514,40 @@ def test_copy(tmp_path):
         stored_fn = fn
         stored_size = size
 
-    source.copy("Roboto/LICENSE.txt", test_target + "out1.txt",
-                on_fetch=on_fetch, on_fetch_done=on_fetch_done)
+    source.copy(
+        "Roboto/LICENSE.txt",
+        test_target + "out1.txt",
+        on_fetch=on_fetch,
+        on_fetch_done=on_fetch_done,
+    )
     assert fetched
     assert fetch_done
     assert fetch_size > 50
 
-    source.copy("Roboto/LICENSE.txt", test_target + "out1.txt",
-                on_fetch=on_fetch, on_fetch_done=on_fetch_done,
-                overwrite=False, on_skip=on_skip)
+    source.copy(
+        "Roboto/LICENSE.txt",
+        test_target + "out1.txt",
+        on_fetch=on_fetch,
+        on_fetch_done=on_fetch_done,
+        overwrite=False,
+        on_skip=on_skip,
+    )
     assert skipped
-    source.copy("Roboto/LICENSE.txt", test_target + "out1.txt",
-                on_fetch=on_fetch, on_fetch_done=on_fetch_done,
-                overwrite=False)
-    source.copy("Roboto/LICENSE.txt", test_target + "out1.txt",
-                on_fetch=on_fetch, on_fetch_done=on_fetch_done,
-                on_error=on_error, on_stored=on_stored)
+    source.copy(
+        "Roboto/LICENSE.txt",
+        test_target + "out1.txt",
+        on_fetch=on_fetch,
+        on_fetch_done=on_fetch_done,
+        overwrite=False,
+    )
+    source.copy(
+        "Roboto/LICENSE.txt",
+        test_target + "out1.txt",
+        on_fetch=on_fetch,
+        on_fetch_done=on_fetch_done,
+        on_error=on_error,
+        on_stored=on_stored,
+    )
     assert len(stored_fn) > 0
     assert stored_size == 11560
     assert not error
@@ -515,25 +555,34 @@ def test_copy(tmp_path):
     source.copy("Roboto/LICENSE.txt", "out_sink.txt", sink=sink)
     assert len(FileStag.load(test_target + "/out_sink.txt")) == 11560
     with mock.patch.object(source, "fetch", lambda fn: None):
-        source.copy("Roboto/LICENSE.txt", test_target + "out1.txt",
-                    on_fetch=on_fetch, on_fetch_done=on_fetch_done,
-                    on_error=on_error)
+        source.copy(
+            "Roboto/LICENSE.txt",
+            test_target + "out1.txt",
+            on_fetch=on_fetch,
+            on_fetch_done=on_fetch_done,
+            on_error=on_error,
+        )
     assert error
     error = False
-    with mock.patch("scistag.filestag.FileStag.save",
-                    lambda fn, data, overwrite: False):
-        source.copy("Roboto/LICENSE.txt", test_target + "out1.txt",
-                    on_fetch=on_fetch, on_fetch_done=on_fetch_done,
-                    on_error=on_error)
+    with mock.patch(
+        "scistag.filestag.FileStag.save", lambda fn, data, overwrite: False
+    ):
+        source.copy(
+            "Roboto/LICENSE.txt",
+            test_target + "out1.txt",
+            on_fetch=on_fetch,
+            on_fetch_done=on_fetch_done,
+            on_error=on_error,
+        )
     assert error
     with mock.patch.object(source, "fetch", lambda fn: None):
         source.copy("Roboto/LICENSE.txt", test_target + "out1.txt")
     assert error
     error = False
-    with mock.patch("scistag.filestag.FileStag.save",
-                    lambda fn, data, overwrite: False):
-        source.copy("Roboto/LICENSE.txt", test_target + "out1.txt",
-                    on_error=on_error)
+    with mock.patch(
+        "scistag.filestag.FileStag.save", lambda fn, data, overwrite: False
+    ):
+        source.copy("Roboto/LICENSE.txt", test_target + "out1.txt", on_error=on_error)
     assert error
 
 

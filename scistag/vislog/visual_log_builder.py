@@ -18,8 +18,7 @@ from pydantic import BaseModel
 
 from scistag.imagestag import Image, Canvas, PixelFormat, Size2D
 
-from scistag.vislog.visual_log import VisualLog, MD, TXT, HTML, \
-    TABLE_PIPE
+from scistag.vislog.visual_log import VisualLog, MD, TXT, HTML, TABLE_PIPE
 from scistag.plotstag import Figure, Plot, MPHelper
 
 if TYPE_CHECKING:
@@ -31,8 +30,19 @@ if TYPE_CHECKING:
     from scistag.vislog.extensions.numpy_logger import NumpyLogger
     from scistag.vislog.extensions.collection_logger import CollectionLogger
 
-LogableContent = Union[str, float, int, bool, np.ndarray,
-                       "pd.DataFrame", "pd.Series", list, dict, Image, Figure]
+LogableContent = Union[
+    str,
+    float,
+    int,
+    bool,
+    np.ndarray,
+    "pd.DataFrame",
+    "pd.Series",
+    list,
+    dict,
+    Image,
+    Figure,
+]
 """
 Definition of all types which can be logged via `add` or provided as content
 for tables, lists and divs.
@@ -44,6 +54,7 @@ class VisualLogBackup(BaseModel):
     Contains the backup of a log and all necessary data to integrate it into
     another log.
     """
+
     data: bytes
     "The logs html representation"
 
@@ -69,19 +80,21 @@ class VisualLogBuilder:
         """
         "The main logging target"
         from .extensions.test_helper import TestHelper
+
         self.test = TestHelper(self)
         """
         Helper class for adding regression tests to the log.
         """
         from .extensions.image_logger import ImageLogger
+
         self.image = ImageLogger(self)
         """
         Helper object for adding images to the log
         
         Can also be called directly to add a simple image to the log.
         """
-        from .extensions.table_logger import \
-            TableLogger
+        from .extensions.table_logger import TableLogger
+
         self.table = TableLogger(self)
         """
         Helper class for adding tables to the log.
@@ -89,11 +102,13 @@ class VisualLogBuilder:
         Can also be called directly to add a simple table to the log.
         """
         from .extensions.time_logger import TimeLogger
+
         self.time = TimeLogger(self)
         """
         Helper class for time measuring and logging times to the log
         """
         from .extensions.basic_logger import BasicLogger
+
         self.log = BasicLogger(self)
         self._md: Union["MarkdownLogger", None] = None
         """
@@ -174,6 +189,7 @@ class VisualLogBuilder:
         :return: The returned data (if any)
         """
         import inspect
+
         frame = inspect.currentframe()
         result = eval(code, frame.f_back.f_globals, frame.f_back.f_locals)
         if log_code:
@@ -210,6 +226,7 @@ class VisualLogBuilder:
             except TypeError:
                 raise ValueError(f"Data type could not be detected")
             from scistag.imagestag.image import SUPPORTED_IMAGE_FILETYPES
+
             if ft is not None and ft.extension in SUPPORTED_IMAGE_FILETYPES:
                 self.image(content)
                 return self
@@ -225,6 +242,7 @@ class VisualLogBuilder:
             return self
         # pandas content frame
         import pandas as pd
+
         if isinstance(content, (pd.DataFrame, pd.Series)):
             self.pd(content)
             return self
@@ -266,7 +284,7 @@ class VisualLogBuilder:
         lines = html.escape(text)
         lines = lines.split("\n")
         for index, text in enumerate(lines):
-            self.add_html(f'{text}<br>\n')
+            self.add_html(f"{text}<br>\n")
             if index == len(lines) - 1:
                 self.add_md(f"{text}\n")
             else:
@@ -314,9 +332,7 @@ class VisualLogBuilder:
         :return: The builder
         """
         self.add_html('<div style="break-after:page"></div>')
-        self.add_txt(
-            f"\n{'_' * 40}\n",
-            md=True)
+        self.add_txt(f"\n{'_' * 40}\n", md=True)
         return self
 
     def sub(self, text: str, level: int = 2) -> VisualLogBuilder:
@@ -331,7 +347,7 @@ class VisualLogBuilder:
         md_level = "#" * level
         escaped_lines = html.escape(text)
         for cur_row in escaped_lines.split("\n"):
-            self.add_html(f'<h{level}>{cur_row}</h{level}>\n')
+            self.add_html(f"<h{level}>{cur_row}</h{level}>\n")
         self.add_md(f"{md_level} {text}")
         if self.add_txt(text) and level <= 4:
             character = "=" if level < 2 else "-"
@@ -396,8 +412,8 @@ class VisualLogBuilder:
         """
         Methods to add markdown content
         """
-        from .extensions.markdown_logger import \
-            MarkdownLogger
+        from .extensions.markdown_logger import MarkdownLogger
+
         if self._md is None:
             self._md = MarkdownLogger(self)
         return self._md
@@ -408,6 +424,7 @@ class VisualLogBuilder:
         Methods to add Pandas content such as DataFrames and DataSeries
         """
         from .extensions.pandas_logger import PandasLogger
+
         if self._pd is None:
             self._pd = PandasLogger(self)
         return self._pd
@@ -418,6 +435,7 @@ class VisualLogBuilder:
         Methods to add Numpy data to the log such as matrices and vectors
         """
         from .extensions.numpy_logger import NumpyLogger
+
         if self._np is None:
             self._np = NumpyLogger(self)
         return self._np
@@ -428,6 +446,7 @@ class VisualLogBuilder:
         Methods to add dictionaries and lists to the log
         """
         from .extensions.collection_logger import CollectionLogger
+
         if self._collection is None:
             self._collection = CollectionLogger(self)
         return self._collection
@@ -440,10 +459,12 @@ class VisualLogBuilder:
         :return: The builder
         """
         escaped_code = html.escape(code).replace("\n", "<br>")
-        self.add_html(f'Code<br><table class="source_code"\n>'
-                      f'<tr><td style="padding: 5px;" align="left">\n'
-                      f'<code>{escaped_code}</code>\n'
-                      f'</td></tr></table><br><br>\n')
+        self.add_html(
+            f'Code<br><table class="source_code"\n>'
+            f'<tr><td style="padding: 5px;" align="left">\n'
+            f"<code>{escaped_code}</code>\n"
+            f"</td></tr></table><br><br>\n"
+        )
         self.add_md(f"```\n{code}\n```")
         self.add_txt(code)
         self.clip_logs()
@@ -458,7 +479,7 @@ class VisualLogBuilder:
         :return: The escaped text
         """
         escaped = html.escape(text)
-        res = escaped.encode('ascii', 'xmlcharrefreplace')
+        res = escaped.encode("ascii", "xmlcharrefreplace")
         return res.decode("utf-8")
 
     def log_statistics(self):
@@ -466,18 +487,22 @@ class VisualLogBuilder:
         Adds statistics about the VisualLog as table to the log
         """
         statistics = self.target_log.get_statistics()
-        self.table([["Updates", f"{statistics.update_counter} "
-                                f"total updates"],
-                    ["Effective lps",
-                     f"{statistics.update_rate:0.2f} updates per second"],
-                    ["Uptime",
-                     f"{statistics.uptime:0.2f} seconds"]],
-                   index=True)
+        self.table(
+            [
+                ["Updates", f"{statistics.update_counter} " f"total updates"],
+                ["Effective lps", f"{statistics.update_rate:0.2f} updates per second"],
+                ["Uptime", f"{statistics.uptime:0.2f} seconds"],
+            ],
+            index=True,
+        )
 
-    def figure(self, figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
-               name: str | None = None,
-               alt_text: str | None = None,
-               _out_image_data: io.IOBase | None = None):
+    def figure(
+        self,
+        figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
+        name: str | None = None,
+        alt_text: str | None = None,
+        _out_image_data: io.IOBase | None = None,
+    ):
         """
         Adds a figure to the log
 
@@ -497,10 +522,14 @@ class VisualLogBuilder:
             self.image(image, name, alt_text=alt_text)
             if _out_image_data is not None:
                 _out_image_data.write(
-                    image.encode(filetype=self.target_log.image_format,
-                                 quality=self.target_log.image_quality))
+                    image.encode(
+                        filetype=self.target_log.image_format,
+                        quality=self.target_log.image_quality,
+                    )
+                )
             return
         import matplotlib.pyplot as plt
+
         if not isinstance(figure, plt.Figure):
             figure = figure.figure
         image_data = MPHelper.figure_to_png(figure, transparent=False)
@@ -508,10 +537,9 @@ class VisualLogBuilder:
             _out_image_data.write(image_data)
         self.image(image_data, name, alt_text=alt_text)
 
-    def pyplot(self,
-               assertion_name: str | None = None,
-               assertion_hash: str | None = None
-               ) -> "PyPlotLogContext":
+    def pyplot(
+        self, assertion_name: str | None = None, assertion_hash: str | None = None
+    ) -> "PyPlotLogContext":
         """
         Opens a matplotlib context to add a figure directly to the plot.
 
@@ -532,11 +560,11 @@ class VisualLogBuilder:
 
 
         """
-        from scistag.vislog.extensions.pyplot_log_context import \
-            PyPlotLogContext
-        log_context = PyPlotLogContext(self,
-                                       assertion_name=assertion_name,
-                                       assertion_hash=assertion_hash)
+        from scistag.vislog.extensions.pyplot_log_context import PyPlotLogContext
+
+        log_context = PyPlotLogContext(
+            self, assertion_name=assertion_name, assertion_hash=assertion_hash
+        )
         return log_context
 
     @staticmethod
@@ -548,7 +576,7 @@ class VisualLogBuilder:
         :param name: The file's name
         :return: The hash name to be used as filename
         """
-        hashed_name = hashlib.md5(name.encode('utf-8')).hexdigest()
+        hashed_name = hashlib.md5(name.encode("utf-8")).hexdigest()
         return hashed_name
 
     @staticmethod

@@ -4,8 +4,9 @@ Implements the tests for the vislog module
 
 from scistag.tests.visual_test_log_scistag import VisualTestLogSciStag
 
-test_log = VisualTestLogSciStag(test_filename=__file__,
-                                formats_out={"html", "md", "txt"})
+test_log = VisualTestLogSciStag(
+    test_filename=__file__, formats_out={"html", "md", "txt"}
+)
 vl = test_log.default_builder
 
 

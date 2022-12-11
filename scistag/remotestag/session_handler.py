@@ -10,6 +10,7 @@ class SessionHandler:
     """
     Handles all of this server's sessions
     """
+
     shared_handler: SessionHandler = None
 
     def __init__(self):
@@ -69,7 +70,9 @@ class SessionHandler:
             with session.lock:
                 if session.session_timeout is None or session.session_timeout == 0:
                     continue
-                if cur_time - session.last_interaction > session.session_timeout:  # session timeout
+                if (
+                    cur_time - session.last_interaction > session.session_timeout
+                ):  # session timeout
                     garbage.append(session)
                     session.unloaded = True
                     session.handle_unload()
@@ -85,8 +88,7 @@ class SessionHandler:
 
         :return: ASCII encoded UUID
         """
-        return base64.urlsafe_b64encode(uuid.uuid1().bytes).rstrip(b'=').decode(
-            'ascii')
+        return base64.urlsafe_b64encode(uuid.uuid1().bytes).rstrip(b"=").decode("ascii")
 
     @staticmethod
     def session_id_to_uuid(session_id: str) -> uuid.UUID:
@@ -96,7 +98,7 @@ class SessionHandler:
         :param session_id: The session id
         :return: The original UUID
         """
-        return uuid.UUID(bytes=base64.urlsafe_b64decode(session_id + '=='))
+        return uuid.UUID(bytes=base64.urlsafe_b64decode(session_id + "=="))
 
 
 SessionHandler.shared_handler = SessionHandler()

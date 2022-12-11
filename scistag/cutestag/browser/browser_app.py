@@ -18,7 +18,7 @@ DEFAULT_URL = "https://github.com/SciStag/SciStag#readme"
 _UNIT_TESTING = "PYTEST_CURRENT_TEST" in os.environ
 
 from PySide6.QtCore import QUrl, QLoggingCategory
-from PySide6.QtWidgets import (QApplication, QMainWindow)
+from PySide6.QtWidgets import QApplication, QMainWindow
 from PySide6.QtWebEngineWidgets import QWebEngineView
 
 
@@ -33,7 +33,7 @@ class CuteBrowserWindow(QMainWindow):
         """
         super().__init__()
         self.initial_url = initial_url
-        self.setWindowTitle('PySide6 WebEngineWidgets Example')
+        self.setWindowTitle("PySide6 WebEngineWidgets Example")
         web_engine_context_log = QLoggingCategory("qt.webenginecontext")
         web_engine_context_log.setFilterRules("*.info=false")
         self.web_view = QWebEngineView()
@@ -55,9 +55,12 @@ class CuteBrowserApp:
     pre-defined size
     """
 
-    def __init__(self, initial_url: str = DEFAULT_URL,
-                 initial_size: Size2D | None = None,
-                 simple: bool = False):
+    def __init__(
+        self,
+        initial_url: str = DEFAULT_URL,
+        initial_size: Size2D | None = None,
+        simple: bool = False,
+    ):
         """
         :param initial_url: The start page's URL
         :param initial_size: The initial window size in pixels
@@ -79,8 +82,7 @@ class CuteBrowserApp:
         max_space = self.main_window.screen().availableGeometry()
         initial_size = self.initial_size
         if initial_size is None:
-            initial_size = Size2D(1280,
-                                  1024)
+            initial_size = Size2D(1280, 1024)
         if initial_size.width > max_space.width():
             initial_size.width = max_space.width()
         if initial_size.height > max_space.height():
@@ -97,9 +99,9 @@ class CuteBrowserApp:
 
 
 if __name__ == "__main__":
+
     def test_run():
         app = CuteBrowserApp()
         app.run()
-
 
     test_run()

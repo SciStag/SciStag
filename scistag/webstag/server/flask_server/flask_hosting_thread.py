@@ -25,6 +25,7 @@ class FlaskHostingThread(ManagedThread):
         super().__init__("FlaskServer")
         self.server = server
         from scistag.webstag.server.web_stag_server import WebStagServer
+
         assert isinstance(server, WebStagServer)
 
     def run(self) -> None:

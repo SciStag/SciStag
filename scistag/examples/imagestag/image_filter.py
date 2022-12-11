@@ -24,12 +24,12 @@ def main():
     panel.pack(side="top", fill="both", expand="yes")
     # the falsecolor image
     img3 = ImageTk.PhotoImage(
-        ColorMapFilter(color_map="viridis").filter(image).to_pil())
+        ColorMapFilter(color_map="viridis").filter(image).to_pil()
+    )
     panel = tkinter.Label(root, image=img3)
     panel.pack(side="top", fill="both", expand="yes")
     # a rescaled image
-    img4 = ImageTk.PhotoImage(
-        ResizeFilter(target_aspect=16 / 9).filter(image).to_pil())
+    img4 = ImageTk.PhotoImage(ResizeFilter(target_aspect=16 / 9).filter(image).to_pil())
     panel = tkinter.Label(root, image=img4)
     panel.pack(side="top", fill="both", expand="yes")
 

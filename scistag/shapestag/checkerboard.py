@@ -5,8 +5,15 @@ from __future__ import annotations
 import math
 import typing
 
-from scistag.imagestag import (Canvas, Color, Colors, Bounding2D, Pos2D, Size2D,
-                               ColorTypes)
+from scistag.imagestag import (
+    Canvas,
+    Color,
+    Colors,
+    Bounding2D,
+    Pos2D,
+    Size2D,
+    ColorTypes,
+)
 from scistag.imagestag.bounding import Bounding2DTypes
 from scistag.imagestag.pos2d import Pos2DTypes
 from scistag.imagestag.size2d import Size2DTypes
@@ -40,15 +47,18 @@ class Checkerboard(Shape):
         "color_b",
         "tile_size",
         "bounding",
-        "offset"}
+        "offset",
+    }
 
-    def __init__(self,
-                 bounding: Bounding2DTypes = None,
-                 col_row_count: Size2DTypes | None = None,
-                 tile_size: float = 16.0,
-                 color_a: ColorTypes = Colors.BLACK,
-                 color_b: ColorTypes = Colors.WHITE,
-                 offset: Pos2DTypes | None = None):
+    def __init__(
+        self,
+        bounding: Bounding2DTypes = None,
+        col_row_count: Size2DTypes | None = None,
+        tile_size: float = 16.0,
+        color_a: ColorTypes = Colors.BLACK,
+        color_b: ColorTypes = Colors.WHITE,
+        offset: Pos2DTypes | None = None,
+    ):
         """
         :param bounding: The region to be covered in pixels
         :param col_row_count: The count of columns and rows (alternative to region)
@@ -57,8 +67,9 @@ class Checkerboard(Shape):
         :param color_b: The second color (used for all even fields (col+row))
         :param offset: The offset in pixels by which the grid shall be moved
         """
-        super().__init__(self.__class__.__name__,
-                         hashable_properties=self.HASHABLE_PROPERTIES)
+        super().__init__(
+            self.__class__.__name__, hashable_properties=self.HASHABLE_PROPERTIES
+        )
         if bounding is None and col_row_count is None:
             raise ValueError("Neither region nor size passed")
         if bounding is not None and col_row_count is not None:
@@ -73,9 +84,11 @@ class Checkerboard(Shape):
             int_size = Size2D(col_row_count).to_int_tuple()
             self.bounding = Bounding2D(
                 pos=(0, 0) if offset is None else Pos2D(offset),
-                size=(int_size[0] * self.tile_size.width,
-                      int_size[
-                          1] * self.tile_size.height))
+                size=(
+                    int_size[0] * self.tile_size.width,
+                    int_size[1] * self.tile_size.height,
+                ),
+            )
         self.color_a = color_a if isinstance(color_a, Color) else Color(color_a)
         "The first color (used for all uneven fields)"
         self.color_b = color_b if isinstance(color_b, Color) else Color(color_b)
@@ -97,13 +110,9 @@ class Checkerboard(Shape):
             for cur_col in range(self.columns):
                 cur_x = ox + cur_col * sy
                 if (cur_col + cur_row) % 2 == 0:
-                    bright_rects.append(
-                        ((cur_x, cur_y), (cur_x + sx, cur_y + sy)))
+                    bright_rects.append(((cur_x, cur_y), (cur_x + sx, cur_y + sy)))
                 else:
-                    dark_rects.append(
-                        ((cur_x, cur_y), (cur_x + sx, cur_y + sy)))
+                    dark_rects.append(((cur_x, cur_y), (cur_x + sx, cur_y + sy)))
         # draw dark and bright rects in one batch each
-        target.rectangle_list(bright_rects,
-                              single_color=self.color_b.to_int_rgba())
-        target.rectangle_list(dark_rects,
-                              single_color=self.color_a.to_int_rgba())
+        target.rectangle_list(bright_rects, single_color=self.color_b.to_int_rgba())
+        target.rectangle_list(dark_rects, single_color=self.color_a.to_int_rgba())

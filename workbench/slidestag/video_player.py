@@ -44,15 +44,17 @@ class VideoPlayer(Widget):
         self.auto_play = parameters.get(VIDEO_PLAYER_AUTO_PLAY, True)
         self._repeat = parameters.get(VIDEO_PLAYER_REPEAT, False)
         self.background_color: Color = parameters.get(
-            VIDEO_PLAYER_BACKGROUND_COLOR, Color(0, 0, 0, 255))
+            VIDEO_PLAYER_BACKGROUND_COLOR, Color(0, 0, 0, 255)
+        )
         if isinstance(self.background_color, tuple):
             self.background_color = Color(*self.background_color)
         self.last_image = None  # The last video image frame
         self.image_update_timestamp = 0.0
         "Timestamp of the last image update"
         if VIDEO_PLAYER_VIDEO in parameters:
-            self.video_source = VideoSourceMovie(parameters[VIDEO_PLAYER_VIDEO],
-                                                 self.get_session().get_media_paths())
+            self.video_source = VideoSourceMovie(
+                parameters[VIDEO_PLAYER_VIDEO], self.get_session().get_media_paths()
+            )
             self.handle_video_loaded()
         elif VIDEO_PLAYER_VIDEO_SOURCE in parameters:
             self.video_source = parameters[VIDEO_PLAYER_VIDEO_SOURCE]
@@ -119,33 +121,48 @@ class VideoPlayer(Widget):
         if self.video_source.update_progress():  # TODO To be moved to a timer
             self.repaint()
             self.image_update_timestamp, next_frame = self.video_source.get_image(
-                self.image_update_timestamp)
+                self.image_update_timestamp
+            )
             if next_frame is not None:
                 next_frame: Image
-                if width != next_frame.width or height != next_frame.height:  # resizing required?
-                    max_scale = min(width / next_frame.width,
-                                    height / next_frame.height)
+                if (
+                    width != next_frame.width or height != next_frame.height
+                ):  # resizing required?
+                    max_scale = min(
+                        width / next_frame.width, height / next_frame.height
+                    )
                     tar_width = int(next_frame.width * max_scale)
                     tar_height = int(next_frame.height * max_scale)
-                    self.last_image = next_frame.resized(
-                        (tar_width, tar_height))
+                    self.last_image = next_frame.resized((tar_width, tar_height))
                 else:
                     self.last_image = next_frame
 
         if self.video_source.valid and self.last_image is not None:
             if width != self.last_image.width or height != self.last_image.height:
                 if self.background_color.to_int_rgba()[3] != 0:
-                    canvas.rect(pos=(0.0, 0.0), size=self.size,
-                                color=self.background_color,
-                                outline_color=Color(0, 0, 0), outline_width=0)
-            canvas.draw_image(self.last_image,
-                              (width // 2 - self.last_image.width // 2,
-                               height // 2 - self.last_image.height // 2))
+                    canvas.rect(
+                        pos=(0.0, 0.0),
+                        size=self.size,
+                        color=self.background_color,
+                        outline_color=Color(0, 0, 0),
+                        outline_width=0,
+                    )
+            canvas.draw_image(
+                self.last_image,
+                (
+                    width // 2 - self.last_image.width // 2,
+                    height // 2 - self.last_image.height // 2,
+                ),
+            )
         else:
             if self.background_color.to_int_rgba()[3] != 0:
-                canvas.rect(pos=(0.0, 0.0), size=self.size,
-                            color=self.background_color,
-                            outline_color=Color(0, 0, 0), outline_width=0)
+                canvas.rect(
+                    pos=(0.0, 0.0),
+                    size=self.size,
+                    color=self.background_color,
+                    outline_color=Color(0, 0, 0),
+                    outline_width=0,
+                )
 
         if not super().handle_paint(event):
             return False
@@ -181,7 +198,12 @@ class VideoPlayer(Widget):
         return True
 
 
-__all__ = ["VideoPlayer", "VIDEO_PLAYER_VIDEO", "VIDEO_PLAYER_AUTO_PLAY",
-           "VIDEO_PLAYER_REPEAT",
-           "VIDEO_PLAYER_AUTO_SIZE", "VIDEO_PLAYER_VIDEO_SOURCE",
-           "VIDEO_PLAYER_BACKGROUND_COLOR"]
+__all__ = [
+    "VideoPlayer",
+    "VIDEO_PLAYER_VIDEO",
+    "VIDEO_PLAYER_AUTO_PLAY",
+    "VIDEO_PLAYER_REPEAT",
+    "VIDEO_PLAYER_AUTO_SIZE",
+    "VIDEO_PLAYER_VIDEO_SOURCE",
+    "VIDEO_PLAYER_BACKGROUND_COLOR",
+]

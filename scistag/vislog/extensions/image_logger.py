@@ -11,8 +11,7 @@ import numpy as np
 from filetype import filetype
 from scistag.filestag import FilePath, FileStag
 from scistag.imagestag import Image, Canvas
-from scistag.vislog.extensions.builder_extension import \
-    BuilderExtension
+from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
     from scistag.imagestag import PixelFormat
@@ -34,16 +33,19 @@ class ImageLogger(BuilderExtension):
         "The log we are logging to"
         self.show = self.__call__
 
-    def __call__(self, source: Image | Canvas | str | bytes | np.ndarray,
-                 name: str | None = None,
-                 alt_text: str | None = None,
-                 pixel_format: Optional["PixelFormat"] | str | None = None,
-                 download: bool = False,
-                 scaling: float = 1.0,
-                 max_width: int | float | None = None,
-                 format: str | tuple[str, int] | None = None,
-                 optical_scaling: float = 1.0,
-                 html_linebreak=True):
+    def __call__(
+        self,
+        source: Image | Canvas | str | bytes | np.ndarray,
+        name: str | None = None,
+        alt_text: str | None = None,
+        pixel_format: Optional["PixelFormat"] | str | None = None,
+        download: bool = False,
+        scaling: float = 1.0,
+        max_width: int | float | None = None,
+        format: str | tuple[str, int] | None = None,
+        optical_scaling: float = 1.0,
+        html_linebreak=True,
+    ):
         """
         Adds an image to the log.
 
@@ -84,16 +86,21 @@ class ImageLogger(BuilderExtension):
             source = Image(source, pixel_format=pixel_format)
         html_lb = "<br>" if html_linebreak else ""
         if isinstance(source, str):
-            if not source.lower().startswith("http") or download or \
-                    self.log.embed_images:
+            if (
+                not source.lower().startswith("http")
+                or download
+                or self.log.embed_images
+            ):
                 source = Image(source=source)
             else:
-                self._insert_image_reference(name,
-                                             source,
-                                             alt_text,
-                                             scaling=scaling,
-                                             max_width=max_width,
-                                             html_linebreak=html_linebreak)
+                self._insert_image_reference(
+                    name,
+                    source,
+                    alt_text,
+                    scaling=scaling,
+                    max_width=max_width,
+                    html_linebreak=html_linebreak,
+                )
                 return
         filename = self.builder.reserve_unique_name(name)
         if isinstance(source, Canvas):
@@ -104,19 +111,18 @@ class ImageLogger(BuilderExtension):
             max_size = None
             if max_width is not None:
                 if scaling != 1.0:
-                    raise ValueError(
-                        "Can't set max_size and scaling at the same time.")
+                    raise ValueError("Can't set max_size and scaling at the same time.")
                 scaling = None
                 if isinstance(max_width, float):
-                    max_width = int(
-                        round(self.builder.max_fig_size.width * max_width))
+                    max_width = int(round(self.builder.max_fig_size.width * max_width))
                 max_size = (max_width, None)
             if not isinstance(source, Image):
                 source = Image(source)
             source = source.resized_ext(factor=scaling, max_size=max_size)
-            size_definition = \
-                f" width={int(round(source.width * optical_scaling))} " \
+            size_definition = (
+                f" width={int(round(source.width * optical_scaling))} "
                 f"height={int(round(source.height * optical_scaling))}"
+            )
         # encode image if required
         if isinstance(source, bytes):
             encoded_image = source
@@ -127,20 +133,20 @@ class ImageLogger(BuilderExtension):
                     img_format, quality = format
                 else:
                     img_format = format
-            encoded_image = source.encode(
-                filetype=img_format,
-                quality=quality)
+            encoded_image = source.encode(filetype=img_format, quality=quality)
         # store on disk if required
         if self.log.log_to_disk:
-            file_location = self._log_image_to_disk(filename, name, source,
-                                                    encoded_image)
+            file_location = self._log_image_to_disk(
+                filename, name, source, encoded_image
+            )
         # embed if required
         if self.log.embed_images:
             embed_data = self._build_get_embedded_image(encoded_image)
             file_location = embed_data
         if len(file_location):
             self.log.write_html(
-                f'<img src="{file_location}" {size_definition}>{html_lb}\n')
+                f'<img src="{file_location}" {size_definition}>{html_lb}\n'
+            )
         if self.log.log_txt_images and self.log.txt_export:
             if not isinstance(source, Image):
                 source = Image(source)
@@ -151,14 +157,16 @@ class ImageLogger(BuilderExtension):
             self.log.write_txt(f"\n[IMAGE][{alt_text}]\n")
         self.log.clip_logs()
 
-    def _insert_image_reference(self,
-                                name,
-                                source,
-                                alt_text,
-                                scaling: float = 1.0,
-                                max_width: int | None = None,
-                                html_scaling: float = 1.0,
-                                html_linebreak: bool = True):
+    def _insert_image_reference(
+        self,
+        name,
+        source,
+        alt_text,
+        scaling: float = 1.0,
+        max_width: int | None = None,
+        html_scaling: float = 1.0,
+        html_linebreak: bool = True,
+    ):
         """
         Inserts a link to an image in the html logger without actually
         downloading or storing the image locally
@@ -179,20 +187,21 @@ class ImageLogger(BuilderExtension):
             image = Image(source)
             if max_width is not None:
                 scaling = max_width / image.width
-            width, height = (int(round(image.width * scaling * html_scaling)),
-                             int(round(image.height * scaling * html_scaling)))
+            width, height = (
+                int(round(image.width * scaling * html_scaling)),
+                int(round(image.height * scaling * html_scaling)),
+            )
             self.log.write_html(
-                f'<img src="{source}" with={width} height={height}>{html_lb}')
+                f'<img src="{source}" with={width} height={height}>{html_lb}'
+            )
         else:
             self.log.write_html(f'<img src="{source}">{html_lb}')
-        self.log.write_md(f'![{name}]({source})\n')
+        self.log.write_md(f"![{name}]({source})\n")
         self.log.write_txt(f"\n[IMAGE][{alt_text}]\n")
 
-    def _log_image_to_disk(self,
-                           filename: str,
-                           name: str,
-                           source: bytes | Image,
-                           encoded_image) -> str:
+    def _log_image_to_disk(
+        self, filename: str, name: str, source: bytes | Image, encoded_image
+    ) -> str:
         """
         Stores an image on the disk
 
@@ -205,24 +214,24 @@ class ImageLogger(BuilderExtension):
         file_location = ""
         if isinstance(source, bytes):
             import filetype
+
             file_type = filetype.guess(source)
-            target_filename = (self.log.target_dir +
-                               f"/{filename}.{file_type.extension}")
+            target_filename = self.log.target_dir + f"/{filename}.{file_type.extension}"
             if self._need_to_store_images_on_disk():
                 FileStag.save(target_filename, source)
         else:
-            extension = (self.log.image_format if
-                         isinstance(self.log.image_format, str)
-                         else self.log.image_format[0])
-            target_filename = \
-                self.log.target_dir + f"/{filename}.{extension}"
+            extension = (
+                self.log.image_format
+                if isinstance(self.log.image_format, str)
+                else self.log.image_format[0]
+            )
+            target_filename = self.log.target_dir + f"/{filename}.{extension}"
             if self._need_to_store_images_on_disk():
                 FileStag.save(target_filename, encoded_image)
         if not self.log.embed_images:
             file_location = FilePath.basename(target_filename)
         if self.log.md_export:
-            self.log.write_md(
-                f'![{name}]({FilePath.basename(target_filename)})\n')
+            self.log.write_md(f"![{name}]({FilePath.basename(target_filename)})\n")
         return file_location
 
     @staticmethod

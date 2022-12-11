@@ -37,7 +37,7 @@ def batch_iter(iterator, n, fast=False):
     if fast or isinstance(iterator, list):
         lst = list(iterator)
         for i in range(0, len(lst), n):
-            yield lst[i:i + n]
+            yield lst[i : i + n]
     else:
         cur_list = []
         for element in iterator:

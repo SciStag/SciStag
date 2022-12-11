@@ -66,8 +66,7 @@ class SimpleSlide(Slide):
     cls_repaint_frequency = 10.0
     "The automatic repaint frequency"
 
-    def __init__(self, slide_manager: SlideManager,
-                 parameters: dict = None) -> None:
+    def __init__(self, slide_manager: SlideManager, parameters: dict = None) -> None:
         super().__init__(slide_manager, parameters)
         self.build_callback = self.cls_load_callback
         self.paint_callback = self.cls_paint_callback
@@ -88,11 +87,19 @@ class SimpleSlide(Slide):
         return True
 
     @classmethod
-    def create_simple_app(cls, name="SlideStag", title: str | None = None,
-                          resolution=(1920, 1080),
-                          dpi=96.0, on_load=None, on_paint=None,
-                          on_tap=None, on_drag=None, on_mouse_move=None,
-                          repaint_frequency: float = 10.0) -> "SlideApp":
+    def create_simple_app(
+        cls,
+        name="SlideStag",
+        title: str | None = None,
+        resolution=(1920, 1080),
+        dpi=96.0,
+        on_load=None,
+        on_paint=None,
+        on_tap=None,
+        on_drag=None,
+        on_mouse_move=None,
+        repaint_frequency: float = 10.0,
+    ) -> "SlideApp":
         """
         Setups a simple SlideStag application
 

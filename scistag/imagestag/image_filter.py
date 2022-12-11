@@ -47,8 +47,7 @@ class ImageFilter:
         """
         return input_data
 
-    def filter(self, input_image: ImageSourceTypes | dict) -> \
-            ImageSourceTypes | dict:
+    def filter(self, input_image: ImageSourceTypes | dict) -> ImageSourceTypes | dict:
         """
         :param input_image: The input image. All common image types are supported. The output type of the filter will
         always match the input type (except in case of a string input of course).
@@ -70,33 +69,33 @@ class ImageFilter:
                 input_image[IMAGE_FILTER_IMAGE] = Image(image)
         else:
             input_image = {
-                IMAGE_FILTER_IMAGE: Image(input_image,
-                                          framework=ImsFramework.RAW)}
+                IMAGE_FILTER_IMAGE: Image(input_image, framework=ImsFramework.RAW)
+            }
         # convert pixel_format if the filter requires a special pixel_format
         if self.required_format is not None:
-            is_gray = input_image[
-                          IMAGE_FILTER_IMAGE].pixel_format != PixelFormat.GRAY
+            is_gray = input_image[IMAGE_FILTER_IMAGE].pixel_format != PixelFormat.GRAY
             if self.required_format == PixelFormat.GRAY and not is_gray:
                 input_image[IMAGE_FILTER_IMAGE] = Image(
                     input_image[IMAGE_FILTER_IMAGE].get_pixels_gray(),
-                    framework=ImsFramework.RAW)
+                    framework=ImsFramework.RAW,
+                )
             elif (
-                    self.required_format == PixelFormat.RGB or
-                    self.required_format == PixelFormat.RGBA) and \
-                    input_image[
-                        IMAGE_FILTER_IMAGE].pixel_format == PixelFormat.GRAY:
+                self.required_format == PixelFormat.RGB
+                or self.required_format == PixelFormat.RGBA
+            ) and input_image[IMAGE_FILTER_IMAGE].pixel_format == PixelFormat.GRAY:
                 input_image[IMAGE_FILTER_IMAGE] = Image(
                     input_image[IMAGE_FILTER_IMAGE].get_pixels_rgb(),
-                    framework=ImsFramework.RAW)
+                    framework=ImsFramework.RAW,
+                )
         # execute filter
         result = self._apply_filter(input_image)
         result[IMAGE_FILTER_NAME] = self.name
         # convert to original input pixel_format
-        if isinstance(original_input,
-                      dict):  # if a dictionary was passed in return all details
+        if isinstance(
+            original_input, dict
+        ):  # if a dictionary was passed in return all details
             return result
-        if isinstance(original_input,
-                      np.ndarray):  # convert back to numpy array?
+        if isinstance(original_input, np.ndarray):  # convert back to numpy array?
             return result[IMAGE_FILTER_IMAGE].get_pixels()
         elif isinstance(original_input, PIL.Image.Image):  # return PIL handle?
             return result[IMAGE_FILTER_IMAGE].to_pil()
@@ -104,6 +103,12 @@ class ImageFilter:
             return result[IMAGE_FILTER_IMAGE]
 
 
-__all__ = ["ImageFilter", "IMAGE_FILTER_IMAGE", "IMAGE_FILTER_ORIGINAL_IMAGE",
-           "IMAGE_FILTER_DATA",
-           "IMAGE_FILTER_MAY_MODIFY", "Image", "ImsFramework"]
+__all__ = [
+    "ImageFilter",
+    "IMAGE_FILTER_IMAGE",
+    "IMAGE_FILTER_ORIGINAL_IMAGE",
+    "IMAGE_FILTER_DATA",
+    "IMAGE_FILTER_MAY_MODIFY",
+    "Image",
+    "ImsFramework",
+]

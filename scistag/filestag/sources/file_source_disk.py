@@ -8,8 +8,11 @@ import os
 from datetime import datetime
 
 from scistag.filestag import FilePath
-from scistag.filestag.file_source import FileSource, FileListEntry, \
-    FileSourcePathOptions
+from scistag.filestag.file_source import (
+    FileSource,
+    FileListEntry,
+    FileSourcePathOptions,
+)
 
 
 class FileSourceDisk(FileSource):
@@ -47,33 +50,35 @@ class FileSourceDisk(FileSource):
         if self._file_list is not None and not force:
             return
         cleaned_path = os.path.normpath(self.search_path)
-        name_list = glob.glob(self.search_path + "/**",
-                              recursive=self.recursive)
+        name_list = glob.glob(self.search_path + "/**", recursive=self.recursive)
         cpl = len(cleaned_path)
-        name_list = [element[cpl + 1:] for index, element in
-                     enumerate(name_list) if os.path.isfile(element)]
-        full_list = [FileListEntry(filename=cur_element,
-                                   file_size=os.path.getsize(
-                                       self.search_path + "/" +
-                                       cur_element),
-                                   createed=datetime.fromtimestamp(
-                                       os.path.getctime(
-                                           self.search_path + "/" +
-                                           cur_element)),
-                                   modified=datetime.fromtimestamp(
-                                       os.path.getmtime(
-                                           self.search_path + "/" +
-                                           cur_element))
-                                   )
-                     for cur_element in name_list]
-        full_list = [element for element in full_list if
-                     self.handle_file_list_filter(element)]
+        name_list = [
+            element[cpl + 1 :]
+            for index, element in enumerate(name_list)
+            if os.path.isfile(element)
+        ]
+        full_list = [
+            FileListEntry(
+                filename=cur_element,
+                file_size=os.path.getsize(self.search_path + "/" + cur_element),
+                createed=datetime.fromtimestamp(
+                    os.path.getctime(self.search_path + "/" + cur_element)
+                ),
+                modified=datetime.fromtimestamp(
+                    os.path.getmtime(self.search_path + "/" + cur_element)
+                ),
+            )
+            for cur_element in name_list
+        ]
+        full_list = [
+            element for element in full_list if self.handle_file_list_filter(element)
+        ]
         elements = sorted(full_list, key=lambda x: x.filename)
         self.update_file_list(elements)
 
-    def get_absolute(self, filename: str,
-                     options: FileSourcePathOptions | None = None) -> \
-            str | None:
+    def get_absolute(
+        self, filename: str, options: FileSourcePathOptions | None = None
+    ) -> str | None:
         return FilePath.absolute(self.search_path + "/" + filename)
 
     def close(self):

@@ -8,8 +8,7 @@ class RemoteWorker(Thread):
     Defines a worker which processes the remote tasks through one or multiple attached services
     """
 
-    def __init__(self, service_handler: "RemoteServiceHandler",
-                 identifiers: list[str]):
+    def __init__(self, service_handler: "RemoteServiceHandler", identifiers: list[str]):
         """
         Initializer
 
@@ -63,8 +62,9 @@ class RemoteWorker(Thread):
             if task is not None:  # try to get a new task and execute it
                 task: RemoteTask
                 service = task.get_service()
-                result = service.run_task(task.get_target_function(),
-                                          task.get_parameters())
+                result = service.run_task(
+                    task.get_target_function(), task.get_parameters()
+                )
                 task.assign_result(result)
                 self._service_handler.flag_as_done(task)
         self._service_handler = None

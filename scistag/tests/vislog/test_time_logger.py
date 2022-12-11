@@ -14,6 +14,10 @@ def test_time_logging_basics():
     test_log.default_builder.time.log()
     test_log.default_builder.time().flush()
     body = test_log.get_body("html")
-    assert b"-" in body and b":" in body and b"." in body \
-           and body.index(b".") > body.index(b":")
+    assert (
+        b"-" in body
+        and b":" in body
+        and b"." in body
+        and body.index(b".") > body.index(b":")
+    )
     vl.embed(test_log)

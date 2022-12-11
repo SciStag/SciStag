@@ -21,12 +21,13 @@ class VideoSourceMovie(VideoSource):
         :param media_paths: The media paths to seek within
         """
         from moviepy.editor import VideoFileClip
+
         super().__init__()
         valid_path = None
         self.moviepy: "VideoFileClip" = None
         media_paths = [""] if media_paths is None else media_paths
         for path in media_paths:
-            cur_path = f"{path}/{filename}" if len(path)>0 else filename
+            cur_path = f"{path}/{filename}" if len(path) > 0 else filename
             if os.path.exists(cur_path):
                 valid_path = cur_path
         if valid_path is not None:
@@ -37,8 +38,9 @@ class VideoSourceMovie(VideoSource):
             self.fps = self.moviepy.fps
             self.time_per_frame = 1.0 / self.fps
 
-    def _get_image_int(self, timestamp: float | None = None) -> tuple[
-        float, Image | None]:
+    def _get_image_int(
+        self, timestamp: float | None = None
+    ) -> tuple[float, Image | None]:
         """
         Returns the current image as np array
 
@@ -46,5 +48,4 @@ class VideoSourceMovie(VideoSource):
         """
         if not self.valid:
             return timestamp, None
-        return self.last_update_timestamp, Image(
-            self.moviepy.get_frame(self.position))
+        return self.last_update_timestamp, Image(self.moviepy.get_frame(self.position))

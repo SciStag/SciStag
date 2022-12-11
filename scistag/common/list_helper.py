@@ -17,4 +17,4 @@ def batch_list(lst, n):
     """
     if not isinstance(lst, list):
         lst = list(lst)
-    return [lst[i:i + n] for i in range(0, len(lst), n)]
+    return [lst[i : i + n] for i in range(0, len(lst), n)]

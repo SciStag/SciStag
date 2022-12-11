@@ -24,9 +24,12 @@ class FileObserver(Observer):
     hash value changed.
     """
 
-    def __init__(self, source: FileSource | list[FileSource] | None,
-                 max_content_size: int = 0,
-                 refresh_time_s: float = 1.0):
+    def __init__(
+        self,
+        source: FileSource | list[FileSource] | None,
+        max_content_size: int = 0,
+        refresh_time_s: float = 1.0,
+    ):
         """
         :param source: The file source we shall observe
         :param max_content_size: Defines the maximum size in bytes up to which
@@ -66,8 +69,7 @@ class FileObserver(Observer):
         hashes = "hi"
         for cur_source in self.sources:
             cur_source.refresh()
-            hashes += cur_source.get_hash(
-                max_content_size=self.max_content_size)
+            hashes += cur_source.get_hash(max_content_size=self.max_content_size)
         for element in self.files:
             if not FileStag.is_simple(element):
                 raise ValueError("Only local files supported as of now")

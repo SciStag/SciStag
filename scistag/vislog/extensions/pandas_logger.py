@@ -28,15 +28,20 @@ class PandasLogger(BuilderExtension):
         "Defines if tabulate may be used"
         self.use_pretty_html_table = True
         "Defines if pretty html shall be used"
-        self.html_table_style = 'blue_light'
+        self.html_table_style = "blue_light"
         "The pretty html style to be used"
         self.txt_table_format = "rounded_outline"
         "The text table format to use in tabulate"
         self.md_table_format = "github"
         "The markdown table format to use"
 
-    def __call__(self, df: "pd.DataFrame", name: str | None = None,
-                 index: bool = True, max_rows: int = 100):
+    def __call__(
+        self,
+        df: "pd.DataFrame",
+        name: str | None = None,
+        index: bool = True,
+        max_rows: int = 100,
+    ):
         """
         Logs a dataframe to the log
 
@@ -52,10 +57,10 @@ class PandasLogger(BuilderExtension):
         if self.use_pretty_html_table:
             try:
                 import pretty_html_table
-                html_code = \
-                    pretty_html_table.build_table(df,
-                                                  self.html_table_style,
-                                                  index=index)
+
+                html_code = pretty_html_table.build_table(
+                    df, self.html_table_style, index=index
+                )
             # pragma: no-cover
             except ModuleNotFoundError:
                 html_code = df.to_html(index=index)
@@ -65,14 +70,12 @@ class PandasLogger(BuilderExtension):
         if self.use_tabulate:
             try:
                 import tabulate
-                md_table = \
-                    df.to_markdown(index=index,
-                                   tablefmt=self.md_table_format)
+
+                md_table = df.to_markdown(index=index, tablefmt=self.md_table_format)
                 self.builder.add_md(md_table)
                 self.builder.add_txt(
-                    df.to_markdown(index=index,
-                                   tablefmt=self.txt_table_format) +
-                    "\n")
+                    df.to_markdown(index=index, tablefmt=self.txt_table_format) + "\n"
+                )
                 return
             # pragma: no-cover
             except ModuleNotFoundError:

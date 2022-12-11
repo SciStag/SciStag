@@ -98,6 +98,7 @@ pytest-order = "^1.0.1"
 pytest-xdist = "^2.5.0"
 pre-commit = "^2.20.0"
 coveralls = "^3.3.1"
+black = { version = "^22.10.0", extras = ["d"] }
 
 [tool.poetry.group.docu]
 optional = true
@@ -146,8 +147,8 @@ ignore_errors = true
 
 [tool.pylint.messages_control]
 disable = [
-    "wrong-hanging-indentation",    # to work together with black
-    "bad-whitespace",               # to work together with black
+    "wrong-hanging-indentation", # to work together with black
+    "bad-whitespace", # to work together with black
     "invalid-name",
     "cyclic-import",
     "import-outside-toplevel",
@@ -157,3 +158,6 @@ extension-pkg-whitelist = "pydantic"
 
 [tool.pylint.format]
 max-line-length = "88"              # to work together with black
+
+[tool.black]
+# Use default black configuration

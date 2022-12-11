@@ -23,8 +23,13 @@ class FileSinkDisk(FileSink):
         self.create_dirs = create_dirs
         "Defines if missing directories may automatically be created"
 
-    def _store_int(self, filename: str, data: bytes, overwrite: bool,
-                   options: FileStorageOptions | None = None) -> bool:
+    def _store_int(
+        self,
+        filename: str,
+        data: bytes,
+        overwrite: bool,
+        options: FileStorageOptions | None = None,
+    ) -> bool:
         filename = self._target + "/" + filename
         tar_dir = FilePath.dirname(filename)
         if not FilePath.exists(tar_dir):

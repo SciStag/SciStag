@@ -28,8 +28,7 @@ def log_image_data(name: str, data: bytes):
     :param name: The log filename
     :param data: The data
     """
-    base_dir = os.path.normpath(
-        os.path.dirname(__file__) + "/../../../temp_test")
+    base_dir = os.path.normpath(os.path.dirname(__file__) + "/../../../temp_test")
     if os.path.exists(base_dir):
         with open(base_dir + "/" + name, "wb") as out_file:
             out_file.write(data)
@@ -39,14 +38,11 @@ def log_image_data(name: str, data: bytes):
 def slide_session():
     if not SlideAppManager.shared_app_manager.app_is_valid(AppMock.APP_NAME):
         AppMock.app_instance = AppMock()
-        SlideAppManager.shared_app_manager.register_application(
-            AppMock.app_instance)
-    config = {
-        SlideSession.SESSION_ID: None,
-        SlideSession.REMOTE_SESSION: False
-    }
+        SlideAppManager.shared_app_manager.register_application(AppMock.app_instance)
+    config = {SlideSession.SESSION_ID: None, SlideSession.REMOTE_SESSION: False}
     session = SlideAppManager.shared_app_manager.create_session(
-        AppMock.APP_NAME, config)
+        AppMock.APP_NAME, config
+    )
     yield session
 
 

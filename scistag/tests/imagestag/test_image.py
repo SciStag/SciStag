@@ -71,7 +71,8 @@ def test_image_color_conversion(stag_image_data):
     assert tuple(pixel_data[50, 50, :]) == rgb_pixel
     assert tuple(bgr_pixel_data[50, 50, :]) == (137, 140, 144)
     assert gray_pixel_data[50, 50] == round(
-        (np.array(rgb_pixel) * (0.2989, 0.5870, 0.1140)).sum())
+        (np.array(rgb_pixel) * (0.2989, 0.5870, 0.1140)).sum()
+    )
     grayscale_image = Image(gray_pixel_data)
 
 
@@ -85,38 +86,37 @@ def test_resize_ext(stag_image_data):
     # to widescreen
     rescaled = image.resized_ext(target_aspect=16 / 9)  # aspect ratio resizing
     rescaled_pixels = rescaled.get_pixels()
-    black_bar_mean = rescaled_pixels[0:, 0:100].mean() + rescaled_pixels[0:,
-                                                         -100:].mean()
+    black_bar_mean = (
+        rescaled_pixels[0:, 0:100].mean() + rescaled_pixels[0:, -100:].mean()
+    )
     assert black_bar_mean == 0.0
     mean_rescaled = np.mean(rescaled_pixels)
     assert mean_rescaled == pytest.approx(87.5, 0.5)
     # to portrait mode
     rescaled = image.resized_ext(target_aspect=9 / 16)  # aspect ratio resizing
     rescaled_pixels = rescaled.get_pixels()
-    black_bar_mean = rescaled_pixels[0:100, 0:].mean() + rescaled_pixels[-100:,
-                                                         0:].mean()
+    black_bar_mean = (
+        rescaled_pixels[0:100, 0:].mean() + rescaled_pixels[-100:, 0:].mean()
+    )
     assert black_bar_mean == 0.0
     assert rescaled.width < rescaled.height
     # fill widescreen
-    filled = image.resized_ext(size=(1920, 1080), fill_area=True,
-                               keep_aspect=True)
+    filled = image.resized_ext(size=(1920, 1080), fill_area=True, keep_aspect=True)
     with pytest.raises(ValueError):
-        filled = image.resized_ext(size=(1920, 1080),
-                                   factor=(1.5, 1.5), fill_area=True,
-                                   keep_aspect=True)
+        filled = image.resized_ext(
+            size=(1920, 1080), factor=(1.5, 1.5), fill_area=True, keep_aspect=True
+        )
     filled_pixels = filled.get_pixels()
     mean_filled = np.mean(filled_pixels)
     assert mean_filled == pytest.approx(120.6, 0.05)
     assert filled.width == 1920
     # filled portrait
-    filled = image.resized_ext(size=(1080, 1920), fill_area=True,
-                               keep_aspect=True)
+    filled = image.resized_ext(size=(1080, 1920), fill_area=True, keep_aspect=True)
     filled_pixels = filled.get_pixels()
     mean_filled = np.mean(filled_pixels)
     assert mean_filled == pytest.approx(120.6, 0.05)
     assert filled.width == 1080
-    filled = image.resized_ext(size=(1080, 1920), fill_area=False,
-                               keep_aspect=True)
+    filled = image.resized_ext(size=(1080, 1920), fill_area=False, keep_aspect=True)
     filled_pixels = filled.get_pixels()
     mean_filled = np.mean(filled_pixels)
     assert mean_filled == pytest.approx(54.57, 0.05)
@@ -189,6 +189,7 @@ def test_encoding(stag_image_data, tmp_path):
     ipython = False
     try:
         import IPython.display
+
         ipython = True
     except ModuleNotFoundError:
         pass
@@ -233,8 +234,7 @@ def test_hsv(stag_image_data):
     band_names = ["Original"] + image.pixel_format.get_full_band_names()
     for plot, band, band_name in zip(fig, bands, band_names):
         plot.add_image(band, size_ratio=0.5)
-    vl.test.assert_figure("HSV", fig,
-                          hash_val="d14022d9f1d948479a81aad7577b7be0")
+    vl.test.assert_figure("HSV", fig, hash_val="d14022d9f1d948479a81aad7577b7be0")
     org_image = image.convert_to_raw().copy()
     assert isinstance(org_image.get_handle(), np.ndarray)
 
@@ -297,8 +297,9 @@ def test_conversion(stag_image_data):
     assert image == reloaded
     assert np.all(image.get_pixels() == reloaded.get_pixels())
 
-    cv_image = Image(image.get_pixels(), pixel_format=PixelFormat.RGB,
-                     framework=ImsFramework.CV)
+    cv_image = Image(
+        image.get_pixels(), pixel_format=PixelFormat.RGB, framework=ImsFramework.CV
+    )
     assert np.all(image.get_pixels() == cv_image.get_pixels_rgb())
     assert np.all(image.to_cv2() == cv_image.get_pixels())
 
@@ -352,32 +353,39 @@ def test_bgr_support():
     # PIL resize
     assert image.resized((10, 10)).get_size() == (10, 10)
     assert not image.is_bgr()
-    image = Image(source=np.zeros((5, 5), dtype=np.uint8),
-                  pixel_format=PixelFormat.BGR,
-                  framework=ImsFramework.CV)
+    image = Image(
+        source=np.zeros((5, 5), dtype=np.uint8),
+        pixel_format=PixelFormat.BGR,
+        framework=ImsFramework.CV,
+    )
     assert not image.is_bgr()  # b/c it's gray
-    image = Image(source=np.zeros((5, 5, 3), dtype=np.uint8),
-                  pixel_format=PixelFormat.BGR,
-                  framework=ImsFramework.CV)
+    image = Image(
+        source=np.zeros((5, 5, 3), dtype=np.uint8),
+        pixel_format=PixelFormat.BGR,
+        framework=ImsFramework.CV,
+    )
     assert image.is_bgr()
     assert image.get_band_names() == ["B", "G", "R"]
     assert image.get_size() == (5, 5)
     assert image.get_size_as_size().width == 5
-    image = Image(source=np.zeros((5, 5, 3), dtype=np.uint8),
-                  pixel_format=PixelFormat.RGB,
-                  framework=ImsFramework.RAW)
+    image = Image(
+        source=np.zeros((5, 5, 3), dtype=np.uint8),
+        pixel_format=PixelFormat.RGB,
+        framework=ImsFramework.RAW,
+    )
     assert not image.is_bgr()
     assert image.get_band_names() == ["R", "G", "B"]
-    image = Image(source=np.zeros((5, 5, 3), dtype=np.uint8),
-                  pixel_format=PixelFormat.BGR,
-                  framework=ImsFramework.RAW)
+    image = Image(
+        source=np.zeros((5, 5, 3), dtype=np.uint8),
+        pixel_format=PixelFormat.BGR,
+        framework=ImsFramework.RAW,
+    )
     assert image.get_band_names() == ["R", "G", "B"]
     assert image.resized((8, 8)).get_size() == (8, 8)
     # cv2 resize
     image.resize((10, 10))
     assert image.get_size() == (10, 10)
-    with mock.patch('scistag.imagestag.definitions.OpenCVHandler.available',
-                    False):
+    with mock.patch("scistag.imagestag.definitions.OpenCVHandler.available", False):
         image.resize((14, 14))
         assert image.get_size() == (14, 14)
 

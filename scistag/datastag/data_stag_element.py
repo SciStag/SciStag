@@ -28,8 +28,7 @@ class DataStagElement:
         self.version_counter: int = 0
         "The element's update counter"
 
-    def set_value(self, value: StagDataTypes,
-                  deprecation_time: float | None = None):
+    def set_value(self, value: StagDataTypes, deprecation_time: float | None = None):
         """
         Sets the element's new value
 

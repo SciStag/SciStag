@@ -1,8 +1,13 @@
 import numpy as np
-from scistag.tests.datastag.datastag4flask.shared_test_client import \
-    test_client, test_remote_connection
-from scistag.tests.datastag.datastag4flask.shared_data_dummies import \
-    get_dummy_jpg, get_dummy_np_array, get_dummy_dict
+from scistag.tests.datastag.datastag4flask.shared_test_client import (
+    test_client,
+    test_remote_connection,
+)
+from scistag.tests.datastag.datastag4flask.shared_data_dummies import (
+    get_dummy_jpg,
+    get_dummy_np_array,
+    get_dummy_dict,
+)
 
 
 def test_push_pop_len(test_remote_connection):

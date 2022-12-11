@@ -36,9 +36,11 @@ class ArchiveFileSinkProto(FileSink):
         """
         super().__init__(target=target, **params)
 
-    def _store_int(self,
-                   filename: str,
-                   data: bytes,
-                   overwrite: bool,
-                   options: FileStorageOptions | None = None) -> bool:
+    def _store_int(
+        self,
+        filename: str,
+        data: bytes,
+        overwrite: bool,
+        options: FileStorageOptions | None = None,
+    ) -> bool:
         raise NotImplementedError("Storage method not implemented")

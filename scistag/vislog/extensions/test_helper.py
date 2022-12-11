@@ -17,8 +17,7 @@ from matplotlib import pyplot as plt
 from scistag.imagestag import Image, Canvas
 from scistag.plotstag import Figure, Plot
 from scistag.filestag import FileStag, FilePath
-from scistag.vislog.extensions.builder_extension import \
-    BuilderExtension
+from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
@@ -38,10 +37,13 @@ class TestHelper(BuilderExtension):
         self.checkpoint_backups = []
         "Data from the last checkpoints"
 
-    def assert_figure(self, name: str,
-                      figure: plt.Figure | plt.Axes | Figure | Plot,
-                      hash_val: str,
-                      alt_text: str | None = None):
+    def assert_figure(
+        self,
+        name: str,
+        figure: plt.Figure | plt.Axes | Figure | Plot,
+        hash_val: str,
+        alt_text: str | None = None,
+    ):
         """
         Adds a figure to the log and verifies its content to a checksum
 
@@ -54,15 +56,21 @@ class TestHelper(BuilderExtension):
             and can then be copies & pasted.
         """
         image_data = io.BytesIO()
-        self.builder.figure(figure=figure, name=name, alt_text=alt_text,
-                            _out_image_data=image_data)
+        self.builder.figure(
+            figure=figure, name=name, alt_text=alt_text, _out_image_data=image_data
+        )
         assert len(image_data.getvalue()) > 0
         result_hash_val = hashlib.md5(image_data.getvalue()).hexdigest()
         self.hash_check_log(result_hash_val, hash_val)
 
-    def assert_image(self, name: str, source: Image | Canvas, hash_val: str,
-                     scaling: float = 1.0,
-                     alt_text: str | None = None):
+    def assert_image(
+        self,
+        name: str,
+        source: Image | Canvas,
+        hash_val: str,
+        scaling: float = 1.0,
+        alt_text: str | None = None,
+    ):
         """
         Assert an image object and verifies it's hash value matches the object's
         hash.
@@ -76,16 +84,18 @@ class TestHelper(BuilderExtension):
         :param alt_text: An alternative text to display if the image can
             not be displayed.
         """
-        result_hash_val = self.log_and_hash_image(name=name,
-                                                  data=source,
-                                                  scaling=scaling,
-                                                  alt_text=alt_text)
+        result_hash_val = self.log_and_hash_image(
+            name=name, data=source, scaling=scaling, alt_text=alt_text
+        )
         self.hash_check_log(result_hash_val, hash_val)
 
-    def log_and_hash_image(self, name: str,
-                           data: Image | Canvas,
-                           alt_text: str | None = None,
-                           scaling: float = 1.0) -> str:
+    def log_and_hash_image(
+        self,
+        name: str,
+        data: Image | Canvas,
+        alt_text: str | None = None,
+        scaling: float = 1.0,
+    ) -> str:
         """
         Writes the image to disk for manual verification (if enabled in the
         test_config) and returns it's hash.
@@ -100,8 +110,7 @@ class TestHelper(BuilderExtension):
         """
         if isinstance(data, Canvas):
             data = data.to_image()
-        self.builder.image(source=data, name=name, alt_text=alt_text,
-                           scaling=scaling)
+        self.builder.image(source=data, name=name, alt_text=alt_text, scaling=scaling)
         return data.get_hash()
 
     def assert_text(self, name: str, text: str, hash_val: str):
@@ -117,10 +126,13 @@ class TestHelper(BuilderExtension):
         self.builder.text(text)
         self.hash_check_log(result_hash_val, hash_val)
 
-    def assert_df(self, name: str,
-                  df: pd.DataFrame,
-                  dump: bool = False,
-                  hash_val: str | None = None):
+    def assert_df(
+        self,
+        name: str,
+        df: pd.DataFrame,
+        dump: bool = False,
+        hash_val: str | None = None,
+    ):
         """
         Asserts the integrity of a dataframe
 
@@ -137,29 +149,33 @@ class TestHelper(BuilderExtension):
             result_hash_val = hashlib.md5(output.getvalue()).hexdigest()
             if result_hash_val != hash_val:
                 self.builder.target_log.write_to_disk()
-                raise AssertionError("Hash mismatch - "
-                                     f"Found: {result_hash_val} - "
-                                     f"Assumed: {hash_val}")
+                raise AssertionError(
+                    "Hash mismatch - "
+                    f"Found: {result_hash_val} - "
+                    f"Assumed: {hash_val}"
+                )
             return
         if dump:
             output = io.BytesIO()
-            df.to_parquet(output, engine='pyarrow')
+            df.to_parquet(output, engine="pyarrow")
             self.save_ref(name, output.getvalue())
             print(f"Warning - Updating test reference of {name}")
         comp_data = self.load_ref(name)
         if comp_data is None:
             raise AssertionError(f"No reference data provided for {name}")
-        comp_df = pd.read_parquet(io.BytesIO(comp_data), engine='pyarrow')
+        comp_df = pd.read_parquet(io.BytesIO(comp_data), engine="pyarrow")
         if not comp_df.equals(df):
-            raise AssertionError(
-                f"Data mismatch between {name} and it's reference")
+            raise AssertionError(f"Data mismatch between {name} and it's reference")
 
-    def assert_np(self, name: str,
-                  data: np.ndarray,
-                  variance_abs: float | None = None,
-                  dump: bool = False,
-                  rounded: int = None,
-                  hash_val: bool | None = None):
+    def assert_np(
+        self,
+        name: str,
+        data: np.ndarray,
+        variance_abs: float | None = None,
+        dump: bool = False,
+        rounded: int = None,
+        hash_val: bool | None = None,
+    ):
         """
         Asserts a nunpy array for validity and logs it
 
@@ -182,18 +198,19 @@ class TestHelper(BuilderExtension):
             platform dependent (slight) data discrepancies.
         """
         if rounded is not None:
-            data = (data * (10 ** rounded)).astype(np.int64)
+            data = (data * (10**rounded)).astype(np.int64)
         if hash_val is not None:
             if data.dtype == float:
-                raise NotImplementedError("Hashing not supported for float"
-                                          "matrices")
+                raise NotImplementedError("Hashing not supported for float" "matrices")
             bytes_val = data.tobytes()
             result_hash_val = hashlib.md5(bytes_val).hexdigest()
             if result_hash_val != hash_val:
                 self.builder.target_log.write_to_disk()
-                raise AssertionError("Hash mismatch - "
-                                     f"Found: {result_hash_val} - "
-                                     f"Assumed: {hash_val}")
+                raise AssertionError(
+                    "Hash mismatch - "
+                    f"Found: {result_hash_val} - "
+                    f"Assumed: {hash_val}"
+                )
             return
         if dump:
             output = io.BytesIO()
@@ -214,9 +231,12 @@ class TestHelper(BuilderExtension):
                 return
         raise AssertionError(f"Data mismatch between {name} and it's reference")
 
-    def assert_val(self, name: str,
-                   data: dict | list | str | Image | Figure | pd.DataFrame,
-                   hash_val: str | None = None):
+    def assert_val(
+        self,
+        name: str,
+        data: dict | list | str | Image | Figure | pd.DataFrame,
+        hash_val: str | None = None,
+    ):
         """
         Asserts a text for validity and logs it
 
@@ -246,9 +266,9 @@ class TestHelper(BuilderExtension):
             return
             # dict or list
         if isinstance(data, (list, dict, str)):
-            self.builder.collection(
-                data)  # no beautiful logging supported yet
+            self.builder.collection(data)  # no beautiful logging supported yet
             import json
+
             data = json.dumps(data).encode("utf-8")
         if data is None or not isinstance(data, bytes):
             raise NotImplementedError("Data type not supported")
@@ -289,13 +309,13 @@ class TestHelper(BuilderExtension):
         """
         if value != assumed:
             self.builder.log(
-                f"⚠️Hash validation failed!\nValue: "
-                f"{value}\nAssumed: {assumed}",
-                level="error")
+                f"⚠️Hash validation failed!\nValue: " f"{value}\nAssumed: {assumed}",
+                level="error",
+            )
             self.builder.target_log.write_to_disk()
-            raise AssertionError("Hash mismatch - "
-                                 f"Found: {value}\n"
-                                 f"Assumed: {assumed}")
+            raise AssertionError(
+                "Hash mismatch - " f"Found: {value}\n" f"Assumed: {assumed}"
+            )
         else:
             self.builder.log(f"{assumed} ✔")
 
@@ -303,9 +323,15 @@ class TestHelper(BuilderExtension):
         """
         Creates a checkpoint of the current data
         """
-        self.checkpoint_backups.append({"name": checkpoint_name, "lengths":
-            [len(b"".join(value)) for key, value in
-             self.builder.target_log._logs.items()]})
+        self.checkpoint_backups.append(
+            {
+                "name": checkpoint_name,
+                "lengths": [
+                    len(b"".join(value))
+                    for key, value in self.builder.target_log._logs.items()
+                ],
+            }
+        )
 
     def assert_cp_diff(self, hash_val: str):
         """
@@ -319,7 +345,7 @@ class TestHelper(BuilderExtension):
         """
         last_checkpoint = self.checkpoint_backups.pop()
         lengths = last_checkpoint["lengths"]
-        difference = b''
+        difference = b""
         index = 0
         keys = []
         for key, value in self.builder.target_log._logs.items():
@@ -330,8 +356,7 @@ class TestHelper(BuilderExtension):
                 continue
             difference = difference + data[length:]
             keys.append(key)
-        assert sorted(list(keys)) == sorted(
-            list(self.builder.target_log.log_formats))
+        assert sorted(list(keys)) == sorted(list(self.builder.target_log.log_formats))
         result_hash_val = hashlib.md5(difference).hexdigest()
         self.hash_check_log(result_hash_val, hash_val)
 

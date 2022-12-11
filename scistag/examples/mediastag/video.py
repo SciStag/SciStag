@@ -31,12 +31,14 @@ def download_video() -> str:
     :return: The video filename
     """
     # Download the demo video
-    print(f"Downloading demo video from {TestConstants.CHROME_FUN_VIDEO}...",
-          end="")
+    print(f"Downloading demo video from {TestConstants.CHROME_FUN_VIDEO}...", end="")
     os.makedirs("temp", exist_ok=True)
     local_filename = "temp/demo_video.mp4"
-    web_fetch(TestConstants.CHROME_FUN_VIDEO, filename=local_filename,
-              max_cache_age=60 * 60 * 24 * 7)
+    web_fetch(
+        TestConstants.CHROME_FUN_VIDEO,
+        filename=local_filename,
+        max_cache_age=60 * 60 * 24 * 7,
+    )
     print("done")
     return local_filename
 

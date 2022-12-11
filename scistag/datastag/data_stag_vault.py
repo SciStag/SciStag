@@ -25,8 +25,7 @@ class DataStagVault:
         self.lock = RLock()
         self.start_time: int = int(time.time())
         self.last_garbage_collection_time = self.start_time - 1
-        self.deprecating_elements: dict[int, list[DataStagElement]] = \
-            defaultdict(list)
+        self.deprecating_elements: dict[int, list[DataStagElement]] = defaultdict(list)
         self.deprecation_stepping = 0
         self.global_dictionary: dict[str, DataStagElement] = {}
         "A dictionary containing all elements"
@@ -48,8 +47,13 @@ class DataStagVault:
         """
         return time.time()
 
-    def push(self, name: str, data: list[StagDataTypes],
-             timeout_s: float | None = None, index=-1) -> int:
+    def push(
+        self,
+        name: str,
+        data: list[StagDataTypes],
+        timeout_s: float | None = None,
+        index=-1,
+    ) -> int:
         """
         Appends an element at the end of a list
         :param name: The element's name
@@ -68,17 +72,21 @@ class DataStagVault:
             element_list = []
             for value in data:
                 element = DataStagElement(self)
-                dep_time = None if timeout_s is None else self.get_server_up_time() + timeout_s
+                dep_time = (
+                    None if timeout_s is None else self.get_server_up_time() + timeout_s
+                )
                 element.parent = list_handle
                 if dep_time is not None:
                     self._update_deprecating_element(element, dep_time)
                 element.set_value(value, dep_time)
                 element_list.append(element)
-            return list_handle.add_elements(element_list, index=index,
-                                            deprecation_time=dep_time)
+            return list_handle.add_elements(
+                element_list, index=index, deprecation_time=dep_time
+            )
 
-    def pop(self, name: str, default: StagDataReturnTypes = None,
-            index: int = 0) -> StagDataReturnTypes:
+    def pop(
+        self, name: str, default: StagDataReturnTypes = None, index: int = 0
+    ) -> StagDataReturnTypes:
         """
         Tries to remove an element at the beginning of a list
         :param name: The name's list
@@ -90,17 +98,19 @@ class DataStagVault:
             list_handle: DataStagList | None = self._get_list_instance(name)
             if list_handle is None:
                 return default
-            uptime = self.get_server_up_time() if list_handle.objects_with_timeout else None
-            element = list_handle.pop_element(index=index,
-                                              deprecation_time=uptime)
+            uptime = (
+                self.get_server_up_time() if list_handle.objects_with_timeout else None
+            )
+            element = list_handle.pop_element(index=index, deprecation_time=uptime)
             if len(list_handle.list_elements) == 0:
                 self.delete(name)
             if element is None:
                 return default
             return element.get_value()
 
-    def set(self, name: str, data: StagDataTypes,
-            timeout_s: float | None = None) -> bool:
+    def set(
+        self, name: str, data: StagDataTypes, timeout_s: float | None = None
+    ) -> bool:
         """
         Stores a named element in the database
         :param name: The element's name
@@ -111,7 +121,9 @@ class DataStagVault:
         self.collect_garbage()
         with self.lock:
             element = self._get_element_by_name(name)
-            assert element is None or element.simple  # Do not silently override lists or advanced sets
+            assert (
+                element is None or element.simple
+            )  # Do not silently override lists or advanced sets
             if element is None:
                 element = DataStagElement(self)
                 element.name = name
@@ -124,9 +136,13 @@ class DataStagVault:
                 element.set_value(data)
             return True
 
-    def add(self, name: str, value: float | int = 1,
-            timeout_s: float | None = None, default=0) -> \
-            float | int:
+    def add(
+        self,
+        name: str,
+        value: float | int = 1,
+        timeout_s: float | None = None,
+        default=0,
+    ) -> float | int:
         """
         Adds given value to the element stored in the database. If it does not exist yet, it will be initialized
         with default.
@@ -146,8 +162,9 @@ class DataStagVault:
             self.set(name, new_value)
             return new_value
 
-    def get(self, name: str,
-            default: StagDataReturnTypes = None) -> StagDataReturnTypes:
+    def get(
+        self, name: str, default: StagDataReturnTypes = None
+    ) -> StagDataReturnTypes:
         """
         Tries to read an element from the database
         :param name: The element's name
@@ -164,8 +181,9 @@ class DataStagVault:
                     return None
             return element.get_value()
 
-    def get_ex(self, name: str, default: StagDataReturnTypes = None,
-               version_counter=-1) -> (int, StagDataReturnTypes):
+    def get_ex(
+        self, name: str, default: StagDataReturnTypes = None, version_counter=-1
+    ) -> (int, StagDataReturnTypes):
         """
         Tries to read an element from the database. Allows to add a version check so only data will be returned if
         it changed since the last get_ex.
@@ -187,8 +205,13 @@ class DataStagVault:
                 return version_counter, None
             return element.version_counter, element.get_value()
 
-    def find(self, mask: str, limit: int = 100, relative_names: bool = False,
-             recursive: bool = False):
+    def find(
+        self,
+        mask: str,
+        limit: int = 100,
+        relative_names: bool = False,
+        recursive: bool = False,
+    ):
         """
         Finds a list of elements by name
         :param mask: The search mask. If it contains a folder the mask is only applied to the nested element
@@ -205,21 +228,24 @@ class DataStagVault:
             folder = self.folders[folder_name]
             key_list = list(folder.keys())
             key_list = fnmatch.filter(key_list, rel_name)
-            global_key_list = [self._get_global_name(folder_name, key) for key
-                               in key_list]
+            global_key_list = [
+                self._get_global_name(folder_name, key) for key in key_list
+            ]
             if not relative_names:
                 key_list = global_key_list
-                key_list = [key for key in key_list if self.global_dictionary[
-                    key].deprecation_time is None or
-                            self.global_dictionary[
-                                key].deprecation_time > uptime]
+                key_list = [
+                    key
+                    for key in key_list
+                    if self.global_dictionary[key].deprecation_time is None
+                    or self.global_dictionary[key].deprecation_time > uptime
+                ]
             else:
-                key_list = [key for key, g_key in zip(key_list, global_key_list)
-                            if
-                            self.global_dictionary[
-                                g_key].deprecation_time is None or
-                            self.global_dictionary[
-                                g_key].deprecation_time > uptime]
+                key_list = [
+                    key
+                    for key, g_key in zip(key_list, global_key_list)
+                    if self.global_dictionary[g_key].deprecation_time is None
+                    or self.global_dictionary[g_key].deprecation_time > uptime
+                ]
             if limit != -1 and len(key_list) > limit:
                 key_list = key_list[0:limit]
             if recursive:
@@ -227,8 +253,7 @@ class DataStagVault:
                 for cur_sub_folder in sub_folders:
                     new_keys = self.find(cur_sub_folder + ".*", recursive=False)
                     if relative_names:
-                        new_keys = [key[len(folder_name) + 1:] for key in
-                                    new_keys]
+                        new_keys = [key[len(folder_name) + 1 :] for key in new_keys]
                         key_list += new_keys
                     else:
                         key_list += new_keys
@@ -249,13 +274,12 @@ class DataStagVault:
                     if recursive:  # add all with shared root?
                         sub_folder_set.append(element)
                     else:  # add just direct child elements?
-                        rest = element[0:len(search_mask)]
-                        if '.' not in rest:
+                        rest = element[0 : len(search_mask)]
+                        if "." not in rest:
                             sub_folder_set.append(element)
         return list(sub_folder_set)
 
-    def get_values_by_name(self, mask: str, limit: int = 100,
-                           flat: bool = True):
+    def get_values_by_name(self, mask: str, limit: int = 100, flat: bool = True):
         """
         Returns the data of a set of elements by name.
         :param mask: The search mask. If it contains a folder the mask is only applied to the nested element
@@ -266,14 +290,17 @@ class DataStagVault:
         with self.lock:
             names = self.find(mask, limit)
             if flat:
-                results = [self.global_dictionary[name].get_value() for name in
-                           names if
-                           self.global_dictionary[name].simple]
+                results = [
+                    self.global_dictionary[name].get_value()
+                    for name in names
+                    if self.global_dictionary[name].simple
+                ]
             else:
-                results = [{"name": name,
-                            "value": self.global_dictionary[name].get_value()}
-                           for name in names if
-                           self.global_dictionary[name].simple]
+                results = [
+                    {"name": name, "value": self.global_dictionary[name].get_value()}
+                    for name in names
+                    if self.global_dictionary[name].simple
+                ]
             return results
 
     def llen(self, name: str) -> int:
@@ -294,8 +321,7 @@ class DataStagVault:
                 return 0
             return len(list_handle.list_elements)
 
-    def lelements(self, name: str, start: int, end: int | None) -> list[
-        StagDataTypes]:
+    def lelements(self, name: str, start: int, end: int | None) -> list[StagDataTypes]:
         """
         Tries to receive a list of elements from the vault
 
@@ -308,7 +334,9 @@ class DataStagVault:
             list_handle = self._get_list_instance(name)
             if list_handle is None:
                 return []
-            uptime = self.get_server_up_time() if list_handle.objects_with_timeout else None
+            uptime = (
+                self.get_server_up_time() if list_handle.objects_with_timeout else None
+            )
             result = list_handle.get_elements(start, end, time_s=uptime)
             if len(list_handle.list_elements) == 0:
                 self.delete(name)
@@ -333,8 +361,7 @@ class DataStagVault:
         """
         return self._delete_element(name)
 
-    def delete_multiple(self, search_masks: list[str],
-                        recursive: bool = False) -> int:
+    def delete_multiple(self, search_masks: list[str], recursive: bool = False) -> int:
         """
         Deletes a set of elements.
         :param search_masks: The element's names or search masks. May not point directly to the root directory
@@ -344,8 +371,7 @@ class DataStagVault:
         with self.lock:
             total = 0
             for cur_mask in search_masks:
-                if len(cur_mask) == 0 or cur_mask[
-                    0] == "*" or "." not in cur_mask:
+                if len(cur_mask) == 0 or cur_mask[0] == "*" or "." not in cur_mask:
                     continue
                 elements = self.find(cur_mask, recursive=recursive)
                 for cur_element in elements:
@@ -353,9 +379,9 @@ class DataStagVault:
                         total += 1
         return total
 
-    def _get_element_by_name(self, name: str,
-                             deprecation_time: float | None = None) -> \
-            DataStagElement | None:
+    def _get_element_by_name(
+        self, name: str, deprecation_time: float | None = None
+    ) -> DataStagElement | None:
         """
         Tries to retrieve a database element
 
@@ -408,7 +434,7 @@ class DataStagVault:
         """
         folder_name = self._get_folder(name)
         if len(folder_name) > 0:
-            return folder_name, name[len(folder_name) + 1:]
+            return folder_name, name[len(folder_name) + 1 :]
         else:
             return "", name
 
@@ -467,7 +493,8 @@ class DataStagVault:
         """
         if element.deprecation_time is not None:
             prev_dep_time_round = self._get_round_deprecation_time(
-                element.deprecation_time)
+                element.deprecation_time
+            )
             prev_list = self.deprecating_elements[prev_dep_time_round]
             if element in prev_list:
                 prev_list.remove(element)
@@ -476,8 +503,9 @@ class DataStagVault:
                     return True
         return False
 
-    def _update_deprecating_element(self, element: DataStagElement,
-                                    dep_time: float = None):
+    def _update_deprecating_element(
+        self, element: DataStagElement, dep_time: float = None
+    ):
         """
         Registers the element in the deprecation registry so it can
         automatically be destroyed once it's outdated
@@ -534,19 +562,16 @@ class DataStagVault:
         :return: A dictionary containing the status
         """
         with self.lock:
-            result = \
-                {
-                    "elementCount": len(self.global_dictionary),
-                    "folderCount": len(self.folders),
-                    "deprecationGroups": len(self.deprecating_elements),
-                    "startTime": self.start_time,
-                    "totalUpTime": time.time() - self.start_time
-                }
+            result = {
+                "elementCount": len(self.global_dictionary),
+                "folderCount": len(self.folders),
+                "deprecationGroups": len(self.deprecating_elements),
+                "startTime": self.start_time,
+                "totalUpTime": time.time() - self.start_time,
+            }
             if advanced:
-                result['deprecationGroupNames'] = list(
-                    self.deprecating_elements.keys())
-                result[
-                    'lastGarbageCollection'] = self.last_garbage_collection_time
+                result["deprecationGroupNames"] = list(self.deprecating_elements.keys())
+                result["lastGarbageCollection"] = self.last_garbage_collection_time
             return result
 
     def _get_global_name(self, folder_name, rel_name):

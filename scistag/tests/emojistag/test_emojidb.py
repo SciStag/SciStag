@@ -1,8 +1,13 @@
 from pydantic import BaseModel
 
-from scistag.emojistag import (EmojiDb, get_emoji_character,
-                               get_emoji_details, get_emoji_sequence,
-                               get_emoji_sequence_valid, find_emojis_by_name)
+from scistag.emojistag import (
+    EmojiDb,
+    get_emoji_character,
+    get_emoji_details,
+    get_emoji_sequence,
+    get_emoji_sequence_valid,
+    find_emojis_by_name,
+)
 
 
 def test_get_emoji_svg():
@@ -32,8 +37,7 @@ def test_unicode_dict():
     unicode_dict = EmojiDb._get_unicode_dict()
     assert len(unicode_dict) > 3600
     assert EmojiDb.get_sequence_for_name("deer") == ["1F98C"]
-    assert EmojiDb.get_sequence_for_name("flag: Germany") == ['1F1E9',
-                                                              '1F1EA']
+    assert EmojiDb.get_sequence_for_name("flag: Germany") == ["1F1E9", "1F1EA"]
 
 
 def test_emoji_db():
@@ -78,27 +82,30 @@ def test_search():
     Tests the search for single categories and emojis by name
     """
     categories = EmojiDb.get_categories()
-    assert categories == ['Activities',
-                          'Animals & Nature',
-                          'Component',
-                          'Flags',
-                          'Food & Drink',
-                          'Objects',
-                          'People & Body',
-                          'Smileys & Emotion',
-                          'Symbols',
-                          'Travel & Places']
+    assert categories == [
+        "Activities",
+        "Animals & Nature",
+        "Component",
+        "Flags",
+        "Food & Drink",
+        "Objects",
+        "People & Body",
+        "Smileys & Emotion",
+        "Symbols",
+        "Travel & Places",
+    ]
     sub_categories = EmojiDb.get_sub_categories("Animals & Nature")
-    assert sub_categories == ['animal-amphibian',
-                              'animal-bird',
-                              'animal-bug',
-                              'animal-mammal',
-                              'animal-marine',
-                              'animal-reptile',
-                              'plant-flower',
-                              'plant-other']
-    mammals = EmojiDb.get_emojis_in_category("Animals & Nature",
-                                             "animal-mammal")
+    assert sub_categories == [
+        "animal-amphibian",
+        "animal-bird",
+        "animal-bug",
+        "animal-mammal",
+        "animal-marine",
+        "animal-reptile",
+        "plant-flower",
+        "plant-other",
+    ]
+    mammals = EmojiDb.get_emojis_in_category("Animals & Nature", "animal-mammal")
     assert len(mammals) == 66
     assert "deer" in [cur.name for cur in mammals]
 

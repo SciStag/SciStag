@@ -5,5 +5,5 @@ import argparse
 import sys
 from scistag.cli.main_cli import SciStagCommandLine
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     SciStagCommandLine()

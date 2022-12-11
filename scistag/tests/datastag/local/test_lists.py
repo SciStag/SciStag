@@ -63,9 +63,15 @@ def test_list_insert(vault_connections, connections=None):
         assert connection.push("insList", ["stringValue", "helloWorld"]) == 2
         assert connection.push("insList", ["firstValue", "secondValue"], index=0) == 4
         assert connection.push("insList", ["midValueA", "midValueB"], index=2) == 6
-        assert " ".join(connection.lelements("insList", start=1, end=3)) == "secondValue midValueA"
+        assert (
+            " ".join(connection.lelements("insList", start=1, end=3))
+            == "secondValue midValueA"
+        )
         assert connection.pop("insList", index=2)
-        assert " ".join(connection.lelements("insList", start=1, end=3)) == "secondValue midValueB"
+        assert (
+            " ".join(connection.lelements("insList", start=1, end=3))
+            == "secondValue midValueB"
+        )
         assert connection.delete("insList")
 
 

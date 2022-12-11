@@ -15,9 +15,13 @@ from scistag.common.mt.stag_lock import StagLock
 from scistag.common.essential_data import get_edp
 from scistag.filestag.file_stag import FileStag
 
-from .emoji_definitions import (EmojiIdentifierTypes, EMOJI_SVG_ADDON,
-                                EMOJI_NAMES, EMOJI_DB_NAME,
-                                EMOJI_NAMES_MARKDOWN)
+from .emoji_definitions import (
+    EmojiIdentifierTypes,
+    EMOJI_SVG_ADDON,
+    EMOJI_NAMES,
+    EMOJI_DB_NAME,
+    EMOJI_NAMES_MARKDOWN,
+)
 from .emoji_info import EmojiInfo
 
 
@@ -136,7 +140,7 @@ class EmojiDb:
         unicode_dict = cls._get_unicode_dict()
         if identifier in unicode_dict:
             return cls._get_unicode_dict().get(identifier, "").split("_")
-        sequence = identifier.encode('unicode-escape').decode('ascii')
+        sequence = identifier.encode("unicode-escape").decode("ascii")
         sequence = sequence.split("\\")[1:]
         sequence = [element.lstrip("Uu").lstrip("0") for element in sequence]
         if cls.validate_sequence(sequence):
@@ -144,8 +148,7 @@ class EmojiDb:
         return []
 
     @classmethod
-    def get_character_sequence(cls, identifier: EmojiIdentifierTypes) -> \
-            list[str]:
+    def get_character_sequence(cls, identifier: EmojiIdentifierTypes) -> list[str]:
         """
         Converts an emoji identifier to a unicode character sequence which
         can be printed to the console or a markdown document.
@@ -195,14 +198,16 @@ class EmojiDb:
             to access their data
         """
         from scistag.imagestag import svg
+
         with cls._access_lock:
             if not cls._initialized:
-                cls._extensions = \
-                    scistag.addons.AddonManager.get_addons_paths("emojis.*")
+                cls._extensions = scistag.addons.AddonManager.get_addons_paths(
+                    "emojis.*"
+                )
                 cls._initialized = True
-                cls._svg_emojis = \
-                    EMOJI_SVG_ADDON in cls._extensions and \
-                    svg.SvgRenderer.available()
+                cls._svg_emojis = (
+                    EMOJI_SVG_ADDON in cls._extensions and svg.SvgRenderer.available()
+                )
         return cls._extensions
 
     @classmethod
@@ -228,15 +233,14 @@ class EmojiDb:
             return None
         lower_cased = [element.lower() for element in sequence]
         combined = "_".join(lower_cased)
-        emoji_path = \
-            extensions[
-                EMOJI_SVG_ADDON] + \
-            f"images/noto/emojis/svg/emoji_u{combined}.svg"
+        emoji_path = (
+            extensions[EMOJI_SVG_ADDON]
+            + f"images/noto/emojis/svg/emoji_u{combined}.svg"
+        )
         return FileStag.load(emoji_path)
 
     @classmethod
-    def get_png(cls,
-                sequence: list[str]) -> bytes | None:
+    def get_png(cls, sequence: list[str]) -> bytes | None:
         """
         Tries to read the SVG of an emoji from the database
 
@@ -250,8 +254,7 @@ class EmojiDb:
         return FileStag.load(emoji_path)
 
     @classmethod
-    def png_exists(cls,
-                   sequence: list[str]) -> bool:
+    def png_exists(cls, sequence: list[str]) -> bool:
         """
         Returns if a PNG graphic for given emoji does exist in the local
         archive.
@@ -288,8 +291,7 @@ class EmojiDb:
         :return: A list of all known emoji categories
         """
         main_dict = cls._get_main_dict()
-        categories = set(
-            [element["category"] for element in main_dict.values()])
+        categories = set([element["category"] for element in main_dict.values()])
         return sorted(list(categories))
 
     @classmethod
@@ -301,14 +303,17 @@ class EmojiDb:
         :return: A list of subcategories in this category
         """
         main_dict = cls._get_main_dict()
-        filtered_list = [element['subcategory'] for element in
-                         main_dict.values() if
-                         element['category'] == category]
+        filtered_list = [
+            element["subcategory"]
+            for element in main_dict.values()
+            if element["category"] == category
+        ]
         return sorted(list(set(filtered_list)))
 
     @classmethod
-    def get_emojis_in_category(cls, category: str, subcategory: str | None) -> \
-            list[EmojiInfo]:
+    def get_emojis_in_category(
+        cls, category: str, subcategory: str | None
+    ) -> list[EmojiInfo]:
         """
         Returns all emojis in the defined category and subcategory
 
@@ -320,21 +325,24 @@ class EmojiDb:
         """
         main_dict = cls._get_main_dict()
         if subcategory is not None:
-            filtered_list = [EmojiInfo.parse_obj(element) for element in
-                             main_dict.values() if
-                             element['category'] == category and
-                             element['subcategory'] == subcategory]
+            filtered_list = [
+                EmojiInfo.parse_obj(element)
+                for element in main_dict.values()
+                if element["category"] == category
+                and element["subcategory"] == subcategory
+            ]
         else:
-            filtered_list = [EmojiInfo.parse_obj(element) for element in
-                             main_dict.values() if
-                             element['category'] == category]
+            filtered_list = [
+                EmojiInfo.parse_obj(element)
+                for element in main_dict.values()
+                if element["category"] == category
+            ]
         return sorted(filtered_list, key=lambda element: element.name)
 
     @classmethod
-    def find_emojis_by_name(cls,
-                            name_mask: str,
-                            md: bool = False,
-                            find_all: bool = False):
+    def find_emojis_by_name(
+        cls, name_mask: str, md: bool = False, find_all: bool = False
+    ):
         """
         Returns all emojis which match the defined search pattern
 
@@ -347,16 +355,19 @@ class EmojiDb:
         """
         main_dict = cls._get_main_dict()
         if md:
-            result = [EmojiInfo.parse_obj(element) for element in
-                      main_dict.values() if
-                      fnmatch(element.get('markdownName', ""), name_mask)]
+            result = [
+                EmojiInfo.parse_obj(element)
+                for element in main_dict.values()
+                if fnmatch(element.get("markdownName", ""), name_mask)
+            ]
         else:
-            result = [EmojiInfo.parse_obj(element) for element in
-                      main_dict.values() if
-                      fnmatch(element['name'], name_mask)]
+            result = [
+                EmojiInfo.parse_obj(element)
+                for element in main_dict.values()
+                if fnmatch(element["name"], name_mask)
+            ]
         if not find_all:
-            result = [element for element in result if
-                      cls.png_exists(element.sequence)]
+            result = [element for element in result if cls.png_exists(element.sequence)]
         return result
 
     @classmethod

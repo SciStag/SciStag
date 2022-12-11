@@ -18,12 +18,12 @@ class NumpyBundler:
     Bundles and unpacks numpy data, see :class:`Bundle`
     """
 
-    NP_CLASS_NAME = 'numpy.ndarray'
+    NP_CLASS_NAME = "numpy.ndarray"
 
     @classmethod
-    def bundle(cls, data: "np.ndarray",
-               options: BundlingOptions | None = None) -> (
-            str, bytes):
+    def bundle(
+        cls, data: "np.ndarray", options: BundlingOptions | None = None
+    ) -> (str, bytes):
         """
         Bundled a numpy array to a bytes stream
 
@@ -33,6 +33,7 @@ class NumpyBundler:
         """
         stream = io.BytesIO()
         import numpy as np
+
         np.save(stream, data)
         return cls.NP_CLASS_NAME, stream.getvalue()
 
@@ -46,4 +47,5 @@ class NumpyBundler:
         :return: The restored numpy array
         """
         import numpy as np
+
         return np.load(io.BytesIO(data))

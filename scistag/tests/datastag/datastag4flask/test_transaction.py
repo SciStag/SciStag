@@ -4,8 +4,10 @@ Tests the transaction functionality for a remote connection
 import time
 
 import numpy as np
-from scistag.tests.datastag.datastag4flask.shared_test_client import \
-    test_client, test_remote_connection
+from scistag.tests.datastag.datastag4flask.shared_test_client import (
+    test_client,
+    test_remote_connection,
+)
 
 
 def test_remote_transaction(test_remote_connection):

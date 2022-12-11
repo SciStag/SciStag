@@ -34,8 +34,7 @@ class Plot:
         """
         :param target_size: The target size in pixels
         """
-        self.target_size = Size2D(target_size) if target_size is not None \
-            else None
+        self.target_size = Size2D(target_size) if target_size is not None else None
         "Desired target size in pixels"
         self.size: Size2D = target_size
         "Plot's effective size in pixels (as far as defined)"
@@ -106,6 +105,7 @@ class Plot:
         """
         if self._figure is None:
             from scistag.plotstag.figure import Figure
+
             self._figure = Figure()
             self._figure.set_plot(self)
         return self._figure
@@ -140,13 +140,14 @@ class Plot:
             self.title_height = 0.0
             return self
         self.title_spacing = figure.default_plot_title_spacing
-        self._title_font = \
-            FontRegistry.get_font(figure.default_font,
-                                  size=figure.default_plot_title_size)
+        self._title_font = FontRegistry.get_font(
+            figure.default_font, size=figure.default_plot_title_size
+        )
         "The title's size in pixels"
         text_size = self._title_font.get_text_size(title)
-        self.title_height = (text_size.height + self.title_spacing[0] +
-                             self.title_spacing[1])
+        self.title_height = (
+            text_size.height + self.title_spacing[0] + self.title_spacing[1]
+        )
         self.update_margins()
         return self
 
@@ -161,8 +162,9 @@ class Plot:
         plot_default_size: Size2D = self.get_figure().plot_default_size
         if self.target_size is not None:
             self.size = self.target_size
-            forced_size = Size2D(self.size.width - hor_margins,
-                                 self.size.width - ver_margins)
+            forced_size = Size2D(
+                self.size.width - hor_margins, self.size.width - ver_margins
+            )
             for layer in self.layers:
                 layer.update_layout(forced_size=forced_size)
         elif len(self.layers) == 0:
@@ -170,8 +172,10 @@ class Plot:
             self.layer_size = self.size
         else:
             self.size = plot_default_size
-            desired_size = Size2D(plot_default_size.width - hor_margins,
-                                  plot_default_size.width - ver_margins)
+            desired_size = Size2D(
+                plot_default_size.width - hor_margins,
+                plot_default_size.width - ver_margins,
+            )
             for layer in self.layers:
                 if layer.fixed_size is not None:
                     desired_size = layer.fixed_size
@@ -179,8 +183,10 @@ class Plot:
                 layer.update_layout(desired_size=desired_size)
         if len(self.layers):
             layer_zero = self.layers[0]
-            self.size = Size2D(layer_zero.size.width + hor_margins,
-                               layer_zero.size.height + ver_margins)
+            self.size = Size2D(
+                layer_zero.size.width + hor_margins,
+                layer_zero.size.height + ver_margins,
+            )
             self.layer_size = layer_zero.size
         else:
             self.layer_size = Size2D(0, 0)
@@ -202,10 +208,14 @@ class Plot:
                 canvas_size = first_layer.size.to_int_tuple()
                 image = canvas.to_image()
                 off = canvas.transform(layer_offset)
-                image = image.cropped(box=(off[0],
-                                           off[1],
-                                           off[0] + canvas_size[0],
-                                           off[1] + canvas_size[1]))
+                image = image.cropped(
+                    box=(
+                        off[0],
+                        off[1],
+                        off[0] + canvas_size[0],
+                        off[1] + canvas_size[1],
+                    )
+                )
                 canvas = image.to_canvas()
             for layer in self.layers:
                 if not clipping:
@@ -225,26 +235,34 @@ class Plot:
         """
         margins = self.margins
         if self.border_width != 0.0 and not self.size.is_empty():
-            ul = (margins[0] - self.border_margins[0],
-                  margins[1] - self.border_margins[1])
-            lr = (self.size.width - margins[2] + self.border_margins[2],
-                  self.size.height - margins[3] + self.border_margins[3])
-            canvas.rect(bounding=
-                        Bounding2D(pos=ul,
-                                   lr=lr),
-                        color=None,
-                        outline_width=int(round(self.border_width)),
-                        outline_color=self.border_color)
+            ul = (
+                margins[0] - self.border_margins[0],
+                margins[1] - self.border_margins[1],
+            )
+            lr = (
+                self.size.width - margins[2] + self.border_margins[2],
+                self.size.height - margins[3] + self.border_margins[3],
+            )
+            canvas.rect(
+                bounding=Bounding2D(pos=ul, lr=lr),
+                color=None,
+                outline_width=int(round(self.border_width)),
+                outline_color=self.border_color,
+            )
 
         if self.title is not None:
             text_size = self._title_font.get_text_size(self.title)
-            center_x = (self.layer_pos.x + self.layer_size.width / 2 -
-                        text_size.width / 2)
+            center_x = (
+                self.layer_pos.x + self.layer_size.width / 2 - text_size.width / 2
+            )
             y_off = self.title_spacing[0] + self._title_font.ascend // 2
-            canvas.text(Pos2D(center_x, y_off),
-                        font=self._title_font,
-                        v_align=VTextAlignment.CENTER,
-                        text=self.title, color=self.title_color)
+            canvas.text(
+                Pos2D(center_x, y_off),
+                font=self._title_font,
+                v_align=VTextAlignment.CENTER,
+                text=self.title,
+                color=self.title_color,
+            )
 
     def render(self) -> Image:
         """
@@ -255,11 +273,12 @@ class Plot:
         self.get_figure()
         return self._figure.render()
 
-    def add_image(self,
-                  image: Image | np.ndarray,
-                  size_ratio: float | tuple[
-                      float, float] | None = None,
-                  bg_fill: str | Color | None = "cb") -> Plot:
+    def add_image(
+        self,
+        image: Image | np.ndarray,
+        size_ratio: float | tuple[float, float] | None = None,
+        bg_fill: str | Color | None = "cb",
+    ) -> Plot:
         """
         Adds an image layer
 
@@ -279,14 +298,16 @@ class Plot:
             "cb" (checkerboard) by default.
         """
         from scistag.plotstag.layers.image_layer import ImageLayer
-        self.add_layer(ImageLayer(image=image,
-                                  size_ratio=size_ratio,
-                                  bg_fill=bg_fill))
+
+        self.add_layer(ImageLayer(image=image, size_ratio=size_ratio, bg_fill=bg_fill))
         return self
 
-    def add_matplot(self, figure: Union["plt.Figure", None] = None,
-                    size_ratio: float | None = None,
-                    **params):
+    def add_matplot(
+        self,
+        figure: Union["plt.Figure", None] = None,
+        size_ratio: float | None = None,
+        **params,
+    ):
         """
         Adds a matplotlib figure as image layer to the plot
 
@@ -307,9 +328,10 @@ class Plot:
         """
         from scistag.plotstag.matplot_helper import MPHelper
         from scistag.plotstag.layers.matplot_layer import MPLayerLock
+
         if figure is not None:
-            self.add_image(MPHelper.figure_to_image(figure),
-                           size_ratio=size_ratio,
-                           bg_fill=None)
+            self.add_image(
+                MPHelper.figure_to_image(figure), size_ratio=size_ratio, bg_fill=None
+            )
         else:
             return MPLayerLock(self, size_ratio=size_ratio, **params)

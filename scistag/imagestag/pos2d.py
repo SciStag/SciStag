@@ -23,8 +23,12 @@ class Pos2D:
     y: float
     "The y component"
 
-    def __init__(self, value: Pos2DTypes | float | None = None,
-                 y: float | None = None, x: float | None = None):
+    def __init__(
+        self,
+        value: Pos2DTypes | float | None = None,
+        y: float | None = None,
+        x: float | None = None,
+    ):
         """
         :param value: The new value, either a Pos2D object to copy,
             x or a tuple containing x and y
@@ -58,7 +62,8 @@ class Pos2D:
         else:
             raise ValueError(
                 "Incompatible position type. Should either be a Pos2D object or"
-                "a tuple of two numbers.")
+                "a tuple of two numbers."
+            )
 
     def __str__(self):
         return f"Pos2D({self.x},{self.y})"

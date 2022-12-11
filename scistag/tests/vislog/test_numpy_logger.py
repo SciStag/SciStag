@@ -17,7 +17,7 @@ def test_np_assert():
     """
     # testing numpy assertion
     np_array = np.ones((4, 4), dtype=float)
-    with mock.patch('builtins.print'):
+    with mock.patch("builtins.print"):
         vl.test.assert_np("test_np_array", np_array, dump=True)
     with pytest.raises(AssertionError):
         vl.test.assert_np("test_np_array_no_data", np_array)
@@ -34,15 +34,27 @@ def test_np_assert():
     with pytest.raises(NotImplementedError):
         vl.test.assert_np("test_np_array", np_array, hash_val="123")
 
-    vl.test.assert_np("test_np_array", np_array, rounded=2,
-                      hash_val="99140a9b8e68954a484e0de3c6861fc6")
+    vl.test.assert_np(
+        "test_np_array",
+        np_array,
+        rounded=2,
+        hash_val="99140a9b8e68954a484e0de3c6861fc6",
+    )
     np_array[0][1] = 0.99
-    vl.test.assert_np("test_np_array", np_array, rounded=2,
-                      hash_val="99140a9b8e68954a484e0de3c6861fc6")
+    vl.test.assert_np(
+        "test_np_array",
+        np_array,
+        rounded=2,
+        hash_val="99140a9b8e68954a484e0de3c6861fc6",
+    )
     np_array[0][1] = 0.98
     with pytest.raises(AssertionError):
-        vl.test.assert_np("test_np_array", np_array, rounded=2,
-                          hash_val="99140a9b8e68954a484e0de3c6861fc6")
+        vl.test.assert_np(
+            "test_np_array",
+            np_array,
+            rounded=2,
+            hash_val="99140a9b8e68954a484e0de3c6861fc6",
+        )
 
 
 def test_np_logging():
@@ -59,10 +71,10 @@ def test_np_logging():
     vl.test.begin("Numpy matrix")
     vl.np(np.identity(3), max_digits=4)
     vl.br()
-    vl.test.assert_cp_diff('64abf164fb088767fa2e139d8ee34560')
+    vl.test.assert_cp_diff("64abf164fb088767fa2e139d8ee34560")
     vl.test.checkpoint("numpy.add")
     vl.add(np.identity(3))
-    vl.test.assert_cp_diff('a0f35967366d2e7877761ffb6dbeb6ed')
+    vl.test.assert_cp_diff("a0f35967366d2e7877761ffb6dbeb6ed")
 
     with pytest.raises(ValueError):
         vl.np(np.zeros((128, 128)))

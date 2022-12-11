@@ -34,6 +34,7 @@ class MouseButton(Enum):
     """
     Enumeration of mouse buttons for Touch- and Drag events
     """
+
     LEFT = 0
     "Left mouse button or the finger"
     MIDDLE = 1
@@ -47,8 +48,7 @@ class TapEvent(TouchEvent):
     Defines an event which is raised when the mouse button is clicked or a finger hits the screen
     """
 
-    def __init__(self, widget, coordinate, coordinate_absolute,
-                 button: MouseButton):
+    def __init__(self, widget, coordinate, coordinate_absolute, button: MouseButton):
         """
         Initializer
         :param widget: The widget
@@ -62,5 +62,4 @@ class TapEvent(TouchEvent):
         self.button: MouseButton = button
 
 
-__all__ = ["WidgetEventHandler", "WidgetEvent", "PaintEvent", "TapEvent",
-           "MouseButton"]
+__all__ = ["WidgetEventHandler", "WidgetEvent", "PaintEvent", "TapEvent", "MouseButton"]

@@ -14,6 +14,15 @@ from .file_sink import FileSink, FileStorageOptions
 from .memory_zip import MemoryZip
 from .bundle import Bundle
 
-__all__ = ["SharedArchive", "FileStag", "FileSource", "FileSourceTypes",
-           "FilePath", "Bundle", "FileSink", "FileStorageOptions",
-           "FileObserver", "MemoryZip"]
+__all__ = [
+    "SharedArchive",
+    "FileStag",
+    "FileSource",
+    "FileSourceTypes",
+    "FilePath",
+    "Bundle",
+    "FileSink",
+    "FileStorageOptions",
+    "FileObserver",
+    "MemoryZip",
+]

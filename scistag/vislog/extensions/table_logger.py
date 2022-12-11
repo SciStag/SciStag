@@ -9,8 +9,7 @@ from typing import TYPE_CHECKING, Union, Callable
 
 import numpy as np
 from pandas import DataFrame, Series
-from scistag.vislog.common.element_context import \
-    ElementContext
+from scistag.vislog.common.element_context import ElementContext
 
 from scistag.imagestag import Image
 from scistag.plotstag import Figure
@@ -19,8 +18,9 @@ from . import BuilderExtension
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
 
-ColumnContent = Union[str, int, float, Callable, Image, Figure,
-                      np.ndarray, DataFrame, Series, dict, list]
+ColumnContent = Union[
+    str, int, float, Callable, Image, Figure, np.ndarray, DataFrame, Series, dict, list
+]
 "Defines the types for potential content of a column"
 
 
@@ -29,8 +29,9 @@ class TableContext(ElementContext):
     Automatically adds the beginning and ending of a table to the log
     """
 
-    def __init__(self, builder: "VisualLogBuilder",
-                 size: tuple[int, int] | None = None):
+    def __init__(
+        self, builder: "VisualLogBuilder", size: tuple[int, int] | None = None
+    ):
         """
         :param builder: The builder object with which we write to the log
         :param size: The table's dimensions (cols x rows) (if known in advance).
@@ -52,8 +53,7 @@ class TableContext(ElementContext):
         log.write_md("<table>")
         self._entered: bool = False
         "Defines if the table was entered already"
-        closing_code = {"html": "</table><br>", "md": "</table><br>",
-                        "txt": "\n"}
+        closing_code = {"html": "</table><br>", "md": "</table><br>", "txt": "\n"}
         super().__init__(builder, closing_code)
 
     def __enter__(self) -> TableContext:
@@ -70,8 +70,10 @@ class TableContext(ElementContext):
         :return: The row iterator
         """
         if self.size is None or self.size[1] is None:
-            raise ValueError("Table column size not defined. Pass the size "
-                             "argument to the table when creating it.")
+            raise ValueError(
+                "Table column size not defined. Pass the size "
+                "argument to the table when creating it."
+            )
         return self.iter_rows(self.size[1])
 
     def iter_rows(self, count: int) -> "TableRowIterator":
@@ -91,8 +93,9 @@ class TableContext(ElementContext):
         iterator = TableRowIterator(self, count=count)
         return iterator
 
-    def add_row(self, content: list[ColumnContent] | None = None) \
-            -> Union["TableRowContext", None]:
+    def add_row(
+        self, content: list[ColumnContent] | None = None
+    ) -> Union["TableRowContext", None]:
         """
         Adds a new row context to the table.
 
@@ -153,6 +156,7 @@ class TableRowIterator:
         Starts the next row and enters it, leaves the previous one (if any)
         """
         import sys
+
         if self.previous_row:
             self.previous_row.__exit__(*sys.exc_info())
         if self.index >= self.row_count:
@@ -198,6 +202,7 @@ class TableColumnIterator:
         Starts the next column and enters it, leaves the previous one (if any)
         """
         import sys
+
         if self.previous_col:
             self.previous_col.__exit__(*sys.exc_info())
         if self.index >= self.col_count:
@@ -219,7 +224,7 @@ class TableRowContext(ElementContext):
         """
         self.table = table
         log = self.table.builder.target_log
-        log.write_html(f'<tr>\n')
+        log.write_html(f"<tr>\n")
         log.write_txt("| ", md=False)
         log.write_md("<tr>\n", no_break=True)
         closing_code = {"html": "</tr>", "md": "</tr>", "txt": "\n"}
@@ -236,14 +241,15 @@ class TableRowContext(ElementContext):
         :return: The column iterator
         """
         if self.table.size is None or self.table.size[0] is None:
-            raise ValueError("Table column size not defined. Pass the size "
-                             "argument to the table when creating it.")
+            raise ValueError(
+                "Table column size not defined. Pass the size "
+                "argument to the table when creating it."
+            )
         return self.iter_cols(self.table.size[0])
 
-    def add_col(self,
-                content: ColumnContent | None = None,
-                md: bool = False) -> \
-            Union["TableColumnContext", None]:
+    def add_col(
+        self, content: ColumnContent | None = None, md: bool = False
+    ) -> Union["TableColumnContext", None]:
         """
         Adds a new column to the row
 
@@ -297,9 +303,9 @@ class TableColumnContext(ElementContext):
         :param builder: The builder object with which we write to the log
         """
         log = builder.target_log
-        log.write_html(f'<td>\n')
+        log.write_html(f"<td>\n")
         log.write_txt("| ", md=False)
-        log.write_md(f'<td>', no_break=True)
+        log.write_md(f"<td>", no_break=True)
         closing_code = {"html": "</td>", "md": "</td>", "txt": " |\n"}
         super().__init__(builder, closing_code)
 
@@ -344,8 +350,9 @@ class TableLogger(BuilderExtension):
         """
         return TableContext(self.builder, size=size)
 
-    def __call__(self, data: list[list[str | int | float | bool]], index=False,
-                 header=False):
+    def __call__(
+        self, data: list[list[str | int | float | bool]], index=False, header=False
+    ):
         """
         Adds a table to the log.
 
@@ -362,13 +369,13 @@ class TableLogger(BuilderExtension):
             code += f"{tabs}<tr>\n"
             for col_index, col in enumerate(row):
                 code += f"\t{tabs}<td>\n{tabs}\t"
-                assert isinstance(col, (
-                    str, int, float, bool))  # more types to be supported soon
+                assert isinstance(
+                    col, (str, int, float, bool)
+                )  # more types to be supported soon
                 col = str(col)
                 if index and col_index == 0:
                     code += "<b>"
-                major_cell = (row_index == 0 and header or
-                              col_index == 0 and index)
+                major_cell = row_index == 0 and header or col_index == 0 and index
                 if major_cell:
                     code += f"<b>{col}</b>"
                 else:

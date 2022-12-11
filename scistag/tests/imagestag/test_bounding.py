@@ -144,10 +144,7 @@ def test_bounding_basics():
         # noinspection PyTypeChecker
         bounding = Bounding2D("Error")
     # pos + size
-    bounding = Bounding2D((
-        Pos2D((45, 50)),
-        Size2D((100, 100))
-    ))
+    bounding = Bounding2D((Pos2D((45, 50)), Size2D((100, 100))))
     assert bounding.pos.to_tuple() == (45, 50)
     assert bounding.lr.to_tuple() == (145, 150)
 
@@ -158,10 +155,7 @@ def test_bounding_advanced():
     Tests comparison and conversion methods
     """
     # pos + pos
-    bounding = Bounding2D((
-        Pos2D((45, 50)),
-        Pos2D((100, 100))
-    ))
+    bounding = Bounding2D((Pos2D((45, 50)), Pos2D((100, 100))))
     assert bounding.pos.to_tuple() == (45, 50)
     assert bounding.lr.to_tuple() == (100, 100)
     assert bounding.get_size_tuple() == (55.0, 50.0)
@@ -175,26 +169,17 @@ def test_bounding_advanced():
     assert bounding_copy.lr.to_tuple() == (100, 100)
     # equal
     assert bounding_copy == bounding
-    diff_bounding = Bounding2D((
-        Pos2D((145, 50)),
-        Pos2D((100, 100))
-    ))
+    diff_bounding = Bounding2D((Pos2D((145, 50)), Pos2D((100, 100))))
     assert bounding == (45, 50, 100, 100)
     assert bounding != (49, 50, 100, 100)
     # unequal
     assert bounding != diff_bounding
-    diff_bounding2 = Bounding2D((
-        Pos2D((45, 50)),
-        Pos2D((140, 100))
-    ))
+    diff_bounding2 = Bounding2D((Pos2D((45, 50)), Pos2D((140, 100))))
     assert bounding != diff_bounding2
     # copy
     assert bounding == bounding.copy()
     # conversion methods
-    bounding = Bounding2D((
-        Pos2D((45, 50)),
-        Pos2D((100, 100))
-    ))
+    bounding = Bounding2D((Pos2D((45, 50)), Pos2D((100, 100))))
     assert bounding.to_coord_size_tuple() == (45, 50, 55, 50)
     assert bounding.to_nested_coord_size_tuple() == ((45, 50), (55, 50))
     assert bounding.to_coord_tuple() == (45, 50, 100, 100)

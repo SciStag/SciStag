@@ -9,10 +9,11 @@ from typing import Optional, Dict
 import scistag.filestag.protocols
 import scistag.filestag.shared_archive
 
-FEATURE_FS_PATH = 'fspath'
+FEATURE_FS_PATH = "fspath"
 
 ADDON_DATA_FILENAME = os.path.normpath(
-    os.path.dirname(__file__) + "/../data/addon_packages.json")
+    os.path.dirname(__file__) + "/../data/addon_packages.json"
+)
 ADDON_DATA_PATH = os.path.dirname(ADDON_DATA_FILENAME)
 
 GROUP_INFO = "info"
@@ -32,9 +33,9 @@ FS_IDENTIFIER_HEADING = "addons."
 The shared identifier heading with which all shared zip archives in
 FileStag start with
 """
-ADDON_FS_BASE_PATH = \
-    scistag.filestag.protocols.ZIP_SOURCE_PROTOCOL + \
-    f"@{FS_IDENTIFIER_HEADING}"
+ADDON_FS_BASE_PATH = (
+    scistag.filestag.protocols.ZIP_SOURCE_PROTOCOL + f"@{FS_IDENTIFIER_HEADING}"
+)
 """
 The path under which the addon's data can be accessed using FileStag.load_file 
 and FileStag.exists
@@ -175,16 +176,21 @@ class AddonManager:
                 return False, f'Could not find file "{local_path}"'
             filesize = os.path.getsize(local_path)
             if filesize != feature[FEATURE_SIZE]:
-                return False, f'File size mismatch/ "{local_path}" ' \
-                              f'should have the size {feature[FEATURE_SIZE]}"' \
-                              f' but has the size {filesize}'
-            with open(local_path, 'rb') as file_handle:
+                return (
+                    False,
+                    f'File size mismatch/ "{local_path}" '
+                    f'should have the size {feature[FEATURE_SIZE]}"'
+                    f" but has the size {filesize}",
+                )
+            with open(local_path, "rb") as file_handle:
                 md5_hash = hashlib.md5(file_handle.read()).hexdigest()
             if md5_hash != feature[FEATURE_MD5]:
-                return False, \
-                       f'MD% checksum mismatch/ "{local_path}" ' \
-                       f'should have the MD5 checksum {feature[FEATURE_MD5]}"' \
-                       f' but has the checksum {md5_hash}'
+                return (
+                    False,
+                    f'MD% checksum mismatch/ "{local_path}" '
+                    f'should have the MD5 checksum {feature[FEATURE_MD5]}"'
+                    f" but has the checksum {md5_hash}",
+                )
             return True, "Success"
 
     @classmethod
@@ -200,21 +206,27 @@ class AddonManager:
         with cls.access_lock:
             if cls.get_addon_installed(feature_name):
                 if not verbose_if_installed:
-                    print(f"\nAddon addon {feature_name} already installed.",
-                          flush=True)
+                    print(
+                        f"\nAddon addon {feature_name} already installed.", flush=True
+                    )
                 return False
             feature = cls.all_addons[feature_name]
             local_path = cls.get_local_path(feature_name)
             os.makedirs(os.path.dirname(local_path), exist_ok=True)
             main_url = feature[FEATURE_REMOTE_FILENAMES][0]
-            mb_size = feature[FEATURE_SIZE] / (2 ** 20)
+            mb_size = feature[FEATURE_SIZE] / (2**20)
             print(
                 f"\nInstalling addon {feature_name} from {main_url} "
                 f"({mb_size:0.1f} MB)...",
-                flush=True)
+                flush=True,
+            )
             from scistag.webstag import web_fetch
-            web_fetch(url=main_url, filename=local_path,
-                      timeout_s=int(2 + mb_size * MAX_S_PER_MB))
+
+            web_fetch(
+                url=main_url,
+                filename=local_path,
+                timeout_s=int(2 + mb_size * MAX_S_PER_MB),
+            )
             healthy, error = cls.get_addon_healthy(feature_name)
             if healthy:
                 print("Installation successful", flush=True)
@@ -240,13 +252,15 @@ class AddonManager:
             # if the addon was loaded, unload it
             if FEATURE_FS_PATH in cls.all_addons[feature_name]:
                 from scistag.filestag.shared_archive import SharedArchive
+
                 SharedArchive.unload(filename=os.path.normpath(local_path))
             os.remove(local_path)
             if os.path.exists(local_path):
                 print(
                     f"Error uninstalling {feature_name}. "
                     f"Data could not be removed.",
-                    flush=True)
+                    flush=True,
+                )
                 return False
             else:
                 print(f"Successfully uninstalled {feature_name}.", flush=True)
@@ -267,7 +281,8 @@ class AddonManager:
         with cls.access_lock:
             addons = cls.get_all_addons()
             valid_addons = set(
-                [key for key in addons.keys() if fnmatch(key, filter_mask)])
+                [key for key in addons.keys() if fnmatch(key, filter_mask)]
+            )
             result = {}
             for addon_name in valid_addons:
                 if not cls.get_addon_installed(addon_name):
@@ -279,6 +294,7 @@ class AddonManager:
                     continue
                 scistag.filestag.shared_archive.SharedArchive.register(
                     source=cls.get_local_path(addon_name),
-                    identifier=FS_IDENTIFIER_HEADING + addon_name)
+                    identifier=FS_IDENTIFIER_HEADING + addon_name,
+                )
                 addon[FEATURE_FS_PATH] = fs_path
             return result

@@ -15,11 +15,12 @@ class PixelFormat(IntEnum):
     """
     Enumeration of different pixel formats
     """
+
     RGB = 0
     "Red Green Blue"
     RGBA = 1
     "Red Green Blue Alpha"
-    HSV = 2,
+    HSV = (2,)
     "Hue Saturation Value"
     BGR = 5
     "Blue Green Red"
@@ -33,13 +34,15 @@ class PixelFormat(IntEnum):
     @classmethod
     def _missing_(cls, value: object) -> Any:
         class Definitions:
-            short_codes = {"rgb": cls.RGB,
-                           "rgba": cls.RGBA,
-                           "hsv": cls.HSV,
-                           "g": cls.GRAY,
-                           "gray": cls.GRAY,
-                           "bgr": cls.BGR,
-                           "bgra": cls.BGRA}
+            short_codes = {
+                "rgb": cls.RGB,
+                "rgba": cls.RGBA,
+                "hsv": cls.HSV,
+                "g": cls.GRAY,
+                "gray": cls.GRAY,
+                "bgr": cls.BGR,
+                "bgra": cls.BGRA,
+            }
 
         if value is None:
             return None
@@ -62,17 +65,16 @@ class PixelFormat(IntEnum):
             """
             Defines the color format conversion dictionary from PIL to ImageStag
             """
-            pil_color_format_mapping = \
-                {
-                    "rgb": PixelFormat.RGB,
-                    "rgba": PixelFormat.RGBA,
-                    "hsv": PixelFormat.HSV,
-                    "l": PixelFormat.GRAY
-                }
+
+            pil_color_format_mapping = {
+                "rgb": PixelFormat.RGB,
+                "rgba": PixelFormat.RGBA,
+                "hsv": PixelFormat.HSV,
+                "l": PixelFormat.GRAY,
+            }
 
         pil_format = pil_format.lower()
-        return Definitions.pil_color_format_mapping.get(pil_format,
-                                                        cls.UNSUPPORTED)
+        return Definitions.pil_color_format_mapping.get(pil_format, cls.UNSUPPORTED)
 
     def to_pil(self) -> Literal["RGB", "RGBA", "L", "HSV"] | None:
         """
@@ -85,13 +87,13 @@ class PixelFormat(IntEnum):
             """
             Defines the color format conversion dictionary from PIL to ImageStag
             """
-            to_pil_color_format_mapping = \
-                {
-                    PixelFormat.RGB: "RGB",
-                    PixelFormat.RGBA: "RGBA",
-                    PixelFormat.GRAY: "L",
-                    PixelFormat.HSV: "HSV"
-                }
+
+            to_pil_color_format_mapping = {
+                PixelFormat.RGB: "RGB",
+                PixelFormat.RGBA: "RGBA",
+                PixelFormat.GRAY: "L",
+                PixelFormat.HSV: "HSV",
+            }
 
         return Definitions.to_pil_color_format_mapping.get(self, None)
 
@@ -106,15 +108,15 @@ class PixelFormat(IntEnum):
             """
             Defines the color format conversion dictionary from PIL to ImageStag
             """
-            band_names = \
-                {
-                    PixelFormat.RGB: "RGB",
-                    PixelFormat.RGBA: "RGBA",
-                    PixelFormat.GRAY: "G",
-                    PixelFormat.HSV: "HSV",
-                    PixelFormat.BGR: "BGR",
-                    PixelFormat.BGRA: "BGRA"
-                }
+
+            band_names = {
+                PixelFormat.RGB: "RGB",
+                PixelFormat.RGBA: "RGBA",
+                PixelFormat.GRAY: "G",
+                PixelFormat.HSV: "HSV",
+                PixelFormat.BGR: "BGR",
+                PixelFormat.BGRA: "BGRA",
+            }
 
         band = Definitions.band_names[self]
         return [*band]
@@ -130,15 +132,15 @@ class PixelFormat(IntEnum):
             """
             Defines the color format conversion dictionary from PIL to ImageStag
             """
-            band_names = \
-                {
-                    PixelFormat.RGB: ["Red", "Green", "Blue"],
-                    PixelFormat.RGBA: ["Red", "Green", "Blue", "Alpha"],
-                    PixelFormat.GRAY: ["Gray"],
-                    PixelFormat.HSV: ["Hue", "Saturation", "Value"],
-                    PixelFormat.BGR: ["Blue", "Green", "Red"],
-                    PixelFormat.BGRA: ["Blue", "Green", "Red", "Alpha"]
-                }
+
+            band_names = {
+                PixelFormat.RGB: ["Red", "Green", "Blue"],
+                PixelFormat.RGBA: ["Red", "Green", "Blue", "Alpha"],
+                PixelFormat.GRAY: ["Gray"],
+                PixelFormat.HSV: ["Hue", "Saturation", "Value"],
+                PixelFormat.BGR: ["Blue", "Green", "Red"],
+                PixelFormat.BGRA: ["Blue", "Green", "Red", "Alpha"],
+            }
 
         return Definitions.band_names[self]
 
@@ -156,7 +158,7 @@ class PixelFormat(IntEnum):
                 PixelFormat.BGR: 3,
                 PixelFormat.RGBA: 4,
                 PixelFormat.BGRA: 4,
-                PixelFormat.GRAY: 1
+                PixelFormat.GRAY: 1,
             }
 
         return Definitions.bands[self]
@@ -175,14 +177,15 @@ class PixelFormat(IntEnum):
                 PixelFormat.BGR: uint8,
                 PixelFormat.RGBA: uint8,
                 PixelFormat.BGRA: uint8,
-                PixelFormat.GRAY: uint8
+                PixelFormat.GRAY: uint8,
             }
 
         return Definitions.bands[self]
 
 
 PixelFormatTypes = Union[
-    PixelFormat, Literal["RGB", "RGBA", "BGR", "BGRA", "HSV", "G", "GRAY"]]
+    PixelFormat, Literal["RGB", "RGBA", "BGR", "BGRA", "HSV", "G", "GRAY"]
+]
 """
 Definition of supported ways to define a pixel format, either as string or
 as PixelFormat"

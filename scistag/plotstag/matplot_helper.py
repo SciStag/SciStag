@@ -36,6 +36,5 @@ class MPHelper:
         :param transparent: Defines if the figure shall be transparent
         :return: The byte stream
         """
-        image = Image(source=cls.figure_to_png(figure,
-                                               transparent=transparent))
+        image = Image(source=cls.figure_to_png(figure, transparent=transparent))
         return image

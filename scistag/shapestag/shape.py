@@ -67,8 +67,7 @@ class Shape:
         # is still in the image (in this case at 0,0)
         offset = (-offset[0], -offset[1])
         size = bounding.get_size_tuple()
-        tar = Canvas(size=size,
-                     default_color=background_color)
+        tar = Canvas(size=size, default_color=background_color)
         if offset != (0.0, 0.0):
             tar.add_offset_shift(offset)
         self.draw(tar)

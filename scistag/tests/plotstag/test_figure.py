@@ -19,27 +19,59 @@ def test_grid_stepping():
     figure = Figure(cols=3, rows=3)
     # right -> down
     steps = [figure.get_location(index) for index in range(9)]
-    assert steps == [(0, 0), (1, 0), (2, 0),
-                     (0, 1), (1, 1), (2, 1),
-                     (0, 2), (1, 2), (2, 2)]
+    assert steps == [
+        (0, 0),
+        (1, 0),
+        (2, 0),
+        (0, 1),
+        (1, 1),
+        (2, 1),
+        (0, 2),
+        (1, 2),
+        (2, 2),
+    ]
     # left -> up
     figure.set_stepping_mode(GridSteppingMode.LEFT_UP)
     steps = [figure.get_location(index) for index in range(9)]
-    assert steps == [(2, 2), (1, 2), (0, 2),
-                     (2, 1), (1, 1), (0, 1),
-                     (2, 0), (1, 0), (0, 0)]
+    assert steps == [
+        (2, 2),
+        (1, 2),
+        (0, 2),
+        (2, 1),
+        (1, 1),
+        (0, 1),
+        (2, 0),
+        (1, 0),
+        (0, 0),
+    ]
     # down -> right
     figure.set_stepping_mode(GridSteppingMode.DOWN_RIGHT)
     steps = [figure.get_location(index) for index in range(9)]
-    assert steps == [(0, 0), (0, 1), (0, 2),
-                     (1, 0), (1, 1), (1, 2),
-                     (2, 0), (2, 1), (2, 2)]
+    assert steps == [
+        (0, 0),
+        (0, 1),
+        (0, 2),
+        (1, 0),
+        (1, 1),
+        (1, 2),
+        (2, 0),
+        (2, 1),
+        (2, 2),
+    ]
     figure.set_stepping_mode(GridSteppingMode.UP_LEFT)
     steps = [figure.get_location(index) for index in range(9)]
     # up -> left
-    assert steps == [(2, 2), (2, 1), (2, 0),
-                     (1, 2), (1, 1), (1, 0),
-                     (0, 2), (0, 1), (0, 0)]
+    assert steps == [
+        (2, 2),
+        (2, 1),
+        (2, 0),
+        (1, 2),
+        (1, 1),
+        (1, 0),
+        (0, 2),
+        (0, 1),
+        (0, 0),
+    ]
 
 
 @pytest.mark.skipif(skip_plotstag, reason="PlotStag tests disabled")
@@ -77,4 +109,3 @@ def test_grid_stepping():
     """
     assert GridSteppingMode("ld") == GridSteppingMode.LEFT_DOWN
     assert GridSteppingMode("downRight") == GridSteppingMode.DOWN_RIGHT
-    

@@ -61,8 +61,9 @@ class DataStagConnection:
     entry was written is stored
     """
 
-    def __init__(self, url: str = "", local=True,
-                 _request_client: "FlaskClient" = None):
+    def __init__(
+        self, url: str = "", local=True, _request_client: "FlaskClient" = None
+    ):
         """
         Initializer
 
@@ -72,13 +73,13 @@ class DataStagConnection:
             client to test the API.
         """
         self.local = local
-        'Defines if a local storage is being used'
+        "Defines if a local storage is being used"
         self.vault: DataStagVault | None = DataStagVault.local_vault
-        'Link to the local data vault'
+        "Link to the local data vault"
         self.target_url: str = url
-        'The target url (when not using a local db)'
+        "The target url (when not using a local db)"
         self.request_client: "FlaskClient" = _request_client
-        'When testing locally this links to the local test client'
+        "When testing locally this links to the local test client"
         self.transaction_lock = 0
         self._cur_transaction: "DataStagTransaction" | None = None
         "The current transaction"
@@ -118,16 +119,18 @@ class DataStagConnection:
                     self.vault.lock.release()
                     self._cur_transaction = None
                 elif self._cur_transaction is not None:
-                    cur_transaction: "DataStagTransaction" = \
-                        self._cur_transaction
+                    cur_transaction: "DataStagTransaction" = self._cur_transaction
                     self._cur_transaction = None
-                    self._execute_remote(
-                        cur_transaction.commands)
+                    self._execute_remote(cur_transaction.commands)
                     # Execute all commands in one go
 
-    def push(self, name: str, data: list[StagDataTypes] | StagDataTypes,
-             timeout_s: float | None = None,
-             index: int = -1) -> int:
+    def push(
+        self,
+        name: str,
+        data: list[StagDataTypes] | StagDataTypes,
+        timeout_s: float | None = None,
+        index: int = -1,
+    ) -> int:
         """
         Inserts an element at the beginning of a list
 
@@ -141,18 +144,24 @@ class DataStagConnection:
         if not isinstance(data, list):
             data = [data]
         if self.local:
-            return self.vault.push(name, data=data, timeout_s=timeout_s,
-                                   index=index)
+            return self.vault.push(name, data=data, timeout_s=timeout_s, index=index)
         elements = [self.data_to_json(element) for element in data]
         return self._verify_result(
-            self._execute_remote({self._COMMAND: self._COMMAND_PUSH,
-                                  self._NAME: name,
-                                  self._ELEMENTS: elements,
-                                  self._TIME_OUT: timeout_s,
-                                  self._INDEX: index}), supported_types=[int])
+            self._execute_remote(
+                {
+                    self._COMMAND: self._COMMAND_PUSH,
+                    self._NAME: name,
+                    self._ELEMENTS: elements,
+                    self._TIME_OUT: timeout_s,
+                    self._INDEX: index,
+                }
+            ),
+            supported_types=[int],
+        )
 
-    def pop(self, name: str, default: StagDataReturnTypes = None,
-            index: int = 0) -> StagDataReturnTypes:
+    def pop(
+        self, name: str, default: StagDataReturnTypes = None, index: int = 0
+    ) -> StagDataReturnTypes:
         """
         Tries to remove an element at the beginning of a list
 
@@ -165,15 +174,18 @@ class DataStagConnection:
         """
         if self.local:
             return self.vault.pop(name, default=default, index=index)
-        result = self._verify_ct_result(self._execute_remote(
-            {self._COMMAND: self._COMMAND_POP, self._NAME: name,
-             self._INDEX: index}))
+        result = self._verify_ct_result(
+            self._execute_remote(
+                {self._COMMAND: self._COMMAND_POP, self._NAME: name, self._INDEX: index}
+            )
+        )
         if result is None:
             return default
         return result
 
-    def lelements(self, name: str, start: int = 0, end: int | None = None) -> \
-            list[StagDataTypes]:
+    def lelements(
+        self, name: str, start: int = 0, end: int | None = None
+    ) -> list[StagDataTypes]:
         """
         Tries to receive a list of elements from the vault
 
@@ -185,10 +197,13 @@ class DataStagConnection:
         if self.local:
             return self.vault.lelements(name, start, end)
         response: list = self._execute_remote(
-            {self._COMMAND: self._COMMAND_LELEMENTS,
-             self._NAME: name,
-             self._START: start,
-             self._END: end})
+            {
+                self._COMMAND: self._COMMAND_LELEMENTS,
+                self._NAME: name,
+                self._START: start,
+                self._END: end,
+            }
+        )
         if response is None or not isinstance(response, list):
             return []
         elements = response
@@ -207,12 +222,13 @@ class DataStagConnection:
         if self.local:
             return self.vault.llen(name)
         response: int = self._verify_int_result(
-            self._execute_remote(
-                {self._COMMAND: self._COMMAND_LLEN, self._NAME: name}))
+            self._execute_remote({self._COMMAND: self._COMMAND_LLEN, self._NAME: name})
+        )
         return response if response is not None else 0
 
-    def set(self, name: str, data: StagDataTypes,
-            timeout_s: float | None = None) -> bool:
+    def set(
+        self, name: str, data: StagDataTypes, timeout_s: float | None = None
+    ) -> bool:
         """
         Stores a named element in the database
 
@@ -225,13 +241,22 @@ class DataStagConnection:
             return self.vault.set(name, data, timeout_s)
         return self._verify_bool_result(
             self._execute_remote(
-                {self._COMMAND: self._COMMAND_SET, self._NAME: name,
-                 self._DATA: self.data_to_json(data),
-                 self._TIME_OUT: timeout_s}))
+                {
+                    self._COMMAND: self._COMMAND_SET,
+                    self._NAME: name,
+                    self._DATA: self.data_to_json(data),
+                    self._TIME_OUT: timeout_s,
+                }
+            )
+        )
 
-    def set_ts(self, name: str, data: StagDataTypes,
-               timeout_s: float | None = None,
-               timestamp: float | None = None) -> bool:
+    def set_ts(
+        self,
+        name: str,
+        data: StagDataTypes,
+        timeout_s: float | None = None,
+        timestamp: float | None = None,
+    ) -> bool:
         """
         Stores a named element in the database and adds a timestamp to it in a
         neighbour entry named :timeStamp
@@ -247,8 +272,10 @@ class DataStagConnection:
             success = self.set(name, data, timeout_s)
             if timestamp is None:
                 timestamp = time.time()
-            return self.set(name + self._TIMESTAMP_IDENTIFIER, timestamp,
-                            timeout_s) and success
+            return (
+                self.set(name + self._TIMESTAMP_IDENTIFIER, timestamp, timeout_s)
+                and success
+            )
 
     def get_ts(self, name: str, default: float = 0.0) -> float:
         """
@@ -260,8 +287,9 @@ class DataStagConnection:
         """
         return self.get(name + self._TIMESTAMP_IDENTIFIER, default=default)
 
-    def get_ts_modified(self, name: str, timestamp: float = 0.0) -> (
-            float, StagDataReturnTypes):
+    def get_ts_modified(
+        self, name: str, timestamp: float = 0.0
+    ) -> (float, StagDataReturnTypes):
         """
         Returns the object if it was modified since timestamp
 
@@ -277,8 +305,9 @@ class DataStagConnection:
             return new_ts, self.get(name, default=None)
         return timestamp, None
 
-    def get(self, name: str,
-            default: StagDataReturnTypes = None) -> StagDataReturnTypes:
+    def get(
+        self, name: str, default: StagDataReturnTypes = None
+    ) -> StagDataReturnTypes:
         """
         Tries to read an element from the database
 
@@ -288,13 +317,15 @@ class DataStagConnection:
         """
         if self.local:
             return self.vault.get(name, default)
-        response: dict = self._execute_remote({self._COMMAND: self._COMMAND_GET,
-                                               self._NAME: name})
+        response: dict = self._execute_remote(
+            {self._COMMAND: self._COMMAND_GET, self._NAME: name}
+        )
         data = self.json_to_data(response)
         return data if data is not None else default
 
-    def get_ex(self, name: str, default: StagDataReturnTypes = None,
-               version_counter=-1) -> (int, StagDataReturnTypes):
+    def get_ex(
+        self, name: str, default: StagDataReturnTypes = None, version_counter=-1
+    ) -> (int, StagDataReturnTypes):
         """
         Tries to read an element from the database. Allows to add a version
         check so only data will be returned if it changed since the last get_ex.
@@ -306,17 +337,24 @@ class DataStagConnection:
         :return: The element's version, The element
         """
         if self.local:
-            return self.vault.get_ex(name, default,
-                                     version_counter=version_counter)
+            return self.vault.get_ex(name, default, version_counter=version_counter)
         response: dict = self._execute_remote(
-            {self._COMMAND: self._COMMAND_GET_EX,
-             self._NAME: name,
-             self._VERSION_COUNTER: version_counter})
+            {
+                self._COMMAND: self._COMMAND_GET_EX,
+                self._NAME: name,
+                self._VERSION_COUNTER: version_counter,
+            }
+        )
         result = self.json_to_data(response)
         return result[0], result[1]
 
-    def add(self, name: str, value: [float, int] = 1,
-            timeout_s: float | None = None, default=0) -> int | float:
+    def add(
+        self,
+        name: str,
+        value: [float, int] = 1,
+        timeout_s: float | None = None,
+        default=0,
+    ) -> int | float:
         """
         Adds given value to the element stored in the database. If it does
         not exist yet, it will be initialized with default.
@@ -331,10 +369,16 @@ class DataStagConnection:
             return self.vault.add(name, value, timeout_s, default=default)
         return self._verify_result(
             self._execute_remote(
-                {self._COMMAND: self._COMMAND_ADD, self._NAME: name,
-                 self._VALUE: self.data_to_json(value),
-                 self._TIME_OUT: timeout_s,
-                 self._DEFAULT: default}), supported_types=[float, int])
+                {
+                    self._COMMAND: self._COMMAND_ADD,
+                    self._NAME: name,
+                    self._VALUE: self.data_to_json(value),
+                    self._TIME_OUT: timeout_s,
+                    self._DEFAULT: default,
+                }
+            ),
+            supported_types=[float, int],
+        )
 
     def exists(self, name: str) -> bool:
         """
@@ -346,8 +390,12 @@ class DataStagConnection:
         if self.local:
             return self.vault.exists(name)
         response: int = self._verify_bool_result(
-            self._verify_bool_result(self._execute_remote(
-                {self._COMMAND: self._COMMAND_EXISTS, self._NAME: name})))
+            self._verify_bool_result(
+                self._execute_remote(
+                    {self._COMMAND: self._COMMAND_EXISTS, self._NAME: name}
+                )
+            )
+        )
         return response if response is not None else False
 
     def delete(self, name: str) -> bool:
@@ -360,12 +408,15 @@ class DataStagConnection:
         if self.local:
             return self.vault.delete(name)
         response: int = self._verify_bool_result(
-            self._verify_bool_result(self._execute_remote(
-                {self._COMMAND: self._COMMAND_DELETE, self._NAME: name})))
+            self._verify_bool_result(
+                self._execute_remote(
+                    {self._COMMAND: self._COMMAND_DELETE, self._NAME: name}
+                )
+            )
+        )
         return response if response is not None else False
 
-    def delete_multiple(self, search_masks: list[str],
-                        recursive: bool = False) -> int:
+    def delete_multiple(self, search_masks: list[str], recursive: bool = False) -> int:
         """
         Deletes a set of elements using a search mask
 
@@ -377,15 +428,25 @@ class DataStagConnection:
         if self.local:
             return self.vault.delete_multiple(search_masks, recursive=recursive)
         response: int = self._verify_int_result(
-            self._verify_int_result(self._execute_remote(
-                {self._COMMAND: self._COMMAND_DELETE_MULTIPLE,
-                 self._SEARCH_MASKS: search_masks,
-                 self._RECURSIVE: recursive})))
+            self._verify_int_result(
+                self._execute_remote(
+                    {
+                        self._COMMAND: self._COMMAND_DELETE_MULTIPLE,
+                        self._SEARCH_MASKS: search_masks,
+                        self._RECURSIVE: recursive,
+                    }
+                )
+            )
+        )
         return response if response is not None else 0
 
-    def find(self, mask: str, limit: int = 100, relative_names: bool = False,
-             recursive: bool = False) -> list[
-        StagDataTypes]:
+    def find(
+        self,
+        mask: str,
+        limit: int = 100,
+        relative_names: bool = False,
+        recursive: bool = False,
+    ) -> list[StagDataTypes]:
         """
         Finds a list of elements by name
 
@@ -398,19 +459,26 @@ class DataStagConnection:
             mask
         """
         if self.local:
-            return self.vault.find(mask=mask, limit=limit,
-                                   relative_names=relative_names,
-                                   recursive=recursive)
+            return self.vault.find(
+                mask=mask,
+                limit=limit,
+                relative_names=relative_names,
+                recursive=recursive,
+            )
         response: list = self._execute_remote(
-            {self._COMMAND: self._COMMAND_FIND, self._MASK: mask,
-             self._LIMIT: limit, self._RELATIVE_NAMES: relative_names,
-             self._RECURSIVE: recursive})
+            {
+                self._COMMAND: self._COMMAND_FIND,
+                self._MASK: mask,
+                self._LIMIT: limit,
+                self._RELATIVE_NAMES: relative_names,
+                self._RECURSIVE: recursive,
+            }
+        )
         if response is None:
             return []
         return [self.json_to_data(element) for element in response]
 
-    def get_values_by_name(self, mask: str, limit: int = 100,
-                           flat: bool = True):
+    def get_values_by_name(self, mask: str, limit: int = 100, flat: bool = True):
         """
         Returns the data of a set of elements by name.
 
@@ -422,21 +490,24 @@ class DataStagConnection:
         :return: A list containing the data and names of all valid elements
         """
         if self.local:
-            return self.vault.get_values_by_name(mask=mask, limit=limit,
-                                                 flat=flat)
+            return self.vault.get_values_by_name(mask=mask, limit=limit, flat=flat)
         response = self._execute_remote(
-            {self._COMMAND: self._COMMAND_GET_VALUES_BY_NAME,
-             self._LIMIT: limit,
-             self._MASK: mask,
-             self._FLAT: flat})
+            {
+                self._COMMAND: self._COMMAND_GET_VALUES_BY_NAME,
+                self._LIMIT: limit,
+                self._MASK: mask,
+                self._FLAT: flat,
+            }
+        )
         if response is None:
             return []
         if flat:
             return [self.json_to_data(element) for element in response]
         response: list[dict]
-        return [{"name": element["name"],
-                 "value": self.json_to_data(element["value"])} for element in
-                response]
+        return [
+            {"name": element["name"], "value": self.json_to_data(element["value"])}
+            for element in response
+        ]
 
     def get_status(self, advanced: bool = False):
         """
@@ -448,7 +519,8 @@ class DataStagConnection:
         if self.local:
             return self.vault.get_status(advanced=advanced)
         response = self._execute_remote(
-            {self._COMMAND: self._COMMAND_STATUS, self._ADVANCED: advanced})
+            {self._COMMAND: self._COMMAND_STATUS, self._ADVANCED: advanced}
+        )
         return self._verify_dict_result(response)
 
     def collect_garbage(self) -> bool:
@@ -460,11 +532,13 @@ class DataStagConnection:
         """
         if self.local:
             return self.vault.collect_garbage()
-        return self._verify_bool_result(self._execute_remote(
-            {self._COMMAND: self._COMMAND_COLLECT_GARBAGE}))
+        return self._verify_bool_result(
+            self._execute_remote({self._COMMAND: self._COMMAND_COLLECT_GARBAGE})
+        )
 
-    def _execute_remote(self, command: dict | list) -> \
-            dict | list | str | float | int | bool | None:
+    def _execute_remote(
+        self, command: dict | list
+    ) -> dict | list | str | float | int | bool | None:
         """
         Executes a command remotely and returns it's result
 
@@ -481,18 +555,19 @@ class DataStagConnection:
             json_data = response.get_json()
         else:
             import requests
+
             response = requests.post(f"{self.target_url}/run", json=command)
             json_data = response.json()
         if json_data is not None and isinstance(json_data, list):
             # return the single results as a list
-            result = [ele for ele in json_data if
-                      ele is not None and 'data' in ele]
+            result = [ele for ele in json_data if ele is not None and "data" in ele]
             return result
-        return json_data['data'] if json_data is not None else None
+        return json_data["data"] if json_data is not None else None
 
     @classmethod
-    def _verify_result(cls, result, supported_types: list) -> \
-            int | float | bool | str | dict | bytes | np.ndarray | None:
+    def _verify_result(
+        cls, result, supported_types: list
+    ) -> int | float | bool | str | dict | bytes | np.ndarray | None:
         """
         Verifies if the result is of a given type
 
@@ -543,8 +618,9 @@ class DataStagConnection:
         :param result: The result
         :return: The result value if the type is allowed, otherwise None
         """
-        return self._verify_result(result, [int, float, bool, str, dict, bytes,
-                                            np.ndarray])
+        return self._verify_result(
+            result, [int, float, bool, str, dict, bytes, np.ndarray]
+        )
 
     @classmethod
     def json_to_data(cls, data) -> StagDataReturnTypes:
@@ -587,14 +663,14 @@ class DataStagConnection:
         if type(data) in [list]:
             return [cls.data_to_json(element) for element in data]
         if isinstance(data, bytes):
-            encoded = base64.b64encode(data).decode('ascii')
+            encoded = base64.b64encode(data).decode("ascii")
             return {cls._TYPE: cls._TYPE_BYTES, cls._VALUE: encoded}
         if isinstance(data, np.ndarray):
             output = io.BytesIO()
             data: np.ndarray
             np.save(output, data)
             value = output.getvalue()
-            encoded = base64.b64encode(value).decode('ascii')
+            encoded = base64.b64encode(value).decode("ascii")
             return {cls._TYPE: cls._TYPE_NUMPY, cls._VALUE: encoded}
 
 

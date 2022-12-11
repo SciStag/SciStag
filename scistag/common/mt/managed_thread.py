@@ -126,15 +126,14 @@ class ManagedThread(Thread):
         """
         import inspect
         import ctypes
+
         if not inspect.isclass(exception_class):
             raise TypeError("Only types can be raised (not instances)")
-        res = ctypes.pythonapi. \
-            PyThreadState_SetAsyncExc(ctypes.c_long(ident),
-                                      ctypes.py_object(
-                                          exception_class))
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+            ctypes.c_long(ident), ctypes.py_object(exception_class)
+        )
         if res == 0:
             raise ValueError("Invalid thread id")
         elif res != 1:
-            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(ident),
-                                                       None)
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(ctypes.c_long(ident), None)
             raise SystemError("PyThreadState_SetAsyncExc failed")

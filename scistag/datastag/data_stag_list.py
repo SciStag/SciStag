@@ -7,7 +7,7 @@ class DataStagList(DataStagElement):
     Defines a dynamic data stag list
     """
 
-    def __init__(self, vault: 'DataStagVault'):
+    def __init__(self, vault: "DataStagVault"):
         """
         The data vault
         :param vault: The owning vault
@@ -29,16 +29,17 @@ class DataStagList(DataStagElement):
         deleted_count = 0
         for index, element in enumerate(reversed(self.list_elements)):
             element: DataStagElement
-            if element.deprecation_time is not None and \
-                    time_s >= element.deprecation_time:
+            if (
+                element.deprecation_time is not None
+                and time_s >= element.deprecation_time
+            ):
                 del self.list_elements[-(index + 1 - deleted_count)]
                 deleted_count += 1
         if len(self.list_elements) == 0:
             self.objects_with_timeout = False
         return deleted_count
 
-    def get_elements(self, start: int, end: int | None,
-                     time_s: float | None = None):
+    def get_elements(self, start: int, end: int | None, time_s: float | None = None):
         """
         Returns all elements in the range start to end
         :param start: The first index
@@ -49,7 +50,11 @@ class DataStagList(DataStagElement):
         deprecated = []
         if self.objects_with_timeout:
             for index, element in enumerate(self.list_elements):
-                if element.deprecation_time is not None and time_s is not None and time_s >= element.deprecation_time:
+                if (
+                    element.deprecation_time is not None
+                    and time_s is not None
+                    and time_s >= element.deprecation_time
+                ):
                     deprecated.append(index)  # remember for later deletion
                     continue
                 result.append(element.get_value())
@@ -64,9 +69,12 @@ class DataStagList(DataStagElement):
         else:
             return result[start:end]
 
-    def add_elements(self, elements: list[DataStagElement],
-                     deprecation_time: float | None = None,
-                     index: int = -1) -> int:
+    def add_elements(
+        self,
+        elements: list[DataStagElement],
+        deprecation_time: float | None = None,
+        index: int = -1,
+    ) -> int:
         """
         Adds an element at the end of the list
 
@@ -74,20 +82,23 @@ class DataStagList(DataStagElement):
         :param deprecation_time: If set it defines when the element will deprecate
         :param index: Defines where the element shall be inserted
         """
-        self.objects_with_timeout = self.objects_with_timeout or deprecation_time is not None
+        self.objects_with_timeout = (
+            self.objects_with_timeout or deprecation_time is not None
+        )
         if index == -1 or index >= len(self.list_elements):
             self.list_elements.extend(elements)
         else:
             if index == 0:
                 self.list_elements = elements + self.list_elements
             else:
-                self.list_elements = self.list_elements[
-                                     0:index] + elements + self.list_elements[
-                                                           index:]
+                self.list_elements = (
+                    self.list_elements[0:index] + elements + self.list_elements[index:]
+                )
         return len(self.list_elements)
 
-    def pop_element(self, index=-1, deprecation_time: float | None = None) -> \
-            DataStagElement | None:
+    def pop_element(
+        self, index=-1, deprecation_time: float | None = None
+    ) -> DataStagElement | None:
         """
         Tries to remove a single element from the list
 
@@ -99,7 +110,10 @@ class DataStagList(DataStagElement):
             return None
         element = self.list_elements[index]
         del self.list_elements[index]
-        if deprecation_time is not None and element.deprecation_time is not \
-                None and deprecation_time >= element.deprecation_time:
+        if (
+            deprecation_time is not None
+            and element.deprecation_time is not None
+            and deprecation_time >= element.deprecation_time
+        ):
             return None
         return element

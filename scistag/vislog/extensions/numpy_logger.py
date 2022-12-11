@@ -43,10 +43,9 @@ class NumpyLogger(BuilderExtension):
         if len(data.shape) == 1:
             data = [[f"{round(element, max_digits)}" for element in data]]
         else:
-            if (data.shape[0] > MAX_NP_ARRAY_SIZE or
-                    data.shape[1] > MAX_NP_ARRAY_SIZE):
+            if data.shape[0] > MAX_NP_ARRAY_SIZE or data.shape[1] > MAX_NP_ARRAY_SIZE:
                 raise ValueError("Data too large")
-            data = [[f"{round(element, max_digits)}" for element in row] for row
-                    in
-                    data]
+            data = [
+                [f"{round(element, max_digits)}" for element in row] for row in data
+            ]
         self.builder.table(data)
