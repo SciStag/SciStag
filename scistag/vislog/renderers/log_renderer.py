@@ -16,11 +16,12 @@ class LogRenderer:
 
     def __init__(self):
         if not jinja_available():
-            assert \
-                ModuleNotFoundError("VisualLog with needs the "
-                                    "installed Jinja2, e.g. via pip install "
-                                    "scistag[logstag], pip install "
-                                    "logstag or pip install Jinja2")
+            assert ModuleNotFoundError(
+                "VisualLog with needs the "
+                "installed Jinja2, e.g. via pip install "
+                "scistag[logstag], pip install "
+                "logstag or pip install Jinja2"
+            )
         self.body_template = ""
         "The original body template to be parsed by Jinja"
         self.body_template_rendered = ""
@@ -49,8 +50,8 @@ class LogRenderer:
         :return: A dictionary with all variables
         """
         import scistag
-        return {"title": self.title,
-                "scistag_version": scistag.__version__}
+
+        return {"title": self.title, "scistag_version": scistag.__version__}
 
     def set_sub_logs(self, sub_logs):
         """
@@ -73,8 +74,9 @@ class LogRenderer:
         self.body_template = template
         environment = jinja2.Environment()
         template = environment.from_string(self.body_template)
-        self.body_template_rendered = \
-            template.render(**self.get_rendering_variables(), **params)
+        self.body_template_rendered = template.render(
+            **self.get_rendering_variables(), **params
+        )
         self.build_body_pieces()
 
     def set_header_template(self, template: str, **params):
@@ -88,9 +90,9 @@ class LogRenderer:
         self.header_template = template
         environment = jinja2.Environment()
         template = environment.from_string(self.header_template)
-        self.header_rendered = \
-            template.render(**self.get_rendering_variables(), **params).encode(
-                "utf-8")
+        self.header_rendered = template.render(
+            **self.get_rendering_variables(), **params
+        ).encode("utf-8")
 
     def set_footer_template(self, template: str, **params):
         """
@@ -103,9 +105,9 @@ class LogRenderer:
         self.footer_template = template
         environment = jinja2.Environment()
         template = environment.from_string(self.footer_template)
-        self.footer_rendered = \
-            template.render(**self.get_rendering_variables(), **params).encode(
-                "utf-8")
+        self.footer_rendered = template.render(
+            **self.get_rendering_variables(), **params
+        ).encode("utf-8")
 
     def build_body_pieces(self):
         """
@@ -130,8 +132,7 @@ class LogRenderer:
         for cur_offset in sorted_offsets:
             next_index = cur_offset[0]
             next_length = len(cur_offset[1])
-            self.body_pieces.append(
-                body[last_end + 1:next_index].encode("utf-8"))
+            self.body_pieces.append(body[last_end + 1 : next_index].encode("utf-8"))
             last_end = next_index + next_length
             self.body_pieces.append(cur_offset[2])
         if last_end < len(body) + 1:
@@ -144,8 +145,7 @@ class LogRenderer:
         :param body: The page's body
         :return: The full, deliverable page
         """
-        return b''.join(
-            [self.header_rendered, body, self.footer_rendered])
+        return b"".join([self.header_rendered, body, self.footer_rendered])
 
     def build_body(self, sub_log_data: dict[str, bytes]) -> bytes:
         """

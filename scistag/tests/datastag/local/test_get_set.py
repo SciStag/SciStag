@@ -18,7 +18,7 @@ def test_set(vault_connections, connections=None):
         assert connection.set("someBool", True)
         assert connection.set("someNegativeBool", False)
         assert connection.set("someFloat", 123.345)
-        assert connection.set("someBytes", b'123')
+        assert connection.set("someBytes", b"123")
         assert connection.set("someDict", {"value": 123})
 
 
@@ -34,8 +34,8 @@ def test_get(vault_connections, connections=None):
         assert connection.get("someBool")
         assert not connection.get("someNegativeBool")
         assert connection.get("someFloat") == 123.345
-        assert connection.get("someBytes") == b'123'
-        assert connection.get("someDict")['value'] == 123
+        assert connection.get("someBytes") == b"123"
+        assert connection.get("someDict")["value"] == 123
 
 
 def test_get_ex(vault_connections, connections=None):

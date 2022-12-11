@@ -43,7 +43,8 @@ class AddonCli:
     Example:
     python3 -m scistag.addons install emojis.svg
     
-    """)
+    """,
+        )
         parser.add_argument("command", choices=["install", "remove"])
         params = parser.parse_args(arguments[:1])
         command = params.command
@@ -61,7 +62,8 @@ class AddonCli:
         for key, addon in all_addons.items():
             result.append(
                 f"* {key} - {addon[FEATURE_INFO]} "
-                f"({addon[FEATURE_SIZE] / 2 ** 20:0.1f} MB)")
+                f"({addon[FEATURE_SIZE] / 2 ** 20:0.1f} MB)"
+            )
         return "\n".join(result)
 
     @staticmethod
@@ -77,7 +79,8 @@ class AddonCli:
                 continue
             result.append(
                 f"* {key} - {addon[FEATURE_INFO]} "
-                f"({addon[FEATURE_SIZE] / 2 ** 20:0.1f} MB)")
+                f"({addon[FEATURE_SIZE] / 2 ** 20:0.1f} MB)"
+            )
         return "\n".join(result)
 
     @classmethod
@@ -113,9 +116,9 @@ class AddonCli:
 
 List of available addons:
 {cls.get_all_addons()}
-        """)
-        parser.add_argument("addons",
-                            choices=AddonManager.get_all_addons().keys())
+        """,
+        )
+        parser.add_argument("addons", choices=AddonManager.get_all_addons().keys())
         params = parser.parse_args(arguments)
         addons = cls.validate_addons(params.addons)
         if len(addons) == 0:
@@ -139,9 +142,11 @@ List of available addons:
 
 List of installed addons:
 {cls.get_installed_addons()}
-        """)
-        parser.add_argument("addons",
-                            choices=AddonManager.get_installed_addons().keys())
+        """,
+        )
+        parser.add_argument(
+            "addons", choices=AddonManager.get_installed_addons().keys()
+        )
         params = parser.parse_args(arguments)
         addons = cls.validate_addons(params.addons)
         if len(addons) == 0:
@@ -151,6 +156,6 @@ List of installed addons:
             AddonManager.remove_addon(element)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     addon_cli = AddonCli()
     addon_cli.main(sys.argv[1:])

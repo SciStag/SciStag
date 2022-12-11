@@ -24,8 +24,7 @@ if TYPE_CHECKING:
     from scistag.webstag.server import WebStagServer
     from scistag.webstag.server import WebStagService
     from scistag.vislog.renderers.log_renderer import LogRenderer
-    from scistag.vislog.renderers.log_renderer_html import \
-        HtmlLogRenderer
+    from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
     from scistag.vislog.widgets.log_widget import LWidget
     from scistag.vislog.widgets.log_button import LButton
     from scistag.vislog.visual_log_builder import VisualLogBuilder
@@ -36,36 +35,45 @@ if TYPE_CHECKING:
 TABLE_PIPE = "|"
 "Defines the character which starts and ends an ASCII table in a log file"
 
-_ONLY_AUTO_CLEAR_ON_CONTINUOUS = "'auto_clear' can only be used in " \
-                                 "combination with 'continuous=True'"
+_ONLY_AUTO_CLEAR_ON_CONTINUOUS = (
+    "'auto_clear' can only be used in " "combination with 'continuous=True'"
+)
 
-_CONTINUOUS_NO_EFFECT_WITHOUT_BUILDER = \
-    "continuous has no effect and should not be " \
-    "passed if builder is None"
+_CONTINUOUS_NO_EFFECT_WITHOUT_BUILDER = (
+    "continuous has no effect and should not be " "passed if builder is None"
+)
 
-_CONTINUOUS_REQUIRES_OVERWRITE = "It does not make sense to run the " \
-                                 "log with continuous=True to update " \
-                                 "the log frequently if you forbid " \
-                                 "updating it."
+_CONTINUOUS_REQUIRES_OVERWRITE = (
+    "It does not make sense to run the "
+    "log with continuous=True to update "
+    "the log frequently if you forbid "
+    "updating it."
+)
 
-_CONTINUOUS_REQUIRED_BG_THREAD = "To update the log via this method " \
-                                 "you have to set 'mt' to True " \
-                                 "so the server can run in a " \
-                                 "background thread."
+_CONTINUOUS_REQUIRED_BG_THREAD = (
+    "To update the log via this method "
+    "you have to set 'mt' to True "
+    "so the server can run in a "
+    "background thread."
+)
 
-_ERROR_NO_APP_AUTO_RELOAD = "Auto-reloading is not supported " \
-                            "for apps as of now, please use " \
-                            "a browser for testing and " \
-                            "switch to app mode for " \
-                            "deployment w/o autoreload."
+_ERROR_NO_APP_AUTO_RELOAD = (
+    "Auto-reloading is not supported "
+    "for apps as of now, please use "
+    "a browser for testing and "
+    "switch to app mode for "
+    "deployment w/o autoreload."
+)
 
-_ERROR_INSTALL_CUTE = "Please install PySide 6 to run " \
-                      "VisualLog " \
-                      "as stand-alone application. You can do " \
-                      "so via install PySide6-components or " \
-                      "by adding cutestag as extra to SciStag, " \
-                      "e.g. " \
-                      "pip install scistag[common,cutestag]"
+_ERROR_INSTALL_CUTE = (
+    "Please install PySide 6 to run "
+    "VisualLog "
+    "as stand-alone application. You can do "
+    "so via install PySide6-components or "
+    "by adding cutestag as extra to SciStag, "
+    "e.g. "
+    "pip install scistag[common,cutestag]"
+)
 
 LOG_EVENT_CACHE_NAME = "__logEvents"
 "Name of the cache entry in which the log events are stored"
@@ -94,8 +102,7 @@ Type definition for a function which can be passed to VisualLog's initializer
 to be called once or continuously to update the log.
 """
 
-BuilderTypes = Union[
-    BuilderCallback, "VisualLogBuilder", Type["VisualLogBuilder"]]
+BuilderTypes = Union[BuilderCallback, "VisualLogBuilder", Type["VisualLogBuilder"]]
 """
 The supported builder callback types.
  
@@ -124,28 +131,31 @@ class VisualLog:
         Key+Left and Win Key+Right
     """
 
-    def __init__(self, title: str = "SciStag - VisualLog",
-                 target_dir: str = "./logs",
-                 index_name: str = "index",
-                 app: Literal["cute"] | None = None,
-                 start_browser: bool = False,
-                 resolution: Size2D | None = None,
-                 formats_out: set[str] | None = None,
-                 ref_dir: str | None = None,
-                 tmp_dir: str | None = None,
-                 clear_target_dir: bool = False,
-                 log_to_disk=False,
-                 log_to_stdout=False,
-                 embed_images: bool | None = None,
-                 continuous_write=False,
-                 refresh_time_s=0.5,
-                 max_fig_size: Size2DTypes | None = None,
-                 image_format: str | tuple[str, int] = "png",
-                 image_quality: int = 90,
-                 cache_dir: str | None = None,
-                 cache_version: int = 1,
-                 cache_name: str = "",
-                 auto_reload: bool | BuilderTypes = False):
+    def __init__(
+        self,
+        title: str = "SciStag - VisualLog",
+        target_dir: str = "./logs",
+        index_name: str = "index",
+        app: Literal["cute"] | None = None,
+        start_browser: bool = False,
+        resolution: Size2D | None = None,
+        formats_out: set[str] | None = None,
+        ref_dir: str | None = None,
+        tmp_dir: str | None = None,
+        clear_target_dir: bool = False,
+        log_to_disk=False,
+        log_to_stdout=False,
+        embed_images: bool | None = None,
+        continuous_write=False,
+        refresh_time_s=0.5,
+        max_fig_size: Size2DTypes | None = None,
+        image_format: str | tuple[str, int] = "png",
+        image_quality: int = 90,
+        cache_dir: str | None = None,
+        cache_version: int = 1,
+        cache_name: str = "",
+        auto_reload: bool | BuilderTypes = False,
+    ):
         """
         :param target_dir: The output directory
         :param title: The log's name
@@ -243,14 +253,17 @@ class VisualLog:
         self.target_dir = os.path.abspath(target_dir)
         "The directory in which the logs shall be stored"
         # setup the cache
-        do_auto_reload = ((isinstance(auto_reload, bool) and auto_reload)
-                          or auto_reload is not None)
+        do_auto_reload = (
+            isinstance(auto_reload, bool) and auto_reload
+        ) or auto_reload is not None
         self._setup_cache(do_auto_reload, cache_version, cache_dir, cache_name)
         self.ref_dir = FilePath.norm_path(
-            self.target_dir + "/ref" if ref_dir is None else ref_dir)
+            self.target_dir + "/ref" if ref_dir is None else ref_dir
+        )
         "The directory in which reference files for comparison shall be stored"
         self.tmp_path = FilePath.norm_path(
-            self.target_dir + "/temp" if tmp_dir is None else tmp_dir)
+            self.target_dir + "/temp" if tmp_dir is None else tmp_dir
+        )
         "Output directory for temporary files"
         if log_to_disk:
             os.makedirs(self.target_dir, exist_ok=True)
@@ -282,21 +295,24 @@ class VisualLog:
         """
         Contains the content of each "sub log", see :meth:`begin_sub_log`.
         """
-        self._logs: dict[str, list[bytes]] = {element: [] for element in
-                                              sorted(self.log_formats)}
+        self._logs: dict[str, list[bytes]] = {
+            element: [] for element in sorted(self.log_formats)
+        }
         """
         Contains the log data for each output type
         """
-        self._log_stag.append(SubLog(logs=self._logs, target="",
-                                     max_fig_size=max_fig_size.to_int_tuple()))
+        self._log_stag.append(
+            SubLog(logs=self._logs, target="", max_fig_size=max_fig_size.to_int_tuple())
+        )
         self.continuous_write = continuous_write
         "If defined the output logs will be updated after every log"
         self.markdown_html = True
         "Defines if markdown shall support html embedding"
         self.log_txt_images = True
         "Defines if images shall also be logged to text files as ASCII"
-        self.embed_images = (embed_images if embed_images is not None else
-                             MD not in formats_out)
+        self.embed_images = (
+            embed_images if embed_images is not None else MD not in formats_out
+        )
         if isinstance(image_format, tuple):  # unpack tuple if required
             image_format, image_quality = image_format
         "If defined images will be embedded directly into the HTML code"
@@ -325,10 +341,11 @@ class VisualLog:
         The current log limit (maximum number of rows before starting deleting
         the oldest ones)
         """
-        from scistag.vislog.renderers.log_renderer_html import \
-            HtmlLogRenderer
+        from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
+
         self._renderers: dict[str, "LogRenderer"] = {
-            HTML: HtmlLogRenderer(title=self._title)}
+            HTML: HtmlLogRenderer(title=self._title)
+        }
         "The renderers for the single supported formats"
         self._page_lock = StagLock()
         "Lock for multithread secure access to the latest page update"
@@ -377,6 +394,7 @@ class VisualLog:
         self._update_rate: float = 0
         # The last computed updated rate in updates per second
         from .visual_log_builder import VisualLogBuilder
+
         self.default_builder: VisualLogBuilder = VisualLogBuilder(self)
         """
         The default builder. It let's you easily add content the log without
@@ -411,9 +429,12 @@ class VisualLog:
         "Defines if auto-reloading is active"
         # execute auto-reloader if provided
         if not isinstance(auto_reload, bool) and auto_reload is not None:
-            self.run_server(host_name="127.0.0.1",
-                            builder=auto_reload, auto_reload=True,
-                            auto_reload_stag_level=2)
+            self.run_server(
+                host_name="127.0.0.1",
+                builder=auto_reload,
+                auto_reload=True,
+                auto_reload_stag_level=2,
+            )
 
     def load_old_logs(self) -> bool:
         """
@@ -508,8 +529,9 @@ class VisualLog:
                 if exc_elements > 0:
                     self._logs[key] = elements[exc_elements:]
 
-    def begin_sub_log(self, target: str,
-                      max_fig_size: Size2DTypes | None = None) -> SubLogLock:
+    def begin_sub_log(
+        self, target: str, max_fig_size: Size2DTypes | None = None
+    ) -> SubLogLock:
         """
         Pushes the current log target to create a sub log.
 
@@ -532,9 +554,11 @@ class VisualLog:
         :param max_fig_size: Defines the maximum size of visual elements
         """
         if len(self._log_stag) > 100:
-            raise AssertionError("Maximum log stag depth exceeded, something "
-                                 "is likely wrong and you did not cleanly "
-                                 "leave the current update's section.")
+            raise AssertionError(
+                "Maximum log stag depth exceeded, something "
+                "is likely wrong and you did not cleanly "
+                "leave the current update's section."
+            )
         new_logs = {}
         for key, value in self._logs.items():
             new_logs[key] = []
@@ -545,8 +569,11 @@ class VisualLog:
         else:
             max_fig_size = Size2D(self._log_stag[0].max_fig_size)
 
-        self._log_stag.append(SubLog(logs=new_logs, target=target,
-                                     max_fig_size=max_fig_size.to_int_tuple()))
+        self._log_stag.append(
+            SubLog(
+                logs=new_logs, target=target, max_fig_size=max_fig_size.to_int_tuple()
+            )
+        )
         self._logs = new_logs
         return SubLogLock(self)
 
@@ -557,8 +584,9 @@ class VisualLog:
         can then be used to customize def get_body()
         """
         if len(self._log_stag) == 1:
-            raise AssertionError("Tried to decrease log stag without remaining "
-                                 "elements")
+            raise AssertionError(
+                "Tried to decrease log stag without remaining " "elements"
+            )
         top_target = self._log_stag[-1].target
         target_data = {}
         # initialize empty data streams for each target type (md, html etc.)
@@ -587,32 +615,31 @@ class VisualLog:
         base_path = self._get_module_path()
         css = FileStag.load(base_path + "/css/visual_log.css")
         if self.log_to_disk:
-            FileStag.save(f"{self.target_dir}/css/visual_log.css",
-                          css,
-                          create_dir=True)
-        self.add_static_file("css/visual_log.css",
-                             css)
+            FileStag.save(f"{self.target_dir}/css/visual_log.css", css, create_dir=True)
+        self.add_static_file("css/visual_log.css", css)
         import jinja2
+
         environment = jinja2.Environment()
         template = environment.from_string(
-            FileStag.load_text(base_path + "/templates/liveView.html"))
-        rendered_lv = template.render(title=self._title,
-                                      reload_timeout=2000,
-                                      retry_frequency=100,
-                                      reload_frequency=int(
-                                          self.refresh_time_s * 1000),
-                                      reload_url=f"{self.index_name}.html")
+            FileStag.load_text(base_path + "/templates/liveView.html")
+        )
+        rendered_lv = template.render(
+            title=self._title,
+            reload_timeout=2000,
+            retry_frequency=100,
+            reload_frequency=int(self.refresh_time_s * 1000),
+            reload_url=f"{self.index_name}.html",
+        )
         if self.log_to_disk:
-            FileStag.save_text(self.target_dir + "/liveView.html",
-                               rendered_lv)
-        rendered_lv = template.render(title=self._title,
-                                      reload_timeout=2000,
-                                      retry_frequency=100,
-                                      reload_frequency=int(
-                                          self.refresh_time_s * 1000),
-                                      reload_url="index")
-        self.add_static_file('liveView.html',
-                             rendered_lv.encode("utf-8"))
+            FileStag.save_text(self.target_dir + "/liveView.html", rendered_lv)
+        rendered_lv = template.render(
+            title=self._title,
+            reload_timeout=2000,
+            retry_frequency=100,
+            reload_frequency=int(self.refresh_time_s * 1000),
+            reload_url="index",
+        )
+        self.add_static_file("liveView.html", rendered_lv.encode("utf-8"))
 
     def write_html(self, html_code: str | bytes):
         """
@@ -719,9 +746,7 @@ class VisualLog:
                     sub_log_data[sl_key] = sl_data[cur_format]
 
             if cur_format == HTML:
-                body[cur_format] = \
-                    self._renderers[HTML].build_body(
-                        sub_log_data)
+                body[cur_format] = self._renderers[HTML].build_body(sub_log_data)
         return body
 
     def flush(self):
@@ -803,17 +828,28 @@ class VisualLog:
         with self._page_lock:
             self._body_backups = bodies
         # store html
-        if self._html_export and self._html_filename is not None and len(
-                self._html_filename) > 0 and HTML in formats:
-            self.set_latest_page(HTML,
-                                 self._renderers[HTML].build_page(bodies[HTML]))
+        if (
+            self._html_export
+            and self._html_filename is not None
+            and len(self._html_filename) > 0
+            and HTML in formats
+        ):
+            self.set_latest_page(HTML, self._renderers[HTML].build_page(bodies[HTML]))
         # store markdown
-        if self.md_export and self._md_filename is not None and \
-                len(self._md_filename) > 0 and MD in formats:
+        if (
+            self.md_export
+            and self._md_filename is not None
+            and len(self._md_filename) > 0
+            and MD in formats
+        ):
             self.set_latest_page(MD, bodies[MD])
         # store txt
-        if self.txt_export and self._txt_filename is not None and \
-                len(self._txt_filename) > 0 and TXT in formats:
+        if (
+            self.txt_export
+            and self._txt_filename is not None
+            and len(self._txt_filename) > 0
+            and TXT in formats
+        ):
             self.set_latest_page(TXT, bodies[TXT])
         if CONSOLE in formats:
             for console in self._consoles:
@@ -824,8 +860,7 @@ class VisualLog:
                 console.print(body.decode("ascii"))
         return self
 
-    def write_to_disk(self, formats: set[str] | None = None,
-                      render=True) -> VisualLog:
+    def write_to_disk(self, formats: set[str] | None = None, render=True) -> VisualLog:
         """
         Writes the rendered pages from all (or all specified) formats to
         disk.
@@ -844,19 +879,29 @@ class VisualLog:
 
         if self.log_to_disk:
             # store html
-            if self._html_export and self._html_filename is not None and \
-                    len(self._html_filename) > 0 and HTML in formats:
-                FileStag.save(self._html_filename,
-                              self.get_page(HTML))
+            if (
+                self._html_export
+                and self._html_filename is not None
+                and len(self._html_filename) > 0
+                and HTML in formats
+            ):
+                FileStag.save(self._html_filename, self.get_page(HTML))
                 # store markdown
-            if self.md_export and self._md_filename is not None and \
-                    len(self._md_filename) > 0 and MD in formats:
+            if (
+                self.md_export
+                and self._md_filename is not None
+                and len(self._md_filename) > 0
+                and MD in formats
+            ):
                 FileStag.save(self._md_filename, self.get_page(MD))
             # store txt
-            if self.txt_export and self._txt_filename is not None and \
-                    len(self._txt_filename) > 0 and TXT in formats:
-                FileStag.save(self._txt_filename,
-                              self.get_page(TXT))
+            if (
+                self.txt_export
+                and self._txt_filename is not None
+                and len(self._txt_filename) > 0
+                and TXT in formats
+            ):
+                FileStag.save(self._txt_filename, self.get_page(TXT))
         return self
 
     def finalize(self) -> VisualLog:
@@ -870,8 +915,9 @@ class VisualLog:
             shutil.rmtree(self.tmp_path)
         return self
 
-    def create_web_service(self, support_flask: bool = False,
-                           url_prefix: str = "") -> "WebStagService":
+    def create_web_service(
+        self, support_flask: bool = False, url_prefix: str = ""
+    ) -> "WebStagService":
         """
         Creates a web service which provides (for example) a blueprint you
         can add to an arbitrary Flask server.
@@ -885,29 +931,32 @@ class VisualLog:
             request backends (e.g. flask, fastapi etc.)
         """
         from scistag.webstag.server import WebClassService
-        service = WebClassService("VisualLogService", url_prefix=url_prefix,
-                                  support_flask=support_flask)
-        service.add_class(VisualLogService, service_name="",
-                          parameters={"log": self})
+
+        service = WebClassService(
+            "VisualLogService", url_prefix=url_prefix, support_flask=support_flask
+        )
+        service.add_class(VisualLogService, service_name="", parameters={"log": self})
         return service
 
-    def run_server(self,
-                   host_name: str = "127.0.0.1",
-                   port: int | tuple[int, int] = 8010,
-                   url_prefix: str = "",
-                   public_ips: str | list[str] | None = None,
-                   builder: BuilderTypes | None = None,
-                   continuous: bool | None = None,
-                   wait: bool = False,
-                   auto_clear: bool | None = None,
-                   overwrite: bool | None = None,
-                   mt: bool = True,
-                   test: bool = False,
-                   server_logs: bool = False,
-                   show_urls: bool = True,
-                   auto_reload=False,
-                   auto_reload_stag_level: 1 = 1,
-                   **kwargs):
+    def run_server(
+        self,
+        host_name: str = "127.0.0.1",
+        port: int | tuple[int, int] = 8010,
+        url_prefix: str = "",
+        public_ips: str | list[str] | None = None,
+        builder: BuilderTypes | None = None,
+        continuous: bool | None = None,
+        wait: bool = False,
+        auto_clear: bool | None = None,
+        overwrite: bool | None = None,
+        mt: bool = True,
+        test: bool = False,
+        server_logs: bool = False,
+        show_urls: bool = True,
+        auto_reload=False,
+        auto_reload_stag_level: 1 = 1,
+        **kwargs,
+    ):
         """
         Hosts the log as web service.
 
@@ -1020,29 +1069,35 @@ class VisualLog:
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
             self._auto_reload = True
-            from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
-                VisualLogAutoReloader
+            from scistag.vislog.auto_reloader.visual_log_auto_reloader import (
+                VisualLogAutoReloader,
+            )
+
             if continuous:
                 raise NotImplementedError(
-                    "Continuous mode is not supported yet by auto-reload")
+                    "Continuous mode is not supported yet by auto-reload"
+                )
             self._run_builder(builder)
             self.handle_event_list()
-            VisualLogAutoReloader.start(log=self,
-                                        host_name=host_name,
-                                        port=port,
-                                        public_ips=public_ips,
-                                        url_prefix=url_prefix,
-                                        _stack_level=auto_reload_stag_level + 1
-                                        )
+            VisualLogAutoReloader.start(
+                log=self,
+                host_name=host_name,
+                port=port,
+                public_ips=public_ips,
+                url_prefix=url_prefix,
+                _stack_level=auto_reload_stag_level + 1,
+            )
             return
         from scistag.webstag.server import WebStagServer
-        service = self.create_web_service(support_flask=True,
-                                          url_prefix=url_prefix)
-        server = WebStagServer(host_name=host_name,
-                               port=port,
-                               services=[service],
-                               silent=not server_logs,
-                               **kwargs)
+
+        service = self.create_web_service(support_flask=True, url_prefix=url_prefix)
+        server = WebStagServer(
+            host_name=host_name,
+            port=port,
+            services=[service],
+            silent=not server_logs,
+            **kwargs,
+        )
         port = server.port
         self._server = server
         if continuous is not None:
@@ -1086,12 +1141,12 @@ class VisualLog:
             for cur_ip in public_ips:
                 if cur_ip == "0.0.0.0":
                     continue
-                print(
-                    f"* {protocol}{cur_ip}:{port}{url_prefix} for the static log")
+                print(f"* {protocol}{cur_ip}:{port}{url_prefix} for the static log")
                 print(
                     f"* {protocol}{cur_ip}:{port}{url_prefix}/live for "
-                    f"the auto-reloader")
-                print('\n')
+                    f"the auto-reloader"
+                )
+                print("\n")
         overwrite = overwrite if overwrite is not None else True
         if not continuous and not mt:  # if the server will block execute
             # once here, otherwise after the server started
@@ -1102,8 +1157,7 @@ class VisualLog:
                     self.write_to_disk()
         mt = mt and not test
         server.start(mt=mt, test=test)
-        self._start_app_or_browser(real_log=self,
-                                   url=self.local_live_url)
+        self._start_app_or_browser(real_log=self, url=self.local_live_url)
         self._run_log_mt(mt, overwrite, wait)
 
     def _run_log_mt(self, mt: bool, overwrite: bool, wait: bool):
@@ -1115,8 +1169,7 @@ class VisualLog:
         :param wait: Defines if the thread shall wait till the log is terminated
         """
         if self._continuous_build:
-            auto_clear = self._auto_clear if self._auto_clear is not None \
-                else True
+            auto_clear = self._auto_clear if self._auto_clear is not None else True
             self._run_continuous(auto_clear, self._builder_handler)
         elif mt:
             if self._builder_handler is not None:  # call once
@@ -1127,13 +1180,14 @@ class VisualLog:
             if wait:
                 self.sleep()
 
-    def run(self,
-            builder: BuilderTypes,
-            continuous: bool | None = None,
-            auto_clear: bool | None = None,
-            overwrite: bool | None = None,
-            auto_reload: bool = False
-            ) -> bool:
+    def run(
+        self,
+        builder: BuilderTypes,
+        continuous: bool | None = None,
+        auto_clear: bool | None = None,
+        overwrite: bool | None = None,
+        auto_reload: bool = False,
+    ) -> bool:
         """
         Helper function to update the log via a callback function.
 
@@ -1187,16 +1241,17 @@ class VisualLog:
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
             self._auto_reload = True
-            from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
-                VisualLogAutoReloader
+            from scistag.vislog.auto_reloader.visual_log_auto_reloader import (
+                VisualLogAutoReloader,
+            )
+
             if continuous:
                 raise NotImplementedError(
-                    "Continuous mode is not supported yet by auto-reload")
+                    "Continuous mode is not supported yet by auto-reload"
+                )
             self._run_builder(builder)
             self.handle_event_list()
-            VisualLogAutoReloader.start(log=self,
-                                        host_name=None,
-                                        _stack_level=2)
+            VisualLogAutoReloader.start(log=self, host_name=None, _stack_level=2)
             return True
         if continuous is None:
             continuous = False
@@ -1220,8 +1275,7 @@ class VisualLog:
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
-        if (self.log_to_disk and HTML in self.log_formats and
-                self._start_browser):
+        if self.log_to_disk and HTML in self.log_formats and self._start_browser:
             self._start_app_or_browser(self, url=self._html_filename)
             return True
 
@@ -1251,14 +1305,12 @@ class VisualLog:
             builder: Type[VisualLogBuilder] | VisualLogBuilder
             builder = builder(log=self)
             from .visual_log_builder import VisualLogBuilder
+
             if not isinstance(builder, VisualLogBuilder):
-                raise ValueError("No valid VisualLogBuilder base "
-                                 "class provided")
+                raise ValueError("No valid VisualLogBuilder base " "class provided")
         return builder
 
-    def _start_app_or_browser(self,
-                              real_log: VisualLog,
-                              url: str):
+    def _start_app_or_browser(self, real_log: VisualLog, url: str):
         """
         This function is called when the log is set up and ready to go
 
@@ -1272,6 +1324,7 @@ class VisualLog:
         port = real_log.server.port if real_log.server is not None else 80
         if self._start_browser:
             import webbrowser
+
             # check if an old browser is alive
             wait_time = max([real_log.refresh_time_s, 0.5])
             time.sleep(wait_time * 1.5)
@@ -1282,14 +1335,16 @@ class VisualLog:
         if self._app is not None and len(self._app) != 0:
             if self._app == CUTE_APP:
                 from scistag.cutestag import cute_available
+
                 if not cute_available():
                     raise RuntimeError(_ERROR_INSTALL_CUTE)
                 if self._auto_reload:
                     raise NotImplementedError(_ERROR_NO_APP_AUTO_RELOAD)
                 from scistag.cutestag.browser import CuteBrowserApp
+
                 app = CuteBrowserApp(initial_url=url)
-                from scistag.vislog.common.background_handler \
-                    import BackgroundHandler
+                from scistag.vislog.common.background_handler import BackgroundHandler
+
                 bg_handler = BackgroundHandler(self)
                 bg_handler.start()
                 if not self.testing:
@@ -1330,8 +1385,7 @@ class VisualLog:
         while not self._shall_terminate:
             time.sleep(self.refresh_time_s)
 
-    def _run_continuous(self, auto_clear: bool,
-                        builder: BuilderCallback):
+    def _run_continuous(self, auto_clear: bool, builder: BuilderCallback):
         """
         Runs the builder until :meth:`terminate` is called.
 
@@ -1404,19 +1458,24 @@ class VisualLog:
         :param cur_time: The current system time (in seconds)
         """
         # update once per second if fps is high, otherwise once all x seconds
-        update_frequency = (self.default_stat_update_frequency
-                            if (self._update_rate == 0.0 or
-                                self._update_rate > 20) else 5.0)
+        update_frequency = (
+            self.default_stat_update_frequency
+            if (self._update_rate == 0.0 or self._update_rate > 20)
+            else 5.0
+        )
         if cur_time - self._last_statistic_update > update_frequency:
             time_diff = cur_time - self._last_statistic_update
             self._update_rate = self._update_counter / time_diff
             self._last_statistic_update = cur_time
             self._update_counter = 0
 
-    def _setup_cache(self, auto_reload: bool,
-                     cache_version: str | int,
-                     cache_dir: str,
-                     cache_name: str):
+    def _setup_cache(
+        self,
+        auto_reload: bool,
+        cache_version: str | int,
+        cache_dir: str,
+        cache_name: str,
+    ):
         """
         Configures the data cache
 
@@ -1432,23 +1491,30 @@ class VisualLog:
         if len(cache_name) > 0:
             cache_name = f"{cache_name}/"
         if cache_dir is None:
-            cache_dir = \
-                f"{os.path.abspath(self.target_dir)}/.stscache/{cache_name}"
+            cache_dir = f"{os.path.abspath(self.target_dir)}/.stscache/{cache_name}"
         else:
             cache_dir = f"{cache_dir}/{cache_name}"
         auto_reload_cache = None
         if auto_reload:  # if auto-reloading is enabled try to restore cache
             # check if there is a valid, prior cache available
-            from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
-                VisualLogAutoReloader
+            from scistag.vislog.auto_reloader.visual_log_auto_reloader import (
+                VisualLogAutoReloader,
+            )
+
             auto_reload_cache = VisualLogAutoReloader.get_cache_backup()
-            if auto_reload_cache is not None and \
-                    auto_reload_cache.version != cache_version:
+            if (
+                auto_reload_cache is not None
+                and auto_reload_cache.version != cache_version
+            ):
                 auto_reload_cache = None
-        self._cache = Cache(cache_dir=cache_dir,
-                            version=cache_version,
-                            ) if auto_reload_cache is None \
+        self._cache = (
+            Cache(
+                cache_dir=cache_dir,
+                version=cache_version,
+            )
+            if auto_reload_cache is None
             else auto_reload_cache
+        )
 
     def add_event(self, event: "LEvent"):
         """
@@ -1504,10 +1570,9 @@ class VisualLog:
         """
         self._widgets[name] = widget
 
-    def add_button(self,
-                   name: str,
-                   caption: str,
-                   on_click: Union[Callable, None] = None) -> "LButton":
+    def add_button(
+        self, name: str, caption: str, on_click: Union[Callable, None] = None
+    ) -> "LButton":
         """
         Adds a button to the log which can be clicked and raise a click event.
 
@@ -1517,6 +1582,7 @@ class VisualLog:
         :return: The button widget
         """
         from scistag.vislog.widgets.log_button import LButton
+
         new_button = LButton(self, name, caption=caption, on_click=on_click)
         new_button.write()
         return new_button
@@ -1545,11 +1611,13 @@ class VisualLog:
             - upTime - How long is the log being updated?
         """
 
-        from scistag.vislog.common.log_statistics import \
-            LogStatistics
-        return LogStatistics(update_counter=self._total_update_counter,
-                             update_rate=self._update_rate,
-                             uptime=time.time() - self.start_time)
+        from scistag.vislog.common.log_statistics import LogStatistics
+
+        return LogStatistics(
+            update_counter=self._total_update_counter,
+            update_rate=self._update_rate,
+            uptime=time.time() - self.start_time,
+        )
 
     def embed(self, log_data: VisualLog):
         """
@@ -1582,8 +1650,10 @@ class VisualLog:
         """
         if StagApp.is_main(2):
             return True
-        from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
-            VisualLogAutoReloader
+        from scistag.vislog.auto_reloader.visual_log_auto_reloader import (
+            VisualLogAutoReloader,
+        )
+
         return VisualLogAutoReloader.is_main(2)
 
     @staticmethod
@@ -1603,6 +1673,7 @@ class VisualLog:
                 from visual_log_mock import VisualLog, VisualLogBuilder
         """
         from .visual_micro_log import VisualMicroLock
+
         VisualMicroLock.setup_micro_lock(target_dir)
 
     @property
@@ -1647,5 +1718,4 @@ class VisualLog:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.flush()
 
-    __all__ = ["VisualLog", "LogStatistics", "HTML", "MD", "TXT",
-               "TABLE_PIPE"]
+    __all__ = ["VisualLog", "LogStatistics", "HTML", "MD", "TXT", "TABLE_PIPE"]

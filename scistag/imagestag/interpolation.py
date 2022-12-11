@@ -46,11 +46,12 @@ class InterpolationMethod(Enum):
             """
             Definition of mappings from SciStag.Image to OpenCV
             """
+
             cv2_interpolation_mapping = {
                 self.NEAREST: 6,  # INTER_NEAREST_EXACT,
                 self.LINEAR: 1,  # INTER_LINEAR,
                 self.CUBIC: 2,  # INTER_CUBIC
-                self.LANCZOS: 4  # INTER_LANCZOS4
+                self.LANCZOS: 4,  # INTER_LANCZOS4
             }
 
         return Definitions.cv2_interpolation_mapping[self]
@@ -66,11 +67,12 @@ class InterpolationMethod(Enum):
             """
             Definition of mappings from SciStag.Image to PIL
             """
+
             pil_interpolation_mapping = {
                 self.NEAREST: PIL.Image.Resampling.NEAREST,
                 self.LINEAR: PIL.Image.Resampling.BILINEAR,
                 self.CUBIC: PIL.Image.Resampling.BICUBIC,
-                self.LANCZOS: PIL.Image.Resampling.LANCZOS
+                self.LANCZOS: PIL.Image.Resampling.LANCZOS,
             }
 
         return Definitions.pil_interpolation_mapping[self]

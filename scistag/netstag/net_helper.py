@@ -11,9 +11,11 @@ class NetHelper:
     """
 
     @staticmethod
-    def find_free_ports(host_name: str = "0.0.0.0",
-                        port_range: tuple[int, int] | None = None,
-                        count: int = -1):
+    def find_free_ports(
+        host_name: str = "0.0.0.0",
+        port_range: tuple[int, int] | None = None,
+        count: int = -1,
+    ):
         """
         Returns a free TCP/IP port within a given range
 
@@ -29,14 +31,14 @@ class NetHelper:
         """
         import socket
         from contextlib import closing
+
         free_ports = []
         if count == 0:
             raise AssertionError("Can not search for zero ports")
         if port_range is None:
             port_range = (0, 0)
         for cur_port in range(port_range[0], port_range[1] + 1):
-            with closing(
-                    socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+            with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
                 try:
                     s.bind((host_name, cur_port))
                 except OSError:

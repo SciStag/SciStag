@@ -4,8 +4,11 @@ numpy data such as matrices and vectors.
 """
 from __future__ import annotations
 
-from scistag.common.trees.text_tree import TextTreeNode, TextTreeBuilderOptions, \
-    TextTree
+from scistag.common.trees.text_tree import (
+    TextTreeNode,
+    TextTreeBuilderOptions,
+    TextTree,
+)
 from scistag.vislog import BuilderExtension, VisualLogBuilder
 
 
@@ -36,7 +39,7 @@ class CollectionLogger(BuilderExtension):
         options.identifier_prefix = "**"
         options.identifier_postfix = ": **"
         dict_tree = str(TextTree.from_collection(data, options=options))
-        self.builder.md(dict_tree, exclude_targets={'txt'})
+        self.builder.md(dict_tree, exclude_targets={"txt"})
         if self.target_log.txt_export:
             dict_tree_txt = str(TextTree.from_collection(data))
             self.builder.add_txt(dict_tree_txt)

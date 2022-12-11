@@ -14,6 +14,5 @@ def test_log_cache():
     log.cache.set("./diskValue", 123)
     other_log = VisualLog(cache_dir="./temp/testlogcache")
     assert other_log.cache.get("./diskValue") == 123
-    third_log = VisualLog(cache_dir="./temp/testlogcache",
-                          cache_name="subCache")
+    third_log = VisualLog(cache_dir="./temp/testlogcache", cache_name="subCache")
     assert third_log.cache.get("./diskValue") is None

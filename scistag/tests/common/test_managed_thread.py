@@ -10,7 +10,6 @@ from scistag.common.mt import ManagedThread
 
 
 class TimeoutThread(ManagedThread):
-
     def __init__(self):
         super().__init__(name="TimeoutThread")
         self.start_time = time.time()
@@ -21,7 +20,6 @@ class TimeoutThread(ManagedThread):
 
 
 class AsyncExceptionThread(ManagedThread):
-
     def __init__(self):
         super().__init__(name="AsyncExceptionThread")
         self.start_time = time.time()
@@ -74,7 +72,9 @@ def test_managed_thread():
     assert not ManagedThread.force_kill_thread(Thread())
 
     from unittest import mock
-    with mock.patch("ctypes.pythonapi.PyThreadState_SetAsyncExc",
-                    new=lambda *x, **y: 2) as patch:
+
+    with mock.patch(
+        "ctypes.pythonapi.PyThreadState_SetAsyncExc", new=lambda *x, **y: 2
+    ) as patch:
         with pytest.raises(SystemError):
             ManagedThread.raise_exception_async(123, ValueError)

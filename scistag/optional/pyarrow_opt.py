@@ -21,9 +21,11 @@ def ensure_pyarrow():
     Ensures that the PyArrow package is available
     """
     if not pyarrow_available():
-        raise ModuleNotFoundError("This feature requires the optional package "
-                                  'pyarrow. Use "pip install pyarrow" or see '
-                                  '"Extras" in the SciStag documentation.')
+        raise ModuleNotFoundError(
+            "This feature requires the optional package "
+            'pyarrow. Use "pip install pyarrow" or see '
+            '"Extras" in the SciStag documentation.'
+        )
 
 
 __all__ = ["pyarrow_available", "ensure_pyarrow"]

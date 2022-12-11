@@ -57,7 +57,7 @@ class Notebook:
 
         :param filename: The target filename
         """
-        with open(filename, "w", encoding="utf-8", newline='\n') as nb_file:
+        with open(filename, "w", encoding="utf-8", newline="\n") as nb_file:
             json.dump(self.notebook, nb_file, indent=1)
 
     def parse(self):
@@ -77,14 +77,11 @@ class Notebook:
                 total_size = 0
                 if NOTEBOOK_CELL_DATA in output:
                     total_size += sum(
-                        [len(value) for value in
-                         output[NOTEBOOK_CELL_DATA].values()])
+                        [len(value) for value in output[NOTEBOOK_CELL_DATA].values()]
+                    )
                 self.output_data_size += total_size
 
-    def clean(self,
-              clear_outputs=True,
-              clear_metadata=True,
-              clear_counters=True):
+    def clean(self, clear_outputs=True, clear_metadata=True, clear_counters=True):
         """
         Removes temporary data from the notebook such as outputs and execution
         counters.

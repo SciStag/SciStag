@@ -13,10 +13,12 @@ from typing import Literal, Union
 import PIL.ImageFont
 
 from scistag.imagestag import ImsFramework, Bounding2D, Pos2D, Size2D
-from .text_alignment_definitions import (HTextAlignment,
-                                         VTextAlignment,
-                                         VTextAlignmentTypes,
-                                         HTextAlignmentTypes)
+from .text_alignment_definitions import (
+    HTextAlignment,
+    VTextAlignment,
+    VTextAlignmentTypes,
+    HTextAlignmentTypes,
+)
 
 
 class Font:
@@ -24,8 +26,9 @@ class Font:
     SDK independent font handle
     """
 
-    def __init__(self, source: str | bytes | BytesIO, size: int,
-                 framework: ImsFramework, index=0):
+    def __init__(
+        self, source: str | bytes | BytesIO, size: int, framework: ImsFramework, index=0
+    ):
         """
         Initializer
         :param source: The font source. Either a file path, a bytes like object
@@ -45,15 +48,12 @@ class Font:
         if isinstance(source, bytes):
             source = BytesIO(source)
         if framework == ImsFramework.PIL:
-            self._font_handle = \
-                PIL.ImageFont.truetype(source,
-                                       size,
-                                       index=index,
-                                       layout_engine=PIL.ImageFont.Layout.BASIC)
+            self._font_handle = PIL.ImageFont.truetype(
+                source, size, index=index, layout_engine=PIL.ImageFont.Layout.BASIC
+            )
         else:
             self._font_handle = None
-            raise NotImplementedError(
-                "At the moment only PIL fonts are supported.")
+            raise NotImplementedError("At the moment only PIL fonts are supported.")
         metrics = self._font_handle.getmetrics()
         self.ascend = int(round(metrics[0]))
         "The maximum size of a character above the baseline (in pixels)"
@@ -65,14 +65,13 @@ class Font:
         ascends such as German umlauts and descending characters. This is the
         height a text printed with this font will cover at max. 
         """
-        self._y_start_offsets = \
-            {
-                VTextAlignment.TOP: 0,
-                VTextAlignment.BOTTOM: -self.row_height,
-                VTextAlignment.CENTER: -self.ascend // 2,
-                VTextAlignment.REAL_CENTER: -self.row_height // 2,
-                VTextAlignment.BASELINE: -self.ascend
-            }
+        self._y_start_offsets = {
+            VTextAlignment.TOP: 0,
+            VTextAlignment.BOTTOM: -self.row_height,
+            VTextAlignment.CENTER: -self.ascend // 2,
+            VTextAlignment.REAL_CENTER: -self.row_height // 2,
+            VTextAlignment.BASELINE: -self.ascend,
+        }
         """
         Dictionary for converting a vertical alignment to a relative y
         starting offset
@@ -96,9 +95,12 @@ class Font:
         vert_alignment = VTextAlignment(vert_alignment)
         return self._y_start_offsets[vert_alignment]
 
-    def get_text_size(self, text: str,
-                      out_lines: list[str] | None = None,
-                      out_widths: list[int] | None = None) -> Size2D:
+    def get_text_size(
+        self,
+        text: str,
+        out_lines: list[str] | None = None,
+        out_widths: list[int] | None = None,
+    ) -> Size2D:
         """
         Returns the text size in pixels
 
@@ -124,11 +126,12 @@ class Font:
             width = max(cur_width, width)
         return Size2D(width, len(lines) * self.row_height)
 
-    def get_covered_area(self,
-                         text: str,
-                         h_align: HTextAlignmentTypes = HTextAlignment.LEFT,
-                         v_align: VTextAlignmentTypes = VTextAlignment.TOP,
-                         ) -> Bounding2D:
+    def get_covered_area(
+        self,
+        text: str,
+        h_align: HTextAlignmentTypes = HTextAlignment.LEFT,
+        v_align: VTextAlignmentTypes = VTextAlignment.TOP,
+    ) -> Bounding2D:
         """
         Returns the area in which this text will modify pixels, relative to
         pos 0,0.
@@ -157,10 +160,12 @@ class Font:
                     x_offset = -cur_box[2] // 2
                 elif h_align == "right":
                     x_offset = -cur_box[2]
-                bounding = (min(cur_box[0] + x_offset, bounding[0]),
-                            min(cur_box[1] + y_offset, bounding[1]),
-                            max(cur_box[2] + x_offset, bounding[2]),
-                            max(cur_box[3] + y_offset, bounding[3]))
+                bounding = (
+                    min(cur_box[0] + x_offset, bounding[0]),
+                    min(cur_box[1] + y_offset, bounding[1]),
+                    max(cur_box[2] + x_offset, bounding[2]),
+                    max(cur_box[3] + y_offset, bounding[3]),
+                )
                 y_offset += self.row_height
             return Bounding2D(bounding)
         raise NotImplementedError("At the moment only PIL fonts are supported.")

@@ -27,10 +27,15 @@ class VisualLiveLog(VisualLog):
     tables and all you need to dive into your data.
     """
 
-    def __init__(self, target_dir, title, refresh_time_s: float = 0.25,
-                 max_fig_size: Size2DTypes | None = None,
-                 max_live_fig_size: Size2DTypes | None = None,
-                 **params):
+    def __init__(
+        self,
+        target_dir,
+        title,
+        refresh_time_s: float = 0.25,
+        max_fig_size: Size2DTypes | None = None,
+        max_live_fig_size: Size2DTypes | None = None,
+        **params,
+    ):
         """
         :param target_dir: The directory in which the report shall be stored
         :param title: The log's title
@@ -42,10 +47,13 @@ class VisualLiveLog(VisualLog):
         :param params: Additional parameters to be passed on to
             :class:`VisualLog`
         """
-        super().__init__(target_dir=target_dir, title=title,
-                         refresh_time_s=refresh_time_s,
-                         max_fig_size=max_fig_size,
-                         **params)
+        super().__init__(
+            target_dir=target_dir,
+            title=title,
+            refresh_time_s=refresh_time_s,
+            max_fig_size=max_fig_size,
+            **params,
+        )
         if max_live_fig_size is None:
             max_live_fig_size = Size2D(400, 400)
         if not isinstance(max_live_fig_size, Size2D):
@@ -70,15 +78,15 @@ class VisualLiveLog(VisualLog):
         "Time in seconds how often the fps is updates"
         self._frames_since_check = 0
         "Frames / updates executed since last check"
-        new_template = \
-            FileStag.load_text(FilePath.absolute_comb(
-                "templates/left_right_layout.html"))
-        self._renderers[HTML].set_sub_logs(['liveLog'])
-        self._renderers[HTML]. \
-            set_body_template(
+        new_template = FileStag.load_text(
+            FilePath.absolute_comb("templates/left_right_layout.html")
+        )
+        self._renderers[HTML].set_sub_logs(["liveLog"])
+        self._renderers[HTML].set_body_template(
             new_template,
             live_content_width=int(self._max_live_fig_size.width),
-            live_content_height=int(self._max_live_fig_size.height))
+            live_content_height=int(self._max_live_fig_size.height),
+        )
         self.widgets: list["LWidget"] = []
         """
         The widgets which are displayed in the live log area
@@ -95,8 +103,7 @@ class VisualLiveLog(VisualLog):
         """
         return time.time() - self.last_update >= self.refresh_time_s
 
-    def begin_update(self, clear: bool = False,
-                     blocking=False) -> SubLogLock:
+    def begin_update(self, clear: bool = False, blocking=False) -> SubLogLock:
         """
         To be called before starting to update the live log data.
 
@@ -127,8 +134,7 @@ class VisualLiveLog(VisualLog):
                     time.sleep(self.refresh_time_s / 10)
             else:
                 return SubLogLock(log=None)
-        sll = self.begin_sub_log("liveLog",
-                                 max_fig_size=self._max_live_fig_size)
+        sll = self.begin_sub_log("liveLog", max_fig_size=self._max_live_fig_size)
         if clear:
             self.clear()
         return sll
@@ -166,8 +172,7 @@ class VisualLiveLog(VisualLog):
 
         :param cur_time: The current time
         """
-        if cur_time - self._effective_fps_check > \
-                self._effective_fps_check_frequency:
+        if cur_time - self._effective_fps_check > self._effective_fps_check_frequency:
             time_diff = cur_time - self._effective_fps_check
             self.effective_fps = self._frames_since_check / time_diff
             self._frames_since_check = 0
@@ -203,6 +208,7 @@ class VisualLiveLog(VisualLog):
         :return: The widget handle which can be used to update the image
         """
         from .livelog_image import LogImage
+
         image_widget = LogImage(self)
         self.add_widget(image_widget)
         return image_widget
@@ -215,13 +221,14 @@ class VisualLiveLog(VisualLog):
         :return: The text widget
         """
         from .livelog_text import LText
+
         text_widget = LText(log=self, text=text)
         self.add_widget(text_widget)
         return text_widget
 
-    def add_progress_bar(self, progress: int | float,
-                         max_progress: int | float,
-                         text: str | None = None) -> "LProgress":
+    def add_progress_bar(
+        self, progress: int | float, max_progress: int | float, text: str | None = None
+    ) -> "LProgress":
         """
         Adds a progress bar widget
 
@@ -234,9 +241,10 @@ class VisualLiveLog(VisualLog):
         :return: The new widget
         """
         from .livelog_progress_bar import LProgress
-        prog_widget = LProgress(self, progress=progress,
-                                max_progress=max_progress,
-                                text=text)
+
+        prog_widget = LProgress(
+            self, progress=progress, max_progress=max_progress, text=text
+        )
         self.add_widget(prog_widget)
         return prog_widget
 

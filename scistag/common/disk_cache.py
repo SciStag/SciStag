@@ -34,9 +34,7 @@ class DiskCache:
     entries without in memory.
     """
 
-    def __init__(self,
-                 version: str = "1",
-                 cache_dir: str | None = None):
+    def __init__(self, version: str = "1", cache_dir: str | None = None):
         """
         :param version: The cache version. 1 by default.
 
@@ -55,6 +53,7 @@ class DiskCache:
         sharing the same version will be accepted. 
         """
         from scistag.common import StagLock
+
         self._access_lock = StagLock()
         "Multithread access lock"
         self.dir_created = False
@@ -106,10 +105,7 @@ class DiskCache:
             except FileNotFoundError:
                 pass
 
-    def set(self, key: str,
-            value: Any,
-            version: int | str = 1
-            ):
+    def set(self, key: str, value: Any, version: int | str = 1):
         """
         Persists a single value in the cache
 
@@ -119,24 +115,18 @@ class DiskCache:
         :param version: The cache version for this entry.
         """
         from scistag.filestag import FileStag, Bundle
-        key, eff_version = Cache.get_key_and_version(key,
-                                                     self._version,
-                                                     version)
+
+        key, eff_version = Cache.get_key_and_version(key, self._version, version)
         with self._access_lock:
             params = {"__version": eff_version}
             with self._access_lock:
                 self._ensure_cache_dir()
                 cache_name = self.get_cache_name(key)
                 bundle_fn = cache_name + BUNDLE_EXTENSION
-                FileStag.save(cache_name,
-                              Bundle.bundle({"data": value,
-                                             "version": 1}))
+                FileStag.save(cache_name, Bundle.bundle({"data": value, "version": 1}))
                 FileStag.save(bundle_fn, Bundle.bundle(params))
 
-    def get(self,
-            key,
-            version: int | str = 1,
-            default=None) -> Any | None:
+    def get(self, key, version: int | str = 1, default=None) -> Any | None:
         """
         Tries to read an element from the disk cache.
 
@@ -149,10 +139,9 @@ class DiskCache:
         :return: Either the cache data or the default value as fallback
         """
         from scistag.filestag import FileStag, Bundle
+
         with self._access_lock:
-            key, eff_version = Cache.get_key_and_version(key,
-                                                         self._version,
-                                                         version)
+            key, eff_version = Cache.get_key_and_version(key, self._version, version)
             cache_name = self.get_cache_name(key)
             params = {}
             with self._access_lock:

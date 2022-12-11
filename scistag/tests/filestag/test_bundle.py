@@ -14,9 +14,14 @@ def test_bundle_basics():
     Tests the bundling and unbundling basics
     """
     # dict
-    simple_data = {"aString": "Text", "anInt": 1234, "aFloat": 1.234,
-                   "aBool": True, "aList": [1234],
-                   "aDict": {"a": "x", "b": "y"}}
+    simple_data = {
+        "aString": "Text",
+        "anInt": 1234,
+        "aFloat": 1.234,
+        "aBool": True,
+        "aList": [1234],
+        "aDict": {"a": "x", "b": "y"},
+    }
     stored = Bundle.bundle(simple_data)
     restored_dict = Bundle.unpack(stored)
     assert simple_data == restored_dict
@@ -38,8 +43,12 @@ def test_bundle_numpy():
     Tests the bundling of NumPy data
     """
     # dict with float matrix
-    simple_data = {"aString": "Text", "anInt": 1234, "aFloat": 1.234,
-                   "ones": np.ones((32, 32), dtype=float)}
+    simple_data = {
+        "aString": "Text",
+        "anInt": 1234,
+        "aFloat": 1.234,
+        "ones": np.ones((32, 32), dtype=float),
+    }
     stored = Bundle.bundle(simple_data)
     restored_dict = Bundle.unpack(stored)
     assert np.all(simple_data["ones"] == restored_dict["ones"])
@@ -47,8 +56,12 @@ def test_bundle_numpy():
     del restored_dict["ones"]
     assert simple_data == restored_dict
     # dict with int matrix
-    simple_data = {"aString": "Text", "anInt": 1234, "aFloat": 1.234,
-                   "ones": np.ones((32, 32), dtype=int)}
+    simple_data = {
+        "aString": "Text",
+        "anInt": 1234,
+        "aFloat": 1.234,
+        "ones": np.ones((32, 32), dtype=int),
+    }
     stored = Bundle.bundle(simple_data)
     restored_dict = Bundle.unpack(stored)
     assert np.all(simple_data["ones"] == restored_dict["ones"])
@@ -58,14 +71,13 @@ def test_pandas():
     """
     Tests the bundling of Pandas DataFrames
     """
-    d = {'one': pd.Series([10, 20, 30, 40],
-                          index=['a', 'b', 'c', 'd']),
-         'two': pd.Series([10, 20, 30, 40],
-                          index=['a', 'b', 'c', 'd'])}
+    d = {
+        "one": pd.Series([10, 20, 30, 40], index=["a", "b", "c", "d"]),
+        "two": pd.Series([10, 20, 30, 40], index=["a", "b", "c", "d"]),
+    }
     df = pd.DataFrame(d)
     # dict with pandas dataframe
-    simple_data = {"aString": "Text", "anInt": 1234, "aFloat": 1.234,
-                   "dataFrame": df}
+    simple_data = {"aString": "Text", "anInt": 1234, "aFloat": 1.234, "dataFrame": df}
     stored = Bundle.bundle(simple_data)
     restored_dict = Bundle.unpack(stored)
     assert np.all(simple_data["dataFrame"] == restored_dict["dataFrame"])
@@ -73,9 +85,13 @@ def test_pandas():
     del restored_dict["dataFrame"]
     assert simple_data == restored_dict
     # dict with pandas series
-    series = pd.Series([10, 20, 30, 40], index=['a', 'b', 'c', 'd'])
-    simple_series = {"aString": "Text", "anInt": 1234, "aFloat": 1.234,
-                     "dataSeries": series}
+    series = pd.Series([10, 20, 30, 40], index=["a", "b", "c", "d"])
+    simple_series = {
+        "aString": "Text",
+        "anInt": 1234,
+        "aFloat": 1.234,
+        "dataSeries": series,
+    }
     stored = Bundle.bundle(simple_series)
     restored_dict = Bundle.unpack(stored)
     assert np.all(simple_series["dataSeries"] == restored_dict["dataSeries"])

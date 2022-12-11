@@ -5,8 +5,7 @@ import os.path
 import time
 from threading import Thread
 
-from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
-    VisualLogAutoReloader
+from scistag.vislog.auto_reloader.visual_log_auto_reloader import VisualLogAutoReloader
 
 
 class AutoReloadTestThread(Thread):
@@ -52,13 +51,15 @@ class AutoReloadTestThread(Thread):
     def write_dummy_log(add_content=""):
         rel_path = os.path.dirname(__file__)
         with open(f"{rel_path}/generic_module.py", "w") as text_file:
-            text_file.write(f"""
+            text_file.write(
+                f"""
 from scistag.vislog import VisualLogBuilder, VisualLog
 def builder(vl: VisualLogBuilder):
     vl.log("Hello testlog")
 {add_content}    
 log = VisualLog(auto_reload=builder)
-        """)
+        """
+            )
 
 
 def test_auto_reload():
@@ -71,8 +72,10 @@ def test_auto_reload():
     AutoReloadTestThread.write_dummy_log()
     kill_thread.start()
     from unittest.mock import patch
-    with patch('builtins.print') as print_patch:
+
+    with patch("builtins.print") as print_patch:
         from .generic_module import builder
+
         test_client = VisualLogAutoReloader.get_test_client()
         assert test_client is not None
         content = test_client.get("/index")

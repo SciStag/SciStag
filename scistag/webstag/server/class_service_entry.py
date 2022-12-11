@@ -23,8 +23,12 @@ class WebClassServiceEntry:
     to a http response again.
     """
 
-    def __init__(self, class_type: type, multithread: bool = False,
-                 parameters: dict | None = None):
+    def __init__(
+        self,
+        class_type: type,
+        multithread: bool = False,
+        parameters: dict | None = None,
+    ):
         """
         :param class_type: The type of the class to be instantiated
         :param multithread: Defines if the class is multithread secure and
@@ -74,9 +78,9 @@ class WebClassServiceEntry:
                             attr.__dict__["ws_flags"] = {}
                         attr.__dict__["ws_flags"]["methods"] = {"GET"}
                     external_name_split = name.split("_")
-                    elements = [external_name_split[0]] \
-                               + [element.title() for element in
-                                  external_name_split[1:]]
+                    elements = [external_name_split[0]] + [
+                        element.title() for element in external_name_split[1:]
+                    ]
                     external_name = "".join(elements)
                     self.methods[external_name] = attr
                     if external_name == "index":
@@ -105,8 +109,7 @@ class WebClassServiceEntry:
                     with self.access_lock:  # lock!
                         result = method(**parameters)
             except TypeError:
-                return WebResponse(body="Invalid parameters provided",
-                                   status=400)
+                return WebResponse(body="Invalid parameters provided", status=400)
             if result is None:
                 return WebResponse(body="OK")
             if isinstance(result, tuple) and len(result) >= 2:

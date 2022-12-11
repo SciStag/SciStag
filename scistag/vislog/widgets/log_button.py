@@ -21,12 +21,13 @@ class LButton(LWidget):
     click event.
     """
 
-    def __init__(self,
-                 log: "VisualLog",
-                 name: str,
-                 caption: str = "",
-                 on_click: Callable | None = None
-                 ):
+    def __init__(
+        self,
+        log: "VisualLog",
+        name: str,
+        caption: str = "",
+        on_click: Callable | None = None,
+    ):
         """
         :param log: The log to which the button shall be added
         :param name: The button's name
@@ -37,11 +38,11 @@ class LButton(LWidget):
         self.caption = caption
         "The buttons caption"
         from scistag.vislog.widgets.log_event import LEvent
+
         self.on_click: Union[Callable[[LEvent], None], None] = on_click
 
     def write(self):
-        html = \
-            f"""
+        html = f"""
             <input class="greenButton" type="button" value="{self.caption}" onclick="fetch('triggerEvent?name={self.name}&type={CLICK_EVENT_TYPE}')" />
             """
         self.log.default_builder.html(html)

@@ -15,9 +15,14 @@ class RemoteTask:
 
     ERROR = "_error"  # Error identifier
 
-    def __init__(self, task_id: RemoteTaskId, service: RemoteService,
-                 target_function: str, parameters: dict,
-                 timeout_s: float = -1.0):
+    def __init__(
+        self,
+        task_id: RemoteTaskId,
+        service: RemoteService,
+        target_function: str,
+        parameters: dict,
+        timeout_s: float = -1.0,
+    ):
         """
         :param task_id: The task's unique id
         :param target_function: The function to execute
@@ -43,7 +48,9 @@ class RemoteTask:
         "Interval of sleep"
         self.timeout_s = timeout_s
         "The timeout time"
-        self._deprecation_time = -1.0 if self.timeout_s == -1.0 else time.time() + timeout_s
+        self._deprecation_time = (
+            -1.0 if self.timeout_s == -1.0 else time.time() + timeout_s
+        )
 
     def get_service(self) -> RemoteService:
         """

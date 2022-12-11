@@ -17,14 +17,18 @@ def test_resize_filter(stag_image_data):
     mean = resized_image_pixels.mean()
     assert mean == pytest.approx(87.55, 0.01)
     # portrait
-    resized_image = ResizeFilter(target_aspect=9 / 16, factor=2.0).filter(stag_image_data)
+    resized_image = ResizeFilter(target_aspect=9 / 16, factor=2.0).filter(
+        stag_image_data
+    )
     resized_image_pixels = resized_image.get_pixels_bgr()
     mean = resized_image_pixels.mean()
     assert mean == pytest.approx(61.36, 0.01)
     assert resized_image.height > resized_image.width
     assert resized_image.width == 1330 and resized_image.height == 2102
     # portrait with red background
-    resized_image = ResizeFilter(target_aspect=9 / 16, background_color=Color(1.0, 0.0, 0.0)).filter(stag_image_data)
+    resized_image = ResizeFilter(
+        target_aspect=9 / 16, background_color=Color(1.0, 0.0, 0.0)
+    ).filter(stag_image_data)
     resized_image_pixels = resized_image.get_pixels_bgr()
     mean = resized_image_pixels.mean()
     assert mean == pytest.approx(101.80, 0.01)
@@ -42,7 +46,9 @@ def test_resize_filter(stag_image_data):
     assert mean == pytest.approx(122.85, 0.01)
     assert resized_image.width == 1330 and resized_image.height == 1050
     # fill image
-    resized_image = ResizeFilter(size=(1000, 800), keep_aspect=True, fill_area=True).filter(stag_image_data)
+    resized_image = ResizeFilter(
+        size=(1000, 800), keep_aspect=True, fill_area=True
+    ).filter(stag_image_data)
     resized_image_pixels = resized_image.get_pixels_bgr()
     mean = resized_image_pixels.mean()
     assert mean == pytest.approx(122.85, 0.01)

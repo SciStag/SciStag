@@ -20,9 +20,12 @@ class PyPlotLogContext:
     Is created via VisualLogBuilder.pyplot, see :meth:`VisualLogBuilder.pyplot`
     """
 
-    def __init__(self, target_log: "VisualLogBuilder",
-                 assertion_name: str | None = None,
-                 assertion_hash: str | None = None):
+    def __init__(
+        self,
+        target_log: "VisualLogBuilder",
+        assertion_name: str | None = None,
+        assertion_hash: str | None = None,
+    ):
         """
         :param target_log: Defines the target into which we shall log
         :param assertion_name: If the figure shall be asserted, it's unique
@@ -31,6 +34,7 @@ class PyPlotLogContext:
             hash value of its image's pixels.
         """
         from scistag.plotstag import MPLock
+
         self.target_log = target_log
         "The log into which we shall write when the figure is finished"
         self.mp_lock = MPLock()
@@ -56,7 +60,7 @@ class PyPlotLogContext:
         if self.assertion_name is None:  # basic logging?
             self.target_log.figure(self.plt_handle.gcf())
         else:  # logging with assert
-            self.target_log.test.assert_figure(self.assertion_name,
-                                               self.plt_handle.gcf(),
-                                               hash_val=self.assertion_hash)
+            self.target_log.test.assert_figure(
+                self.assertion_name, self.plt_handle.gcf(), hash_val=self.assertion_hash
+            )
         self.mp_lock.__exit__(exc_type, exc_val, exc_tb)

@@ -54,6 +54,7 @@ class SlideApp:
         :return: The app handle
         """
         from scistag.slidestag.slide_application_manager import SlideAppManager
+
         SlideAppManager.get().register_application(self)
         return self
 
@@ -62,8 +63,8 @@ class SlideApp:
         Setups a session via the SlideAppManager and returns it
         """
         from scistag.slidestag.slide_application_manager import SlideAppManager
-        session = SlideAppManager.shared_app_manager.create_session(
-            self.app_name)
+
+        session = SlideAppManager.shared_app_manager.create_session(self.app_name)
         return session
 
     def run_as_kivy_app(self):
@@ -71,11 +72,16 @@ class SlideApp:
         Runs the application within Kivy
         """
         from scistag.slidestag4kivy.simple_kivy_app import run_simple_kivy_app
+
         run_simple_kivy_app(self)
 
-    def run_as_web_app(self, host_name: str = "0.0.0.0", port: int = 5020,
-                       ssl_context: tuple[str, str] | None = None,
-                       verbose=False):
+    def run_as_web_app(
+        self,
+        host_name: str = "0.0.0.0",
+        port: int = 5020,
+        ssl_context: tuple[str, str] | None = None,
+        verbose=False,
+    ):
         """
         Runs the application via Flask. Note that this is only a very
         minimalistic implementation for fast prototyping.
@@ -97,7 +103,10 @@ class SlideApp:
         if not verbose:
             print(
                 f"\n* View your app at --> {protocol}://{host_name}:{port}/apps/{self.app_name} <--\n",
-                flush=True)
+                flush=True,
+            )
         from scistag.slidestag4flask import SimpleSlideServer
-        SimpleSlideServer.run_simple_server(host_name=host_name, port=port,
-                                            ssl_context=ssl_context)
+
+        SimpleSlideServer.run_simple_server(
+            host_name=host_name, port=port, ssl_context=ssl_context
+        )

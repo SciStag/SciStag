@@ -34,7 +34,10 @@ def test_exists():
     svg_files = SharedArchive.scan(svg_path, name_filter="*.svg", long_identifier=True)
     assert len(svg_files) > 0
     assert svg_files[0].startswith(ZIP_SOURCE_PROTOCOL)
-    assert SharedArchive.scan("NotExisting", name_filter="*.svg", long_identifier=True) == []
+    assert (
+        SharedArchive.scan("NotExisting", name_filter="*.svg", long_identifier=True)
+        == []
+    )
     # verify file
     assert SharedArchive.exists_at_source(svg_files[0])
     assert not SharedArchive.exists_at_source(svg_files[0] + "/someNonsense")
@@ -62,7 +65,9 @@ def test_register_and_unload():
     SharedArchive.register(data, "TempEssentialData")
     assert len(SharedArchive.archives) == prev_count + 1
     # load from file and using caching
-    SharedArchive.register(ESSENTIAL_DATA_ARCHIVE_NAME, "TempEssentialData2", cache=True)
+    SharedArchive.register(
+        ESSENTIAL_DATA_ARCHIVE_NAME, "TempEssentialData2", cache=True
+    )
     assert len(SharedArchive.archives) == prev_count + 2
     assert SharedArchive.unload(identifier="TempEssentialData")
     assert SharedArchive.unload(identifier="TempEssentialData2")
@@ -74,6 +79,8 @@ def test_url_verification():
     Tests the split function
     """
     with pytest.raises(ValueError):
-        SharedArchive._split_identifier_and_filename(ZIP_SOURCE_PROTOCOL + "someFile.zip")
+        SharedArchive._split_identifier_and_filename(
+            ZIP_SOURCE_PROTOCOL + "someFile.zip"
+        )
     with pytest.raises(ValueError):
         SharedArchive._split_identifier_and_filename(ZIP_SOURCE_PROTOCOL + "@someFile")

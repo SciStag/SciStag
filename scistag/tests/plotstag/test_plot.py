@@ -32,23 +32,26 @@ def test_plotting_methods():
     vl.sub_test("A plot with a title")
     figure = Figure()
     figure.add_plot().add_image(stag, size_ratio=1.0).set_title("A stag")
-    vl.test.assert_image("stag_plot", figure.render(),
-                         '6aea6c57d9580f0eed58ac84f7cbee3c')
+    vl.test.assert_image(
+        "stag_plot", figure.render(), "6aea6c57d9580f0eed58ac84f7cbee3c"
+    )
     vl.add(figure)
     vl.sub_test("Example for a figure and plot with title")
     figure = Figure(cols=2, rows=2)
     figure.set_title("A group of four stags")
     for index, element in enumerate(figure):
         element.add_image(stag, size_ratio=0.5).set_title(f"Stag #{index + 1}")
-    vl.test.assert_image("stag_plot",
-                         figure.render(), '6b1d21a0c50cd66077b2b3ce98381c58')
+    vl.test.assert_image(
+        "stag_plot", figure.render(), "6b1d21a0c50cd66077b2b3ce98381c58"
+    )
     vl.sub_test("Example for a figure with a title")
     figure = Figure(cols=2, rows=2)
     figure.set_title("A group of four stags")
     for element in figure:
         element.add_image(stag, size_ratio=0.5)
-    vl.test.assert_image("stag_plot",
-                         figure.render(), '1dd0dd4b554e0367fe8b8ecc62458f04')
+    vl.test.assert_image(
+        "stag_plot", figure.render(), "1dd0dd4b554e0367fe8b8ecc62458f04"
+    )
     pixels = stag.get_pixels_rgb()
 
     with MPLock() as plt:

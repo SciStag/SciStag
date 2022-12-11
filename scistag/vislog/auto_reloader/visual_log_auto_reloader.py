@@ -25,8 +25,10 @@ from scistag.vislog import VisualLog
 if TYPE_CHECKING:
     from scistag.common.cache import Cache
 
-ERROR_TEXT = "Yikes! An error occurred 🙍 - Please fix the bug 🐛 above and " \
-             "save the file to continue"
+ERROR_TEXT = (
+    "Yikes! An error occurred 🙍 - Please fix the bug 🐛 above and "
+    "save the file to continue"
+)
 "Error text to be shown when the module stopped working"
 HEALTHY_AGAIN_TEXT = "Yay - the module is healthy again, let's rock on! 🤘👨"
 "Text to be shown when healthy again"
@@ -91,7 +93,8 @@ class VisualLogAutoReloader:
         cls.main_log = VisualLog(
             title=cls._embedded_log._title,
             log_to_disk=log_to_disk,
-            refresh_time_s=refresh_time_s)
+            refresh_time_s=refresh_time_s,
+        )
 
     @classmethod
     def set_log(cls, log):
@@ -134,15 +137,17 @@ class VisualLogAutoReloader:
         return cls._initial_filename == inspect.stack()[_stack_level].filename
 
     @classmethod
-    def start(cls,
-              log: VisualLog,
-              host_name: str | None = "127.0.0.1",
-              port: int | tuple[int, int] = 8010,
-              public_ips: str | list[str] | None = None,
-              url_prefix: str = "",
-              check_time_s: float | None = None,
-              server_params: dict | None = None,
-              _stack_level=1):
+    def start(
+        cls,
+        log: VisualLog,
+        host_name: str | None = "127.0.0.1",
+        port: int | tuple[int, int] = 8010,
+        public_ips: str | list[str] | None = None,
+        url_prefix: str = "",
+        check_time_s: float | None = None,
+        server_params: dict | None = None,
+        _stack_level=1,
+    ):
         """
         Starts the auto-reloading service
 
@@ -187,11 +192,10 @@ class VisualLogAutoReloader:
         cls._reloading = True
         cls._initial_filename = inspect.stack()[_stack_level].filename
         cls.content = FileStag.load(cls._initial_filename)
-        short_name = os.path.splitext(os.path.basename(cls._initial_filename))[
-            0]
+        short_name = os.path.splitext(os.path.basename(cls._initial_filename))[0]
         import importlib.util
-        spec = importlib.util.spec_from_file_location(short_name,
-                                                      cls._initial_filename)
+
+        spec = importlib.util.spec_from_file_location(short_name, cls._initial_filename)
         cls.imp_module = importlib.util.module_from_spec(spec)
         sys.modules[short_name] = cls.imp_module
 
@@ -202,22 +206,24 @@ class VisualLogAutoReloader:
         mt = server_params.pop("mt", True)
         if host_name is not None:
             cls.main_log.testing = cls.testing
-            cls.main_log.run_server(host_name=host_name,
-                                    port=port,
-                                    public_ips=public_ips,
-                                    url_prefix=url_prefix,
-                                    mt=mt,
-                                    **server_params)
+            cls.main_log.run_server(
+                host_name=host_name,
+                port=port,
+                public_ips=public_ips,
+                url_prefix=url_prefix,
+                mt=mt,
+                **server_params,
+            )
             with cls._access_lock:
                 if cls.testing:  # return test client when in testing mode
-                    cls._test_client = \
-                        cls.main_log.server.handle.test_client()
+                    cls._test_client = cls.main_log.server.handle.test_client()
                 else:
                     cls._test_client = None
         try:
             print(f"Auto-reloading enabled for module {cls.imp_module}")
-            cls._embedded_log._start_app_or_browser(real_log=cls.main_log,
-                                                    url=cls.main_log.local_live_url)
+            cls._embedded_log._start_app_or_browser(
+                real_log=cls.main_log, url=cls.main_log.local_live_url
+            )
             while True:
                 with cls._access_lock:
                     sht = cls._shall_terminate
@@ -297,8 +303,7 @@ class VisualLogAutoReloader:
             rl_time = time.time() - loop_start_time
             VisualLogAutoReloader.update_content()
             if cls.was_sick:
-                print(
-                    f"\u001b[32m\n{HEALTHY_AGAIN_TEXT} \u001b[0m")
+                print(f"\u001b[32m\n{HEALTHY_AGAIN_TEXT} \u001b[0m")
                 cls.was_sick = False
             else:
                 print(f"... reloaded module in {rl_time:0.3f}s")
@@ -308,6 +313,7 @@ class VisualLogAutoReloader:
             cls.was_sick = True
             print("\u001b[31m", end="")
             import traceback
+
             print(traceback.format_exc())
             print(f"\n{ERROR_TEXT}")
             print("\u001b[0m", end="")

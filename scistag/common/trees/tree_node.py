@@ -13,6 +13,7 @@ class TreeConfig:
     """
     Defines the tree's be
     """
+
     immutable: bool = False
     "Defines if the tree may be modified"
     create_missing: bool = True
@@ -80,8 +81,10 @@ class TreeNode:
             if exist_ok:
                 return self._index[name]
             else:
-                raise ValueError("Key already exists. Pass exist=ok to also "
-                                 "update already existing values")
+                raise ValueError(
+                    "Key already exists. Pass exist=ok to also "
+                    "update already existing values"
+                )
         return type(self)(name=name, parent=self)
 
     def __getitem__(self, item):
@@ -155,8 +158,7 @@ class TreeNode:
         if self._index is None:
             self._index = {}
         if node._name in self._index:
-            raise ValueError(
-                f"A node with the name {node._name} already exists")
+            raise ValueError(f"A node with the name {node._name} already exists")
         self._index[node._name] = node
         node._parent = self
         node.config = self.config

@@ -6,7 +6,7 @@ from scistag.remotestag import RemoteServiceHandler
 from scistag.slidestag import SlideApp, SlideSession
 from scistag.slidestag4kivy.embedded_slider import EmbeddedSlider
 
-kivy.require('2.1.0')
+kivy.require("2.1.0")
 
 
 class KivyApp(App):
@@ -26,8 +26,9 @@ class KivyApp(App):
         self.main_view = None
 
     def build(self):
-        self.main_view = EmbeddedSlider(size=self.slide_session.resolution,
-                                        size_hint=(None, None))
+        self.main_view = EmbeddedSlider(
+            size=self.slide_session.resolution, size_hint=(None, None)
+        )
         self.main_view.set_session(self.slide_session)
         self.title = self.slide_session.title
         return self.main_view
@@ -40,6 +41,6 @@ def run_simple_kivy_app(slide_app: "SlideApp"):
     """
     session: SlideSession = slide_app.setup_session()
     RemoteServiceHandler.get_default_handler().start()
-    Config.set('graphics', 'width', str(session.resolution[0]))
-    Config.set('graphics', 'height', str(session.resolution[1]))
+    Config.set("graphics", "width", str(session.resolution[0]))
+    Config.set("graphics", "height", str(session.resolution[1]))
     KivyApp(slide_app, session).run()

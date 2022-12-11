@@ -6,8 +6,11 @@ from typing import Union
 
 from pydantic import SecretStr
 
-from scistag.filestag.protocols import HTTPS_PROTOCOL_URL_HEADER, \
-    HTTP_PROTOCOL_URL_HEADER, FILE_PATH_PROTOCOL_URL_HEADER
+from scistag.filestag.protocols import (
+    HTTPS_PROTOCOL_URL_HEADER,
+    HTTP_PROTOCOL_URL_HEADER,
+    FILE_PATH_PROTOCOL_URL_HEADER,
+)
 from scistag.webstag import web_fetch
 
 FileSourceTypes = Union[str, SecretStr, bytes]
@@ -36,8 +39,7 @@ class FileStag:
     """
 
     @classmethod
-    def is_simple(cls,
-                  filename: FileSourceTypes | FileTargetTypes) -> bool:
+    def is_simple(cls, filename: FileSourceTypes | FileTargetTypes) -> bool:
         """
         Returns if the file path points to a simple file on disk which does not
         require loading it to memory
@@ -65,13 +67,11 @@ class FileStag:
         elif not isinstance(path, str):
             return path
         if path.startswith(FILE_PATH_PROTOCOL_URL_HEADER):
-            path = path[len(FILE_PATH_PROTOCOL_URL_HEADER):]
+            path = path[len(FILE_PATH_PROTOCOL_URL_HEADER) :]
         return path
 
     @classmethod
-    def load(cls,
-             source: FileSourceTypes,
-             **params) -> bytes | None:
+    def load(cls, source: FileSourceTypes, **params) -> bytes | None:
         """
         Loads a file by filename from a local file, a registered web archive
         or the web
@@ -87,10 +87,12 @@ class FileStag:
         source = cls.resolve_name(source)
         from .shared_archive import SharedArchive
         from scistag.filestag import ZIP_SOURCE_PROTOCOL
+
         if source.startswith(ZIP_SOURCE_PROTOCOL):
             return SharedArchive.load_file(source)
         if source.startswith(HTTP_PROTOCOL_URL_HEADER) or source.startswith(
-                HTTPS_PROTOCOL_URL_HEADER):
+            HTTPS_PROTOCOL_URL_HEADER
+        ):
             return web_fetch(source, **params)
         if os.path.exists(source):
             return open(source, "rb").read()
@@ -98,9 +100,7 @@ class FileStag:
             return None
 
     @classmethod
-    def save(cls,
-             target: FileTargetTypes,
-             data: bytes, **_) -> bool:
+    def save(cls, target: FileTargetTypes, data: bytes, **_) -> bool:
         """
         Saves data to a file
 
@@ -112,8 +112,9 @@ class FileStag:
             raise ValueError("No data provided")
         target = cls.resolve_name(target)
         if not cls.is_simple(target):
-            raise NotImplementedError("At the moment only local file storage"
-                                      "is supported")
+            raise NotImplementedError(
+                "At the moment only local file storage" "is supported"
+            )
         try:
             with open(target, "wb") as output_file:
                 output_file.write(data)
@@ -122,9 +123,7 @@ class FileStag:
         return True
 
     @classmethod
-    def delete(cls,
-               target: FileTargetTypes,
-               **params) -> bool:
+    def delete(cls, target: FileTargetTypes, **params) -> bool:
 
         """
         Deletes a file
@@ -137,8 +136,9 @@ class FileStag:
         """
         target = cls.resolve_name(target)
         if not cls.is_simple(target):
-            raise NotImplementedError("At the moment only local file deletion"
-                                      "is supported")
+            raise NotImplementedError(
+                "At the moment only local file deletion" "is supported"
+            )
         try:
             os.remove(target)
         except FileNotFoundError:
@@ -146,10 +146,9 @@ class FileStag:
         return True
 
     @classmethod
-    def load_text(cls,
-                  source: FileSourceTypes,
-                  encoding: str = "utf-8",
-                  **params) -> str | None:
+    def load_text(
+        cls, source: FileSourceTypes, encoding: str = "utf-8", **params
+    ) -> str | None:
         """
         Loads a text file from a given file source
 
@@ -166,11 +165,9 @@ class FileStag:
         return data.decode(encoding=encoding)
 
     @classmethod
-    def save_text(cls,
-                  target: FileTargetTypes,
-                  text: str,
-                  encoding: str = "utf-8",
-                  **params) -> bool:
+    def save_text(
+        cls, target: FileTargetTypes, text: str, encoding: str = "utf-8", **params
+    ) -> bool:
         """
         Saves text data to a file
 
@@ -188,10 +185,9 @@ class FileStag:
         return cls.save(target, data=encoded_text, **params)
 
     @classmethod
-    def load_json(cls,
-                  source: FileSourceTypes,
-                  encoding: str = "utf-8",
-                  **params) -> dict | None:
+    def load_json(
+        cls, source: FileSourceTypes, encoding: str = "utf-8", **params
+    ) -> dict | None:
         """
         Loads a json dictionary from a given file source
 
@@ -209,12 +205,14 @@ class FileStag:
         return json.loads(data)
 
     @classmethod
-    def save_json(cls,
-                  target: FileTargetTypes,
-                  data: dict,
-                  indent: int | None = None,
-                  encoding: str = "utf-8",
-                  **params) -> bool:
+    def save_json(
+        cls,
+        target: FileTargetTypes,
+        data: dict,
+        indent: int | None = None,
+        encoding: str = "utf-8",
+        **params,
+    ) -> bool:
         """
         Saves json data to a file target
 
@@ -229,15 +227,18 @@ class FileStag:
         if data is None:
             raise ValueError("No data provided")
         target = cls.resolve_name(target)
-        text = json.dumps(data) if indent is None else json.dumps(data,
-                                                                  indent=indent)
+        text = json.dumps(data) if indent is None else json.dumps(data, indent=indent)
         encoded_text = text.encode(encoding=encoding)
         return cls.save(target, data=encoded_text, **params)
 
     @classmethod
-    def copy(cls, source: FileSourceTypes, target: FileTargetTypes,
-             create_dir: bool = False,
-             **params) -> bool:
+    def copy(
+        cls,
+        source: FileSourceTypes,
+        target: FileTargetTypes,
+        create_dir: bool = False,
+        **params,
+    ) -> bool:
         """
         Copies a file from given source to given target location
 
@@ -264,8 +265,7 @@ class FileStag:
         return cls.save(target, data)
 
     @classmethod
-    def exists(cls,
-               filename: FileSourceTypes, **params) -> bool:
+    def exists(cls, filename: FileSourceTypes, **params) -> bool:
         """
         Verifies if a file exists
 
@@ -277,9 +277,11 @@ class FileStag:
         filename = cls.resolve_name(filename)
         from .shared_archive import SharedArchive
         from scistag.filestag import ZIP_SOURCE_PROTOCOL
+
         if filename.startswith(ZIP_SOURCE_PROTOCOL):
             return SharedArchive.exists_at_source(filename)
         if filename.startswith(HTTP_PROTOCOL_URL_HEADER) or filename.startswith(
-                HTTPS_PROTOCOL_URL_HEADER):
+            HTTPS_PROTOCOL_URL_HEADER
+        ):
             return web_fetch(filename, **params) is not None
         return os.path.exists(filename)

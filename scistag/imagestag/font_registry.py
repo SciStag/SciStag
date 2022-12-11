@@ -14,8 +14,9 @@ class RegisteredFont:
     properties such as weight and style.
     """
 
-    def __init__(self, font_face: str, base_path: str,
-                 variations: list[tuple[str, set[str]]]):
+    def __init__(
+        self, font_face: str, base_path: str, variations: list[tuple[str, set[str]]]
+    ):
         """
         :param font_face: The font's face name, e.g. Roboto
         :param base_path: Base file name without extension,
@@ -30,13 +31,12 @@ class RegisteredFont:
         "The filename base path (excluding variations)"
         self.extension = ".ttf"
         "The file extension"
-        self.variable_weight = 'wght' in variations[0][0]
+        self.variable_weight = "wght" in variations[0][0]
         "Has the font a totally flexible weight?"
         self.variations = variations
         "Different main variations, e.g. Italic"
 
-    def get_handle(self, size: int, flags: set[str] | None = None) -> \
-            Font | None:
+    def get_handle(self, size: int, flags: set[str] | None = None) -> Font | None:
         """
         Tries to create a font handle for given font
         :param size: The font's size
@@ -46,6 +46,7 @@ class RegisteredFont:
         if flags is None:
             flags = set()
         from scistag.imagestag.font import Font, ImsFramework
+
         for variation in self.variations:
             if flags == variation[1]:
                 full_name = self.base_path + variation[0] + self.extension
@@ -60,6 +61,7 @@ class FontRegistry:
     Manages all available fonts which can be used from (especially) ImageStag
     and SlideStag.
     """
+
     access_lock = RLock()
     "Multi-thread access lock"
     _base_fonts_registered = False
@@ -68,8 +70,9 @@ class FontRegistry:
     "Dictionary of registered fonts"
 
     @classmethod
-    def register_font(cls, font_face: str, base_path: str,
-                      variations: list[tuple[str, set[str]]]):
+    def register_font(
+        cls, font_face: str, base_path: str, variations: list[tuple[str, set[str]]]
+    ):
         """
         Registers a single font. See _register_base_fonts for examples.
 
@@ -85,13 +88,14 @@ class FontRegistry:
         with cls.access_lock:
             if font_face in cls.fonts:
                 raise ValueError("Font was already registered")
-            cls.fonts[font_face] = RegisteredFont(font_face=font_face,
-                                                  base_path=base_path,
-                                                  variations=variations)
+            cls.fonts[font_face] = RegisteredFont(
+                font_face=font_face, base_path=base_path, variations=variations
+            )
 
     @classmethod
-    def get_font(cls, font_face: str, size: int,
-                 flags: set[str] | None = None) -> Font | None:
+    def get_font(
+        cls, font_face: str, size: int, flags: set[str] | None = None
+    ) -> Font | None:
         """
         Tries to create a font handle for given font
 
@@ -119,6 +123,7 @@ class FontRegistry:
         """
         with cls.access_lock:
             import copy
+
             return copy.deepcopy(cls.fonts)
 
     @classmethod
@@ -137,31 +142,32 @@ class FontRegistry:
         Registers the standard fonts which shipped with SciStag
         """
         edp = get_edp()
-        FontRegistry.register_font(font_face="Roboto",
-                                   base_path=edp + "fonts/Roboto/Roboto",
-                                   variations=[('-Regular', set()),
-                                               ('-Italic', {'Italic'}),
-                                               ('-Black', {'Black'}),
-                                               ('-Bold', {'Bold'}),
-                                               ('-Medium', {'Medium'}),
-                                               ('-Light', {'Light'}),
-                                               ('-Thin', {'Thin'}),
-                                               ('-BlackItalic',
-                                                {'Black', 'Italic'}),
-                                               ('-BoldItalic',
-                                                {'Bold', 'Italic'}),
-                                               ('-MediumItalic',
-                                                {'Medium', 'Italic'}),
-                                               ('-LightItalic',
-                                                {'Light', 'Italic'}),
-                                               ('-ThinItalic',
-                                                {'Thin', 'Italic'})])
-        FontRegistry.register_font(font_face="Roboto Flex",
-                                   base_path=edp + \
-                                             "fonts/RobotoFlex/RobotoFlex[GRAD,XOPQ,XTRA,YOPQ,YTAS,YTDE,YTFI,YTLC,YTUC,opsz,slnt,wdth,wght].ttf",
-                                   variations=[('', set()),
-                                               ('-Italic', {'Italic'})])
-        FontRegistry.register_font(font_face="JetBrains Mono",
-                                   base_path=edp + "fonts/JetBrains Mono/JetBrainsMono",
-                                   variations=[('[wght]', set()),
-                                               ('-Italic[wght]', {'Italic'})])
+        FontRegistry.register_font(
+            font_face="Roboto",
+            base_path=edp + "fonts/Roboto/Roboto",
+            variations=[
+                ("-Regular", set()),
+                ("-Italic", {"Italic"}),
+                ("-Black", {"Black"}),
+                ("-Bold", {"Bold"}),
+                ("-Medium", {"Medium"}),
+                ("-Light", {"Light"}),
+                ("-Thin", {"Thin"}),
+                ("-BlackItalic", {"Black", "Italic"}),
+                ("-BoldItalic", {"Bold", "Italic"}),
+                ("-MediumItalic", {"Medium", "Italic"}),
+                ("-LightItalic", {"Light", "Italic"}),
+                ("-ThinItalic", {"Thin", "Italic"}),
+            ],
+        )
+        FontRegistry.register_font(
+            font_face="Roboto Flex",
+            base_path=edp
+            + "fonts/RobotoFlex/RobotoFlex[GRAD,XOPQ,XTRA,YOPQ,YTAS,YTDE,YTFI,YTLC,YTUC,opsz,slnt,wdth,wght].ttf",
+            variations=[("", set()), ("-Italic", {"Italic"})],
+        )
+        FontRegistry.register_font(
+            font_face="JetBrains Mono",
+            base_path=edp + "fonts/JetBrains Mono/JetBrainsMono",
+            variations=[("[wght]", set()), ("-Italic[wght]", {"Italic"})],
+        )

@@ -12,9 +12,11 @@ def test_markdown():
     vl.test.begin("Testing markdown logging")
     vl.test.checkpoint("log.markdown.basic")
     vl.md("**Single line markdown**")
-    vl.md("""
+    vl.md(
+        """
     
     * How about some
     * multi-line markdown? 
-    """)
+    """
+    )
     vl.test.assert_cp_diff("cab9b56dc7c3b2c50d88dfc754decb4d")

@@ -7,5 +7,14 @@ from .slide_application import SlideApp
 from .slide_session import SlideSession
 from .simple_slide import SimpleSlide
 
-__all__ = ["Slide", "SlideApp", "SlideSession", "Widget", "SimpleSlide",
-           "MouseButton", "WidgetEvent", "TapEvent", "PaintEvent"]
+__all__ = [
+    "Slide",
+    "SlideApp",
+    "SlideSession",
+    "Widget",
+    "SimpleSlide",
+    "MouseButton",
+    "WidgetEvent",
+    "TapEvent",
+    "PaintEvent",
+]

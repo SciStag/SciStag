@@ -28,8 +28,7 @@ class WebClassService(WebStagService):
       Example. MyClass.get_item_count -> /myClass/itemCount.
     """
 
-    def __init__(self, service_name: str, url_prefix: str = "",
-                 support_flask=False):
+    def __init__(self, service_name: str, url_prefix: str = "", support_flask=False):
         """
         :param service_name: The name under which the service is registered.
             Just has to be unique.
@@ -41,15 +40,21 @@ class WebClassService(WebStagService):
         :param support_flask: Defines if the service shall be configured for
             flask
         """
-        WebStagService.__init__(self, service_name=service_name,
-                                bp_reg_params={"url_prefix": url_prefix})
+        WebStagService.__init__(
+            self, service_name=service_name, bp_reg_params={"url_prefix": url_prefix}
+        )
         self._access_lock = StagLock()
         self._classes: dict[str, WebClassServiceEntry] = {}
         if support_flask:
             self.setup_wrapper_blueprint()
 
-    def add_class(self, class_type, service_name: str | None = None,
-                  multithread: bool = False, parameters: dict | None = None):
+    def add_class(
+        self,
+        class_type,
+        service_name: str | None = None,
+        multithread: bool = False,
+        parameters: dict | None = None,
+    ):
         """
         Registers a new class type
 
@@ -74,10 +79,9 @@ class WebClassService(WebStagService):
         with self._access_lock:
             if service_name in self._classes:
                 raise AssertionError(f"Service {service_name} already exists")
-            self._classes[service_name] = \
-                WebClassServiceEntry(class_type,
-                                     multithread=multithread,
-                                     parameters=parameters)
+            self._classes[service_name] = WebClassServiceEntry(
+                class_type, multithread=multithread, parameters=parameters
+            )
 
     def handle_unified_request(self, request: WebRequest) -> WebResponse:
         elements = request.relative_path.split("/")

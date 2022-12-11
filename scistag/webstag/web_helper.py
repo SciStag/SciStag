@@ -13,8 +13,7 @@ class WebHelper:
     """
 
     @staticmethod
-    def get_public_ip(timeout_s=5.0,
-                      max_cache_age=ONE_DAY) -> str | None:
+    def get_public_ip(timeout_s=5.0, max_cache_age=ONE_DAY) -> str | None:
         """
         Returns the server's public IP as seen by other servers by using
         the IP resolving service defined. (at the moment limited to ipify).
@@ -26,9 +25,8 @@ class WebHelper:
         """
         from scistag.webstag.web_fetch import web_fetch
 
-        api_url = 'https://api.ipify.org'
-        result = web_fetch(api_url, max_cache_age=max_cache_age,
-                           timeout_s=timeout_s)
+        api_url = "https://api.ipify.org"
+        result = web_fetch(api_url, max_cache_age=max_cache_age, timeout_s=timeout_s)
         if result is None:
             return None
-        return result.decode('utf8')
+        return result.decode("utf8")

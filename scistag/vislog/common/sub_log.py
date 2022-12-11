@@ -17,6 +17,7 @@ class SubLog:
     """
     Defines a single entry on the log target stag
     """
+
     logs: dict
     "The log dictionaries for all targets"
     target: str

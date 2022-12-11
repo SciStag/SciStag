@@ -96,13 +96,15 @@ class Session:
         :param user_data_name: The user data's name (alpha numeric)
         :param data: The data
         """
-        assert re.match(r'^[A-Za-z0-9_]+$', user_data_name)
+        assert re.match(r"^[A-Za-z0-9_]+$", user_data_name)
         if self.handle_user_data(user_data_name, data):
             return
         self.data_connection.set_ts(
-            f"{self.user_data_root_path}{user_data_name}", data=data,
+            f"{self.user_data_root_path}{user_data_name}",
+            data=data,
             timeout_s=self.default_user_data_timeout,
-            timestamp=time.time())
+            timestamp=time.time(),
+        )
 
     def handle_load(self):
         """
@@ -116,9 +118,7 @@ class Session:
         """
         Called when the session shall deallocate memory intensive resources
         """
-        self.data_connection.delete_multiple(
-            [
-                self.session_data_root_path + "*"])
+        self.data_connection.delete_multiple([self.session_data_root_path + "*"])
         # delete all old data related to our session
 
     def set_guest_data(self, data: bytes):

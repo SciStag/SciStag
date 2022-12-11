@@ -30,7 +30,7 @@ class DataStagCommandHandler(DataStagConnection):
             self._COMMAND_LELEMENTS: self._handle_lelements,
             self._COMMAND_FIND: self._handle_find,
             self._COMMAND_COLLECT_GARBAGE: self._handle_collect_garbage,
-            self._COMMAND_STATUS: self._handle_status
+            self._COMMAND_STATUS: self._handle_status,
         }
         """
         Dictionary which maps the incoming commands to their corresponding
@@ -46,12 +46,11 @@ class DataStagCommandHandler(DataStagConnection):
         :return: The JSON compatible dictionary
         """
         conv_data = cls.data_to_json(data)
-        return {
-            cls._DATA: conv_data
-        }
+        return {cls._DATA: conv_data}
 
-    def handle_command_data(self, command_data: dict | list) -> \
-            dict | list[dict | None] | None:
+    def handle_command_data(
+        self, command_data: dict | list
+    ) -> dict | list[dict | None] | None:
         """
         Execute a single remote command or list of remote commands executed in
         the DataVault
@@ -60,8 +59,7 @@ class DataStagCommandHandler(DataStagConnection):
         :return: The commands return value
         """
         if isinstance(command_data, list):
-            results = [self.handle_command_data(element) for element in
-                       command_data]
+            results = [self.handle_command_data(element) for element in command_data]
             return results
         command = command_data.get(self._COMMAND, "")
         if command in self.commands:
@@ -94,8 +92,7 @@ class DataStagCommandHandler(DataStagConnection):
         value = self.json_to_data(temp_value)
         timeout = command.get(self._TIME_OUT)
         default = command.get(self._DEFAULT)
-        res = self.add(name=name, value=value, timeout_s=timeout,
-                       default=default)
+        res = self.add(name=name, value=value, timeout_s=timeout, default=default)
         return self.bundle_return(res)
 
     def _handle_get(self, command: dict) -> dict:
@@ -119,8 +116,7 @@ class DataStagCommandHandler(DataStagConnection):
         """
         name = command.get(self._NAME)
         version_counter = command.get(self._VERSION_COUNTER)
-        version, data = self.get_ex(name, default=None,
-                                    version_counter=version_counter)
+        version, data = self.get_ex(name, default=None, version_counter=version_counter)
         return self.bundle_return([version, data])
 
     def _handle_push(self, command: dict) -> dict:
@@ -183,7 +179,8 @@ class DataStagCommandHandler(DataStagConnection):
         search_masks = command.get(self._SEARCH_MASKS)
         recursive = command.get(self._RECURSIVE, False)
         return self.bundle_return(
-            self.delete_multiple(search_masks, recursive=recursive))
+            self.delete_multiple(search_masks, recursive=recursive)
+        )
 
     def _handle_exists(self, command: dict) -> dict:
         """
@@ -211,9 +208,15 @@ class DataStagCommandHandler(DataStagConnection):
             return self.bundle_return(results)
         else:
             results: list[dict]
-            return {self._DATA: [{"name": element["name"],
-                                  "value": self.json_to_data(element["value"])}
-                                 for element in results]}
+            return {
+                self._DATA: [
+                    {
+                        "name": element["name"],
+                        "value": self.json_to_data(element["value"]),
+                    }
+                    for element in results
+                ]
+            }
 
     def _handle_lelements(self, command: dict) -> dict:
         """
@@ -240,8 +243,9 @@ class DataStagCommandHandler(DataStagConnection):
         limit = command.get(self._LIMIT)
         relative_names = command.get(self._RELATIVE_NAMES, False)
         recursive = command.get(self._RECURSIVE, False)
-        results = self.find(mask=mask, limit=limit,
-                            relative_names=relative_names, recursive=recursive)
+        results = self.find(
+            mask=mask, limit=limit, relative_names=relative_names, recursive=recursive
+        )
         return self.bundle_return(results)
 
     def _handle_collect_garbage(self, command: dict) -> dict:

@@ -13,11 +13,13 @@ from typing import Union
 from .size2d import Size2D, Size2DTypes
 from .pos2d import Pos2D, Pos2DTypes
 
-Bounding2DTypes = Union["Bounding2D",
-                        tuple[int, int, int, int],
-                        tuple[float, float, float, float],
-                        tuple[Pos2DTypes, Pos2DTypes],
-                        tuple[Pos2DTypes, Size2DTypes]]
+Bounding2DTypes = Union[
+    "Bounding2D",
+    tuple[int, int, int, int],
+    tuple[float, float, float, float],
+    tuple[Pos2DTypes, Pos2DTypes],
+    tuple[Pos2DTypes, Size2DTypes],
+]
 """
 The supported bounding types. Either a Bounding2D, a 4-tuple of either integers 
 or floats defining x,y,x2,y2 or a 2-tuple of the supported position and size 
@@ -48,10 +50,13 @@ class Bounding2D:
     or greater than x and y of pos.
     """
 
-    def __init__(self, value: Bounding2DTypes | None = None,
-                 pos: Pos2DTypes | None = None,
-                 lr: Pos2DTypes | None = None,
-                 size: Size2DTypes | None = None):
+    def __init__(
+        self,
+        value: Bounding2DTypes | None = None,
+        pos: Pos2DTypes | None = None,
+        lr: Pos2DTypes | None = None,
+        size: Size2DTypes | None = None,
+    ):
         """
         :param value: The bounding value (or a bounding to copy) as defined by
             :class:`Bounding2DTypes`.
@@ -68,18 +73,19 @@ class Bounding2D:
             self.pos = Pos2D(pos)
             if size is not None:
                 size = size if isinstance(size, Size2D) else Size2D(size)
-                self.lr = Pos2D(x=self.pos.x + size.width,
-                                y=self.pos.y + size.height)
+                self.lr = Pos2D(x=self.pos.x + size.width, y=self.pos.y + size.height)
                 return
             if lr is not None:
                 self.lr = Pos2D(lr)
                 return
-            raise ValueError("Neither lr nor size defined but required in"
-                             " combination with ul")
+            raise ValueError(
+                "Neither lr nor size defined but required in" " combination with ul"
+            )
         if lr is not None:  # lr + size
             if size is None:
-                raise ValueError("Neither ul nor size defined but required in "
-                                 "combination with lr")
+                raise ValueError(
+                    "Neither ul nor size defined but required in " "combination with lr"
+                )
             self.pos = Pos2D(x=lr.x - size.width, y=lr.y - size.height)
             self.lr = Pos2D(lr)
             return
@@ -91,12 +97,13 @@ class Bounding2D:
                 self.lr = value[1]
             else:  # Pos Size
                 size = Size2D(value=value[1])
-                self.lr = Pos2D(x=self.pos.x + size.width,
-                                y=self.pos.y + size.height)
+                self.lr = Pos2D(x=self.pos.x + size.width, y=self.pos.y + size.height)
         else:  # x,y,x2,y2
             if len(value) != 4:
-                raise ValueError("Invalid value size, either provide "
-                                 "((x,y),(width,height)) or (x,y,x2,y2)")
+                raise ValueError(
+                    "Invalid value size, either provide "
+                    "((x,y),(width,height)) or (x,y,x2,y2)"
+                )
             self.pos = Pos2D(x=value[0], y=value[1])
             self.lr = Pos2D(x=value[2], y=value[3])
 
@@ -119,8 +126,7 @@ class Bounding2D:
 
         :return: The size in pixels
         """
-        return Size2D(width=self.lr.x - self.pos.x,
-                      height=self.lr.y - self.pos.y)
+        return Size2D(width=self.lr.x - self.pos.x, height=self.lr.y - self.pos.y)
 
     def is_empty(self) -> bool:
         """
@@ -136,8 +142,7 @@ class Bounding2D:
 
         :return: The size in pixels
         """
-        return (self.lr.x - self.pos.x,
-                self.lr.y - self.pos.y)
+        return (self.lr.x - self.pos.x, self.lr.y - self.pos.y)
 
     def get_int_size_tuple(self) -> tuple[float, float]:
         """
@@ -145,8 +150,7 @@ class Bounding2D:
 
         :return: The size in pixels
         """
-        return (int(round(self.lr.x - self.pos.x)),
-                int(round(self.lr.y - self.pos.y)))
+        return (int(round(self.lr.x - self.pos.x)), int(round(self.lr.y - self.pos.y)))
 
     def width(self) -> float:
         """
@@ -170,8 +174,7 @@ class Bounding2D:
 
         :return: A tuple in the format x, y, x2, y2
         """
-        return (self.pos.x, self.pos.y,
-                self.lr.x, self.lr.y)
+        return (self.pos.x, self.pos.y, self.lr.x, self.lr.y)
 
     def to_int_coord_tuple(self) -> (int, int, int, int):
         """
@@ -179,8 +182,12 @@ class Bounding2D:
 
         :return: A tuple in the format x, y, x2, y2
         """
-        return (int(round(self.pos.x)), int(round(self.pos.y)),
-                int(round(self.lr.x)), int(round(self.lr.y)))
+        return (
+            int(round(self.pos.x)),
+            int(round(self.pos.y)),
+            int(round(self.lr.x)),
+            int(round(self.lr.y)),
+        )
 
     def to_nested_coord_tuple(self) -> ((float, float), (float, float)):
         """
@@ -188,8 +195,7 @@ class Bounding2D:
 
         :return: A tuple in the format (x, y), (x2, y2)
         """
-        return (self.pos.x, self.pos.y), \
-               (self.lr.x, self.lr.y)
+        return (self.pos.x, self.pos.y), (self.lr.x, self.lr.y)
 
     def to_coord_size_tuple(self) -> (float, float, float, float):
         """
@@ -197,9 +203,7 @@ class Bounding2D:
 
         :return: A tuple in the format x, y, width, height
         """
-        return (self.pos.x, self.pos.y,
-                self.lr.x - self.pos.x,
-                self.lr.y - self.pos.y)
+        return (self.pos.x, self.pos.y, self.lr.x - self.pos.x, self.lr.y - self.pos.y)
 
     def to_int_coord_size_tuple(self) -> (int, int, int, int):
         """
@@ -207,10 +211,12 @@ class Bounding2D:
 
         :return: A tuple in the format x, y, width, height
         """
-        return (int(round(self.pos.x)),
-                int(round(self.pos.y)),
-                int(round(self.lr.x - self.pos.x)),
-                int(round(self.lr.y - self.pos.y)))
+        return (
+            int(round(self.pos.x)),
+            int(round(self.pos.y)),
+            int(round(self.lr.x - self.pos.x)),
+            int(round(self.lr.y - self.pos.y)),
+        )
 
     def to_nested_coord_size_tuple(self) -> ((float, float), (float, float)):
         """
@@ -220,19 +226,18 @@ class Bounding2D:
         """
         return (self.pos.x, self.pos.y), (
             self.lr.x - self.pos.x,
-            self.lr.y - self.pos.y)
+            self.lr.y - self.pos.y,
+        )
 
     def __eq__(self, other: Bounding2DTypes) -> bool:
         if not isinstance(other, self.__class__):
             other = Bounding2D(other)
-        return (self.pos == other.pos and
-                self.lr == other.lr)
+        return self.pos == other.pos and self.lr == other.lr
 
     def __ne__(self, other: Bounding2DTypes) -> bool:
         if not isinstance(other, self.__class__):
             other = Bounding2D(other)
-        return (self.pos != other.pos or
-                self.lr != other.lr)
+        return self.pos != other.pos or self.lr != other.lr
 
 
 RawBoundingType = tuple[tuple[float, float], tuple[float, float]]
@@ -240,5 +245,4 @@ RawBoundingType = tuple[tuple[float, float], tuple[float, float]]
 Defines the raw bounding type with the structure ((x,y),(x2,y2)).
 """
 
-__all__ = ["Bounding2D", "Bounding2DTypes",
-           "RawBoundingType"]
+__all__ = ["Bounding2D", "Bounding2DTypes", "RawBoundingType"]

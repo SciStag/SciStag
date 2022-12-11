@@ -21,13 +21,13 @@ def test_filepath_basics():
     # relative path
     assert FilePath.norm_path("home/user/../file.txt") == "home/file.txt"
     # Test relative absolute path
-    assert FilePath.absolute_comb("test.txt",
-                                  "/home/data/../") == "/home/test.txt"
+    assert FilePath.absolute_comb("test.txt", "/home/data/../") == "/home/test.txt"
     # Test relative absolute path to calling file
     if not SystemInfo.os_type.is_windows:
         script_dir = FilePath.dirname(__file__)
-        assert FilePath.absolute_comb(
-            "__index__.py") == script_dir + "/" + "__index__.py"
+        assert (
+            FilePath.absolute_comb("__index__.py") == script_dir + "/" + "__index__.py"
+        )
         # caller's path
         assert FilePath.script_path() == script_dir
         # caller's script name

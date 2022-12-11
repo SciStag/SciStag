@@ -19,8 +19,7 @@ from .size2d import Size2D, Size2DTypes
 from .definitions import ImsFramework, get_opencv
 from .image_base import ImageBase
 from ..filestag import FileStag
-from ..filestag.protocols import HTTP_PROTOCOL_URL_HEADER, \
-    HTTPS_PROTOCOL_URL_HEADER
+from ..filestag.protocols import HTTP_PROTOCOL_URL_HEADER, HTTPS_PROTOCOL_URL_HEADER
 
 if TYPE_CHECKING:
     from scistag.imagestag.canvas import Canvas
@@ -57,12 +56,15 @@ class Image(ImageBase):
         :language: python
     """
 
-    def __init__(self, source: ImageSourceTypes | None = None,
-                 framework: ImsFramework | Literal["PIL", "RAW", "CV"] = None,
-                 pixel_format: PixelFormatTypes | None = None,
-                 size: Size2DTypes | None = None,
-                 bg_color: Color | None = None,
-                 **params):
+    def __init__(
+        self,
+        source: ImageSourceTypes | None = None,
+        framework: ImsFramework | Literal["PIL", "RAW", "CV"] = None,
+        pixel_format: PixelFormatTypes | None = None,
+        size: Size2DTypes | None = None,
+        bg_color: Color | None = None,
+        **params,
+    ):
         """
         :param source: The image source. Either a file name, a http URL,
             numpy array or one of the supported low level types. Note that
@@ -89,13 +91,16 @@ class Image(ImageBase):
             if bg_color is None:
                 bg_color = Colors.BLACK
             if source is not None:
-                raise ValueError("Can not pass a source and an image size of "
-                                 "a new image")
+                raise ValueError(
+                    "Can not pass a source and an image size of " "a new image"
+                )
             if pixel_format is None:
                 pixel_format = PixelFormat.RGB
             from .canvas import Canvas
-            canvas = Canvas(size=size, default_color=bg_color,
-                            pixel_format=pixel_format)
+
+            canvas = Canvas(
+                size=size, default_color=bg_color, pixel_format=pixel_format
+            )
             source = canvas.target_image
         if pixel_format is None:
             pixel_format = PixelFormat.RGB
@@ -103,8 +108,9 @@ class Image(ImageBase):
         "The image's width in pixels"
         self.height = 1
         "The image's height in pixels"
-        self.framework = ImsFramework(framework) if framework is not None else \
-            ImsFramework.PIL
+        self.framework = (
+            ImsFramework(framework) if framework is not None else ImsFramework.PIL
+        )
         "The framework being used. ImsFramework.PIL by default."
         self._pil_handle: PIL.Image.Image | None = None
         "The PILLOW handle (if available)"
@@ -113,9 +119,9 @@ class Image(ImageBase):
         self.pixel_format: PixelFormat = pixel_format
         "The base format (rgb, rbga, bgr etc.)"
         # ------- preparation of source data -------
-        source, self.pixel_format = \
-            self._prepare_data_source(framework, source,
-                                      self.pixel_format, **params)
+        source, self.pixel_format = self._prepare_data_source(
+            framework, source, self.pixel_format, **params
+        )
         # ------------------------------------------
         if self.framework is None:
             self.framework = ImsFramework.PIL
@@ -135,8 +141,7 @@ class Image(ImageBase):
     def __setattr__(self, key, value):
         if "_read_only" in self.__dict__:
             if key in self.__dict__:
-                raise ValueError(
-                    f"{key} can not be modified after initialization")
+                raise ValueError(f"{key} can not be modified after initialization")
         self.__dict__[key] = value
 
     def _repr_png_(self) -> bytes:
@@ -148,11 +153,13 @@ class Image(ImageBase):
         return self.to_png()
 
     @classmethod
-    def _prepare_data_source(cls,
-                             framework: ImsFramework,
-                             source: ImageSourceTypes,
-                             pixel_format: PixelFormat,
-                             **params):
+    def _prepare_data_source(
+        cls,
+        framework: ImsFramework,
+        source: ImageSourceTypes,
+        pixel_format: PixelFormat,
+        **params,
+    ):
         """
         Prepares and if necessary converts the data source to a supported format
 
@@ -163,17 +170,21 @@ class Image(ImageBase):
         """
         if isinstance(source, cls):
             source = source.to_pil()
-        if isinstance(source,
-                      np.ndarray) and pixel_format == PixelFormat.BGR and \
-                framework != ImsFramework.CV:
-            source = cls.normalize_to_rgb(source, keep_gray=True,
-                                          input_format=pixel_format)
+        if (
+            isinstance(source, np.ndarray)
+            and pixel_format == PixelFormat.BGR
+            and framework != ImsFramework.CV
+        ):
+            source = cls.normalize_to_rgb(
+                source, keep_gray=True, input_format=pixel_format
+            )
             pixel_format = cls.detect_format(source)
         # fetch from web if desired
         if isinstance(source, str):
             if source.startswith(HTTP_PROTOCOL_URL_HEADER) or source.startswith(
-                    HTTPS_PROTOCOL_URL_HEADER):
-                params['cache'] = params.get("cache", True)
+                HTTPS_PROTOCOL_URL_HEADER
+            ):
+                params["cache"] = params.get("cache", True)
             source = FileStag.load(source, **params)
             if source is None:
                 raise ValueError("Image data could not be received")
@@ -187,16 +198,13 @@ class Image(ImageBase):
         :param source: The data source
         """
         if isinstance(source, np.ndarray):
-            self._pixel_data = \
-                self.normalize_to_bgr(source,
-                                      input_format=self.pixel_format,
-                                      keep_gray=True)
-            self.pixel_format = self.detect_format(self._pixel_data,
-                                                   is_cv2=True)
+            self._pixel_data = self.normalize_to_bgr(
+                source, input_format=self.pixel_format, keep_gray=True
+            )
+            self.pixel_format = self.detect_format(self._pixel_data, is_cv2=True)
         else:
             self._pixel_data = Image(source).get_pixels(PixelFormat.BGR)
-            self.pixel_format = self.detect_format(self._pixel_data,
-                                                   is_cv2=True)
+            self.pixel_format = self.detect_format(self._pixel_data, is_cv2=True)
         self.height, self.width = self._pixel_data.shape[0:2]
 
     def _init_as_pil(self, source: bytes | np.ndarray | PIL.Image.Image):
@@ -218,7 +226,7 @@ class Image(ImageBase):
         except PIL.UnidentifiedImageError:
             raise ValueError("Invalid or damaged image data")
         if self._pil_handle.mode == "P":
-            if 'transparency' in self._pil_handle.info:
+            if "transparency" in self._pil_handle.info:
                 self._pil_handle = self._pil_handle.convert("RGBA")
             else:
                 self._pil_handle = self._pil_handle.convert("RGB")
@@ -233,8 +241,10 @@ class Image(ImageBase):
 
         :return: True if the image currently in bgr or bgra format
         """
-        return (self.pixel_format == PixelFormat.BGR or self.pixel_format ==
-                PixelFormat.BGRA)
+        return (
+            self.pixel_format == PixelFormat.BGR
+            or self.pixel_format == PixelFormat.BGRA
+        )
 
     @property
     def size(self) -> tuple[int, int]:
@@ -271,24 +281,26 @@ class Image(ImageBase):
         box = Bounding2D(box)
         box = box.to_int_coord_tuple()
         if box[2] < box[0] or box[3] < box[1]:
-            raise ValueError(
-                "X2 or Y2 are not allowed to be smaller than X or Y")
-        if box[0] < 0 or box[1] < 0 or box[2] >= self.width or box[
-            3] >= self.height:
+            raise ValueError("X2 or Y2 are not allowed to be smaller than X or Y")
+        if box[0] < 0 or box[1] < 0 or box[2] >= self.width or box[3] >= self.height:
             raise ValueError("Box region out of image bounds")
         if self._pil_handle:
             return Image(self._pil_handle.crop(box=box))
         else:
-            cropped = self._pixel_data[box[1]:box[3], box[0]:box[2],
-                      :] if len(self._pixel_data.shape) == 3 \
-                else self._pixel_data[box[1]:box[3] + 1, box[0]:box[2] + 1]
-            return Image(cropped, framework=self.framework,
-                         pixel_format=self.pixel_format)
+            cropped = (
+                self._pixel_data[box[1] : box[3], box[0] : box[2], :]
+                if len(self._pixel_data.shape) == 3
+                else self._pixel_data[box[1] : box[3] + 1, box[0] : box[2] + 1]
+            )
+            return Image(
+                cropped, framework=self.framework, pixel_format=self.pixel_format
+            )
 
-    def resize(self,
-               size: Size2DTypes,
-               interpolation: InterpolationMethod = InterpolationMethod.LANCZOS
-               ):
+    def resize(
+        self,
+        size: Size2DTypes,
+        interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
+    ):
         """
         Resizes the image to given resolution (modifying this image directly)
 
@@ -301,26 +313,32 @@ class Image(ImageBase):
         if size[0] == self.width and size[1] == self.height:
             return
         if self.framework == ImsFramework.PIL:
-            self.__dict__["_pil_handle"] = \
-                self._pil_handle.resize(size,
-                                        resample=resample_method)
+            self.__dict__["_pil_handle"] = self._pil_handle.resize(
+                size, resample=resample_method
+            )
         else:
             cv = get_opencv()
             if cv is not None:
-                self.__dict__["_pixel_data"] = \
-                    cv.resize(self._pixel_data, dsize=size,
-                              interpolation=resample_method_cv)
+                self.__dict__["_pixel_data"] = cv.resize(
+                    self._pixel_data, dsize=size, interpolation=resample_method_cv
+                )
             else:
-                image = Image(self._pixel_data, framework=ImsFramework.PIL,
-                              pixel_format=self.pixel_format)
+                image = Image(
+                    self._pixel_data,
+                    framework=ImsFramework.PIL,
+                    pixel_format=self.pixel_format,
+                )
                 image.resize(size, interpolation=interpolation)
                 self.__dict__["_pixel_data"] = image.get_pixels(
-                    desired_format=self.pixel_format)
+                    desired_format=self.pixel_format
+                )
         self.__dict__["width"], self.__dict__["height"] = size
 
-    def resized(self,
-                size: Size2DTypes,
-                interpolation: InterpolationMethod = InterpolationMethod.LANCZOS) -> Image:
+    def resized(
+        self,
+        size: Size2DTypes,
+        interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
+    ) -> Image:
         """
         Returns an image resized to given resolution
 
@@ -334,21 +352,26 @@ class Image(ImageBase):
         if self.framework == ImsFramework.PIL:
             return Image(
                 self._pil_handle.resize(size, resample=resample_method),
-                framework=ImsFramework.PIL)
+                framework=ImsFramework.PIL,
+            )
         else:
-            return Image(
-                self.to_pil().resize(size, resample=resample_method))
+            return Image(self.to_pil().resize(size, resample=resample_method))
 
-    def resized_ext(self, size: Size2DTypes | None = None,
-                    max_size: Size2DTypes | int | float | tuple[
-                        int | None, int | None] | None = None,
-                    keep_aspect: bool = False,
-                    target_aspect: float | None = None,
-                    fill_area: bool = False,
-                    factor: float | tuple[float, float] | None = None,
-                    interpolation: InterpolationMethod =
-                    InterpolationMethod.LANCZOS,
-                    background_color=Color(0.0, 0.0, 0.0, 1.0)) -> Image:
+    def resized_ext(
+        self,
+        size: Size2DTypes | None = None,
+        max_size: Size2DTypes
+        | int
+        | float
+        | tuple[int | None, int | None]
+        | None = None,
+        keep_aspect: bool = False,
+        target_aspect: float | None = None,
+        fill_area: bool = False,
+        factor: float | tuple[float, float] | None = None,
+        interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
+        background_color=Color(0.0, 0.0, 0.0, 1.0),
+    ) -> Image:
         """
         Returns a resized variant of the image with many configuration
         possibilities.
@@ -392,9 +415,9 @@ class Image(ImageBase):
         """
         size = Size2D(size).to_int_tuple() if size is not None else None
         if max_size is not None:
-            size = self. \
-                compute_rescaled_size_from_max_size(max_size,
-                                                    self.get_size_as_size())
+            size = self.compute_rescaled_size_from_max_size(
+                max_size, self.get_size_as_size()
+            )
         handle = self.to_pil()
         resample_method = interpolation.to_pil()
         int_color = background_color.to_int_rgba()
@@ -402,31 +425,42 @@ class Image(ImageBase):
         # target image size (including black borders)
         if keep_aspect and size is not None:
             if factor is not None and not isinstance(factor, float):
-                raise ValueError("Can not combine a tuple factor "
-                                 "with keep_aspect")
+                raise ValueError("Can not combine a tuple factor " "with keep_aspect")
             if fill_area:
                 factor = max([size[0] / self.width, size[1] / self.height])
                 virtual_size = int(round(factor * self.width)), int(
-                    round(factor * self.height))
+                    round(factor * self.height)
+                )
                 ratio = size[0] / virtual_size[0], size[1] / virtual_size[1]
                 used_pixels = int(round(self.width * ratio[0])), int(
-                    round(self.height * ratio[1]))
-                offset = self.width // 2 - used_pixels[
-                    0] // 2, self.height // 2 - used_pixels[1] // 2
-                return Image(handle.resize(size, resample=resample_method,
-                                           box=(offset[0], offset[1],
-                                                offset[0] + used_pixels[0] - 1,
-                                                offset[1] + used_pixels[
-                                                    1] - 1)))
+                    round(self.height * ratio[1])
+                )
+                offset = (
+                    self.width // 2 - used_pixels[0] // 2,
+                    self.height // 2 - used_pixels[1] // 2,
+                )
+                return Image(
+                    handle.resize(
+                        size,
+                        resample=resample_method,
+                        box=(
+                            offset[0],
+                            offset[1],
+                            offset[0] + used_pixels[0] - 1,
+                            offset[1] + used_pixels[1] - 1,
+                        ),
+                    )
+                )
             else:
                 bordered_image_size = size
                 factor = min([size[0] / self.width, size[1] / self.height])
         if fill_area:
             raise ValueError(
-                'fill_area==True without keep_aspect==True has no effect. '
-                'If you anyway just want to ' +
-                'fill the whole area with the image just provide "size" and '
-                'set "fill_area" to False')
+                "fill_area==True without keep_aspect==True has no effect. "
+                "If you anyway just want to "
+                + 'fill the whole area with the image just provide "size" and '
+                'set "fill_area" to False'
+            )
         if target_aspect is not None:
             factor = (1.0, 1.0) if factor is None else factor
             if isinstance(factor, float):
@@ -434,17 +468,20 @@ class Image(ImageBase):
             if size is not None:
                 raise ValueError(
                     '"target_aspect" can not be combined with "size" but just '
-                    'with factor. ' +
-                    'Use "size" + "keep_aspect" instead if you know the desired '
-                    'target size already.')
+                    "with factor. "
+                    + 'Use "size" + "keep_aspect" instead if you know the desired '
+                    "target size already."
+                )
             # if the image shall also be resized
             size = int(round(self.width * factor[0])), int(
-                round(self.height * factor[1]))
+                round(self.height * factor[1])
+            )
         if factor is not None:
             if isinstance(factor, float):
                 factor = (factor, factor)
             size = int(round(self.width * factor[0])), int(
-                round(self.height * factor[1]))
+                round(self.height * factor[1])
+            )
         if not (size is not None and size[0] > 0 and size[1] > 0):
             raise ValueError("No valid rescaling parameters provided")
         if size != (self.width, self.height):
@@ -457,23 +494,26 @@ class Image(ImageBase):
                 # to the sides
                 bordered_image_size = (
                     int(round(self.height * target_aspect * factor[0])),
-                    int(round(self.height * factor[1])))
+                    int(round(self.height * factor[1])),
+                )
             else:  # otherwise to top and bottom
-                bordered_image_size = (int(round(self.width * factor[0])),
-                                       int(round(self.width * rs ** factor[1])))
+                bordered_image_size = (
+                    int(round(self.width * factor[0])),
+                    int(round(self.width * rs ** factor[1])),
+                )
         if bordered_image_size is not None:
-            new_image = PIL.Image.new(handle.mode, bordered_image_size,
-                                      int_color)
-            position = (new_image.width // 2 - handle.width // 2,
-                        new_image.height // 2 - handle.height // 2)
+            new_image = PIL.Image.new(handle.mode, bordered_image_size, int_color)
+            position = (
+                new_image.width // 2 - handle.width // 2,
+                new_image.height // 2 - handle.height // 2,
+            )
             new_image.paste(handle, position)
             return Image(new_image)
         return Image(handle)
 
-    def compute_rescaled_size_from_max_size(self,
-                                            max_size,
-                                            org_size: Size2D) -> \
-            tuple[int, int]:
+    def compute_rescaled_size_from_max_size(
+        self, max_size, org_size: Size2D
+    ) -> tuple[int, int]:
         """
         Computes the new size of an image after rescaling with a given
         maximum width and/or height and a given original size.
@@ -486,29 +526,28 @@ class Image(ImageBase):
         if isinstance(max_size, (float, int)):
             max_size = (max_size, max_size)
         if isinstance(max_size, tuple) and len(max_size) == 2:
-            max_width = \
-                int(round(max_size[0])) if max_size[0] is not None else None
-            max_height = \
-                int(round(max_size[1])) if max_size[1] is not None else None
+            max_width = int(round(max_size[0])) if max_size[0] is not None else None
+            max_height = int(round(max_size[1])) if max_size[1] is not None else None
         else:
             max_size = Size2D(max_size)
             max_width, max_height = max_size.to_int_tuple()
         if max_width is not None:
             if max_height is not None:
-                scaling = min([max_width / self.width,
-                               max_height / self.height])
+                scaling = min([max_width / self.width, max_height / self.height])
             else:
                 scaling = max_width / self.width
         elif max_height is not None:
             scaling = max_height / self.height
         else:
-            raise ValueError(
-                "Neither a valid maximum width nor height passed")
-        return (int(round(org_size.width * scaling)),
-                int(round(org_size.height * scaling)))
+            raise ValueError("Neither a valid maximum width nor height passed")
+        return (
+            int(round(org_size.width * scaling)),
+            int(round(org_size.height * scaling)),
+        )
 
-    def convert(self, pixel_format: PixelFormat | str,
-                bg_fill: Union["Color", None] = None) -> Image:
+    def convert(
+        self, pixel_format: PixelFormat | str, bg_fill: Union["Color", None] = None
+    ) -> Image:
         """
         Converts the image's pixel format to another one for example from
         RGB to gray, from RGB to HSV etc.
@@ -527,21 +566,22 @@ class Image(ImageBase):
             original = self.to_pil()
         pil_format = pixel_format.to_pil()
         if pil_format is None:
-            raise NotImplementedError("The conversion to this format is "
-                                      "currently not supported")
+            raise NotImplementedError(
+                "The conversion to this format is " "currently not supported"
+            )
         if pixel_format == PixelFormat.RGB and original.mode == "RGBA":
-            new_image = Image(pixel_format=PixelFormat.RGB,
-                              size=self.get_size(),
-                              bg_color=bg_fill)
+            new_image = Image(
+                pixel_format=PixelFormat.RGB, size=self.get_size(), bg_color=bg_fill
+            )
             pil_handle = new_image.to_pil()
             pil_handle.paste(original, (0, 0), original)
-            self.__dict__['_pil_handle'] = pil_handle
+            self.__dict__["_pil_handle"] = pil_handle
         else:
-            self.__dict__['_pil_handle'] = original.convert(pil_format)
+            self.__dict__["_pil_handle"] = original.convert(pil_format)
         framework = self.framework
-        self.__dict__['framework'] = ImsFramework.PIL
-        self.__dict__['pixel_format'] = pixel_format
-        self.__dict__['_pixel_data'] = None
+        self.__dict__["framework"] = ImsFramework.PIL
+        self.__dict__["pixel_format"] = pixel_format
+        self.__dict__["_pixel_data"] = None
         return self
 
     def convert_to_raw(self) -> Image:
@@ -551,9 +591,9 @@ class Image(ImageBase):
         """
         if self.framework == ImsFramework.RAW:
             return self
-        self.__dict__['_pixel_data'] = self.get_pixels()
-        self.__dict__['_pil_handle'] = None
-        self.__dict__['framework'] = ImsFramework.RAW
+        self.__dict__["_pixel_data"] = self.get_pixels()
+        self.__dict__["_pil_handle"] = None
+        self.__dict__["framework"] = ImsFramework.RAW
         return self
 
     def convert_to_pil(self) -> Image:
@@ -567,10 +607,9 @@ class Image(ImageBase):
         if new_format is None:
             raise NotImplementedError("This color format is not supported")
         pixels = self.get_pixels()
-        self.__dict__['_pil_handle'] = PIL.Image.fromarray(pixels,
-                                                           mode=new_format)
-        self.__dict__['_pixel_data'] = None
-        self.__dict__['framework'] = ImsFramework.PIL
+        self.__dict__["_pil_handle"] = PIL.Image.fromarray(pixels, mode=new_format)
+        self.__dict__["_pixel_data"] = None
+        self.__dict__["framework"] = ImsFramework.PIL
         return self
 
     def copy(self) -> Image:
@@ -585,9 +624,12 @@ class Image(ImageBase):
             return Image(self.to_pil().copy())
         else:
             import copy
-            return Image(copy.deepcopy(self._pixel_data),
-                         pixel_format=self.pixel_format,
-                         framework=self.framework)
+
+            return Image(
+                copy.deepcopy(self._pixel_data),
+                pixel_format=self.pixel_format,
+                framework=self.framework,
+            )
 
     def get_handle(self) -> np.ndarray | PIL.Image.Image:
         """
@@ -600,11 +642,11 @@ class Image(ImageBase):
 
         :return: The handle
         """
-        return self._pil_handle if self.framework == ImsFramework.PIL else \
-            self._pixel_data
+        return (
+            self._pil_handle if self.framework == ImsFramework.PIL else self._pixel_data
+        )
 
-    def get_pixels(self,
-                   desired_format: PixelFormat | None = None) -> np.ndarray:
+    def get_pixels(self, desired_format: PixelFormat | None = None) -> np.ndarray:
         """
         Returns the image's pixel data as :class:`np.ndarray`.
 
@@ -625,19 +667,15 @@ class Image(ImageBase):
             pixel_data = np.array(image)
         if self.pixel_format == desired_format:
             return pixel_data
-        to_rgb = (desired_format == PixelFormat.RGB or
-                  desired_format == PixelFormat.RGBA)
-        if self.pixel_format not in {PixelFormat.RGB,
-                                     PixelFormat.RGBA} and to_rgb:
-            return self.normalize_to_rgb(pixel_data,
-                                         input_format=self.pixel_format)
+        to_rgb = desired_format == PixelFormat.RGB or desired_format == PixelFormat.RGBA
+        if self.pixel_format not in {PixelFormat.RGB, PixelFormat.RGBA} and to_rgb:
+            return self.normalize_to_rgb(pixel_data, input_format=self.pixel_format)
         elif desired_format == PixelFormat.GRAY:
-            return self.normalize_to_gray(pixel_data,
-                                          input_format=self.pixel_format)
-        elif (desired_format == PixelFormat.BGR or
-              desired_format == PixelFormat.BGRA):
-            pixel_data = self.normalize_to_bgr(pixel_data,
-                                               input_format=self.pixel_format)
+            return self.normalize_to_gray(pixel_data, input_format=self.pixel_format)
+        elif desired_format == PixelFormat.BGR or desired_format == PixelFormat.BGRA:
+            pixel_data = self.normalize_to_bgr(
+                pixel_data, input_format=self.pixel_format
+            )
             return pixel_data
         raise NotImplementedError("The request conversion is not supported yet")
 
@@ -658,8 +696,7 @@ class Image(ImageBase):
             return [data]
         else:
             result = np.dsplit(data, data.shape[-1])
-            result = [element.reshape((self.height, self.width)) for element in
-                      result]
+            result = [element.reshape((self.height, self.width)) for element in result]
             return result
 
     def get_band_names(self) -> list[str]:
@@ -693,10 +730,18 @@ class Image(ImageBase):
         data = {}
         bands = self.pixel_format.bands
         data_type = self.pixel_format.data_type
-        shape = (self.height, self.width) if bands == 1 else \
-            (self.height, self.width, bands)
-        data_type_str = "|i1" if data_type == int or data_type == np.uint else \
-            "|f4" if data_type == float else "|u1"
+        shape = (
+            (self.height, self.width)
+            if bands == 1
+            else (self.height, self.width, bands)
+        )
+        data_type_str = (
+            "|i1"
+            if data_type == int or data_type == np.uint
+            else "|f4"
+            if data_type == float
+            else "|u1"
+        )
         data["shape"] = shape
         data["typestr"] = data_type_str
         data["version"] = 3
@@ -710,8 +755,11 @@ class Image(ImageBase):
 
         :return: The OpenCV numpy data
         """
-        return self.get_pixels_bgr() if self.pixel_format != PixelFormat.GRAY \
+        return (
+            self.get_pixels_bgr()
+            if self.pixel_format != PixelFormat.GRAY
             else self.get_pixels(desired_format=PixelFormat.GRAY)
+        )
 
     def get_pixels_gray(self) -> np.ndarray:
         """
@@ -738,15 +786,19 @@ class Image(ImageBase):
         :return: The canvas handle
         """
         if self._pil_handle is None:
-            raise NotImplementedError("Canvas conversion is only supported "
-                                      "for PIL based images")
+            raise NotImplementedError(
+                "Canvas conversion is only supported " "for PIL based images"
+            )
         from scistag.imagestag.canvas import Canvas
+
         return Canvas(target_image=self)
 
-    def encode(self,
-               filetype: str | tuple[str, int] = "png",
-               quality: int = 90,
-               background_color: Color | None = None) -> bytes | None:
+    def encode(
+        self,
+        filetype: str | tuple[str, int] = "png",
+        quality: int = 90,
+        background_color: Color | None = None,
+    ) -> bytes | None:
         """
         Compresses the image and returns the compressed file's data as bytes
         object.
@@ -764,19 +816,22 @@ class Image(ImageBase):
         """
         image = self
         if isinstance(filetype, tuple):
-            assert (len(filetype) == 2 and isinstance(filetype[0], str) and
-                    isinstance(filetype[1], int))
+            assert (
+                len(filetype) == 2
+                and isinstance(filetype[0], str)
+                and isinstance(filetype[1], int)
+            )
             filetype, quality = filetype
         filetype = filetype.lstrip(".").lower()
         if filetype == "jpg":
             filetype = "jpeg"
-        if self.is_transparent() and (filetype != "png" or background_color is
-                                      not None):
+        if self.is_transparent() and (
+            filetype != "png" or background_color is not None
+        ):
             from scistag.imagestag import Canvas
-            color = Colors.WHITE if background_color is None else \
-                background_color
-            white_canvas = Canvas(size=self.get_size(),
-                                  default_color=color)
+
+            color = Colors.WHITE if background_color is None else background_color
+            white_canvas = Canvas(size=self.get_size(), default_color=color)
             white_canvas.draw_image(self, (0, 0))
             image = white_canvas.to_image()
         assert filetype in SUPPORTED_IMAGE_FILETYPE_SET
@@ -818,6 +873,7 @@ class Image(ImageBase):
         :return: The ASCII image as string
         """
         from .ascii_image import AsciiImage
+
         return AsciiImage(self, max_width=max_width, **params).get_ascii()
 
     def to_ipython(self, filetype="png", quality: int = 90, **params) -> Any:
@@ -832,12 +888,14 @@ class Image(ImageBase):
         """
         try:
             from IPython.display import Image as IPImage
-            return IPImage(self.encode(filetype=filetype, quality=quality,
-                                       **params))
+
+            return IPImage(self.encode(filetype=filetype, quality=quality, **params))
         except ModuleNotFoundError:
-            raise RuntimeError("Jupyter Notebook not found. "
-                               "Please install SciStag with Jupyter support, "
-                               "e.g. pip install scistag[common,jupyter]")
+            raise RuntimeError(
+                "Jupyter Notebook not found. "
+                "Please install SciStag with Jupyter support, "
+                "e.g. pip install scistag[common,jupyter]"
+            )
 
     def save(self, target: str, **params):
         """
@@ -862,8 +920,10 @@ class Image(ImageBase):
 
         :return: True if the image is transparent
         """
-        return (self.pixel_format == PixelFormat.BGRA or
-                self.pixel_format == PixelFormat.RGBA)
+        return (
+            self.pixel_format == PixelFormat.BGRA
+            or self.pixel_format == PixelFormat.RGBA
+        )
 
     def get_raw_data(self) -> bytes:
         """
@@ -882,8 +942,7 @@ class Image(ImageBase):
         return hashlib.md5(self.to_pil().tobytes()).hexdigest()
 
     def __eq__(self, other: Image):
-        if (self.framework == ImsFramework.PIL and
-                other.framework == ImsFramework.PIL):
+        if self.framework == ImsFramework.PIL and other.framework == ImsFramework.PIL:
             return self._pil_handle == other._pil_handle
         if self.pixel_format != other.pixel_format:
             return False

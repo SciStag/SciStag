@@ -33,13 +33,13 @@ class Env:
         result_dict = {}
         for cur_line in content:
             if "#" in cur_line:
-                cur_line = cur_line[0:cur_line.index("#")]
+                cur_line = cur_line[0 : cur_line.index("#")]
             if "=" not in cur_line:
                 raise AssertionError(f"No assignment found for {cur_line}")
             cur_line = cur_line.lstrip("'\" ").rstrip("\"' ")
             first_app = cur_line.index("=")
             key = cur_line[0:first_app]
-            value = cur_line[first_app + 1:]
+            value = cur_line[first_app + 1 :]
             result_dict[key] = value
             os.environ[key] = value
         return result_dict

@@ -1,5 +1,7 @@
-from scistag.tests.datastag.datastag4flask.shared_test_client import \
-    test_remote_connection, test_client
+from scistag.tests.datastag.datastag4flask.shared_test_client import (
+    test_remote_connection,
+    test_client,
+)
 from scistag.tests.datastag.local.test_get_set import all_get_set_tests
 from scistag.tests.datastag.local.test_lists import all_list_tests
 from scistag.tests.datastag.local.test_deprecation import all_deprecation_tests

@@ -1,6 +1,7 @@
 from __future__ import annotations
 from .widget import Widget
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from scistag.slidestag.slide_session import SlideSession
 
@@ -11,8 +12,9 @@ class Window(Widget):
     the parent does not have usually any parent elements but defines the root of this tree.
     """
 
-    def __init__(self, session: SlideSession, parameters: dict,
-                 parent: Widget | None = None):
+    def __init__(
+        self, session: SlideSession, parameters: dict, parent: Widget | None = None
+    ):
         """
         Initializer
         :param session: The window's session

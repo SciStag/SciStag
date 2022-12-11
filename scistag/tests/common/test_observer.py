@@ -47,13 +47,13 @@ def test_observer_list():
     mock_d.value = "fkh"
     obs_list = ObserverList([mock_a], refresh_time_s=0.05)
     cur = obs_list.__hash__()
-    assert cur == '64fcb4b683ee7bebcfa76d99d94fcaf2'
+    assert cur == "64fcb4b683ee7bebcfa76d99d94fcaf2"
     assert obs_list.__hash__() == cur
     obs_list.add(mock_b)
-    assert obs_list.__hash__() == 'd99f1b7c4aafd45b22eb6a46efad26d9'
+    assert obs_list.__hash__() == "d99f1b7c4aafd45b22eb6a46efad26d9"
     obs_list.add([mock_c, mock_d])
-    assert obs_list.__hash__() == '556e77c9d7228d6126073ccb4595ab52'
+    assert obs_list.__hash__() == "556e77c9d7228d6126073ccb4595ab52"
     mock_d.value = "ZZK"  # still cached
-    assert obs_list.__hash__() == '556e77c9d7228d6126073ccb4595ab52'
+    assert obs_list.__hash__() == "556e77c9d7228d6126073ccb4595ab52"
     time.sleep(0.05)
-    assert not obs_list.__hash__() == '556e77c9d7228d6126073ccb4595ab52'
+    assert not obs_list.__hash__() == "556e77c9d7228d6126073ccb4595ab52"

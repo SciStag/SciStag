@@ -73,7 +73,7 @@ class SlideManager(Widget):
         if slide is not None:
             if isinstance(slide, str):
                 for element in self.slides:
-                    element: 'Slide'
+                    element: "Slide"
                     if element.get_name() == slide:
                         slide = element
                         break
@@ -99,8 +99,11 @@ class SlideManager(Widget):
         :param current: The current (assumed) slide
         :return True if the slide could successfully be changed
         """
-        if current is not None and current != self._current_slide or len(
-                self.slides) == 0:
+        if (
+            current is not None
+            and current != self._current_slide
+            or len(self.slides) == 0
+        ):
             return False
         if self._current_slide is None:
             target = 0
@@ -121,7 +124,8 @@ class SlideManager(Widget):
         :return True if the slide could successfully be changed
         """
         if (current is not None and current != self._current_slide) or len(
-                self.slides) == 0:
+            self.slides
+        ) == 0:
             return False
         if self._current_slide is None:
             target = 0
@@ -136,6 +140,7 @@ class SlideManager(Widget):
     def add_widget(self, child: Widget):
         super().add_widget(child)
         from .slide import Slide
+
         if isinstance(child, Slide):
             self.slides.append(child)
 
@@ -147,7 +152,11 @@ class SlideManager(Widget):
     def handle_paint(self, event: PaintEvent) -> bool:
         canvas: Canvas = event.canvas
         theme = self.theme
-        canvas.rect(pos=(0.0, 0.0), size=self.size,
-                    color=theme.default_background,
-                    outline_color=Color(0, 0, 0), outline_width=0)
+        canvas.rect(
+            pos=(0.0, 0.0),
+            size=self.size,
+            color=theme.default_background,
+            outline_color=Color(0, 0, 0),
+            outline_width=0,
+        )
         return super().handle_paint(event)

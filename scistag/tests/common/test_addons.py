@@ -6,11 +6,18 @@ import pytest
 import os
 from scistag.filestag import FileStag
 from scistag.addons import AddonManager
-from scistag.addons.addon_manager import (FEATURE_TEST, FEATURE_SIZE,
-                                          FEATURE_INFO, FEATURE_MD5, GROUP_INFO)
-from scistag.addons.addon_manager import (FEATURE_LOCAL_FILENAME,
-                                          FEATURE_REMOTE_FILENAMES,
-                                          GROUP_IGNORE_SET)
+from scistag.addons.addon_manager import (
+    FEATURE_TEST,
+    FEATURE_SIZE,
+    FEATURE_INFO,
+    FEATURE_MD5,
+    GROUP_INFO,
+)
+from scistag.addons.addon_manager import (
+    FEATURE_LOCAL_FILENAME,
+    FEATURE_REMOTE_FILENAMES,
+    GROUP_IGNORE_SET,
+)
 from scistag.logstag import log_info
 
 # Environment variables
@@ -62,13 +69,13 @@ def test_install_and_removal():
     release_test = int(os.environ.get(ENV_FLAG_RELEASE_TEST, "0")) == 1
     if not release_test:
         log_info(
-            "\nSkipping addon install and removal test due to traffic. Set TEST_RELEASE to 1 to execute all tests.\n")
+            "\nSkipping addon install and removal test due to traffic. Set TEST_RELEASE to 1 to execute all tests.\n"
+        )
         return
     intense_test = int(os.environ.get(ENV_FLAG_TEST_ALL, "0")) == 1
     max_size = int(os.environ.get(ENV_FLAG_MAX_SIZE, "0"))
     if intense_test:
-        log_info(
-            "Full addon verification test enabled. This could take a while...")
+        log_info("Full addon verification test enabled. This could take a while...")
 
     keep = set()
     for key, feature in AddonManager.get_all_addons().items():
@@ -82,7 +89,8 @@ def test_install_and_removal():
         if max_size != 0 and feature[FEATURE_SIZE] > max_size:
             continue
         if AddonManager.get_addon_installed(
-                key):  # remove addons we want to install ourselves
+            key
+        ):  # remove addons we want to install ourselves
             AddonManager.remove_addon(key)
 
     # install test addons
@@ -91,7 +99,8 @@ def test_install_and_removal():
             continue
         if max_size != 0 and feature[FEATURE_SIZE] > max_size:
             log_info(
-                f"Feature {key} exceeds maximum test size of {max_size} bytes, skipping download test.")
+                f"Feature {key} exceeds maximum test size of {max_size} bytes, skipping download test."
+            )
             continue
         assert AddonManager.install_addon(key)
 
@@ -123,8 +132,7 @@ def test_addon_access():
     assert len(paths) == 1
     assert "emojis.svg" in paths
     svg_path = paths["emojis.svg"]
-    test_file = FileStag.load(
-        svg_path + "images/noto/emojis/svg/emoji_u00a9.svg")
+    test_file = FileStag.load(svg_path + "images/noto/emojis/svg/emoji_u00a9.svg")
     assert len(test_file) == 2483
     installed_addons = AddonManager.get_installed_addons()
     assert "emojis.svg" in installed_addons

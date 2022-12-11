@@ -17,10 +17,26 @@ from .canvas import Canvas
 from .font import Font, HTextAlignment, VTextAlignment
 from .anchor2d import Anchor2D, Anchor2DTypes
 
-__all__ = ["Bounding2D", "Color", "ColorTypes", "Colors",
-           "ImsFramework", "Image", "ImageFilter",
-           "get_opencv",
-           "PIL", "PIL_AVAILABLE",
-           "Canvas", "Font", "HTextAlignment", "VTextAlignment",
-           "Size2D", "Size2DTypes", "Pos2D", "Pos2DTypes",
-           "Anchor2D", "Anchor2DTypes", "PixelFormat"]
+__all__ = [
+    "Bounding2D",
+    "Color",
+    "ColorTypes",
+    "Colors",
+    "ImsFramework",
+    "Image",
+    "ImageFilter",
+    "get_opencv",
+    "PIL",
+    "PIL_AVAILABLE",
+    "Canvas",
+    "Font",
+    "HTextAlignment",
+    "VTextAlignment",
+    "Size2D",
+    "Size2DTypes",
+    "Pos2D",
+    "Pos2DTypes",
+    "Anchor2D",
+    "Anchor2DTypes",
+    "PixelFormat",
+]

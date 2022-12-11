@@ -3,9 +3,9 @@ Tests the text alignment classes
 """
 import pytest
 
-from scistag.imagestag.text_alignment_definitions import (HTextAlignment,
-                                                          VTextAlignment)
+from scistag.imagestag.text_alignment_definitions import HTextAlignment, VTextAlignment
 from . import skip_imagestag
+
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
 def test_halignment():

@@ -18,8 +18,7 @@ class EmbeddedSlider(AdvancedImage):
         self.update_frequency = 1 / 30.0
         self.allow_stretch = False
         self.auto_size = True
-        self.timer = Clock.schedule_interval(self.handle_timer,
-                                             self.update_frequency)
+        self.timer = Clock.schedule_interval(self.handle_timer, self.update_frequency)
         self.session: SlideSession | None = None
         self.bind(on_touch_down=self.handle_touch_down)
         self.bind(on_touch_up=self.handle_touch_up)
@@ -33,24 +32,18 @@ class EmbeddedSlider(AdvancedImage):
         self.session = session
 
     def handle_touch_move(self, widget, event):
-        tm_event = {"type": "tapMove",
-                    "coord": (int(event.pos[0]), int(event.pos[1]))}
-        self.session.handle_user_data(self.session.USER_DATA_CLIENT_EVENTS,
-                                      [tm_event])
+        tm_event = {"type": "tapMove", "coord": (int(event.pos[0]), int(event.pos[1]))}
+        self.session.handle_user_data(self.session.USER_DATA_CLIENT_EVENTS, [tm_event])
         return True
 
     def handle_touch_down(self, widget, event):
-        td_event = {"type": "tapDown",
-                    "coord": (int(event.pos[0]), int(event.pos[1]))}
-        self.session.handle_user_data(self.session.USER_DATA_CLIENT_EVENTS,
-                                      [td_event])
+        td_event = {"type": "tapDown", "coord": (int(event.pos[0]), int(event.pos[1]))}
+        self.session.handle_user_data(self.session.USER_DATA_CLIENT_EVENTS, [td_event])
         return True
 
     def handle_touch_up(self, widget, event):
-        tu_event = {"type": "tapUp",
-                    "coord": (int(event.pos[0]), int(event.pos[1]))}
-        self.session.handle_user_data(self.session.USER_DATA_CLIENT_EVENTS,
-                                      [tu_event])
+        tu_event = {"type": "tapUp", "coord": (int(event.pos[0]), int(event.pos[1]))}
+        self.session.handle_user_data(self.session.USER_DATA_CLIENT_EVENTS, [tu_event])
         return True
 
     def handle_timer(self, timer):

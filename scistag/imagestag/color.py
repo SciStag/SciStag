@@ -7,10 +7,14 @@ from dataclasses import dataclass
 if typing.TYPE_CHECKING:
     from scistag.imagestag import PixelFormat
 
-ColorTypes = Union["Color", tuple[int, int, int], tuple[int, int, int, int],
-                   tuple[float, float, float],
-                   tuple[float, float, float, float],
-                   str]
+ColorTypes = Union[
+    "Color",
+    tuple[int, int, int],
+    tuple[int, int, int, int],
+    tuple[float, float, float],
+    tuple[float, float, float, float],
+    str,
+]
 """
 The supported color type. Either a Color or a tuple of 3 or 4 
 ints or floats (RGB/RGBA)
@@ -40,12 +44,14 @@ class Color:
     _int_rgba: tuple = ()
     "Cached, rounded int tuple"
 
-    def __init__(self,
-                 value: ColorTypes | float | int | None = None,
-                 green: float | int = 1.0,
-                 blue: float | int = 1.0,
-                 alpha: float | int = 1.0,
-                 red: float | int | None = None):
+    def __init__(
+        self,
+        value: ColorTypes | float | int | None = None,
+        green: float | int = 1.0,
+        blue: float | int = 1.0,
+        alpha: float | int = 1.0,
+        red: float | int | None = None,
+    ):
         """
         Usage:
 
@@ -92,12 +98,10 @@ class Color:
             if value is None:
                 raise ValueError("Missing color initialization data")
         if isinstance(value, Color):
-            self.r, self.g, self.b, self.a = \
-                value.r, value.g, value.b, value.a
+            self.r, self.g, self.b, self.a = value.r, value.g, value.b, value.a
         elif isinstance(value, tuple):
             if len(value) < 2 or len(value) > 4:
-                raise ValueError(
-                    "Invalid color structure. 3 or 4 values assumed.")
+                raise ValueError("Invalid color structure. 3 or 4 values assumed.")
             if isinstance(value[0], float):
                 if len(value) == 3:
                     self.r, self.g, self.b = value
@@ -106,28 +110,29 @@ class Color:
                     self.r, self.g, self.b, self.a = value
             else:
                 if len(value) == 3:
-                    self.r, self.g, self.b = value[0] / 255.0, value[
-                        1] / 255.0, value[2] / 255.0
+                    self.r, self.g, self.b = (
+                        value[0] / 255.0,
+                        value[1] / 255.0,
+                        value[2] / 255.0,
+                    )
                     self.a = 1.0
                 else:
-                    self.r, self.g, self.b, self.a = value[0] / 255.0, \
-                                                     value[1] / 255.0, \
-                                                     value[2] / 255.0, \
-                                                     value[
-                                                         3] / 255.0,
+                    self.r, self.g, self.b, self.a = (
+                        value[0] / 255.0,
+                        value[1] / 255.0,
+                        value[2] / 255.0,
+                        value[3] / 255.0,
+                    )
         elif isinstance(value, str):
-            if not value.startswith("#") or (
-                    len(value) != 7 and len(value) != 9):
-                raise ValueError(
-                    "Invalid color definition. Use #RRGGBB or #RRGGBBAA")
+            if not value.startswith("#") or (len(value) != 7 and len(value) != 9):
+                raise ValueError("Invalid color definition. Use #RRGGBB or #RRGGBBAA")
             h: str = value.lstrip("#")
             if len(h) == 6:
-                values = tuple(int(h[i:i + 2], 16) / 255.0 for i in [0, 2, 4])
+                values = tuple(int(h[i : i + 2], 16) / 255.0 for i in [0, 2, 4])
                 self.r, self.g, self.b = values
                 self.a = 1.0
             else:
-                values = tuple(
-                    int(h[i:i + 2], 16) / 255.0 for i in [0, 2, 4, 6])
+                values = tuple(int(h[i : i + 2], 16) / 255.0 for i in [0, 2, 4, 6])
                 self.r, self.g, self.b, self.a = values
         elif isinstance(value, float):
             self.r = value
@@ -142,8 +147,7 @@ class Color:
         else:
             raise TypeError("Invalid data type")
         self._rgba = (self.r, self.g, self.b, self.a)
-        self._int_rgba = tuple(
-            [int(round(element * 255.0)) for element in self._rgba])
+        self._int_rgba = tuple([int(round(element * 255.0)) for element in self._rgba])
 
     _HSV_TO_RGB_MAP = {
         0: lambda p, q, t, v: Color(v, t, p),
@@ -151,7 +155,7 @@ class Color:
         2: lambda p, q, t, v: Color(p, v, t),
         3: lambda p, q, t, v: Color(p, q, v),
         4: lambda p, q, t, v: Color(t, p, v),
-        5: lambda p, q, t, v: Color(v, p, q)
+        5: lambda p, q, t, v: Color(v, p, q),
     }
     """
     Hash hap for converting HSV to RGB 
@@ -172,28 +176,35 @@ class Color:
             return Color(v, v, v)
         i = int(h * 6.0)
         f = (h * 6.0) - i
-        p, q, t = (int(255 * (v * (1. - s))),
-                   int(255 * (v * (1. - s * f))),
-                   int(255 * (v * (1. - s * (1. - f)))))
+        p, q, t = (
+            int(255 * (v * (1.0 - s))),
+            int(255 * (v * (1.0 - s * f))),
+            int(255 * (v * (1.0 - s * (1.0 - f)))),
+        )
         v *= 255
         i %= 6
         return cls._HSV_TO_RGB_MAP[i](p, q, t, v)
 
     def __setattr__(self, key, value):
-        if key in {"r", "g", "b", "a", "_rgba", "_int_rgba"} and \
-                "_int_rgba" in self.__dict__:
+        if (
+            key in {"r", "g", "b", "a", "_rgba", "_int_rgba"}
+            and "_int_rgba" in self.__dict__
+        ):
             raise RuntimeError("Modifying a Color is not allowed.")
         else:
             super().__setattr__(key, value)
 
     def __str__(self) -> str:
-        return f"Color({round(self.r, 3)}," \
-               f"{round(self.g, 3)}," \
-               f"{round(self.b, 3)}," \
-               f"{round(self.a, 3)})" if self.a != 1.0 else \
-            f"Color({round(self.r, 3)}," \
-            f"{round(self.g, 3)}," \
+        return (
+            f"Color({round(self.r, 3)},"
+            f"{round(self.g, 3)},"
+            f"{round(self.b, 3)},"
+            f"{round(self.a, 3)})"
+            if self.a != 1.0
+            else f"Color({round(self.r, 3)},"
+            f"{round(self.g, 3)},"
             f"{round(self.b, 3)})"
+        )
 
     def to_rgb(self) -> (float, float, float):
         """
@@ -233,8 +244,12 @@ class Color:
 
         :return: The BGRA values
         """
-        return (self._int_rgba[2], self._int_rgba[1], self._int_rgba[0],
-                self._int_rgba[3])
+        return (
+            self._int_rgba[2],
+            self._int_rgba[1],
+            self._int_rgba[0],
+            self._int_rgba[3],
+        )
 
     def to_int_bgr(self) -> (int, int, int):
         """
@@ -250,8 +265,9 @@ class Color:
 
         :return: The gray value (0 .. 1.0)
         """
-        return min(max(0.299 * self.r + 0.587 * self.g + 0.114 * self.b, 0.0),
-                   1.0)  # convert to gray and clip between 0.0 and 1.0
+        return min(
+            max(0.299 * self.r + 0.587 * self.g + 0.114 * self.b, 0.0), 1.0
+        )  # convert to gray and clip between 0.0 and 1.0
 
     def to_int_gray(self) -> int:
         """
@@ -259,8 +275,9 @@ class Color:
 
         :return: The gray value (0 .. 255)
         """
-        gray = min(max(0.299 * self.r + 0.587 * self.g + 0.114 * self.b, 0.0),
-                   1.0)  # convert to gray and clip between 0.0 and 1.0
+        gray = min(
+            max(0.299 * self.r + 0.587 * self.g + 0.114 * self.b, 0.0), 1.0
+        )  # convert to gray and clip between 0.0 and 1.0
         return int(round(gray * 255))
 
     def to_hsv(self) -> (float, float, float):
@@ -285,7 +302,7 @@ class Color:
         if max_val == 0.0:
             saturation = 0.0
         else:
-            saturation = (val_range / max_val)
+            saturation = val_range / max_val
         value = max_val
         return hue, saturation, value
 
@@ -298,8 +315,7 @@ class Color:
         :return: The hue saturation and value as int tuple
         """
         h, s, v = self.to_hsv()
-        return int(round(h / 360. * 255)), int(round(s * 255)), int(
-            round(v * 255))
+        return int(round(h / 360.0 * 255)), int(round(s * 255)), int(round(v * 255))
 
     def to_hex(self) -> str:
         """
@@ -312,20 +328,25 @@ class Color:
             alpha is 1.0 (255), otherwise 9 digits.
         """
         r, g, b, a = self.to_int_rgba()
-        return f'#{r:02X}{g:02X}{b:02X}' if a == 255 \
-            else f'#{r:02X}{g:02X}{b:02X}{a:02X}'
+        return (
+            f"#{r:02X}{g:02X}{b:02X}" if a == 255 else f"#{r:02X}{g:02X}{b:02X}{a:02X}"
+        )
 
     def __eq__(self, other):  # equal
-        return self.r == other.r and \
-               self.g == other.g and \
-               self.b == other.b and \
-               self.a == other.a
+        return (
+            self.r == other.r
+            and self.g == other.g
+            and self.b == other.b
+            and self.a == other.a
+        )
 
     def __ne__(self, other):  # not equal
-        return self.r != other.r or \
-               self.g != other.g or \
-               self.b != other.b or \
-               self.a != other.a
+        return (
+            self.r != other.r
+            or self.g != other.g
+            or self.b != other.b
+            or self.a != other.a
+        )
 
     def to_format(self, pixel_format: "PixelFormat") -> tuple | int | float:
         """
@@ -335,13 +356,15 @@ class Color:
         :return: The converted color
         """
         from scistag.imagestag import PixelFormat
+
         _CONVERSION_METHODS = {
             PixelFormat.RGB: lambda color: color.to_int_rgb(),
             PixelFormat.RGBA: lambda color: color.to_int_rgba(),
             PixelFormat.BGR: lambda color: color.to_int_bgr(),
             PixelFormat.BGRA: lambda color: color.to_int_bgr(),
             PixelFormat.GRAY: lambda color: color.to_int_gray(),
-            PixelFormat.HSV: lambda color: color.to_int_hsv()}
+            PixelFormat.HSV: lambda color: color.to_int_hsv(),
+        }
         if pixel_format in _CONVERSION_METHODS:
             return _CONVERSION_METHODS[pixel_format](self)
         raise ValueError(f"Unsupported target format {pixel_format}")

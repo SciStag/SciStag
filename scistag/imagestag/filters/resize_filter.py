@@ -10,14 +10,17 @@ class ResizeFilter(ImageFilter):
     This filter resizes the image using the provided constraints
     """
 
-    def __init__(self, size: Optional[tuple[int, int]] = None,
-                 max_size: Size2DTypes | tuple[
-                     int | None, int | None] | None = None,
-                 keep_aspect: bool = False,
-                 target_aspect: float | None = None,
-                 fill_area: bool = False, factor: float | None = None,
-                 interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
-                 background_color=Color(0.0, 0.0, 0.0, 1.0)):
+    def __init__(
+        self,
+        size: Optional[tuple[int, int]] = None,
+        max_size: Size2DTypes | tuple[int | None, int | None] | None = None,
+        keep_aspect: bool = False,
+        target_aspect: float | None = None,
+        fill_area: bool = False,
+        factor: float | None = None,
+        interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
+        background_color=Color(0.0, 0.0, 0.0, 1.0),
+    ):
         """
         Initializer
 
@@ -63,14 +66,16 @@ class ResizeFilter(ImageFilter):
 
     def _apply_filter(self, input_data: dict) -> dict:
         image = input_data[IMAGE_FILTER_IMAGE]
-        image = image.resized_ext(size=self.size,
-                                  max_size=self.max_size,
-                                  keep_aspect=self.keep_aspect,
-                                  target_aspect=self.target_aspect,
-                                  fill_area=self.fill_area,
-                                  factor=self.factor,
-                                  interpolation=self.interpolation,
-                                  background_color=self.background_color)
+        image = image.resized_ext(
+            size=self.size,
+            max_size=self.max_size,
+            keep_aspect=self.keep_aspect,
+            target_aspect=self.target_aspect,
+            fill_area=self.fill_area,
+            factor=self.factor,
+            interpolation=self.interpolation,
+            background_color=self.background_color,
+        )
         return {IMAGE_FILTER_IMAGE: image}
 
 

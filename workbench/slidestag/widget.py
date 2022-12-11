@@ -3,13 +3,12 @@ from typing import Callable, Any, Union
 from scistag.common import Component
 from scistag.common.data_cache import DataCache
 from scistag.imagestag import Color, Size2D, Pos2D
-from scistag.imagestag.bounding import (Bounding2D)
+from scistag.imagestag.bounding import Bounding2D
 from scistag.imagestag.pos2d import Pos2DTypes
 from scistag.imagestag.size2d import Size2DTypes
 from scistag.imagestag.canvas import Canvas
 from scistag.slidestag.slide_theme import Theme
-from scistag.slidestag.base_events import (WidgetEventHandler, TapEvent,
-                                           PaintEvent)
+from scistag.slidestag.base_events import WidgetEventHandler, TapEvent, PaintEvent
 
 
 class Widget(Component):
@@ -17,12 +16,15 @@ class Widget(Component):
     The Widget class is the base class for all visual control elements in SlideStag.
     """
 
-    def __init__(self, parent: Widget | None = None,
-                 position: Pos2DTypes | None = None,
-                 size: Size2DTypes | None = None,
-                 alpha: float = 1.0,
-                 visible: bool = True,
-                 background_color: Color = None):
+    def __init__(
+        self,
+        parent: Widget | None = None,
+        position: Pos2DTypes | None = None,
+        size: Size2DTypes | None = None,
+        alpha: float = 1.0,
+        visible: bool = True,
+        background_color: Color = None,
+    ):
         """
         :param parent: The parent widget
         :param position: The position in pixels, relative to the upper left corner of it's parent. 0.0, 0.0 by default
@@ -36,11 +38,11 @@ class Widget(Component):
         "Defines if the view is visible"
         self.alpha: float = alpha
         "Property. The view's alpha value (1.0 = 100% opaque)"
-        self.position: Pos2D = Pos2D(
-            position) if position is not None else Pos2D(0.0, 0.0)
+        self.position: Pos2D = (
+            Pos2D(position) if position is not None else Pos2D(0.0, 0.0)
+        )
         "Property. The view's position in pixels, relative to it's parent's upper left edge"
-        self.size: Size2D = Size2D(size) if size is not None else Size2D(100.0,
-                                                                         100.0)
+        self.size: Size2D = Size2D(size) if size is not None else Size2D(100.0, 100.0)
         "Property. The view's size in pixels"
         self.parent: Widget | None = None
         "Property (read-only). The widget's parent"
@@ -70,30 +72,39 @@ class Widget(Component):
         if parent is not None:
             parent.add_widget(self)
 
-    PROPERTIES = {"position": {
-        "info": "A widget's position in pixels, relative to it's parents upper left coordinate",
-        "type": tuple[float, float]},
-                     "size": {"info": "A widget's size in pixels",
-                              "type": "Size2D"},
-                     "parent": {"info": "A widget's parent widget",
-                                "type": "AWidget", "readOnly": True},
-                     "alpha": {"info": "Opacity in percent (0.0 .. 1.0)",
-                               "type": float},
-                     "visible": {"info": "Defines if the view is visible",
-                                 "type": bool},
-                     "background_color": {
-                         "info": "The Widget's background color. Fills the image's background if defined.",
-                         "type": Union[Color, None]
-                     },
-                     "theme": {"info": "Defines the color scheme to be used",
-                               "type": Theme, "readOnly": True},
-                     "dpi_scaling": {
-                         "info": "Defines the scaling factor to be applied",
-                         "type": float,
-                         "readOnly": True},
-                     "session": {"info": "Defines the widget's user session",
-                                 "type": "Session", "readOnly": True},
-                 } | Component.PROPERTIES
+    PROPERTIES = {
+        "position": {
+            "info": "A widget's position in pixels, relative to it's parents upper left coordinate",
+            "type": tuple[float, float],
+        },
+        "size": {"info": "A widget's size in pixels", "type": "Size2D"},
+        "parent": {
+            "info": "A widget's parent widget",
+            "type": "AWidget",
+            "readOnly": True,
+        },
+        "alpha": {"info": "Opacity in percent (0.0 .. 1.0)", "type": float},
+        "visible": {"info": "Defines if the view is visible", "type": bool},
+        "background_color": {
+            "info": "The Widget's background color. Fills the image's background if defined.",
+            "type": Union[Color, None],
+        },
+        "theme": {
+            "info": "Defines the color scheme to be used",
+            "type": Theme,
+            "readOnly": True,
+        },
+        "dpi_scaling": {
+            "info": "Defines the scaling factor to be applied",
+            "type": float,
+            "readOnly": True,
+        },
+        "session": {
+            "info": "Defines the widget's user session",
+            "type": "Session",
+            "readOnly": True,
+        },
+    } | Component.PROPERTIES
 
     def handle_paint(self, event: PaintEvent) -> bool:
         """
@@ -103,8 +114,9 @@ class Widget(Component):
         :return: True if the execution shall continue
         """
         if self.background_color is not None:
-            event.canvas.rect(pos=(0.0, 0.0), size=self.size,
-                              color=self.background_color)
+            event.canvas.rect(
+                pos=(0.0, 0.0), size=self.size, color=self.background_color
+            )
         if not self.on_paint.execute(event):
             return False
         return True
@@ -126,7 +138,7 @@ class Widget(Component):
         """
         super().handle_load()
         for element in self._visible_children:  # reload all now visible children
-            element: 'Widget'
+            element: "Widget"
             element.handle_load()
 
     def handle_unload(self):
@@ -134,7 +146,7 @@ class Widget(Component):
         Called when the widget becomes invisible and shall be unloaded
         """
         for element in self._visible_children:  # reload all now visible children
-            element: 'Widget'
+            element: "Widget"
             element.handle_unload()
         super().handle_unload()
 
@@ -157,7 +169,7 @@ class Widget(Component):
             self.unload()
         self.__dict__["parent"] = None
 
-    def add_widget(self, child: 'Widget'):
+    def add_widget(self, child: "Widget"):
         """
         Registers a child widget
 
@@ -173,7 +185,7 @@ class Widget(Component):
             self._layout_update_required = True
             child.load()
 
-    def remove_widget(self, child: 'Widget') -> bool:
+    def remove_widget(self, child: "Widget") -> bool:
         """
         Removes a child widget
 
@@ -317,8 +329,7 @@ class Widget(Component):
             tuple([int(round(element * self.dpi_scaling)) for element in value])
         return int(round(value * self.dpi_scaling))
 
-    def get_relative_coordinate(self, coordinate) -> \
-            tuple[Widget, float, float] | None:
+    def get_relative_coordinate(self, coordinate) -> tuple[Widget, float, float] | None:
         """
         Receives the widget hit and the coordinates within the widget
 
@@ -328,15 +339,12 @@ class Widget(Component):
         """
         coord = [coordinate[0], coordinate[1]]
         width, height = self.size.to_tuple()
-        if coord[0] < 0 or coord[1] < 0 or coord[0] > width or coord[
-            1] > height:
+        if coord[0] < 0 or coord[1] < 0 or coord[0] > width or coord[1] > height:
             return None
-        for child in reversed(
-                self._visible_children):  # prefer child covering us
+        for child in reversed(self._visible_children):  # prefer child covering us
             child: Widget
             child_coord = child.position
-            relative_coordinate = [coord[0] - child_coord.x,
-                                   coord[1] - child_coord.y]
+            relative_coordinate = [coord[0] - child_coord.x, coord[1] - child_coord.y]
             result = child.get_relative_coordinate(relative_coordinate)
             if result is not None:
                 return result
@@ -401,8 +409,12 @@ class Widget(Component):
         paint_event = PaintEvent(widget=self, canvas=canvas, config=config)
         self.paint_recursive(paint_event)
 
-    def cache_data(self, identifier: str, builder: Callable[[object], Any],
-                   parameters: object | None = None) -> Any:
+    def cache_data(
+        self,
+        identifier: str,
+        builder: Callable[[object], Any],
+        parameters: object | None = None,
+    ) -> Any:
         """
         Tries to retrieve given element from cache.
 
@@ -415,8 +427,9 @@ class Widget(Component):
         :param parameters: If the data may dynamically change using the same identifier, pass it too
         :return: The data
         """
-        return self.temp_cache.cache(identifier=identifier, builder=builder,
-                                     parameters=parameters)
+        return self.temp_cache.cache(
+            identifier=identifier, builder=builder, parameters=parameters
+        )
 
 
 __all__ = ["Widget", "PaintEvent", "Color"]

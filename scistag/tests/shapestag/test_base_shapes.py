@@ -9,6 +9,7 @@ from scistag.tests.visual_test_log_scistag import VisualTestLogSciStag
 
 from . import vl
 
+
 def test_checkerboard():
     """
     Tests the checkerboard class
@@ -27,21 +28,28 @@ def test_checkerboard():
     cb = Checkerboard(bounding=(15.0, 15.0, 300, 256), tile_size=30)
     cb.draw(canvas)
     vl.test.assert_image("checkerboard", canvas, "212dc3bd9697b20e2117a86193495bea")
-    vl.sub_test("A checkerboard with a specified "
-           "column and row count")
+    vl.sub_test("A checkerboard with a specified " "column and row count")
     canvas.clear(Colors.BLACK)
     cb = Checkerboard(col_row_count=(16, 10), tile_size=16)
     cb.draw(canvas)
     vl.test.assert_image("checkerboard", canvas, "51b6fd23a7af332fd72bf2ad33aeb02e")
-    vl.sub_test("A checkerboard with a specified "
-           "column and row count and custom colors")
-    cb = Checkerboard(col_row_count=(14, 14), tile_size=20,
-                      color_a="#FFEEEE", color_b="#999999").to_image()
+    vl.sub_test(
+        "A checkerboard with a specified " "column and row count and custom colors"
+    )
+    cb = Checkerboard(
+        col_row_count=(14, 14), tile_size=20, color_a="#FFEEEE", color_b="#999999"
+    ).to_image()
     vl.test.assert_image("checkerboard", cb, "240be440718718180babb8af5ecfd955")
-    vl.sub_test("A checkerboard with a specified "
-           "column and row count and a negative painting offset")
-    cb = Checkerboard(col_row_count=(14, 14), tile_size=20,
-                      color_a="#FFEEEE", color_b="#999999",
-                      offset=(-10, -10)).to_image()
+    vl.sub_test(
+        "A checkerboard with a specified "
+        "column and row count and a negative painting offset"
+    )
+    cb = Checkerboard(
+        col_row_count=(14, 14),
+        tile_size=20,
+        color_a="#FFEEEE",
+        color_b="#999999",
+        offset=(-10, -10),
+    ).to_image()
 
     vl.test.assert_image("checkerboard", cb, "240be440718718180babb8af5ecfd955")

@@ -17,17 +17,18 @@ def _show_cairo_msg():
     missing.
     """
     print(
-        '\nCairoSVG graphics rendering not available, high-quality rendering '
-        'disabled.\n\n'
-        'Install Cairo on Linux, in Docker containers or in Windows '
-        'Subsystem for Linux (WSL)\n'
+        "\nCairoSVG graphics rendering not available, high-quality rendering "
+        "disabled.\n\n"
+        "Install Cairo on Linux, in Docker containers or in Windows "
+        "Subsystem for Linux (WSL)\n"
         'via "pip install scistag[svg]" or "pip install cairosvg" for the '
-        'module and the\n'
+        "module and the\n"
         'required library via "sudo apt-get install cairosvg"\n\n'
-        'On OS X you can install Cairo via `sudo port install cairo ` or `brew install cairo libxml2 libffi`\n\n'
-        'Call scistag.imagestag.SvgRenderer.set_verbose(true) to suppress this '
-        'message\n'
-        "See help(scistag.imagestag.SvgRenderer) for further details")
+        "On OS X you can install Cairo via `sudo port install cairo ` or `brew install cairo libxml2 libffi`\n\n"
+        "Call scistag.imagestag.SvgRenderer.set_verbose(true) to suppress this "
+        "message\n"
+        "See help(scistag.imagestag.SvgRenderer) for further details"
+    )
 
 
 class SvgRenderer:
@@ -74,6 +75,7 @@ class SvgRenderer:
     image = SvgRenderer.render(my_svg)
     ```
     """
+
     _access_lock = threading.RLock()
     _verbose = os.environ.get("SCISTAG_SUPPORT_SVG", 1) == 0
     _initialized = False
@@ -96,6 +98,7 @@ class SvgRenderer:
                     os.chdir(path)
                 try:
                     import cairosvg
+
                     cls._cairo_available = True
                     cls._svg_to_png = cairosvg.svg2png
                     break
@@ -119,11 +122,13 @@ class SvgRenderer:
             return cls._cairo_available
 
     @classmethod
-    def render(cls, svg_data: bytes,
-               output_width=None,
-               output_height=None,
-               bg_color: ColorTypes | None = None) -> \
-            Image | None:
+    def render(
+        cls,
+        svg_data: bytes,
+        output_width=None,
+        output_height=None,
+        bg_color: ColorTypes | None = None,
+    ) -> Image | None:
         """
         Renders an SVG
 
@@ -140,11 +145,13 @@ class SvgRenderer:
             image_data = io.BytesIO()
             if bg_color is not None:
                 bg_color = Color(bg_color).to_hex()
-            cls._svg_to_png(svg_data, write_to=image_data,
-                            output_width=output_width,
-                            output_height=output_height,
-                            background_color=bg_color
-                            )
+            cls._svg_to_png(
+                svg_data,
+                write_to=image_data,
+                output_width=output_width,
+                output_height=output_height,
+                background_color=bg_color,
+            )
             return Image(image_data.getvalue())
 
     @classmethod

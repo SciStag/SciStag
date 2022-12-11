@@ -20,9 +20,9 @@ class ClassHelper:
         if not isinstance(element, type):
             element = element.__class__
         module = element.__module__
-        if module == '__builtin__' or module == 'builtins':
+        if module == "__builtin__" or module == "builtins":
             return element.__qualname__
-        return module + '.' + element.__qualname__
+        return module + "." + element.__qualname__
 
 
 __all__ = ["ClassHelper"]

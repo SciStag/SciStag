@@ -20,7 +20,7 @@ def test_basics():
     assert Cache.get_app_session_id() == 123
     Cache.override_app_session_id(old_id)
     assert Cache.get_app_session_id() == old_id
-    assert cache.version == '1'
+    assert cache.version == "1"
     cache = Cache(version=3)
     assert cache.version == "3"
     cache = Cache(version="123")
@@ -87,11 +87,11 @@ def test_clear():
     Tests the clearing functionality of the cache
     """
     cache = Cache()
-    cache.set('value', 123)
-    assert cache['value'] == 123
+    cache.set("value", 123)
+    assert cache["value"] == 123
     assert "value" in cache
-    cache.set('./diskValue', 123)
-    assert cache['./diskValue'] == 123
+    cache.set("./diskValue", 123)
+    assert cache["./diskValue"] == 123
     assert "./diskValue" in cache
     cache.clear()
     assert "value" not in cache
@@ -110,8 +110,8 @@ def test_load_unload():
 
         def handle_load(self):
             super().handle_load()
-            self['tempValue'] = 123
-            self['tempValue2'] = 123
+            self["tempValue"] = 123
+            self["tempValue2"] = 123
 
         def handle_unload(self):
             if not self.no_unload:
@@ -119,8 +119,8 @@ def test_load_unload():
 
     cache = DummyCache()
     cache.load()
-    assert cache['tempValue'] == 123
-    del cache['tempValue2']
+    assert cache["tempValue"] == 123
+    del cache["tempValue2"]
     cache.unload()
     assert "tempValue" not in cache
 

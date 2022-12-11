@@ -19,8 +19,9 @@ class ConfigStag:
     "The root branch"
 
     @classmethod
-    def _get_branch(cls, cur_branch: dict, source: str | list[str],
-                    may_create=True) -> dict | None:
+    def _get_branch(
+        cls, cur_branch: dict, source: str | list[str], may_create=True
+    ) -> dict | None:
         """
         Returns the branch for a specific path in the format mainBranch.subBranch.nextBranch.
 
@@ -46,12 +47,16 @@ class ConfigStag:
         if len(branches) == 1:  # reached the last branch?
             return next_branch
         else:
-            return cls._get_branch(next_branch, branches[1:],
-                                   may_create=may_create)
+            return cls._get_branch(next_branch, branches[1:], may_create=may_create)
 
     @classmethod
-    def load_config_file(cls, source: str, base_branch: str = "", required=True,
-                         environment: str | None = None):
+    def load_config_file(
+        cls,
+        source: str,
+        base_branch: str = "",
+        required=True,
+        environment: str | None = None,
+    ):
         """
         Loads a configuration file and attaches it to the global configuration tree
 
@@ -68,8 +73,7 @@ class ConfigStag:
                     cls.import_environment(base_branch, environment)
                 if not required:
                     return
-                raise FileNotFoundError(
-                    f"Could not load configuration from {source}")
+                raise FileNotFoundError(f"Could not load configuration from {source}")
             new_elements = json.load(io.BytesIO(data))
             if len(base_branch) == 0:
                 tar_branch = cls.root_branch
@@ -80,8 +84,7 @@ class ConfigStag:
             cls.import_environment(base_branch, environment)
 
     @classmethod
-    def import_environment(cls, base_branch: str = "",
-                           environment: str = "SC_"):
+    def import_environment(cls, base_branch: str = "", environment: str = "SC_"):
         """
         Imports all environment variables beginning with environment into the configuration, starting at branch
             base_branch.
@@ -99,7 +102,7 @@ class ConfigStag:
         """
         for item, value in os.environ.items():
             if item.startswith(environment):
-                name_rest = item[len(environment):]
+                name_rest = item[len(environment) :]
                 name_rest = name_rest.replace("_", ".").lower()
                 if len(base_branch) > 1:
                     cls.set(base_branch + "." + name_rest, value)
@@ -147,8 +150,7 @@ class ConfigStag:
                 raise ValueError("Zero length identifier provided")
             tar_branch = cls.root_branch
             if len(path) > 1:
-                tar_branch = cls._get_branch(tar_branch, path[0:-1],
-                                             may_create=False)
+                tar_branch = cls._get_branch(tar_branch, path[0:-1], may_create=False)
             if tar_branch is None:
                 return default_value
             result = tar_branch.get(path[-1], default_value)

@@ -6,8 +6,11 @@ for storage target containers.
 from __future__ import annotations
 
 from scistag.filestag import FilePath
-from scistag.filestag.protocols import AZURE_PROTOCOL_HEADER, \
-    ZIP_SOURCE_PROTOCOL, AZURE_DEFAULT_ENDPOINTS_HEADER
+from scistag.filestag.protocols import (
+    AZURE_PROTOCOL_HEADER,
+    ZIP_SOURCE_PROTOCOL,
+    AZURE_DEFAULT_ENDPOINTS_HEADER,
+)
 
 
 class FileStorageOptions:
@@ -52,25 +55,33 @@ class FileSink:
         """
         if target == ZIP_SOURCE_PROTOCOL:
             from scistag.filestag.sinks import FileSinkZip
+
             return FileSinkZip(target=target, **params)
-        if target.startswith(AZURE_PROTOCOL_HEADER) or \
-                target.startswith(AZURE_DEFAULT_ENDPOINTS_HEADER):
+        if target.startswith(AZURE_PROTOCOL_HEADER) or target.startswith(
+            AZURE_DEFAULT_ENDPOINTS_HEADER
+        ):
             from .azure.azure_storage_file_sink import AzureStorageFileSink
+
             return AzureStorageFileSink(target=target, **params)
-        if target.startswith("/") or (
-                len(target) >= 2 and target[1] == ":") or \
-                target.startswith("\\\\"):
+        if (
+            target.startswith("/")
+            or (len(target) >= 2 and target[1] == ":")
+            or target.startswith("\\\\")
+        ):
             from scistag.filestag.sinks import FileSinkDisk
+
             if params.get("create_dirs", True):
                 FilePath.make_dirs(target)
             return FileSinkDisk(target=target, **params)
         raise ValueError("Unsupported target type")
 
-    def store(self,
-              filename: str,
-              data: bytes,
-              overwrite: bool = True,
-              options: FileStorageOptions | None = None) -> bool:
+    def store(
+        self,
+        filename: str,
+        data: bytes,
+        overwrite: bool = True,
+        options: FileStorageOptions | None = None,
+    ) -> bool:
         """
         Stores a single file in the file sink
 
@@ -81,14 +92,15 @@ class FileSink:
         :param options: Advanced storage and file options
         :return: True on success
         """
-        return self._store_int(filename, data, overwrite=overwrite,
-                               options=options)
+        return self._store_int(filename, data, overwrite=overwrite, options=options)
 
-    def _store_int(self,
-                   filename: str,
-                   data: bytes,
-                   overwrite: bool,
-                   options: FileStorageOptions | None = None) -> bool:
+    def _store_int(
+        self,
+        filename: str,
+        data: bytes,
+        overwrite: bool,
+        options: FileStorageOptions | None = None,
+    ) -> bool:
         """
         The internal storage function to be implemented for the different
         kinds of target types.

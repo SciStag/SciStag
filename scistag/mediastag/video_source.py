@@ -123,8 +123,9 @@ class VideoSource:
             return True
         return False
 
-    def _get_image_int(self, timestamp: float | None = None) -> tuple[
-        float, Image | None]:
+    def _get_image_int(
+        self, timestamp: float | None = None
+    ) -> tuple[float, Image | None]:
         """
         Returns the current image as np array (internal function providing the raw data before filters
         etc. are applied)
@@ -133,8 +134,9 @@ class VideoSource:
         """
         return timestamp, None
 
-    def get_image(self, timestamp: float | None = None, wait: bool = False,
-                  timeout_s: float = 2.0) -> tuple[float, Image | None]:
+    def get_image(
+        self, timestamp: float | None = None, wait: bool = False, timeout_s: float = 2.0
+    ) -> tuple[float, Image | None]:
         """
         Returns the current image as np array
 
@@ -151,8 +153,7 @@ class VideoSource:
         if new_timestamp != self.last_raw_image_timestamp and new_image is not None:
             self.last_raw_image = self.last_returned_image = new_image
             if self.image_filter is not None:
-                self.last_returned_image = self.image_filter.filter(
-                    self.last_raw_image)
+                self.last_returned_image = self.image_filter.filter(self.last_raw_image)
             return self.last_raw_image_timestamp, self.last_returned_image
         if wait:
             start_time = time.time()

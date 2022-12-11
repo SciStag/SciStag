@@ -18,7 +18,9 @@ def ensure_config():
     with access_lock:
         if not config_loaded:
             bp = os.path.dirname(__file__)
-            ConfigStag.load_config_file(bp + "/test_config.json", environment="SC_", required=False)
+            ConfigStag.load_config_file(
+                bp + "/test_config.json", environment="SC_", required=False
+            )
             config_loaded = True
 
 

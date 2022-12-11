@@ -6,8 +6,7 @@ from threading import Thread
 from unittest import mock
 
 from scistag.vislog import VisualLog, VisualLogBuilder
-from scistag.vislog.auto_reloader.visual_log_auto_reloader import \
-    VisualLogAutoReloader
+from scistag.vislog.auto_reloader.visual_log_auto_reloader import VisualLogAutoReloader
 
 
 def test_log_runner_basics():
@@ -60,8 +59,8 @@ class AutoreloadKillThread(Thread):
 
 def test_builder_calls():
     """
-    Tests the callbacks of different builder types with a simple run
-l    """
+        Tests the callbacks of different builder types with a simple run
+    l"""
     log = VisualLog()
     log.run(builder=DummyBuilder)
     assert b"Some content" in log.get_page("html")
@@ -75,7 +74,7 @@ l    """
     log.run(builder=builder_callback, continuous=True, auto_clear=True)
     assert b"Some function content" in log.get_page("html")
     VisualLogAutoReloader.testing = True
-    with mock.patch('builtins.print'):
+    with mock.patch("builtins.print"):
         log = VisualLog(refresh_time_s=0.05)
         kt = AutoreloadKillThread(log, duration=0.25)
         kt.start()
@@ -95,11 +94,12 @@ def test_run_server(pbi):
     Tests running the log explicitly as server
     """
     log = VisualLog()
-    log.run_server(builder=DummyBuilder, public_ips=["auto"], mt=True,
-                   test=True)
+    log.run_server(builder=DummyBuilder, public_ips=["auto"], mt=True, test=True)
     log = VisualLog()
-    log.run_server(builder=DummyBuilder, public_ips=["auto"], mt=True,
-                   test=True, continuous=True)
+    log.run_server(
+        builder=DummyBuilder, public_ips=["auto"], mt=True, test=True, continuous=True
+    )
     log = VisualLog()
-    log.run_server(builder=DummyBuilder, public_ips=["auto"], mt=False,
-                   test=True, continuous=False)
+    log.run_server(
+        builder=DummyBuilder, public_ips=["auto"], mt=False, test=True, continuous=False
+    )

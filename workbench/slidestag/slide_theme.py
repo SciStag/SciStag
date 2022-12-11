@@ -53,5 +53,4 @@ class Theme:
         :param canvas: The output canvas
         :return: The font handle
         """
-        return canvas.get_font(font_face=self.default_font,
-                               size=self.default_font_size)
+        return canvas.get_font(font_face=self.default_font, size=self.default_font_size)

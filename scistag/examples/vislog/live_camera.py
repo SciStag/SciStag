@@ -18,6 +18,7 @@ class LiveCameraDemo(VisualLogBuilder):
         """
         super().__init__(**kwargs)
         from scistag.mediastag.camera_cv2 import CameraCv2
+
         # Initialize first USB camera (change by your needs)
         self.video_source = CameraCv2(0)
         # Start camera (runs in a background thread)
@@ -31,8 +32,9 @@ class LiveCameraDemo(VisualLogBuilder):
         """
         vl = self
         vl.title(f"Webcam Demo")
-        self.frame_timestamp, new_image = \
-            self.video_source.get_image(self.frame_timestamp)
+        self.frame_timestamp, new_image = self.video_source.get_image(
+            self.frame_timestamp
+        )
         if new_image is not None:
             # new image available? normalize it's size to ~1 Megapixel
             self.last_image = new_image.resized_ext(max_size=(1024, 1024))
@@ -46,11 +48,15 @@ class LiveCameraDemo(VisualLogBuilder):
 
 if VisualLog.is_main():
     FRAME_RATE = 60.0  # update as fast as possible
-    test_log = VisualLog("Webcam Demo",
-                         refresh_time_s=1.0 / FRAME_RATE,
-                         start_browser=True,
-                         image_format=("jpg", 80))
-    test_log.run_server(continuous=True,  # update continuously
-                        auto_clear=True,  # clear log for us each turn
-                        url_prefix="/webcamDemo",  # host at /webCamDemo
-                        builder=LiveCameraDemo)  # our update func
+    test_log = VisualLog(
+        "Webcam Demo",
+        refresh_time_s=1.0 / FRAME_RATE,
+        start_browser=True,
+        image_format=("jpg", 80),
+    )
+    test_log.run_server(
+        continuous=True,  # update continuously
+        auto_clear=True,  # clear log for us each turn
+        url_prefix="/webcamDemo",  # host at /webCamDemo
+        builder=LiveCameraDemo,
+    )  # our update func

@@ -16,8 +16,7 @@ class MPLayerLock(MPLock):
     exiting
     """
 
-    def __init__(self, target_plot: Plot, size_ratio: float | None = None,
-                 **params):
+    def __init__(self, target_plot: Plot, size_ratio: float | None = None, **params):
         """
         :param target_plot: The plot to which the figure shall be added
         :param size_ratio: If set the matplot plot's original size will
@@ -34,13 +33,13 @@ class MPLayerLock(MPLock):
     def __enter__(self):
         res = super().__enter__()
         import matplotlib.pyplot as plt
+
         self.figure = plt.figure(**self.params)
         return res
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         image = MPHelper.figure_to_image(self.figure)
-        self.target_plot.add_image(image, bg_fill=None,
-                                   size_ratio=self.size_ratio)
+        self.target_plot.add_image(image, bg_fill=None, size_ratio=self.size_ratio)
         if self.figure:
             del self.figure
         super(MPLayerLock, self).__exit__(exc_type, exc_val, exc_tb)

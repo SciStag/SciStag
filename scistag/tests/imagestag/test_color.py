@@ -15,8 +15,7 @@ def test_color_basics():
     :return:
     """
     color = Color(Colors.WHITE)
-    assert color.r == 1.0 and color.g == 1.0 and color.b == 1.0 \
-           and color.a == 1.0
+    assert color.r == 1.0 and color.g == 1.0 and color.b == 1.0 and color.a == 1.0
     assert str(color) == "Color(1.0,1.0,1.0)"
     color = Color((0.2, 0.3, 0.4, 0.5))
     assert str(color) == "Color(0.2,0.3,0.4,0.5)"
@@ -34,8 +33,7 @@ def test_color_basics():
         # noinspection PyTypeChecker
         Color((0.2, 0.3, 0.4, 0.5, 0.6))
     assert Color((0.0, 0.0, 1.0)) == Colors.BLUE
-    assert Color("#AABBCCAB").to_rgba() == pytest.approx(
-        (0.66, 0.73, 0.8, 0.67), 0.02)
+    assert Color("#AABBCCAB").to_rgba() == pytest.approx((0.66, 0.73, 0.8, 0.67), 0.02)
     with pytest.raises(ValueError):
         Color("whatever")
     assert Color(color) == color
@@ -60,8 +58,11 @@ def test_conversion_functions():
     assert Color(244, 48, 29).to_int_hsv() == (4, 225, 244)
     assert Color(40, 48, 240).to_int_hsv() == (168, 212, 240)
     assert Color(0, 0, 0).to_int_hsv() == (0, 0, 0)
-    assert Color.from_hsv(168 / 255 * 360, 212 / 255, 240 / 255).to_int_rgb() \
-           == (40, 49, 240)
+    assert Color.from_hsv(168 / 255 * 360, 212 / 255, 240 / 255).to_int_rgb() == (
+        40,
+        49,
+        240,
+    )
     assert Color.from_hsv(50, 0.0, 0.5).to_int_rgb() == (128, 128, 128)
     h, s, v = Color(30, 98, 29).to_hsv()
     assert h == pytest.approx(119, 0.01)

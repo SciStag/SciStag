@@ -39,24 +39,27 @@ class WebStagServiceBlueprint(Blueprint):
         :return: The Flask response
         """
         cr = request
-        fw_request = WebRequest(path=path, method=cr.method,
-                                headers=dict(cr.headers),
-                                body=None,
-                                parameters=dict(cr.args), relative_path=path,
-                                base_url=cr.base_url,
-                                url=cr.url,
-                                host_url=cr.host_url,
-                                url_root=cr.url_root,
-                                remote_addr=cr.remote_addr,
-                                environ=cr.environ,
-                                mimetype=cr.mimetype,
-                                host=cr.host
-                                )
+        fw_request = WebRequest(
+            path=path,
+            method=cr.method,
+            headers=dict(cr.headers),
+            body=None,
+            parameters=dict(cr.args),
+            relative_path=path,
+            base_url=cr.base_url,
+            url=cr.url,
+            host_url=cr.host_url,
+            url_root=cr.url_root,
+            remote_addr=cr.remote_addr,
+            environ=cr.environ,
+            mimetype=cr.mimetype,
+            host=cr.host,
+        )
         w_response: WebResponse = self.service.handle_unified_request(fw_request)
         r = Response(w_response.body, status=w_response.status)
         if not w_response.cache:
             r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             r.headers["Pragma"] = "no-cache"
             r.headers["Expires"] = "0"
-            r.headers['Cache-Control'] = 'public, max-age=0'
+            r.headers["Cache-Control"] = "public, max-age=0"
         return r

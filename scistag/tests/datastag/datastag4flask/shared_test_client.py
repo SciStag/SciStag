@@ -15,7 +15,7 @@ def setup_server():
     return server
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def test_client():
     """
     Creates a Flask server and returns a client to access it and test it's functions
@@ -28,7 +28,8 @@ def test_client():
         with flask_app.app_context():
             yield testing_client  # this is where the testing happens!
 
-@pytest.fixture(scope='module')
+
+@pytest.fixture(scope="module")
 def test_remote_connection(test_client):
     """
     Returns a flask test client and returns a DataStagConnection pointing to this test client

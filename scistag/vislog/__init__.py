@@ -9,6 +9,11 @@ from .visual_log_builder import VisualLogBuilder, VisualLogBackup
 from .extensions.builder_extension import BuilderExtension
 from .common.log_statistics import LogStatistics
 
-__all__ = ["VisualLog", "VisualTestLog", "VisualLogBuilder",
-           "VisualLogBackup", "LogStatistics",
-           "BuilderExtension"]
+__all__ = [
+    "VisualLog",
+    "VisualTestLog",
+    "VisualLogBuilder",
+    "VisualLogBackup",
+    "LogStatistics",
+    "BuilderExtension",
+]

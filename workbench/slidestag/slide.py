@@ -17,8 +17,7 @@ class Slide(Widget):
     SLIDE_FLAG_NEEDS_USER_CAMERA = "NeedsCamera"
     "Defines in the slide_flags if access to the user camera is desired"
 
-    def __init__(self, slide_manager: SlideManager,
-                 parameters: dict = None) -> None:
+    def __init__(self, slide_manager: SlideManager, parameters: dict = None) -> None:
         """
         :param slide_manager: The parent view managing this slide
         :param parameters:
@@ -26,10 +25,11 @@ class Slide(Widget):
             "backgroundImage" The slide's background image
         """
         parameters = {} if parameters is None else parameters
-        parameters['visible'] = False
+        parameters["visible"] = False
         super().__init__(slide_manager, parameters)
-        self._slide_name = parameters.get(self.SLIDE_NAME,
-                                          str(random.randint(0, 2 ** 32)))
+        self._slide_name = parameters.get(
+            self.SLIDE_NAME, str(random.randint(0, 2**32))
+        )
         self._ui_loaded = False
         self.background_image_name = parameters.get(self.BACKGROUND_IMAGE, "")
         self.background_image = None  # The background image
@@ -37,8 +37,7 @@ class Slide(Widget):
         self.slide_flags = {}
         "Defines the requirements of the current slide"
         self.auto_repaint_frequency = 0.0
-        "Defines the frequency with which this slide automatically repaints itself, e.g if you have an animated" \
-        "presentation."
+        "Defines the frequency with which this slide automatically repaints itself, e.g if you have an animated" "presentation."
 
     def get_manager(self) -> SlideManager | None:
         """
@@ -75,8 +74,7 @@ class Slide(Widget):
         """
         self._ui_loaded = True
         if self.background_image_name != "":
-            self.background_image = canvas.load_image(
-                self.background_image_name)
+            self.background_image = canvas.load_image(self.background_image_name)
         return True
 
     def handle_unload(self) -> bool:
@@ -102,9 +100,13 @@ class Slide(Widget):
         canvas = event.canvas
         theme = self.theme
         if self.background_image is None:
-            canvas.rect(pos=(0.0, 0.0), size=self.size,
-                        color=theme.slide_background,
-                        outline_color=Color(0, 0, 0), outline_width=0)
+            canvas.rect(
+                pos=(0.0, 0.0),
+                size=self.size,
+                color=theme.slide_background,
+                outline_color=Color(0, 0, 0),
+                outline_width=0,
+            )
         else:
             canvas.draw_image(self.background_image, (0, 0))
         return super().handle_paint(event)

@@ -105,8 +105,7 @@ class VisualMicroLock:
         """
         Inserts a page break
         """
-        self.text(
-            f"\n{'_' * 40}\n")
+        self.text(f"\n{'_' * 40}\n")
         return self
 
     def finalize(self, *_, **__):
@@ -126,6 +125,7 @@ class VisualMicroLock:
         with open(__file__, "r") as src_file:
             content = src_file.read()
         import os
+
         if os.path.exists(out_name):
             with open(out_name, "r") as old_mock_file:
                 if content == old_mock_file.read():

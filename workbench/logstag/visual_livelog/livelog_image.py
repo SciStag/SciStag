@@ -32,9 +32,9 @@ class LogImage(LogWidget):
         :param image: The new image or None to disable the widget
         """
         mlfs = self.log.max_live_fig_size
-        if (image is not None and
-                (image.width > mlfs.width or
-                 image.height > mlfs.height)):
+        if image is not None and (
+            image.width > mlfs.width or image.height > mlfs.height
+        ):
             self.image = image.resized_ext(max_size=mlfs)
         else:
             self.image = image

@@ -25,11 +25,14 @@ class WebStagServer:
     web services.
     """
 
-    def __init__(self, services: list[WebStagService] | None = None,
-                 host_name: str = "127.0.0.1",
-                 port: int | tuple[int, int] = 8010,
-                 flask_ssl_context=None,
-                 silent=False):
+    def __init__(
+        self,
+        services: list[WebStagService] | None = None,
+        host_name: str = "127.0.0.1",
+        port: int | tuple[int, int] = 8010,
+        flask_ssl_context=None,
+        silent=False,
+    ):
         """
         :param services: The initial set of services to use
         :param host_name: The host name under which the service shall be
@@ -51,8 +54,7 @@ class WebStagServer:
         "Thread-safe access lock to shared data"
         self._flask: "Flask" | None = None
         "The Flask handle"
-        self._services: list[WebStagService] = \
-            services if services is not None else []
+        self._services: list[WebStagService] = services if services is not None else []
         "The services to be hosted"
         self._started = False
         "Defines if the server was started already"
@@ -63,9 +65,8 @@ class WebStagServer:
             port = (0, 0)
         if isinstance(port, tuple):
             from scistag.netstag import NetHelper
-            free_ports = NetHelper.find_free_ports(host_name,
-                                                   port_range=port,
-                                                   count=1)
+
+            free_ports = NetHelper.find_free_ports(host_name, port_range=port, count=1)
             if len(free_ports) == 0:
                 raise OSError("No free network port found")
             port = free_ports[0]
@@ -120,13 +121,17 @@ class WebStagServer:
             configured for a unit test
         """
         from flask import Flask
+
         self._flask = Flask(__name__)
         for cur_service in self._services:
             cur_service: WebStagService
-            self._flask.register_blueprint(cur_service.service,
-                                           **cur_service.reg_params)
-        from scistag.webstag.server.flask_server.flask_hosting_thread import \
-            FlaskHostingThread
+            self._flask.register_blueprint(
+                cur_service.service, **cur_service.reg_params
+            )
+        from scistag.webstag.server.flask_server.flask_hosting_thread import (
+            FlaskHostingThread,
+        )
+
         self.server_thread = FlaskHostingThread(self)
         with self._access_lock:
             self._started = True
@@ -163,10 +168,11 @@ class WebStagServer:
         """
         Setups the server's logging behavior
         """
-        log = logging.getLogger('werkzeug')
+        log = logging.getLogger("werkzeug")
         if self.silent:
             log.setLevel(logging.CRITICAL)
             from flask import cli
+
             if hasattr(cli, "show_server_banner"):
                 cli.show_server_banner = self._disabled_server_banner
 
@@ -175,9 +181,12 @@ class WebStagServer:
         Executes the server (endless-loop). Do not call this directly.
         """
         self._setup_logging()
-        self._flask.run(port=self.port, host=self.host_name,
-                        ssl_context=self.ssl_context,
-                        debug=False)
+        self._flask.run(
+            port=self.port,
+            host=self.host_name,
+            ssl_context=self.ssl_context,
+            debug=False,
+        )
 
     @property
     def started(self):

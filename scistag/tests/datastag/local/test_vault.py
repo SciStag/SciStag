@@ -11,6 +11,7 @@ except ModuleNotFoundError:
 
 # pylint: disable=W0621
 
+
 def test_delete(vault_connections, connections=None):
     """
     Try deleting and detecting elements
@@ -33,15 +34,17 @@ def test_folder_structures(vault_connections, connections=None):
     """
     connections = connections if connections is not None else vault_connections
     for connection in connections:
-        for cur in ['a', 'b', 'c']:
+        for cur in ["a", "b", "c"]:
             server_name = f"server_{cur}"
-            connection.set(f"services.inference.servers.{server_name}", {"name": server_name, \
-                                                                         "url": f"http://{server_name}:1234"})
+            connection.set(
+                f"services.inference.servers.{server_name}",
+                {"name": server_name, "url": f"http://{server_name}:1234"},
+            )
         values = connection.get_values_by_name("services.inference.servers.*")
         assert values[0]["name"] == "server_a"
         assert values[2]["name"] == "server_c"
 
-        name_list = ['Peter', 'Steffi', 'Heinz', "Gitte", "Hans"]
+        name_list = ["Peter", "Steffi", "Heinz", "Gitte", "Hans"]
         for cur in name_list:
             connection.set(f"users.{cur}", {"name": cur}, timeout_s=0.5)
         names = connection.find("users.*", relative_names=True)
@@ -100,7 +103,7 @@ def test_garbage_collection(vault_connections, connections=None):
     for index, connection in enumerate(connections):
         connection.collect_garbage()
         status = connection.get_status()
-        assert status['elementCount'] < prev_status[index]['elementCount']
+        assert status["elementCount"] < prev_status[index]["elementCount"]
 
 
 def all_common_tests(connection):

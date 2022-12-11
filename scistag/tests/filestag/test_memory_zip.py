@@ -13,8 +13,9 @@ def test_mem_zip():
     """
     Tests the basic functions
     """
-    fs = FileSource.from_source(os.path.dirname(__file__), search_mask="*.py",
-                                recursive=False)
+    fs = FileSource.from_source(
+        os.path.dirname(__file__), search_mask="*.py", recursive=False
+    )
     total_size = 0
     with MemoryZip() as mz:
         for element in fs:

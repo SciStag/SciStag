@@ -33,6 +33,7 @@ def cute_available() -> bool:
             _loaded = True
             try:
                 import PySide6
+
                 _cute_module = PySide6
             except ModuleNotFoundError:
                 pass

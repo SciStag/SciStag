@@ -9,8 +9,9 @@ def test_clear():
     Clears all example notebooks to prevent committing binary garbage to git
     """
     example_dir = os.path.dirname(__file__) + "/../../examples/"
-    notebook_list = FileSource.from_source(example_dir, search_mask="*.ipynb",
-                                           dont_load=True)
+    notebook_list = FileSource.from_source(
+        example_dir, search_mask="*.ipynb", dont_load=True
+    )
     for element in notebook_list:
         if "_cleaned." in element.filename:
             continue

@@ -11,7 +11,6 @@ from scistag.webstag.server import WebStagServer, WebClassService
 
 
 class SimpleClass:
-
     def get_hello_world(self):
         return "Hello world"
 
@@ -25,13 +24,10 @@ def test_init():
     server._setup_logging()
     assert server.port != 0
 
-    if scistag.common.SystemInfo.os_type == \
-            scistag.common.SystemInfo.os_type.LINUX:
+    if scistag.common.SystemInfo.os_type == scistag.common.SystemInfo.os_type.LINUX:
         with pytest.raises(OSError):
-            WebStagServer(host_name="127.0.0.1", port=(389, 389),
-                          silent=True)
-    server = WebStagServer(host_name="127.0.0.1", port=(4000, 4100),
-                           silent=True)
+            WebStagServer(host_name="127.0.0.1", port=(389, 389), silent=True)
+    server = WebStagServer(host_name="127.0.0.1", port=(4000, 4100), silent=True)
     assert 4000 <= server.port <= 4100
 
     class_service = WebClassService(service_name="simple")

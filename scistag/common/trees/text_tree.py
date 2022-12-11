@@ -71,8 +71,8 @@ class TextTreeBuilderOptions:
 
     @staticmethod
     def default_bullet_tree_formatter(
-            node: TreeNode, value: Any,
-            options: TextTreeBuilderOptions) -> str:
+        node: TreeNode, value: Any, options: TextTreeBuilderOptions
+    ) -> str:
         if isinstance(value, float):
             return f"{value:0.{options.precision}f}"
         return str(value)
@@ -117,10 +117,9 @@ class TextTree(TextTreeNode):
     """
 
     @classmethod
-    def _try_to_flatten(cls,
-                        node: TreeNode,
-                        element: Any,
-                        options: TextTreeBuilderOptions) -> str | None:
+    def _try_to_flatten(
+        cls, node: TreeNode, element: Any, options: TextTreeBuilderOptions
+    ) -> str | None:
         """
         Verifies if a list contains only simple data types such as integers,
         floats and bools which could be visualized in a single line and if
@@ -143,14 +142,18 @@ class TextTree(TextTreeNode):
             return None
         if options.formatter is not None:
             formatter = options.formatter
-            return "[" + ", ".join(
-                [formatter(node, val, options) for val in element]) + "]"
+            return (
+                "["
+                + ", ".join([formatter(node, val, options) for val in element])
+                + "]"
+            )
         else:
             return "[" + ", ".join([str(val) for val in element]) + "]"
 
     @classmethod
-    def _add_collection_to_tree(cls, node: TextTreeNode, element: dict | list,
-                                options: TextTreeBuilderOptions) -> None:
+    def _add_collection_to_tree(
+        cls, node: TextTreeNode, element: dict | list, options: TextTreeBuilderOptions
+    ) -> None:
         """
         Adds a collection such as a list or a dictionary to a TextTreeNode.
 
@@ -165,25 +168,22 @@ class TextTree(TextTreeNode):
         if isinstance(element, dict):
             for key, value in element.items():
                 if isinstance(value, list):
-                    if (flat := cls._try_to_flatten(node,
-                                                    value,
-                                                    options)) is not None:
-                        TextTreeNode(f"{id_pre}{key}{id_post}{flat}",
-                                     parent=node,
-                                     name=key)
+                    if (flat := cls._try_to_flatten(node, value, options)) is not None:
+                        TextTreeNode(
+                            f"{id_pre}{key}{id_post}{flat}", parent=node, name=key
+                        )
                         continue
                 if isinstance(value, (dict, list)):
-                    new_node = TextTreeNode(f"{id_pre}{key}{id_post}",
-                                            parent=node,
-                                            name=key)
-                    cls._add_collection_to_tree(new_node, value,
-                                                options=options)
+                    new_node = TextTreeNode(
+                        f"{id_pre}{key}{id_post}", parent=node, name=key
+                    )
+                    cls._add_collection_to_tree(new_node, value, options=options)
                 else:
                     if options.formatter is not None:
                         value = options.formatter(node, value, options)
-                    TextTreeNode(f"{id_pre}{key}{id_post}{str(value)}",
-                                 parent=node,
-                                 name=key)
+                    TextTreeNode(
+                        f"{id_pre}{key}{id_post}{str(value)}", parent=node, name=key
+                    )
         if isinstance(element, list):
             for index, value in enumerate(element):
                 if options.show_index:
@@ -191,27 +191,26 @@ class TextTree(TextTreeNode):
                 else:
                     index_text = ""
                 if isinstance(value, (dict, list)):
-                    if (flat := cls._try_to_flatten(node,
-                                                    value,
-                                                    options)) is not None:
-                        TextTreeNode(f"{index_text}{flat}", parent=node,
-                                     name=f"{index}")
+                    if (flat := cls._try_to_flatten(node, value, options)) is not None:
+                        TextTreeNode(
+                            f"{index_text}{flat}", parent=node, name=f"{index}"
+                        )
                         continue
-                    new_node = TextTreeNode(f"{index_text}",
-                                            parent=node,
-                                            name=f"{index}")
-                    cls._add_collection_to_tree(new_node, value,
-                                                options=options)
+                    new_node = TextTreeNode(
+                        f"{index_text}", parent=node, name=f"{index}"
+                    )
+                    cls._add_collection_to_tree(new_node, value, options=options)
                 else:
                     if options.formatter is not None:
                         value = options.formatter(node, value, options)
-                    TextTreeNode(f"{index_text}{str(value)}", parent=node,
-                                 name=f"{index}")
+                    TextTreeNode(
+                        f"{index_text}{str(value)}", parent=node, name=f"{index}"
+                    )
 
     @classmethod
-    def from_collection(cls, collection: dict | list,
-                        options: TextTreeBuilderOptions | None = None) -> \
-            TextTreeNode:
+    def from_collection(
+        cls, collection: dict | list, options: TextTreeBuilderOptions | None = None
+    ) -> TextTreeNode:
         """
         Converts a dictionary or a list to a nested bullet point list
 
@@ -223,6 +222,5 @@ class TextTree(TextTreeNode):
         root_node = TextTree(text="/", name="root")
         if options is None:
             options = TextTreeBuilderOptions()
-        TextTree._add_collection_to_tree(root_node, element=collection,
-                                         options=options)
+        TextTree._add_collection_to_tree(root_node, element=collection, options=options)
         return root_node

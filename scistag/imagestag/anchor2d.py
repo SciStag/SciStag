@@ -18,6 +18,7 @@ class Anchor2D(IntEnum):
     as a rectangle, a circle or a multi-line text is painted just given a
     position and a size is painted.
     """
+
     TOP_LEFT = 0
     """
     The origin is the shape's top left edge - everything is painted to the right
@@ -102,7 +103,7 @@ class Anchor2D(IntEnum):
                 "b": cls.BOTTOM,
                 "bottom": cls.BOTTOM,
                 "br": cls.BOTTOM_RIGHT,
-                "bottomRight": cls.BOTTOM_RIGHT
+                "bottomRight": cls.BOTTOM_RIGHT,
             }
 
         if value not in Definitions.values:
@@ -129,15 +130,22 @@ class Anchor2D(IntEnum):
             size = Size2D(size)
         x_align = self % 3
         y_align = self // 3
-        return (0.0 if x_align == 0 else  # left
-                -size.width / 2 if x_align == 1 else  # h center
-                -size.width,  # right
-                0.0 if y_align == 0 else  # top
-                -size.height / 2 if y_align == 1 else  # v center
-                -size.height)  # bottom
+        return (
+            0.0
+            if x_align == 0
+            else -size.width / 2  # left
+            if x_align == 1
+            else -size.width,  # h center  # right
+            0.0
+            if y_align == 0
+            else -size.height / 2  # top
+            if y_align == 1
+            else -size.height,  # v center
+        )  # bottom
 
-    def shift_position(self, pos: Pos2D, size: Size2D,
-                       round_shift: bool = False) -> Pos2D:
+    def shift_position(
+        self, pos: Pos2D, size: Size2D, round_shift: bool = False
+    ) -> Pos2D:
         """
         Adjusts the position by the amount of pixels this anchor will shift
         the painting origin of the position caused through this anchor.
@@ -163,10 +171,26 @@ class Anchor2D(IntEnum):
         return pos
 
 
-Anchor2DLiterals = Literal["tl", "topLeft", "t", "top", "tr", "topRight",
-                           "cl", "centerLeft", "c", "center", "cr",
-                           "centerRight", "bl", "bottomLeft",
-                           "b", "bottom", "br", "bottomRight"]
+Anchor2DLiterals = Literal[
+    "tl",
+    "topLeft",
+    "t",
+    "top",
+    "tr",
+    "topRight",
+    "cl",
+    "centerLeft",
+    "c",
+    "center",
+    "cr",
+    "centerRight",
+    "bl",
+    "bottomLeft",
+    "b",
+    "bottom",
+    "br",
+    "bottomRight",
+]
 """
 Shortcode alternative which can be passed to most functions supporting anchors 
 to minimize the amount of imports required.

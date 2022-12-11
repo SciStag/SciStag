@@ -13,6 +13,7 @@ class WebRequest:
     """
     Defines the parameters of a web request
     """
+
     path: str
     "The absolute url path (excluding host/IP)"
     relative_path: str
@@ -34,7 +35,7 @@ class WebRequest:
     remote_addr: str
     "The clients' IP, e.g. 192.168.3.98"
     environ: dict
-    "The request headers, e.g. \"HTTP_USER_AGENT\""
+    'The request headers, e.g. "HTTP_USER_AGENT"'
     url_root: str
     "The url of the blueprint/service being called, e.g.  http://localhost/"
     mimetype: str

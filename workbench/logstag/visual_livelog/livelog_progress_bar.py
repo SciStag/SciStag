@@ -16,10 +16,13 @@ class LProgress(LWidget):
     Displays a progress bar in the VisualLiveLog
     """
 
-    def __init__(self, log: "VisualLiveLog",
-                 progress=0.0,
-                 max_progress=1.0,
-                 text: str | None = None):
+    def __init__(
+        self,
+        log: "VisualLiveLog",
+        progress=0.0,
+        max_progress=1.0,
+        text: str | None = None,
+    ):
         """
         :param log: The target log
         :param progress: The current progress, either a discrete value or
@@ -55,9 +58,9 @@ class LProgress(LWidget):
             max_value = int(round(self.max_progress * 100))
             if self.label_text is not None:
                 perc_round = str(round(self.cur_progress * 100, 3))
-                value_text = \
-                    f"{self.label_text} " \
-                    f"({perc_round.rstrip('0').rstrip('.')}%)"
+                value_text = (
+                    f"{self.label_text} " f"({perc_round.rstrip('0').rstrip('.')}%)"
+                )
         elif self.max_progress != -1:
             value = self.cur_progress
             max_value = self.max_progress
@@ -66,15 +69,15 @@ class LProgress(LWidget):
         else:
             value_text = self.label_text
             value = max_value = 0
-        label_html = ''
+        label_html = ""
         if value_text is not None:
             label_html = f'<label for="file">{value_text}</label>'
 
         if self.max_progress == -1:
-            self.log.html(
-                f'<div class="loader"></div> {label_html}<br><br>')
+            self.log.html(f'<div class="loader"></div> {label_html}<br><br>')
             #  f'{label_html} <div class="loader"></div><br><br>')
             return
         self.log.html(
             f'{label_html}<br><progress value="{value}" max="{max_value}" '
-            f'style="width:100%;height:25px"></progress><br><br>')
+            f'style="width:100%;height:25px"></progress><br><br>'
+        )

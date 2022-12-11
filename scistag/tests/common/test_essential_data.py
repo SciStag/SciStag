@@ -1,6 +1,9 @@
 # Tests essential data authenticity and functionality
 import zipfile
-from scistag.common.essential_data import verify_essential_data, ESSENTIAL_DATA_ARCHIVE_NAME
+from scistag.common.essential_data import (
+    verify_essential_data,
+    ESSENTIAL_DATA_ARCHIVE_NAME,
+)
 
 
 def test_essential_data():

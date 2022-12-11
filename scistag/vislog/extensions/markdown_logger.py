@@ -23,8 +23,9 @@ class MarkdownLogger(BuilderExtension):
         super().__init__(builder)
         self.add = self.__call__
 
-    def __call__(self, text: str, exclude_targets: set[str] | None = None) \
-            -> VisualLogBuilder:
+    def __call__(
+        self, text: str, exclude_targets: set[str] | None = None
+    ) -> VisualLogBuilder:
         """
         Adds a markdown section.
 
@@ -47,7 +48,8 @@ class MarkdownLogger(BuilderExtension):
             exclude_targets = set()
         import markdown
         from markdown.extensions.tables import TableExtension
-        parsed = markdown.markdown(text, extensions=['tables'])
+
+        parsed = markdown.markdown(text, extensions=["tables"])
         if MD not in exclude_targets:
             self.builder.add_md(text + "\n")
         if HTML not in exclude_targets:
@@ -57,8 +59,7 @@ class MarkdownLogger(BuilderExtension):
         self.builder.clip_logs()
         return self.builder
 
-    def embed(self, source: FileSourceTypes,
-              encoding="utf-8") -> VisualLogBuilder:
+    def embed(self, source: FileSourceTypes, encoding="utf-8") -> VisualLogBuilder:
         """
         Embeds a markdown file into the log
 

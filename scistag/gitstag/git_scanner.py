@@ -25,8 +25,8 @@ class GitScanner:
         self.dir_count = 0
         "The count of directories"
         self.dir_list: list[dict] = []
-        '''The list of all directories parsed. Format: {"path": path, "ignored": false}. Note that only the highest
-        'level ignored directories will be listed, not the nested ones.'''
+        """The list of all directories parsed. Format: {"path": path, "ignored": false}. Note that only the highest
+        'level ignored directories will be listed, not the nested ones."""
         self.file_list: list[dict] = []
         'The list of all non ignored files. Format: {"filename": name, "size": size_in_bytes}'
         self.file_list_by_size: list[dict] = []
@@ -63,14 +63,24 @@ class GitScanner:
         """
         with open(filename, "r") as ignore_file:
             all_lines = ignore_file.readlines()
-            all_lines = [element.rstrip("\n") for element in all_lines if not element.startswith("#")]
+            all_lines = [
+                element.rstrip("\n")
+                for element in all_lines
+                if not element.startswith("#")
+            ]
             all_lines = [element for element in all_lines if not len(element) == 0]
-            all_lines = [os.path.normpath(f"{base_path}/{element}") if element.startswith("/") else f"*/" + element for
-                         element in all_lines]
+            all_lines = [
+                os.path.normpath(f"{base_path}/{element}")
+                if element.startswith("/")
+                else f"*/" + element
+                for element in all_lines
+            ]
             return org_list + all_lines
 
     @classmethod
-    def find_valid_repo_files(cls, path: str, file_list: List, ignore_list: List, dir_list: List) -> None:
+    def find_valid_repo_files(
+        cls, path: str, file_list: List, ignore_list: List, dir_list: List
+    ) -> None:
         """
         Finds a list of valid files in the current directory. Continues the search in subdirectories
         :param path: The base path
@@ -86,12 +96,16 @@ class GitScanner:
             full_path = os.path.normpath(f"{path}/{cur_element}")
             cur_stat = os.stat(full_path)
             is_dir: bool = S_ISDIR(cur_stat.st_mode)
-            is_ignored = cls.get_is_ignored(full_path, is_dir=is_dir, ignore_list=ignore_list)
+            is_ignored = cls.get_is_ignored(
+                full_path, is_dir=is_dir, ignore_list=ignore_list
+            )
             if is_dir:
                 dir_list.append({"path": full_path, "ignored": is_ignored})
             if not is_ignored:
                 if is_dir:
-                    cls.find_valid_repo_files(full_path, file_list, ignore_list, dir_list=dir_list)
+                    cls.find_valid_repo_files(
+                        full_path, file_list, ignore_list, dir_list=dir_list
+                    )
                 else:
                     file_list.append({"filename": full_path, "size": cur_stat.st_size})
 
@@ -104,7 +118,7 @@ class GitScanner:
         """
         total_size = 0
         for element in filelist:
-            total_size += element['size']
+            total_size += element["size"]
         return total_size
 
     def scan(self, path: str):
@@ -116,7 +130,9 @@ class GitScanner:
         res_file_list = []
         cur_ignore_list = ["*/.git/*"]
         self.dir_list.clear()
-        self.find_valid_repo_files(path, res_file_list, ignore_list=cur_ignore_list, dir_list=self.dir_list)
+        self.find_valid_repo_files(
+            path, res_file_list, ignore_list=cur_ignore_list, dir_list=self.dir_list
+        )
         self.total_size = self.compute_total_size(res_file_list)
         self.file_list = res_file_list
         res_file_list = sorted(res_file_list, key=lambda x: x["size"], reverse=True)
@@ -124,7 +140,9 @@ class GitScanner:
         self.file_count = len(self.file_list)
         self.file_list_by_size = res_file_list
 
-    def get_large_files(self, min_size: int, ignore_list: list[str], hard_limit_size: int = -1) -> list[str]:
+    def get_large_files(
+        self, min_size: int, ignore_list: list[str], hard_limit_size: int = -1
+    ) -> list[str]:
         """
         Returns all files larger than a given threshold which are not on the ignore list
         :param min_size: The minimum size in bytes
@@ -133,17 +151,19 @@ class GitScanner:
         :param ignore_list: Masks of the files to ignore
         :return: The list of all remaining files
         """
-        large_elements = [element for element in self.file_list if element['size'] >= min_size]
+        large_elements = [
+            element for element in self.file_list if element["size"] >= min_size
+        ]
         result_list: list[str] = []
         for element in large_elements:
             skip = False
-            if hard_limit_size == -1 or element['size'] < hard_limit_size:
+            if hard_limit_size == -1 or element["size"] < hard_limit_size:
                 for ignore_entry in ignore_list:
-                    if fnmatch.fnmatch(element['filename'], ignore_entry):
+                    if fnmatch.fnmatch(element["filename"], ignore_entry):
                         skip = True
                         break
             if skip:
                 continue
             else:
-                result_list.append(element['filename'])
+                result_list.append(element["filename"])
         return result_list

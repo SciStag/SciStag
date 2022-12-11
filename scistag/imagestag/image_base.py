@@ -39,9 +39,9 @@ class ImageBase:
         return PixelFormat.RGB if pixels.shape[2] == 3 else PixelFormat.RGBA
 
     @classmethod
-    def _pixel_data_from_source(cls,
-                                source: (str | np.ndarray | bytes |
-                                         PIL.Image.Image)) -> np.ndarray:
+    def _pixel_data_from_source(
+        cls, source: (str | np.ndarray | bytes | PIL.Image.Image)
+    ) -> np.ndarray:
         """
         Loads an arbitrary source and returns it as pixel data
 
@@ -56,6 +56,7 @@ class ImageBase:
             return np.array(source)
         elif isinstance(source, str) or isinstance(source, bytes):
             from .image import Image
+
             return Image(source, framework=ImsFramework.PIL).get_pixels()
         else:
             raise NotImplemented
@@ -74,9 +75,12 @@ class ImageBase:
             return pixel_data[..., [2, 1, 0, 3]].copy()
 
     @classmethod
-    def normalize_to_rgb(cls, pixels: np.ndarray,
-                         input_format: PixelFormat = PixelFormat,
-                         keep_gray=False) -> np.ndarray:
+    def normalize_to_rgb(
+        cls,
+        pixels: np.ndarray,
+        input_format: PixelFormat = PixelFormat,
+        keep_gray=False,
+    ) -> np.ndarray:
         """
         Guarantees that the output will be in the RGB or RGBA format
 
@@ -98,9 +102,12 @@ class ImageBase:
             return pixels
 
     @classmethod
-    def normalize_to_bgr(cls, pixels: np.ndarray,
-                         input_format: PixelFormat = PixelFormat.RGB,
-                         keep_gray=False) -> np.ndarray:
+    def normalize_to_bgr(
+        cls,
+        pixels: np.ndarray,
+        input_format: PixelFormat = PixelFormat.RGB,
+        keep_gray=False,
+    ) -> np.ndarray:
         """
         Guarantees that the output will be in the BGR or BGRA format
 
@@ -122,9 +129,9 @@ class ImageBase:
             return cls.bgr_to_rgb(pixels)
 
     @classmethod
-    def normalize_to_gray(cls, pixels: np.ndarray,
-                          input_format: PixelFormat = PixelFormat.RGB) \
-            -> np.ndarray:
+    def normalize_to_gray(
+        cls, pixels: np.ndarray, input_format: PixelFormat = PixelFormat.RGB
+    ) -> np.ndarray:
         """
         Guarantees that the output will be grayscale
 
@@ -137,9 +144,11 @@ class ImageBase:
             return pixels
         if input_format in [PixelFormat.BGR, PixelFormat.BGRA]:
             from scistag.imagestag import get_opencv
+
             cv = get_opencv()
             if cv is not None:
                 from scistag.imagestag import cv
+
                 if input_format == PixelFormat.BGR:
                     return cv.cvtColor(pixels, cv.COLOR_BGR2GRAY)
                 if input_format == PixelFormat.BGRA:
@@ -147,16 +156,17 @@ class ImageBase:
             blue, green, red = pixels[:, :, 0], pixels[:, :, 1], pixels[:, :, 2]
         else:
             from scistag.imagestag import get_opencv
+
             cv = get_opencv()
             if cv is not None:
                 from scistag.imagestag import get_opencv
+
                 if input_format == PixelFormat.RGB:
                     return cv.cvtColor(pixels, cv.COLOR_RGB2GRAY)
                 if input_format == PixelFormat.RGBA:
                     return cv.cvtColor(pixels, cv.COLOR_RGBA2GRAY)
             red, green, blue = pixels[:, :, 0], pixels[:, :, 1], pixels[:, :, 2]
-        return (0.2989 * red + 0.5870 * green + 0.1140 * blue).round().astype(
-            np.uint8)
+        return (0.2989 * red + 0.5870 * green + 0.1140 * blue).round().astype(np.uint8)
 
     @classmethod
     def from_cv2(cls, pixel_data: np.ndarray) -> "Image":
@@ -169,6 +179,7 @@ class ImageBase:
         :return: The image instance
         """
         from .image import Image
-        return Image(pixel_data,
-                     pixel_format=cls.detect_format(pixel_data,
-                                                    is_cv2=True))
+
+        return Image(
+            pixel_data, pixel_format=cls.detect_format(pixel_data, is_cv2=True)
+        )

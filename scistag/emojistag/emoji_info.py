@@ -15,6 +15,7 @@ class EmojiInfo(BaseModel):
     """
     Contains the information about a single emoji
     """
+
     sequence: list[str]
     "The unique identification sequence"
     name: str
@@ -48,4 +49,5 @@ class EmojiInfo(BaseModel):
         For more advanced versions see :func:`render_emoji`
         """
         from .emoji_renderer import render_emoji
+
         return render_emoji(self.sequence)

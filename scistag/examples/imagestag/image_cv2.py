@@ -23,8 +23,10 @@ def main():
     panel.pack(side="top", fill="both", expand="yes")
     # convert image to gray scale and show it
     gray_scale = Image(
-        opencv.cvtColor(image.get_pixels(desired_format=PixelFormat.BGR),
-                        opencv.COLOR_BGR2GRAY))
+        opencv.cvtColor(
+            image.get_pixels(desired_format=PixelFormat.BGR), opencv.COLOR_BGR2GRAY
+        )
+    )
     img2 = ImageTk.PhotoImage(gray_scale.to_pil())
     panel = Label(root, image=img2)
     panel.pack(side="top", fill="both", expand="yes")

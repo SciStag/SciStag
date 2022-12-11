@@ -7,9 +7,12 @@ class SimpleSlideServer:
     """
 
     @staticmethod
-    def run_simple_server(host_name: str = "0.0.0.0", port: int = 5020,
-                          ssl_context: tuple[str, str] | None = None,
-                          blueprints: list | None = None):
+    def run_simple_server(
+        host_name: str = "0.0.0.0",
+        port: int = 5020,
+        ssl_context: tuple[str, str] | None = None,
+        blueprints: list | None = None,
+    ):
         """
         Setups a server and starts it
 
@@ -25,20 +28,21 @@ class SimpleSlideServer:
         import logging
         from scistag.slidestag4flask import slidestag_service
 
-        new_app = Flask(__name__,
-                        static_url_path='',
-                        static_folder='web/static',
-                        template_folder='web/templates')
+        new_app = Flask(
+            __name__,
+            static_url_path="",
+            static_folder="web/static",
+            template_folder="web/templates",
+        )
         new_app.register_blueprint(slidestag_service)
         if blueprints is not None:  # register additional blueprints
             for element in blueprints:
                 if isinstance(element, tuple):
-                    new_app.register_blueprint(element[0],
-                                               url_prefix=element[1])
+                    new_app.register_blueprint(element[0], url_prefix=element[1])
                 else:
                     new_app.register_blueprint(element)
         app = new_app
         WSGIRequestHandler.protocol_version = "HTTP/1.1"
-        log = logging.getLogger('werkzeug')
+        log = logging.getLogger("werkzeug")
         log.setLevel(logging.ERROR)
         app.run(port=port, host=host_name, ssl_context=ssl_context)

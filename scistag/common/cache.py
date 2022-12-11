@@ -88,8 +88,8 @@ class Cache:
         self._mem_cache_versions = {}
         "Version numbers for the elements stored in the memory cache"
         from scistag.common.disk_cache import DiskCache
-        self._disk_cache = DiskCache(version=version,
-                                     cache_dir=cache_dir)
+
+        self._disk_cache = DiskCache(version=version, cache_dir=cache_dir)
         "Cache for persisting data between execution sessions"
         self._version = version
         """
@@ -198,11 +198,7 @@ class Cache:
             return key, f"{minor}"
         return key, f"{major}.{minor}"
 
-    def cache(self,
-              key: str,
-              generator: Callable,
-              *args,
-              **kwargs):
+    def cache(self, key: str, generator: Callable, *args, **kwargs):
         """
         Tries to find the element **key** in the cache and return's it's
         content. If no element with such a name and/or version number can be
@@ -259,12 +255,15 @@ class Cache:
         """
         with self._access_lock:
             org_key = key
-            key, eff_version = self.get_key_and_version(key,
-                                                        self._version,
-                                                        minor=version)
+            key, eff_version = self.get_key_and_version(
+                key, self._version, minor=version
+            )
             assert len(key) > 0
-            if not key[0].isalpha() and not key.startswith(
-                    "./") and not key.startswith("_"):
+            if (
+                not key[0].isalpha()
+                and not key.startswith("./")
+                and not key.startswith("_")
+            ):
                 raise ValueError("Keys has to start with a character")
             if "/" in key:
                 self._disk_cache.set(org_key, value, version=version)
@@ -275,10 +274,7 @@ class Cache:
             self._mem_cache[key] = value
             self._mem_cache_versions[key] = eff_version
 
-    def get(self,
-            key: str,
-            default=None,
-            version=None):
+    def get(self, key: str, default=None, version=None):
         """
         Returns a value from the cache.
 
@@ -297,16 +293,15 @@ class Cache:
         """
         with self._access_lock:
             org_key = key
-            key, eff_version = self.get_key_and_version(key, self._version,
-                                                        minor=version)
+            key, eff_version = self.get_key_and_version(
+                key, self._version, minor=version
+            )
             if "/" in key:
-                data = self._disk_cache.get(org_key,
-                                            version=version)
+                data = self._disk_cache.get(org_key, version=version)
                 if data is None:
                     return default
                 return data
-            if (key in self._mem_cache and
-                    self._mem_cache_versions[key] == eff_version):
+            if key in self._mem_cache and self._mem_cache_versions[key] == eff_version:
                 return self._mem_cache[key]
             else:
                 return default
@@ -336,7 +331,8 @@ class Cache:
             if not self.loaded:
                 raise RuntimeError(
                     "loaded flag of component not correctly set to True. "
-                    "Did you forget to call super().handle_load()?")
+                    "Did you forget to call super().handle_load()?"
+                )
 
     def unload(self):
         """
@@ -347,12 +343,14 @@ class Cache:
         with self._access_lock:
             if not self.loaded:
                 raise RuntimeError(
-                    "Tried to unload component which was not loaded before")
+                    "Tried to unload component which was not loaded before"
+                )
             self.handle_unload()
             if self.loaded:
                 raise RuntimeError(
                     "loaded flag of component not correctly set to False. "
-                    "Did you forget to call super().handle_unload()?")
+                    "Did you forget to call super().handle_unload()?"
+                )
             for element in self._volatile_cache_entries:
                 if element.startswith("."):  # clear volatile members
                     member_name = element[1:]
@@ -436,8 +434,11 @@ class Cache:
     def __getitem__(self, key) -> Any:
         with self._access_lock:
             result = self.get(key)
-            if (result is None and key not in self._mem_cache and key not in
-                    self._disk_cache):
+            if (
+                result is None
+                and key not in self._mem_cache
+                and key not in self._disk_cache
+            ):
                 raise KeyError(f"Key {key} not found")
             return result
 
@@ -470,8 +471,9 @@ class Cache:
             key, eff_version = self.get_key_and_version(key, self._version)
             if "/" in key:
                 return key in self._disk_cache
-            return (key in self._mem_cache and
-                    self._mem_cache_versions[key] == eff_version)
+            return (
+                key in self._mem_cache and self._mem_cache_versions[key] == eff_version
+            )
 
 
 _cache_access_lock = StagLock()

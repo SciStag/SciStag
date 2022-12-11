@@ -38,7 +38,6 @@ class StagApp:
             shall look at. 1 = Callee, 2 = Caller's callee etc.
         """
         main_file = cls.get_main_file()
-        if main_file is not None and inspect.stack()[
-            stack_level].filename == main_file:
+        if main_file is not None and inspect.stack()[stack_level].filename == main_file:
             return True
         return False

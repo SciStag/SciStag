@@ -39,10 +39,12 @@ class ElementContext:
             return
         self._closed = True
         from scistag.vislog import VisualLog
+
         log: VisualLog = self.builder.target_log
         for key, value in self.closing_code.items():
             if key in log.log_formats:
                 from scistag.vislog.visual_log import HTML, MD, TXT
+
                 if key == HTML:
                     log.write_html(value)
                 elif key == MD:

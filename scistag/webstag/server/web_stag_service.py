@@ -50,16 +50,21 @@ class WebStagService:
         the unified handle_unified_request method.
         :return:
         """
-        from scistag.webstag.server.flask_server.webstag_service_blueprint import \
-            WebStagServiceBlueprint
+        from scistag.webstag.server.flask_server.webstag_service_blueprint import (
+            WebStagServiceBlueprint,
+        )
 
         blue_print = WebStagServiceBlueprint(self)
         self.set_service_blueprint(blue_print)
         # add routing rules
-        blue_print.add_url_rule("/", None, blue_print.execute_service,
-                                defaults={'path': ''})
-        blue_print.add_url_rule('/<path:path>', None,
-                                blue_print.execute_service, )
+        blue_print.add_url_rule(
+            "/", None, blue_print.execute_service, defaults={"path": ""}
+        )
+        blue_print.add_url_rule(
+            "/<path:path>",
+            None,
+            blue_print.execute_service,
+        )
 
     def handle_unified_request(self, request: WebRequest) -> WebResponse:
         """

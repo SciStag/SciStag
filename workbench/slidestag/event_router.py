@@ -29,15 +29,16 @@ class EventRouter:
         """
         coordinate = event["coord"]
         target = root_window.get_relative_coordinate(coordinate)
-        if event['type'] == "mouseDown" and target is not None:
+        if event["type"] == "mouseDown" and target is not None:
             self._mouse_focus = target[0]
-        elif event['type'] == "mouseUp":
+        elif event["type"] == "mouseUp":
             if self._mouse_focus is not None and self._mouse_focus == target[0]:
-                click_event = TapEvent(self._mouse_focus,
-                                       coordinate=(target[1], target[2]),
-                                       coordinate_absolute=(
-                                       coordinate[0], coordinate[1]),
-                                       button=MouseButton.LEFT)
+                click_event = TapEvent(
+                    self._mouse_focus,
+                    coordinate=(target[1], target[2]),
+                    coordinate_absolute=(coordinate[0], coordinate[1]),
+                    button=MouseButton.LEFT,
+                )
                 self._mouse_focus.handle_click(click_event)
             self._mouse_focus = None
 
@@ -54,11 +55,10 @@ class EventRouter:
         root_window: Widget = self._session.get_root_window()
         new_events = []
         for element in events:
-            relative = element.get('relative', False)
+            relative = element.get("relative", False)
             if relative:
                 width, height = root_window.size.to_int_tuple()
-                coordinate = element["coord"][0] * width, \
-                             element["coord"][1] * height
+                coordinate = element["coord"][0] * width, element["coord"][1] * height
                 element["coord"] = coordinate
             if element["type"] == "tapMove":
                 element["type"] = "mouseMove"

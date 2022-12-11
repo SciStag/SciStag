@@ -42,6 +42,7 @@ class BundleElementInfo(BaseModel):
     """
     Defines a single bundle element
     """
+
     version: int = 1
     "The protocol version"
     data_type: Optional[str] = None
@@ -62,6 +63,7 @@ class BundleInfo(BaseModel):
     """
     Defines the bundle information
     """
+
     source_type: Literal["dict", "tuple", "list"]
     "The list of keys in their original order"
     keys: list[str]
@@ -84,6 +86,7 @@ class BundlingOptions:
     """
     Options for bundling the data
     """
+
     recursive = False
     "Defines if the data shall be bundled recursive (not supported yet)"
 
@@ -93,6 +96,7 @@ class UnpackOptions:
     """
     Options for bundling the data
     """
+
     recursive = False
     "Defines if the data shall be bundled recursive (not supported yet)"
 
@@ -139,8 +143,11 @@ class Bundle:
     """
 
     @classmethod
-    def bundle(cls, elements: dict[str, Any] | list[Any] | tuple,
-               compression: int | None = None) -> bytes:
+    def bundle(
+        cls,
+        elements: dict[str, Any] | list[Any] | tuple,
+        compression: int | None = None,
+    ) -> bytes:
         """
         Stores a dictionary, a list or a tuple in a zip file in memory and
         returns its bytes string representation which can then for
@@ -159,13 +166,17 @@ class Bundle:
         if compression is None:
             compression = 10
         comp_level = min(max((compression // 10), 0), 9)
-        comp_method = (zipfile.ZIP_STORED if comp_level == 0 else
-                       zipfile.ZIP_DEFLATED)
-        with MemoryZip(compresslevel=comp_level,
-                       compression=comp_method) as mem_zip:
-            source_type = (DICT if isinstance(elements, dict) else
-                           LIST if isinstance(elements, list) else
-                           TUPLE if isinstance(elements, tuple) else None)
+        comp_method = zipfile.ZIP_STORED if comp_level == 0 else zipfile.ZIP_DEFLATED
+        with MemoryZip(compresslevel=comp_level, compression=comp_method) as mem_zip:
+            source_type = (
+                DICT
+                if isinstance(elements, dict)
+                else LIST
+                if isinstance(elements, list)
+                else TUPLE
+                if isinstance(elements, tuple)
+                else None
+            )
             if source_type is None:
                 raise ValueError("Unsupported source type")
             keys = []
@@ -182,20 +193,20 @@ class Bundle:
                     # store basic types directly
                     simple[key] = element
                     if isinstance(element, tuple):  # remember original type
-                        simple[BI_SIMPLE_ELEMENT_FLAG + key] = {
-                            IS_TUPLE_FLAG: True}
+                        simple[BI_SIMPLE_ELEMENT_FLAG + key] = {IS_TUPLE_FLAG: True}
                     continue
-                data_type, byte_data = cls.to_bytes(element,
-                                                    options=options)
-                advanced[key] = BundleElementInfo(
-                    data_type=data_type)
+                data_type, byte_data = cls.to_bytes(element, options=options)
+                advanced[key] = BundleElementInfo(data_type=data_type)
                 mem_zip.writestr(key, byte_data)
-            bundle_info = BundleInfo(source_type=source_type,
-                                     keys=keys,
-                                     simple_elements=simple,
-                                     adv_elements=advanced)
-            mem_zip.writestr(BUNDLE_INFO_NAME,
-                             json.dumps(bundle_info.json()).encode("utf-8"))
+            bundle_info = BundleInfo(
+                source_type=source_type,
+                keys=keys,
+                simple_elements=simple,
+                adv_elements=advanced,
+            )
+            mem_zip.writestr(
+                BUNDLE_INFO_NAME, json.dumps(bundle_info.json()).encode("utf-8")
+            )
         return mem_zip.to_bytes()
 
     @classmethod
@@ -234,9 +245,9 @@ class Bundle:
                     result_elements.append(data)
                 else:
                     byte_stream = mem_zip.read(key)
-                    rec_object = cls.from_bytes(data_type=adv[key].data_type,
-                                                data=byte_stream,
-                                                options=options)
+                    rec_object = cls.from_bytes(
+                        data_type=adv[key].data_type, data=byte_stream, options=options
+                    )
                     result[key] = rec_object
                     result_elements.append(rec_object)
             st = bundle_info.source_type
@@ -246,12 +257,10 @@ class Bundle:
                 return result_elements
             if st == TUPLE:
                 return tuple(result_elements)
-            raise NotImplementedError(
-                f"The return type {st} is not supported")
+            raise NotImplementedError(f"The return type {st} is not supported")
 
     @classmethod
-    def to_bytes(cls, element: Any, options: BundlingOptions) -> \
-            tuple[str, bytes]:
+    def to_bytes(cls, element: Any, options: BundlingOptions) -> tuple[str, bytes]:
         """
         Converts an element to its storable bytes representation
 
@@ -270,12 +279,12 @@ class Bundle:
                     bundler = cls._bundlers[el_type]
             if bundler is None:
                 raise NotImplementedError(
-                    f"No bundler found for data type {str(el_type)}")
+                    f"No bundler found for data type {str(el_type)}"
+                )
         return bundler(element, options)
 
     @classmethod
-    def from_bytes(cls, data_type: str, data: bytes,
-                   options: UnpackOptions) -> Any:
+    def from_bytes(cls, data_type: str, data: bytes, options: UnpackOptions) -> Any:
         """
         Converts an object from it's byte representation back to its
         normal form.
@@ -288,13 +297,13 @@ class Bundle:
         with cls._access_lock:
             if data_type not in cls._unpackers:
                 return NotImplementedError(
-                    f"No unpacker found for data type {data_type}")
+                    f"No unpacker found for data type {data_type}"
+                )
             unpacker = cls._unpackers[data_type]
         return unpacker(data, options)
 
     @classmethod
-    def register_bundler(cls, data_type: str,
-                         callback: BundleToBytesCallback):
+    def register_bundler(cls, data_type: str, callback: BundleToBytesCallback):
         """
         Registers a new bundling helper function
 
@@ -305,8 +314,7 @@ class Bundle:
             cls._bundlers[data_type] = callback
 
     @classmethod
-    def register_unpacker(cls, data_type: str,
-                          callback: UnpackFromBytesCallback):
+    def register_unpacker(cls, data_type: str, callback: UnpackFromBytesCallback):
         """
         Registers a new unpacking helper function
 
@@ -338,18 +346,20 @@ def _register_base_types():
     Bundle.register_unpacker("bytes", lambda data, options: data)
     from .bundlers.numpy_bundler import NumpyBundler
     from .bundlers.dataframe_bundler import DataFrameBundler, DataSeriesBundler
+
     # Numpy array
     Bundle.register_bundler(NumpyBundler.NP_CLASS_NAME, NumpyBundler.bundle)
     Bundle.register_unpacker(NumpyBundler.NP_CLASS_NAME, NumpyBundler.unpack)
     # Pandas DataFrame
-    Bundle.register_bundler(DataFrameBundler.DF_CLASS_NAME,
-                            DataFrameBundler.bundle)
-    Bundle.register_unpacker(DataFrameBundler.DF_CLASS_NAME,
-                             DataFrameBundler.unpack)
-    Bundle.register_unpacker("DataFrameBundler",  # for backwards compatibility
-                             DataFrameBundler.unpack)
+    Bundle.register_bundler(DataFrameBundler.DF_CLASS_NAME, DataFrameBundler.bundle)
+    Bundle.register_unpacker(DataFrameBundler.DF_CLASS_NAME, DataFrameBundler.unpack)
+    Bundle.register_unpacker(
+        "DataFrameBundler", DataFrameBundler.unpack  # for backwards compatibility
+    )
     # Pandas Series
-    Bundle.register_bundler(DataSeriesBundler.SERIES_CLASS_NAME,
-                            DataSeriesBundler.bundle)
-    Bundle.register_unpacker(DataSeriesBundler.SERIES_CLASS_NAME,
-                             DataSeriesBundler.unpack)
+    Bundle.register_bundler(
+        DataSeriesBundler.SERIES_CLASS_NAME, DataSeriesBundler.bundle
+    )
+    Bundle.register_unpacker(
+        DataSeriesBundler.SERIES_CLASS_NAME, DataSeriesBundler.unpack
+    )

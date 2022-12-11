@@ -36,6 +36,7 @@ class MPLock:
     def __enter__(self):
         self.access_lock.acquire()
         import matplotlib.pyplot as plt
+
         self.plt = plt
         if self.backend is not None:
             plt.switch_backend(self.backend)
@@ -43,5 +44,6 @@ class MPLock:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         import matplotlib.pyplot as plt
-        plt.close('all')
+
+        plt.close("all")
         self.access_lock.release()
