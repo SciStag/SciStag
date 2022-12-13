@@ -30,3 +30,6 @@
 - Test for creating Color from HSV
 - Granting access to Material Design icons
 - Fast histogram visualization via PlotStag
+- VisualLog init start_browser does not fail even if the disk is neither hosted nor stored on disk
+- Passing format to VisualLogBuilder logging functions instead of explicitly passing
+md=True or False

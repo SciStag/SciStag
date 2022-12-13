@@ -327,8 +327,8 @@ class TestHelper(BuilderExtension):
             {
                 "name": checkpoint_name,
                 "lengths": [
-                    len(b"".join(value))
-                    for key, value in self.builder.target_log._logs.items()
+                    len(self.builder.target_log._logs.build(key))
+                    for key in sorted(self.builder.target_log.log_formats)
                 ],
             }
         )
@@ -348,9 +348,9 @@ class TestHelper(BuilderExtension):
         difference = b""
         index = 0
         keys = []
-        for key, value in self.builder.target_log._logs.items():
+        for key in sorted(self.builder.target_log.log_formats):
             length = lengths[index]
-            data = b"".join(value)
+            data = self.builder.target_log._logs.build(key)
             index += 1
             if not isinstance(data, bytes):
                 continue

@@ -3,11 +3,8 @@ Helper functions to export images of rendering methods for manual verification
 """
 from __future__ import annotations
 
-import builtins
-import inspect
 import os
 import shutil
-import sys
 import time
 from collections import Counter
 from typing import TYPE_CHECKING, Callable, Union, Type, Literal
@@ -15,6 +12,7 @@ from typing import TYPE_CHECKING, Callable, Union, Type, Literal
 from scistag.common import StagLock, Cache, StagApp
 from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Size2D, Size2DTypes
+from scistag.vislog.common.visual_log_element import VisualLogElement
 from scistag.vislog.server.visual_log_service import VisualLogService
 from scistag.webstag.web_helper import WebHelper
 from scistag.logstag.console_stag import Console
@@ -289,11 +287,13 @@ class VisualLog:
         self.log_formats = formats_out
         "Defines if text shall be logged"
         self.log_formats.add(CONSOLE)
-        self._logs: dict[str, list[bytes]] = {
-            element: [] for element in sorted(self.log_formats)
-        }
+        self._logs = VisualLogElement(name="", output_formats=sorted(self.log_formats))
         """
         Contains the log data for each output type
+        """
+        self.cur_element = self._logs
+        """
+        Defines the current target element to which new data shall be added
         """
         self.continuous_write = continuous_write
         "If defined the output logs will be updated after every log"
@@ -543,10 +543,9 @@ class VisualLog:
         """
         if HTML not in self.log_formats:
             return
-        if isinstance(html_code, bytes):
-            self._logs[HTML].append(html_code)
-        else:
-            self._logs[HTML].append(html_code.encode("utf-8"))
+        if not isinstance(html_code, bytes):
+            html_code = html_code.encode("utf-8")
+        self.cur_element.add_data(HTML, html_code)
         if self.continuous_write:
             self.write_to_disk(formats={HTML})
         return True
@@ -562,7 +561,7 @@ class VisualLog:
         if MD not in self.log_formats:
             return
         new_text = md_code + ("" if no_break else "\n")
-        self._logs[MD].append(new_text.encode("utf-8"))
+        self.cur_element.add_data(MD, new_text.encode("utf-8"))
         if self.continuous_write:
             self.write_to_disk(formats={MD})
         return True
@@ -583,9 +582,9 @@ class VisualLog:
             self._add_to_console(txt_code)
         if md and MD in self.log_formats:
             self.write_md(txt_code)
-        if TXT not in self._logs:
+        if TXT not in self.log_formats:
             return
-        self._logs[TXT].append((txt_code + "\n").encode("utf-8"))
+        self.cur_element.add_data(TXT, (txt_code + "\n").encode("utf-8"))
         if self.continuous_write:
             self.write_to_disk(formats={TXT})
         return True
@@ -600,7 +599,7 @@ class VisualLog:
         for console in self._consoles:
             if console.progressive:
                 console.print(txt_code)
-        self._logs[CONSOLE].append((txt_code + "\n").encode("ascii"))
+        self.cur_element.add_data(CONSOLE, (txt_code + "\n").encode("ascii"))
         return True
 
     def get_temp_path(self, relative: str | None = None) -> str:
@@ -617,26 +616,24 @@ class VisualLog:
             return FilePath.norm_path(self.tmp_path + "/" + relative)
         return self.tmp_path
 
-    def _build_body(self, base_log: dict[str:bytes]):
+    def _build_body(self):
         """
         Requests to combine all logs and sub logs to a single page which
         can be logged to the disk or provided in the browser. (excluding
         html headers and footers), so just "the body" of the HTML page.
 
-        :param base_log: The byte stream of all concatenated logs for each
-            output type.
         :return: The finalized page, e.g. by combining base_log w/
             sub_logs as shown in the :class:`VisualLiveLog` class.
         """
         body: dict[str, bytes] = {}
-        for cur_format, log_entries in base_log.items():
-            body[cur_format] = b"".join(log_entries)
 
         for cur_format in self.log_formats:
-            log_data = b"".join(self._logs[cur_format])
+            log_data = self._logs.build(cur_format)
 
             if cur_format == HTML:
                 body[cur_format] = self._renderers[HTML].build_body(log_data)
+            else:
+                body[cur_format] = log_data
         return body
 
     def flush(self):
@@ -714,7 +711,7 @@ class VisualLog:
         """
         if formats is None:
             formats = self.log_formats
-        bodies = self._build_body(self._logs)
+        bodies = self._build_body()
         with self._page_lock:
             self._body_backups = bodies
         # store html
@@ -1517,7 +1514,7 @@ class VisualLog:
         """
         for cur_format in self.log_formats:
             if cur_format in log_data.log_formats:
-                self._logs[cur_format].append(log_data.get_body(cur_format))
+                self.cur_element.add_data(cur_format, log_data.get_body(cur_format))
 
     def clear(self):
         """
@@ -1525,8 +1522,8 @@ class VisualLog:
         """
         self.name_counter = Counter()
         self.title_counter = Counter()
-        for key in self._logs.keys():
-            self._logs[key].clear()
+        self._logs.clear()
+        self.cur_element = self._logs
 
     @classmethod
     def is_main(cls) -> bool:

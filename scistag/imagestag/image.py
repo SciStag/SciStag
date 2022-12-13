@@ -793,6 +793,32 @@ class Image(ImageBase):
 
         return Canvas(target_image=self)
 
+    def save(
+        self,
+        target: str,
+        quality: int = 90,
+        **params,
+    ):
+        """
+        Saves the image to disk
+
+        :param target: The storage target such as a filename
+        :param filetype: The output file type. Valid types are
+            "png", "jpg"/"jpeg", "bmp" and "gif".
+
+            You can also pass the filetype and quality as a str, int tuple
+            such as("jpg", 60).
+        :param quality: The image quality between (0 = worst quality) and
+            (95 = best quality). >95 = minimal loss
+        :param params: See :meth:`~encode`
+        :return: True on success
+        """
+        with open(target, "wb") as output_file:
+            extension = os.path.splitext(target)[1]
+            data = self.encode(filetype=extension, quality=quality, **params)
+            output_file.write(data)
+            return data is not None
+
     def encode(
         self,
         filetype: str | tuple[str, int] = "png",
@@ -896,22 +922,6 @@ class Image(ImageBase):
                 "Please install SciStag with Jupyter support, "
                 "e.g. pip install scistag[common,jupyter]"
             )
-
-    def save(self, target: str, **params):
-        """
-        Saves the image to disk
-
-        :param target: The storage target such as a filename
-        :keyword int quality: The image quality between (0 = worst quality) and
-            (95 = best quality). >95 = minimal loss
-        :param params: See :meth:`~encode`
-        :return: True on success
-        """
-        with open(target, "wb") as output_file:
-            extension = os.path.splitext(target)[1]
-            data = self.encode(filetype=extension, **params)
-            output_file.write(data)
-            return data is not None
 
     def is_transparent(self) -> bool:
         """

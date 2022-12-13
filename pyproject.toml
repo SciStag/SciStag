@@ -98,7 +98,7 @@ pytest-order = "^1.0.1"
 pytest-xdist = "^2.5.0"
 pre-commit = "^2.20.0"
 coveralls = "^3.3.1"
-black = { version = "^22.10.0", extras = ["d"] }
+black = { version = "^22.10.0", extras = ["d", "jupyter"] }
 
 [tool.poetry.group.docu]
 optional = true

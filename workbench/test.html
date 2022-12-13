@@ -1,0 +1,35 @@
+<html>
+<head>
+    <title>Webcam</title>
+</head>
+<body>
+<h1>Webcam</h1>
+<button onclick="showWebcam()">Show Webcam</button>
+<div id="webcam-container">
+    <video id="webcam" autoplay></video>
+</div>
+<script>
+    function showWebcam() {
+        // Check if the user's browser supports the webcam API
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            alert("Your browser does not support the webcam API!");
+            return;
+        }
+
+        // Request access to the user's webcam
+        navigator.mediaDevices.getUserMedia({video: true})
+            .then(function (stream) {
+                // Add the webcam stream to the srcObject property of the <video> element
+                var webcamElement = document.getElementById("webcam");
+                webcamElement.srcObject = stream;
+
+                // Start playing the webcam video
+                webcamElement.play();
+            })
+            .catch(function (error) {
+                // Handle errors here
+                console.error("Error: ", error);
+            });
+    }
+</script>
+</body>
