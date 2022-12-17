@@ -16,3 +16,5 @@ class WebResponse:
     "The response code (e.g 200 = OK)"
     cache: bool = False
     "Defines if the response may be cached"
+    headers: dict | None = None
+    "Defines the header elements to be returned"

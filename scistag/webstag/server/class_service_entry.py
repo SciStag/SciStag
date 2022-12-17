@@ -97,6 +97,12 @@ class WebClassServiceEntry:
         """
         self.prepare()
         path = request.relative_path
+        path_elements = path.split("/")
+        if len(path_elements) > 1:
+            path = path_elements[0]
+            path_elements = path_elements[1:]
+        else:
+            path_elements = []
         if path in self.methods or MISSING_FALLBACK_NAME in self.methods:
             method = self.methods.get(path, MISSING_FALLBACK_NAME)
             parameters = {}
@@ -104,10 +110,10 @@ class WebClassServiceEntry:
                 parameters[key] = element
             try:
                 if self.multithread:  # no lock needed?
-                    result = method(**parameters)
+                    result = method(*path_elements, **parameters)
                 else:
                     with self.access_lock:  # lock!
-                        result = method(**parameters)
+                        result = method(*path_elements, **parameters)
             except TypeError:
                 return WebResponse(body="Invalid parameters provided", status=400)
             if result is None:

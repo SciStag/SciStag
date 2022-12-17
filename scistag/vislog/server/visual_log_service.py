@@ -8,6 +8,9 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
+from scistag.vislog.visual_log import HTML
+from scistag.webstag.server import WebResponse
+
 if TYPE_CHECKING:
     from scistag.vislog import VisualLog
 
@@ -37,9 +40,9 @@ class VisualLogService:
         event_name = params.pop("name", "")
         event_type = params.pop("type", "")
         if len(event_name):
-            from scistag.vislog.log_event import LogEvent
+            from scistag.vislog.widgets.log_event import LEvent
 
-            self.log.add_event(LogEvent(name=event_name, event_type=event_type))
+            self.log.add_event(LEvent(name=event_name, event_type=event_type))
             return "OK"
         return "Bad request", 400
 
@@ -47,7 +50,25 @@ class VisualLogService:
         """
         Returns the most recent index.html
         """
-        return self.log.get_page("html")
+        return self.log.get_body(format_type=HTML)
+
+    def get_elements(self, *path, timestamp: int = 0) -> WebResponse:
+        """
+        Returns the page's element at given element path inside ._logs
+        """
+        try:
+            timestamp = int(timestamp)
+        except TypeError:
+            pass
+        new_timestamp, body = self.log.get_element(
+            name="-".join(path), output_format=HTML, backup=True
+        )
+        new_timestamp -= self.log.start_time
+        new_timestamp = int(round(new_timestamp * 1000))
+        if new_timestamp == timestamp:  # nothing changed?
+            return WebResponse(body=b"", status=304)
+        response = WebResponse(body=body, headers={"timestamp": new_timestamp})
+        return response
 
     def get_pid(self):
         """

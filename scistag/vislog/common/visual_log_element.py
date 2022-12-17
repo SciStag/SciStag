@@ -45,6 +45,10 @@ class VisualLogElement:
         """A dictionary storing the data for each output format type. 
         
         The data can be described as raw bytes string or via a nested sub element."""
+        self.sub_elements: dict[str, VisualLogElement] = {}
+        """
+        Dictionary of nested sub elements 
+        """
 
     def add_data(self, output_format: str, data: bytes):
         """
@@ -77,6 +81,7 @@ class VisualLogElement:
         for output_format in self.data.keys():
             self.data[output_format].append(new_element)
             self.data[output_format].append(b"")
+        self.sub_elements[name] = new_element
         return new_element
 
     def build(self, output_format: str) -> bytes:
@@ -112,3 +117,44 @@ class VisualLogElement:
         self.data: dict[str, list[bytes | VisualLogElement]] = {
             element: [b""] for element in self.data.keys()
         }
+
+    def __contains__(self, item):
+        """
+        Defines if given sub element exists
+
+        :param item: The element's name
+        :return: True if the sub element with given name does exist
+        """
+        return item in self.sub_elements
+
+    def __getitem__(self, item) -> VisualLogElement:
+        """
+        Returns given sub element.
+
+        Raises KeyError if the element does not exist.
+
+        :param item: The element's name
+        :return: The element
+        """
+        return self.sub_elements[item]
+
+    def clone(self, parent=None) -> VisualLogElement:
+        """
+        Creates a copy of this element and all sub elements
+
+        :return: A copy of this element
+        """
+        new_element = VisualLogElement(self.name, output_formats=list(self.data.keys()))
+        new_element.parent = parent
+        new_element.last_direct_change_time = self.last_direct_change_time
+        new_element.last_child_update_time = self.last_child_update_time
+        for cur_sub_name, cur_sub in self.sub_elements.items():
+            sub_clone = cur_sub.clone(parent=self)
+            new_element.sub_elements[cur_sub_name] = sub_clone
+        for key, data_list in self.data.items():
+            for element in data_list:
+                if isinstance(element, VisualLogElement):
+                    new_element.data[key].append(new_element.sub_elements[element.name])
+                else:
+                    new_element.data[key].append(element)
+        return new_element

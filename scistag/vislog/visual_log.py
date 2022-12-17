@@ -13,9 +13,10 @@ from scistag.common import StagLock, Cache, StagApp
 from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Size2D, Size2DTypes
 from scistag.vislog.common.visual_log_element import VisualLogElement
-from scistag.vislog.server.visual_log_service import VisualLogService
 from scistag.webstag.web_helper import WebHelper
 from scistag.logstag.console_stag import Console
+
+ROOT_ELEMENT_NAME = "body"
 
 if TYPE_CHECKING:
     from scistag.webstag.server import WebStagServer
@@ -223,6 +224,12 @@ class VisualLog:
         :param auto_reload: Defines if this log will be executed in auto_reload
             mode in its cache should be update and restored each turn.
         """
+        self._page_lock = StagLock()
+        "Lock for multithread secure access to the latest page update"
+        self._backup_lock = StagLock()
+        "Lock for multithread secure access to the latest page update backup"
+        self.start_time = time.time()
+        "The time stamp of when the log was creation"
         try:
             if clear_target_dir and log_to_disk:
                 shutil.rmtree(target_dir)
@@ -287,7 +294,14 @@ class VisualLog:
         self.log_formats = formats_out
         "Defines if text shall be logged"
         self.log_formats.add(CONSOLE)
-        self._logs = VisualLogElement(name="", output_formats=sorted(self.log_formats))
+        self._logs = VisualLogElement(
+            name=ROOT_ELEMENT_NAME, output_formats=sorted(self.log_formats)
+        )
+        self._log_backup: VisualLogElement | None = None
+        """
+        Defines a copy of the current data
+        """
+        self.create_log_backup()
         """
         Contains the log data for each output type
         """
@@ -333,8 +347,6 @@ class VisualLog:
             HTML: HtmlLogRenderer(title=self._title)
         }
         "The renderers for the single supported formats"
-        self._page_lock = StagLock()
-        "Lock for multithread secure access to the latest page update"
         self._page_backups: dict[str, bytes] = {}
         """
         A backup of the latest rendered page of each dynamic data type
@@ -355,8 +367,6 @@ class VisualLog:
         self._server: Union["WebStagServer", None] = None
         "The web server (if one was being started via :meth:`run_server`)"
         # Statistics
-        self.start_time = time.time()
-        "The time stamp of when the log was creation"
         self._events = []
         "List of unhandled events"
         self._widgets = {}
@@ -530,7 +540,7 @@ class VisualLog:
             reload_timeout=2000,
             retry_frequency=100,
             reload_frequency=int(self.refresh_time_s * 1000),
-            reload_url="index",
+            reload_url="elements/body",
         )
         self.add_static_file("liveView.html", rendered_lv.encode("utf-8"))
 
@@ -616,6 +626,15 @@ class VisualLog:
             return FilePath.norm_path(self.tmp_path + "/" + relative)
         return self.tmp_path
 
+    def create_log_backup(self):
+        """
+        Creates a copy of the logs and stores it in the log backup
+        """
+        with self._page_lock:
+            log_copy = self._logs.clone()
+        with self._backup_lock:
+            self._log_backup = log_copy
+
     def _build_body(self):
         """
         Requests to combine all logs and sub logs to a single page which
@@ -675,6 +694,49 @@ class VisualLog:
             if format_type in self._page_backups:
                 return self._page_backups[format_type]
             return b""
+
+    def get_element(
+        self, name: str | None, output_format: str = HTML, backup: bool = False
+    ) -> (float, bytes):
+        """
+        Returns the element at given node, starting with the root element
+        ROOT_ELEMENT_NAME
+
+        :param name: The name of the element to return.
+
+            By default the root element will be returned.
+        :param output_format: The format to return
+        :param backup: Defines if the last backup shall be accessed rather than the
+            working data.
+        :return: Timestamp of the last update, the element's content
+        """
+        if name is None:
+            name = ROOT_ELEMENT_NAME
+        cleaned_name = name.replace("-", ".")
+        tree = cleaned_name.split(".")
+        if len(tree) == 0 or tree[0] != ROOT_ELEMENT_NAME:
+            return 0.0, b""
+
+        if backup:
+            access_lock = self._backup_lock
+            element: VisualLogElement = self._log_backup
+        else:
+            access_lock = self._page_lock
+            element: VisualLogElement = self._logs
+
+        with access_lock:
+            for cur_sub_name in tree[1:]:
+                if cur_sub_name in cur_sub_name:
+                    element = element[cur_sub_name]
+                else:
+                    return 0.0, b""
+
+            if element is None:
+                return 0.0, b""
+            latest_update = max(
+                element.last_child_update_time, element.last_direct_change_time
+            )
+            return latest_update, element.build(output_format)
 
     def get_body(self, format_type: str) -> bytes:
         """
@@ -818,6 +880,7 @@ class VisualLog:
             request backends (e.g. flask, fastapi etc.)
         """
         from scistag.webstag.server import WebClassService
+        from scistag.vislog.server.visual_log_service import VisualLogService
 
         service = WebClassService(
             "VisualLogService", url_prefix=url_prefix, support_flask=support_flask
@@ -1173,10 +1236,12 @@ class VisualLog:
         :param builder: The builder to be called from rebuild the log
         """
         if builder is not None:
-            if getattr(builder, "build", None) is not None:
-                builder.build_page()
-            else:
-                builder(self.default_builder)
+            with self._page_lock:
+                if getattr(builder, "build", None) is not None:
+                    builder.build_page()
+                else:
+                    builder(self.default_builder)
+            self.create_log_backup()
         self.write_to_disk()
 
     def prepare_builder(self, builder: BuilderTypes):

@@ -9,10 +9,11 @@
     pageUpdateTimeout = {{ reload_timeout }};
     pageUpdateFrequency = {{ reload_frequency }};
     pageRetryFrequency = {{ retry_frequency }};
-    let lastData = ""
+    let lastData = "";
+    let lastUpdateTimeStamps = 0;
 
     function fetch_newest_page() {
-        fetch("{{ reload_url }}", {
+        fetch("{{ reload_url }}?timestamp=" + lastUpdateTimeStamps.toString(), {
             method: "GET",
             keepalive: true,
             timeout: pageUpdateTimeout,
@@ -21,8 +22,9 @@
             if (res.status !== 200) {
                 return;
             }
+            lastUpdateTimeStamps = res.headers.get("timestamp")
             res.text().then(data => {
-                if (data.includes("</body>") && lastData !== data) {
+                if (lastData !== data) {
                     document.getElementById('includedContent').innerHTML = data;
                     lastData = data;
                 }

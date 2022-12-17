@@ -2,6 +2,7 @@
 A demo which shows how to host a log via http and how to update it's content
 continuously using a callback.
 """
+import os
 
 from scistag.vislog import VisualLog, VisualLogBuilder
 
@@ -51,7 +52,7 @@ if VisualLog.is_main():
     test_log = VisualLog(
         "Webcam Demo",
         refresh_time_s=1.0 / FRAME_RATE,
-        start_browser=True,
+        start_browser=os.environ.get("DEMO_VISLOG_BROWSER", "1") == "1",
         image_format=("jpg", 80),
     )
     test_log.run_server(
