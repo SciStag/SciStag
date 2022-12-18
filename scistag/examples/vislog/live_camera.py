@@ -33,18 +33,27 @@ class LiveCameraDemo(VisualLogBuilder):
         """
         vl = self
         vl.title(f"Webcam Demo")
-        self.frame_timestamp, new_image = self.video_source.get_image(
-            self.frame_timestamp
-        )
-        if new_image is not None:
-            # new image available? normalize it's size to ~1 Megapixel
-            self.last_image = new_image.resized_ext(max_size=(1024, 1024))
-        if self.last_image is not None:
-            vl.image(self.last_image, "LiveView")
-        else:
-            vl.log("Did not receive any image yet :(")
-        vl.log("")
-        vl.log_statistics()
+
+        cell = vl.cell.add()
+
+        # TODO Clean-up, update to new cell updating approach
+
+        while True:
+            with cell:
+                self.frame_timestamp, new_image = self.video_source.get_image(
+                    self.frame_timestamp
+                )
+                if new_image is not None:
+                    # new image available? normalize it's size to ~1 Megapixel
+                    self.last_image = new_image.resized_ext(max_size=(1024, 1024))
+
+                cell.clear()
+                if self.last_image is not None:
+                    vl.image(self.last_image, "LiveView")
+                else:
+                    vl.log("Did not receive any image yet :(")
+                vl.log("")
+                vl.log_statistics()
 
 
 if VisualLog.is_main():
@@ -57,7 +66,7 @@ if VisualLog.is_main():
     )
     test_log.run_server(
         continuous=True,  # update continuously
-        auto_clear=True,  # clear log for us each turn
+        auto_clear=False,  # clear log for us each turn
         url_prefix="/webcamDemo",  # host at /webCamDemo
         builder=LiveCameraDemo,
     )  # our update func

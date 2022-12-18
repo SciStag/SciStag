@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from scistag.vislog.extensions.markdown_logger import MarkdownLogger
     from scistag.vislog.extensions.pandas_logger import PandasLogger
     from scistag.vislog.extensions.numpy_logger import NumpyLogger
+    from scistag.vislog.extensions.cell_logger import CellLogger
     from scistag.vislog.extensions.collection_logger import CollectionLogger
     from scistag.vislog.sessions.page_session import PageSession
     from scistag.vislog.common.page_update_context import PageUpdateContext
@@ -133,6 +134,10 @@ class VisualLogBuilder:
         self._collection: Union["CollectionLogger", None] = None
         """
         Extension to log lists and dictionaries
+        """
+        self._cell: Union["CellLogger", None] = None
+        """
+        Extension to add replaceable, dynamic content cells
         """
 
     def build(self):
@@ -458,6 +463,17 @@ class VisualLogBuilder:
         if self._collection is None:
             self._collection = CollectionLogger(self)
         return self._collection
+
+    @property
+    def cell(self) -> "CellLogger":
+        """
+        Methods to add dynamic content regions to the log
+        """
+        from .extensions.cell_logger import CellLogger
+
+        if self._cell is None:
+            self._cell = CellLogger(self)
+        return self._cell
 
     def code(self, code: str) -> VisualLogBuilder:
         """

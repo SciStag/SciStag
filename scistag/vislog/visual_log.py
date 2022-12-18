@@ -913,11 +913,10 @@ class VisualLog:
         :param builder: The builder to be called from rebuild the log
         """
         if builder is not None:
-            with self._general_lock:
-                if getattr(builder, "build", None) is not None:
-                    builder.build_page()
-                else:
-                    builder(self.default_builder)
+            if getattr(builder, "build", None) is not None:
+                builder.build_page()
+            else:
+                builder(self.default_builder)
         self.default_page.write_to_disk()
 
     def prepare_builder(self, builder: BuilderTypes, page_session: PageSession):
@@ -1025,7 +1024,6 @@ class VisualLog:
         while True:
             self._update_counter += 1
             self._total_update_counter += 1
-            self.default_page.begin_update()
             with self._general_lock:
                 if self._shall_terminate:
                     break
@@ -1033,7 +1031,6 @@ class VisualLog:
                 self.clear()
             self._run_builder(builder)
             self.handle_event_list()
-            self.default_page.end_update()
             self.default_page.write_to_disk()
             cur_time = time.time()
             while cur_time < next_update:

@@ -86,8 +86,10 @@ class PageSession:
         """
         Event handling lock
         """
-        self.cur_element = self._logs
+        self.cur_element: VisualLogElement = self._logs
         """Defines the current target element"""
+        self.element_stack: list[VisualLogElement] = []
+        """Stag of previous elements which were previously a target"""
         self._html_export = HTML in self.log_formats
         "Defines if HTML gets exported"
         self.md_export = MD in self.log_formats
@@ -444,18 +446,20 @@ class PageSession:
         """
         pass
 
-    def reserve_unique_name(self, name: str):
+    def reserve_unique_name(self, name: str, digits: int = 0):
         """
         Reserves a unique name within the log, e.g. to store an object to
         a unique file.
 
         :param name: The desired name
+        :param digits: If provided the returned name will contain at least the given
+            number of digits.
         :return: The effective name with which the data shall be stored
         """
         self.name_counter[name] += 1
         result = name
-        if self.name_counter[name] > 1:
-            result += f"_{self.name_counter[name]}"
+        if self.name_counter[name] > 1 or digits > 0:
+            result += f"_{self.name_counter[name]:0{digits}d}"
         return result
 
     def begin_update(self) -> "PageUpdateContext":
@@ -522,3 +526,41 @@ class PageSession:
                     "targetElement": ROOT_DOM_ELEMENT,
                 }, data
         return {}, None
+
+    def begin_sub_element(self, name: str) -> VisualLogElement:
+        """
+        Begins a new sub element and sets it as writing target.
+
+        Sub elements provide an easy way, e.g. via `with builder.cell()` to update
+        individual regions of the log dynamically such as pages within pages.
+
+        :param name: The unique name of the element to be added
+        :return: The element which was created
+        """
+        new_element = self.cur_element.add_sub_element(name)
+        self.element_stack.append(self.cur_element)
+        self.cur_element = new_element
+        return new_element
+
+    def enter_element(self, element: VisualLogElement):
+        """
+        Enters a previously created element to update it again
+
+        :param element: The element to enter
+        """
+        self.element_stack.append(self.cur_element)
+        self.cur_element = element
+
+    def end_sub_element(self) -> VisualLogElement:
+        """
+        Sets the previous LogElement as new target
+
+        :return: The previous element which will become the new target now again
+        """
+        if len(self.element_stack) == 0:
+            raise RuntimeError(
+                "No remaining elements on target stack. Mismatching "
+                "count of entering and leaving sub element regions."
+            )
+        self.cur_element = self.element_stack.pop()
+        return self.cur_element
