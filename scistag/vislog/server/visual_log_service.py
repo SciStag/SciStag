@@ -50,7 +50,7 @@ class VisualLogService:
         """
         Returns the most recent index.html
         """
-        return self.log.get_body(format_type=HTML)
+        return self.log.default_page.get_body(format_type=HTML)
 
     def get_elements(self, *path, timestamp: int = 0) -> WebResponse:
         """

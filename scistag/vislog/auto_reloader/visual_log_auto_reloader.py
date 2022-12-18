@@ -114,10 +114,10 @@ class VisualLogAutoReloader:
         """
         if cls.main_log is None or cls._embedded_log is None:
             return
-        cls._embedded_log.render()
+        cls._embedded_log.default_page.render()
         cls.main_log.clear()
-        cls.main_log.embed(cls._embedded_log)
-        cls.main_log.render()
+        cls.main_log.default_page.embed(cls._embedded_log.default_page)
+        cls.main_log.default_page.render()
 
     @classmethod
     def is_main(cls, _stack_level=1) -> bool:

@@ -40,6 +40,6 @@ class CollectionLogger(BuilderExtension):
         options.identifier_postfix = ": **"
         dict_tree = str(TextTree.from_collection(data, options=options))
         self.builder.md(dict_tree, exclude_targets={"txt"})
-        if self.target_log.txt_export:
+        if self.builder.page.txt_export:
             dict_tree_txt = str(TextTree.from_collection(data))
             self.builder.add_txt(dict_tree_txt)

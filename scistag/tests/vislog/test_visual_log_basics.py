@@ -220,17 +220,17 @@ def test_different_setups(_):
     a_console = Console()
     log.add_console(a_console)
     log.default_builder.log("Console text")
-    log.write_to_disk()
+    log.default_page.write_to_disk()
     log.flush()  # just another name for write_to_disk as of now
-    assert log.get_page("wdwdd") == b""
-    assert b"Console text" in log.get_body("html")
-    assert log.get_body("wdwdd") == b""
-    log.render(formats=None)  # enforce fetch
-    log.write_to_disk(formats=None, render=False)
+    assert log.default_page.get_page("wdwdd") == b""
+    assert b"Console text" in log.default_page.get_body("html")
+    assert log.default_page.get_body("wdwdd") == b""
+    log.default_page.render(formats=None)  # enforce fetch
+    log.default_page.write_to_disk(formats=None, render=False)
 
     # log without html
     no_html_log = VisualLog(formats_out={"txt"})
-    no_html_log.write_html("shouldnt be logged")
+    no_html_log.default_page.write_html("shouldnt be logged")
     vl = no_html_log.default_builder
     vl.log("should be logged")
     with no_html_log as vl:
@@ -253,7 +253,7 @@ def test_runner():
     log: VisualLog = VisualLog(
         max_fig_size=(128, 128), log_to_disk=False, image_format=("jpg", 80)
     )
-    assert log.invalid == False
+    assert not log.invalid
     log.invalidate()
     assert log.invalid
 
@@ -267,7 +267,7 @@ def test_statistics():
         max_fig_size=(128, 128), log_to_disk=False, image_format=("jpg", 80)
     )
     log.default_builder.log_statistics()
-    body = log.render().get_body("html")
+    body = log.default_page.render().get_body("html")
     assert b"total updates" in body
 
 
@@ -287,7 +287,7 @@ def test_simple_logging():
     cl.log("This is an error", level=LogLevel.ERROR)
     cl.log("This is also an error", level="error")
     cl.log(None)
-    vl.embed(log.render())
+    vl.embed(log.default_page.render())
 
 
 def test_adv_logging():
@@ -322,7 +322,7 @@ def test_clear_log():
         formats_out={"html", "md"},
     )
     log.default_builder.log("Something")
-    log.write_to_disk()
+    log.default_page.write_to_disk()
     data = log.get_file("index.md")
     assert log.get_file("../../evil/index.md") is None
     assert len(data) >= 5
@@ -333,7 +333,7 @@ def test_clear_log():
         clear_target_dir=True,
         formats_out={"html", "md"},
     )
-    new_log.write_to_disk()
+    new_log.default_page.write_to_disk()
     data = FileStag.load(f"{bp}/clogs/index.md")
     assert len(data) <= 5
 
@@ -354,11 +354,11 @@ def test_printing():
     )
     log.add_console(console)
     with mock.patch("builtins.print") as printer:
-        log.write_html("<br>")
-        log.write_txt("txt")
-        log.write_md("md")
+        log.default_page.write_html("<br>")
+        log.default_page.write_txt("txt")
+        log.default_page.write_md("md")
         assert printer.called
-    log.render()
+    log.default_page.render()
 
 
 def test_backup():

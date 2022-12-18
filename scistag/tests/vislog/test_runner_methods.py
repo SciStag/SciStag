@@ -63,16 +63,16 @@ def test_builder_calls():
     l"""
     log = VisualLog()
     log.run(builder=DummyBuilder)
-    assert b"Some content" in log.get_page("html")
+    assert b"Some content" in log.default_page.get_page("html")
     log = VisualLog()
     log.run(builder=builder_callback, overwrite=False)
-    assert b"Some function content" in log.get_page("html")
+    assert b"Some function content" in log.default_page.get_page("html")
     log = VisualLog(refresh_time_s=0.05)
     log.run(builder=DummyBuilder, continuous=True)
-    assert b"Some content" in log.get_page("html")
+    assert b"Some content" in log.default_page.get_page("html")
     log = VisualLog(refresh_time_s=0.05)
     log.run(builder=builder_callback, continuous=True, auto_clear=True)
-    assert b"Some function content" in log.get_page("html")
+    assert b"Some function content" in log.default_page.get_page("html")
     VisualLogAutoReloader.testing = True
     with mock.patch("builtins.print"):
         log = VisualLog(refresh_time_s=0.05)

@@ -959,4 +959,4 @@ class Image(ImageBase):
         return np.all(self.get_pixels() == other.get_pixels())
 
 
-__all__ = ["Image", "ImageSourceTypes"]
+__all__ = ["Image", "ImageSourceTypes", "SUPPORTED_IMAGE_FILETYPES"]

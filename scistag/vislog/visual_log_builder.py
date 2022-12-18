@@ -5,7 +5,7 @@ adding data in a VisualLog.
 
 from __future__ import annotations
 
-from typing import Optional, Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING, Union
 import io
 
 import html
@@ -16,9 +16,9 @@ import filetype
 import numpy as np
 from pydantic import BaseModel
 
-from scistag.imagestag import Image, Canvas, PixelFormat, Size2D
+from scistag.imagestag import Image, Size2D
 
-from scistag.vislog.visual_log import VisualLog, MD, TXT, HTML, TABLE_PIPE
+from scistag.vislog.visual_log import VisualLog, HTML
 from scistag.plotstag import Figure, Plot, MPHelper
 
 if TYPE_CHECKING:
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from scistag.vislog.extensions.pandas_logger import PandasLogger
     from scistag.vislog.extensions.numpy_logger import NumpyLogger
     from scistag.vislog.extensions.collection_logger import CollectionLogger
+    from scistag.vislog.sessions.page_session import PageSession
 
 LogableContent = Union[
     str,
@@ -68,11 +69,17 @@ class VisualLogBuilder:
     documentation creation.
     """
 
-    def __init__(self, log: "VisualLog"):
+    def __init__(self, log: "VisualLog", page_session: Union["PageSession", None]):
         """
         :param log: The log to which the content shall be added.
         """
         self.target_log: "VisualLog" = log
+        self.page = page_session
+        """
+        Defines the target page which will store this builder's data
+        """
+        if self.page is None:
+            self.page = log.default_page
         self._file_dependencies = []
         """
         A list of files which were used to build the current log. When ever
@@ -170,15 +177,15 @@ class VisualLogBuilder:
         """
         Clears the whole log (excluding headers and footers)
         """
-        self.target_log.clear()
+        self.page.clear()
 
-    def embed(self, log: VisualLog):
+    def embed(self, page: PageSession):
         """
         Embeds another VisualLog's content into this one
 
-        :param log: The source log
+        :param page: The source log page to embed
         """
-        self.target_log.embed(log)
+        self.page.embed(page)
 
     def evaluate(self, code: str, log_code: bool = True) -> Any:
         """
@@ -599,7 +606,7 @@ class VisualLogBuilder:
         :param html_code: The html code
         :return: True if txt logging is enabled
         """
-        self.target_log.write_html(html_code)
+        self.page.write_html(html_code)
 
     def create_backup(self) -> VisualLogBackup:
         """
@@ -615,9 +622,9 @@ class VisualLogBuilder:
         :return: The backup data
         """
         self.flush()
-        if HTML not in self.target_log.log_formats:
+        if HTML not in self.page.log_formats:
             raise ValueError("At the moment only HTML backup is supported")
-        return VisualLogBackup(data=self.target_log.get_body(HTML))
+        return VisualLogBackup(data=self.page.get_body(HTML))
 
     def insert_backup(self, backup: VisualLogBackup):
         """
@@ -638,7 +645,7 @@ class VisualLogBuilder:
         :param no_break: If defined no line break will be added
         :return: True if txt logging is enabled
         """
-        self.target_log.write_md(md_code, no_break=no_break)
+        self.page.write_md(md_code, no_break=no_break)
 
     def add_txt(self, txt_code: str, console: bool = True, md: bool = False):
         """
@@ -653,13 +660,13 @@ class VisualLogBuilder:
         :param md: Defines if the text shall be added to markdown as well
         :return: True if txt logging is enabled
         """
-        return self.target_log.write_txt(txt_code, console, md)
+        return self.page.write_txt(txt_code, console, md)
 
     def handle_modified(self):
         """
         Is called when a new block of content has been inserted
         """
-        self.target_log.handle_modified()
+        self.page.handle_modified()
 
     def get_temp_path(self, relative: str | None = None) -> str:
         """
@@ -680,7 +687,7 @@ class VisualLogBuilder:
         :param name: The desired name
         :return: The effective name with which the data shall be stored
         """
-        return self.target_log.reserve_unique_name(name)
+        return self.page.reserve_unique_name(name)
 
     def flush(self) -> VisualLogBuilder:
         """
