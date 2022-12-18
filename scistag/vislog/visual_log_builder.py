@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     from scistag.vislog.extensions.numpy_logger import NumpyLogger
     from scistag.vislog.extensions.collection_logger import CollectionLogger
     from scistag.vislog.sessions.page_session import PageSession
+    from scistag.vislog.common.page_update_context import PageUpdateContext
 
 LogableContent = Union[
     str,
@@ -708,3 +709,22 @@ class VisualLogBuilder:
             default only local files are observed.
         """
         self._file_dependencies.append(filename)
+
+    def begin_update(self) -> "PageUpdateContext":
+        """
+        Can be called at the beginning of a larger update block, e.g. if a page
+        is completely cleared and re-built to prevent page flickering.
+
+        Will automatically created a backup of the page's previous state and will
+        return this update until end_update is called as often as begin_update.
+
+        A PageUpdateContext can be used via `with self.begin_update()` to automatically
+        call end_update once the content block is left.
+        """
+        self.page.begin_update()
+
+    def end_update(self):
+        """
+        Ends the update mode
+        """
+        self.page.end_update()

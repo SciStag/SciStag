@@ -9,6 +9,7 @@ import time
 from collections import Counter
 from typing import TYPE_CHECKING, Callable, Union, Type, Literal
 
+import scistag
 from scistag.common import StagLock, Cache, StagApp
 from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Size2D, Size2DTypes
@@ -354,6 +355,8 @@ class VisualLog:
             log_to_disk=log_to_disk,
         )
         """Defines the initial default target page in which the page data ia stored"""
+        self.pages = [self.default_page]
+        """A list of all currently active pages"""
         self.default_builder: VisualLogBuilder = VisualLogBuilder(
             self, page_session=self.default_page
         )
@@ -482,25 +485,29 @@ class VisualLog:
         import jinja2
 
         environment = jinja2.Environment()
+        css = FileStag.load_text(FilePath.absolute_comb("css/visual_log.css"))
+        properties = {
+            "css": css,
+            "title": self._title,
+            "reload_timeout": 2000,
+            "retry_frequency": 100,
+            "reload_frequency": int(self.refresh_time_s * 1000),
+            "reload_url": "events",
+            "scistag_version": scistag.__version__,
+        }
         template = environment.from_string(
-            FileStag.load_text(base_path + "/templates/liveView.html")
+            FileStag.load_text(base_path + "/templates/liveLog/default_liveView.html")
         )
-        rendered_lv = template.render(
-            title=self._title,
-            reload_timeout=2000,
-            retry_frequency=100,
-            reload_frequency=int(self.refresh_time_s * 1000),
-            reload_url=f"{self.index_name}.html",
+        header_template = environment.from_string(
+            FileStag.load_text(base_path + "/templates/liveLog/live_header.html")
         )
-        if self.log_to_disk:
-            FileStag.save_text(self.target_dir + "/liveView.html", rendered_lv)
-        rendered_lv = template.render(
-            title=self._title,
-            reload_timeout=2000,
-            retry_frequency=100,
-            reload_frequency=int(self.refresh_time_s * 1000),
-            reload_url="elements/body",
+        footer_template = environment.from_string(
+            FileStag.load_text(base_path + "/templates/liveLog/live_footer.html")
         )
+        rendered_header = header_template.render(**properties)
+        rendered_lv = template.render(**properties)
+        rendered_footer = footer_template.render(**properties)
+        rendered_lv = rendered_header + rendered_lv + rendered_footer
         self.add_static_file("liveView.html", rendered_lv.encode("utf-8"))
 
     def get_temp_path(self, relative: str | None = None) -> str:
@@ -1018,6 +1025,7 @@ class VisualLog:
         while True:
             self._update_counter += 1
             self._total_update_counter += 1
+            self.default_page.begin_update()
             with self._general_lock:
                 if self._shall_terminate:
                     break
@@ -1025,6 +1033,7 @@ class VisualLog:
                 self.clear()
             self._run_builder(builder)
             self.handle_event_list()
+            self.default_page.end_update()
             self.default_page.write_to_disk()
             cur_time = time.time()
             while cur_time < next_update:

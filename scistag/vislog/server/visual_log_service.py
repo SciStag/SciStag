@@ -50,24 +50,17 @@ class VisualLogService:
         """
         Returns the most recent index.html
         """
-        return self.log.default_page.get_body(format_type=HTML)
+        return self.log.default_page.get_page(format_type=HTML)
 
-    def get_elements(self, *path, timestamp: int = 0) -> WebResponse:
+    def get_events(self, *path, sessionId: str) -> WebResponse:
         """
-        Returns the page's element at given element path inside ._logs
+        Returns the page's newest events which shall be executed in JavaScript in the
+        script liveLog/defaultLive_view.html
         """
-        try:
-            timestamp = int(timestamp)
-        except TypeError:
-            pass
-        new_timestamp, body = self.log.get_element(
-            name="-".join(path), output_format=HTML, backup=True
-        )
-        new_timestamp -= self.log.start_time
-        new_timestamp = int(round(new_timestamp * 1000))
-        if new_timestamp == timestamp:  # nothing changed?
+        event_header, event_body = self.log.default_page.get_events_js(sessionId)
+        if event_body is None:  # nothing changed?
             return WebResponse(body=b"", status=304)
-        response = WebResponse(body=body, headers={"timestamp": new_timestamp})
+        response = WebResponse(body=event_body, headers=event_header)
         return response
 
     def get_pid(self):

@@ -12,6 +12,9 @@ from scistag.common import StagLock
 from scistag.filestag import FileStag
 from scistag.vislog.common.visual_log_element import VisualLogElement
 
+ROOT_DOM_ELEMENT = "includedContent"
+"Defines the root element in the HTML page containing the main site's data"
+
 # Definition of output types
 HTML = "html"
 "Html output"
@@ -27,6 +30,7 @@ ROOT_ELEMENT_NAME = "body"
 
 if typing.TYPE_CHECKING:
     from scistag.vislog.visual_log import VisualLog
+    from scistag.vislog.common.page_update_context import PageUpdateContext
 
 
 class PageSession:
@@ -78,6 +82,10 @@ class PageSession:
         "Lock for multithread secure access to the latest page update"
         self._backup_lock = StagLock()
         "Lock for multithread secure access to the latest page update backup"
+        self._event_lock = StagLock()
+        """
+        Event handling lock
+        """
         self.cur_element = self._logs
         """Defines the current target element"""
         self._html_export = HTML in self.log_formats
@@ -110,6 +118,15 @@ class PageSession:
         "Counter for file names to prevent writing to the same file twice"
         self.title_counter = Counter()
         "Counter for titles to numerate the if appearing twice"
+        self._update_context_counter = 0
+        """Defines if the page is currently in an updating state.         
+        See :meth:`begin_update`"""
+        self.last_client_update_time = 0.0
+        """Timestamp when the client updated the page the last time"""
+        self.last_client_id: str = ""
+        """The client's ID the last time it requested events"""
+        self.old_client_ids: set[str] = set()
+        """Previously connected client IDs"""
 
     def create_log_backup(self):
         """
@@ -242,8 +259,26 @@ class PageSession:
                 return self._page_backups[format_type]
             return b""
 
+    def get_root_element(
+        self, backup: bool | None = None
+    ) -> (StagLock, VisualLogElement):
+        """
+        Returns the current, active root element and it's access lock
+        :param backup: Defines if the backup or default element shall be used.
+
+            Will be auto-detected if None is passed.
+        :return: The access lock to access the content, the root element
+        """
+        if backup is None:
+            with self._backup_lock:
+                backup = self._update_context_counter >= 1
+        if backup:
+            return self._backup_lock, self._log_backup
+        else:
+            return self._page_lock, self._logs
+
     def get_element(
-        self, name: str | None, output_format: str = HTML, backup: bool = False
+        self, name: str | None, output_format: str = HTML, backup: bool | None = None
     ) -> (float, bytes):
         """
         Returns the element at given node, starting with the root element
@@ -254,7 +289,7 @@ class PageSession:
             By default the root element will be returned.
         :param output_format: The format to return
         :param backup: Defines if the last backup shall be accessed rather than the
-            working data.
+            working data. If no value is passed the mode will be automatically selected.
         :return: Timestamp of the last update, the element's content
         """
         if name is None:
@@ -264,12 +299,7 @@ class PageSession:
         if len(tree) == 0 or tree[0] != ROOT_ELEMENT_NAME:
             return 0.0, b""
 
-        if backup:
-            access_lock = self._backup_lock
-            element: VisualLogElement = self._log_backup
-        else:
-            access_lock = self._page_lock
-            element: VisualLogElement = self._logs
+        access_lock, element = self.get_root_element(backup)
 
         with access_lock:
             for cur_sub_name in tree[1:]:
@@ -427,3 +457,68 @@ class PageSession:
         if self.name_counter[name] > 1:
             result += f"_{self.name_counter[name]}"
         return result
+
+    def begin_update(self) -> "PageUpdateContext":
+        """
+        Can be called at the beginning of a larger update block - e.g. if a page
+        is completely cleared and re-built - to prevent page flickering.
+
+        Will automatically created a backup of the page's previous state and will
+        return this update until end_update is called as often as begin_update.
+
+        A PageUpdateContext can be used via `with page_session.begin_update()` or in
+        case of the builder `with builder.begin_update()` to automatically call
+        end_update once the content block is left.
+        """
+        with self._backup_lock:
+            self._update_context_counter += 1
+            if self._update_context_counter == 1:
+                self.create_log_backup()
+            from scistag.vislog.common.page_update_context import PageUpdateContext
+
+            return PageUpdateContext(self)
+
+    def end_update(self):
+        """
+        Ends the update mode
+        """
+        with self._backup_lock:
+            self._update_context_counter -= 1
+
+    def reset_client(self):
+        """
+        Is called when the client changed, e.g. because the page was reloaded
+        """
+        self.last_client_update_time = 0.0
+
+    def get_events_js(self, client_id: str) -> [dict, bytes | None]:
+        """
+        Returns the newest events which need to be handled on client side
+        (in JavaScript).
+
+        :param client_id: The client's unique ID
+        :return: Header data, Content data
+        """
+        with self._event_lock:
+            if self.last_client_id != client_id:  # page reloaded
+                if client_id in self.old_client_ids:
+                    return (
+                        {
+                            "action": "setContent",
+                            "targetElement": ROOT_DOM_ELEMENT,
+                        },
+                        b"Session was opened in another browser or tab. "
+                        b"Please close this one",
+                    )
+                self.reset_client()
+                self.old_client_ids.add(client_id)
+            self.last_client_id = client_id
+            self.log.last_page_request = time.time()
+            update_time, data = self.get_element("body", HTML)
+            if self.last_client_update_time < update_time:
+                self.last_client_update_time = update_time
+                return {
+                    "action": "setContent",
+                    "targetElement": ROOT_DOM_ELEMENT,
+                }, data
+        return {}, None
