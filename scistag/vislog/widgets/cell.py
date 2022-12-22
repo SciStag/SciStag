@@ -153,7 +153,8 @@ class Cell(LWidget):
         if not self.progressive:
             self.clear()
         self.sub_element.add_data("html", b'<div class="vl_log_cell">')
-        self.handle_build()
+        event = CellBuildEvent(name=self.name, widget=self, builder=self.builder)
+        self.raise_event(event)
         self.sub_element.add_data("html", b"</div>")
         if opened:
             self.leave()
@@ -185,7 +186,7 @@ class Cell(LWidget):
         :param event: The event to handle
         """
         if event.event_type == _LEVENT_TYPE_CELL_BUILD:
-            self.build()
+            self.handle_build()
 
     def handle_loop(self) -> float | None:
         if self._next_tick is None:

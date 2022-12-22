@@ -305,13 +305,10 @@ class PageSession:
 
         with access_lock:
             for cur_sub_name in tree[1:]:
-                if cur_sub_name in cur_sub_name:
+                if cur_sub_name in element:
                     element = element[cur_sub_name]
                 else:
                     return 0.0, b""
-
-            if element is None:
-                return 0.0, b""
             latest_update = max(
                 element.last_child_update_time, element.last_direct_change_time
             )
@@ -493,7 +490,6 @@ class PageSession:
         """
         Is called when the client changed, e.g. because the page was reloaded
         """
-        self.last_client_update_time = 0.0
         self.element_update_times = {}
 
     def get_events_js(self, client_id: str) -> [dict, bytes | None]:
