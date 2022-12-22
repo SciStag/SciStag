@@ -10,7 +10,7 @@ def test_list():
     Tests the logging of lists
     """
     vl.test.checkpoint("vislog.list")
-    vl.collection.log(
+    vl.collection.add(
         [1, 2, 3, "a", 123.4, ["A", "B", "C", {"adict": {"withADict": {"value": 123}}}]]
     )
     vl.add([4, 5, 6])

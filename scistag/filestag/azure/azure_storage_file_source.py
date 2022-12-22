@@ -40,7 +40,7 @@ class AzureStorageFileSource(FileSource):
 
     def __init__(self, source: str, tag_filter: str | None = None, **params):
         """
-        :param source: The source data definition, awaiting the following format:
+        :param source: The source data definition, awaiting the following filetype:
             ``azure://CONNECTION_STRING_INCLUDING_KEY/container_name`` or
             ``azure://CONNECTION_STRING_INCLUDING_KEY/container_name/searchPath``
         :param tag_filter: The tag filter to search files by a tag. None by default. See

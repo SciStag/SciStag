@@ -23,8 +23,7 @@ class BasicLogger(BuilderExtension):
         :param builder: The builder object with which we write to the log
         """
         super().__init__(builder)
-        self._log = self.builder.target_log
-        self.log = self.__call__
+        self.add = self.__call__
         self.level_tag = {
             LogLevel.INFO: "[INFO]",
             LogLevel.DEBUG: "[DEBUG]",
@@ -69,7 +68,7 @@ class BasicLogger(BuilderExtension):
 
             if line.startswith(TABLE_PIPE):
                 if len(common_block) > 0:
-                    self.log(common_block, level=level)
+                    self.add(common_block, level=level)
                     common_block = ""
                 if cur_table is None:
                     cur_table = []
@@ -85,7 +84,7 @@ class BasicLogger(BuilderExtension):
                 common_block += line + "\n"
         flush_table()
         if len(common_block) > 0:
-            self.log(common_block, level=level)
+            self.add(common_block, level=level)
         return self.builder
 
     def __call__(
@@ -140,7 +139,7 @@ class BasicLogger(BuilderExtension):
             )
 
         md_lines = md_text.split("\n")
-        if self._log.markdown_html and level is not None:
+        if self.target_log.markdown_html and level is not None:
             md_lines = "<br>".join(md_lines) + "<br>"
             if level in self.level_color:
                 self.builder.add_md(
@@ -167,7 +166,7 @@ class BasicLogger(BuilderExtension):
         :param args: The elements to log. Will be separated by space.
         :param kwargs: Keyword arguments
         """
-        self.log(*args, **kwargs, level=LogLevel.INFO)
+        self.add(*args, **kwargs, level=LogLevel.INFO)
         return self.builder
 
     def debug(self, *args, **kwargs) -> VisualLogBuilder:
@@ -177,7 +176,7 @@ class BasicLogger(BuilderExtension):
         :param args: The elements to log. Will be separated by space.
         :param kwargs: Keyword arguments
         """
-        self.log(*args, **kwargs, level=LogLevel.DEBUG)
+        self.add(*args, **kwargs, level=LogLevel.DEBUG)
         return self.builder
 
     def warning(self, *args, **kwargs) -> VisualLogBuilder:
@@ -187,7 +186,7 @@ class BasicLogger(BuilderExtension):
         :param args: The elements to log. Will be separated by space.
         :param kwargs: Keyword arguments
         """
-        self.log(*args, **kwargs, level=LogLevel.WARNING)
+        self.add(*args, **kwargs, level=LogLevel.WARNING)
         return self.builder
 
     def error(self, *args, **kwargs) -> VisualLogBuilder:
@@ -197,7 +196,7 @@ class BasicLogger(BuilderExtension):
         :param args: The elements to log. Will be separated by space.
         :param kwargs: Keyword arguments
         """
-        self.log(*args, **kwargs, level=LogLevel.ERROR)
+        self.add(*args, **kwargs, level=LogLevel.ERROR)
         return self.builder
 
     def critical(self, *args, **kwargs) -> VisualLogBuilder:
@@ -207,5 +206,5 @@ class BasicLogger(BuilderExtension):
         :param args: The elements to log. Will be separated by space.
         :param kwargs: Keyword arguments
         """
-        self.log(*args, **kwargs, level=LogLevel.CRITICAL)
+        self.add(*args, **kwargs, level=LogLevel.CRITICAL)
         return self.builder

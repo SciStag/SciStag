@@ -195,7 +195,7 @@ def test_different_setups(_):
     log: VisualLog = VisualLog(
         max_fig_size=(128, 128),
         log_to_disk=False,
-        image_format=("jpg", 80),
+        filetype=("jpg", 80),
         continuous_write=True,
     )
     assert not log.log_to_disk
@@ -214,7 +214,7 @@ def test_different_setups(_):
     log: VisualLog = VisualLog(
         max_fig_size=(128, 128),
         log_to_disk=False,
-        image_format=("jpg", 80),
+        filetype=("jpg", 80),
         continuous_write=True,
     )
     a_console = Console()
@@ -239,7 +239,7 @@ def test_different_setups(_):
 
 def test_static_file():
     log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, image_format=("jpg", 80)
+        max_fig_size=(128, 128), log_to_disk=False, filetype=("jpg", 80)
     )
     log.add_static_file("testFile.bin", "bHello world")
     assert log.get_file("testFile.bin") == "bHello world"
@@ -251,7 +251,7 @@ def test_runner():
     :return:
     """
     log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, image_format=("jpg", 80)
+        max_fig_size=(128, 128), log_to_disk=False, filetype=("jpg", 80)
     )
     assert not log.invalid
     log.invalidate()
@@ -264,7 +264,7 @@ def test_statistics():
     :return:
     """
     log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, image_format=("jpg", 80)
+        max_fig_size=(128, 128), log_to_disk=False, filetype=("jpg", 80)
     )
     log.default_builder.log_statistics()
     body = log.default_page.render().get_body("html")

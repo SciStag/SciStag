@@ -5,6 +5,12 @@ an event to be processed by a VisualLog widget or the log itself.
 
 from dataclasses import dataclass
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.widgets.log_widget import LWidget
+
 
 @dataclass
 class LEvent:
@@ -14,5 +20,9 @@ class LEvent:
 
     name: str
     "Name of the component which triggered the event"
+    widget: "LWidget"
+    "The component which triggered the event"
     event_type: str
     "The type of the event"
+    builder: "VisualLogBuilder"
+    "The log builder which triggered the event"

@@ -2,9 +2,10 @@
 A demo which shows how to host a log via http and how to update it's content
 continuously using a callback.
 """
+from __future__ import annotations
 import os
 
-from scistag.vislog import VisualLog, VisualLogBuilder
+from scistag.vislog import VisualLog, VisualLogBuilder, cell
 
 
 class LiveCameraDemo(VisualLogBuilder):
@@ -27,33 +28,23 @@ class LiveCameraDemo(VisualLogBuilder):
         self.frame_timestamp = 0.0
         self.last_image = None
 
-    def build(self):
-        """
-        Is called at the defined refresh_time_s interval
-        """
-        vl = self
-        vl.title(f"Webcam Demo")
+    @cell
+    def header(self):
+        self.title(f"Webcam Demo")
 
-        cell = vl.cell.add()
-
-        # TODO Clean-up, update to new cell updating approach
-
-        while True:
-            with cell:
-                self.frame_timestamp, new_image = self.video_source.get_image(
-                    self.frame_timestamp
-                )
-                if new_image is not None:
-                    # new image available? normalize it's size to ~1 Megapixel
-                    self.last_image = new_image.resized_ext(max_size=(1024, 1024))
-
-                cell.clear()
-                if self.last_image is not None:
-                    vl.image(self.last_image, "LiveView")
-                else:
-                    vl.log("Did not receive any image yet :(")
-                vl.log("")
-                vl.log_statistics()
+    @cell(interval_s=1.0 / 160, continuous=True)
+    def update_image(self):
+        self.frame_timestamp, new_image = self.video_source.get_image(
+            self.frame_timestamp
+        )
+        if new_image is not None:
+            # new image available? normalize it's size to ~1 Megapixel
+            self.last_image = new_image.resized_ext(max_size=(1024, 1024))
+        if self.last_image is not None:
+            self.image(self.last_image, "LiveView", filetype=("jpg", 80))
+            self.br().log_statistics()
+        else:
+            self.log("Did not receive any image yet :(")
 
 
 if VisualLog.is_main():
@@ -62,10 +53,9 @@ if VisualLog.is_main():
         "Webcam Demo",
         refresh_time_s=1.0 / FRAME_RATE,
         start_browser=os.environ.get("DEMO_VISLOG_BROWSER", "1") == "1",
-        image_format=("jpg", 80),
     )
     test_log.run_server(
-        continuous=True,  # update continuously
+        continuous=False,  # update continuously
         auto_clear=False,  # clear log for us each turn
         url_prefix="/webcamDemo",  # host at /webCamDemo
         builder=LiveCameraDemo,

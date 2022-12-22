@@ -155,7 +155,7 @@ class MicroLogHelper:
         """
         self.target = tar
         "The target log"
-        self.log = self.__call__
+        self.add = self.__call__
 
     def __call__(self, *args, **_) -> "VisualMicroLock":
         """
@@ -174,7 +174,7 @@ class MicroLogHelper:
 
         :param args: The elements to log. Will be separated by space.
         """
-        self.log("[INFO]    ", *args)
+        self.add("[INFO]    ", *args)
         return self.target
 
     def debug(self, *args, **_) -> "VisualMicroLock":
@@ -183,7 +183,7 @@ class MicroLogHelper:
 
         :param args: The elements to log. Will be separated by space.
         """
-        self.log("[DEBUG]   ", *args)
+        self.add("[DEBUG]   ", *args)
         return self.target
 
     def warning(self, *args, **_) -> "VisualMicroLock":
@@ -192,7 +192,7 @@ class MicroLogHelper:
 
         :param args: The elements to log. Will be separated by space.
         """
-        self.log("[WARNING] ", *args)
+        self.add("[WARNING] ", *args)
         return self.target
 
     def error(self, *args, **_) -> "VisualMicroLock":
@@ -201,7 +201,7 @@ class MicroLogHelper:
 
         :param args: The elements to log. Will be separated by space.
         """
-        self.log("[ERROR]   ", *args)
+        self.add("[ERROR]   ", *args)
         return self.target
 
     def critical(self, *args, **_) -> "VisualMicroLock":
@@ -210,5 +210,5 @@ class MicroLogHelper:
 
         :param args: The elements to log. Will be separated by space.
         """
-        self.log("[CRITICAL]", *args)
+        self.add("[CRITICAL]", *args)
         return self.target

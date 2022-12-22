@@ -281,16 +281,16 @@ class VisualLogAutoReloader:
         Handles the main loop which verifies if any element was modified
         and reloads all modified modules if required.
         """
-        events = []
         if cls._embedded_log is not None:
-            events = cls.main_log.get_events(clear=True)
+            widgets = cls.main_log.default_builder.widget
+            events = widgets.get_events(clear=True)
             for event in events:
-                cls._embedded_log.add_event(event)
+                cls._embedded_log.default_builder.widget.add_event(event)
         new_content = FileStag.load(cls._initial_filename)
         if new_content is None:
             new_content = b""
         try:
-            cls._embedded_log.handle_event_list()
+            cls._embedded_log.default_builder.widget.handle_event_list()
             if cls.content == new_content and not cls._embedded_log.invalid:
                 return
             cls.content = new_content

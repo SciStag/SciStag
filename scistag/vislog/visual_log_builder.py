@@ -5,6 +5,7 @@ adding data in a VisualLog.
 
 from __future__ import annotations
 
+import types
 from typing import Any, TYPE_CHECKING, Union
 import io
 
@@ -24,14 +25,15 @@ from scistag.plotstag import Figure, Plot, MPHelper
 if TYPE_CHECKING:
     import pandas as pd
     from matplotlib import pyplot as plt
+    from scistag.vislog.sessions.page_session import PageSession
+    from scistag.vislog.common.page_update_context import PageUpdateContext
     from scistag.vislog.extensions.pyplot_log_context import PyPlotLogContext
     from scistag.vislog.extensions.markdown_logger import MarkdownLogger
     from scistag.vislog.extensions.pandas_logger import PandasLogger
     from scistag.vislog.extensions.numpy_logger import NumpyLogger
     from scistag.vislog.extensions.cell_logger import CellLogger
     from scistag.vislog.extensions.collection_logger import CollectionLogger
-    from scistag.vislog.sessions.page_session import PageSession
-    from scistag.vislog.common.page_update_context import PageUpdateContext
+    from scistag.vislog.extensions.widget_logger import WidgetLogger
 
 LogableContent = Union[
     str,
@@ -71,17 +73,19 @@ class VisualLogBuilder:
     documentation creation.
     """
 
-    def __init__(self, log: "VisualLog", page_session: Union["PageSession", None]):
+    def __init__(
+        self, log: "VisualLog", page_session: Union["PageSession", None] = None
+    ):
         """
         :param log: The log to which the content shall be added.
         """
         self.target_log: "VisualLog" = log
-        self.page = page_session
+        self.page_session = page_session
         """
         Defines the target page which will store this builder's data
         """
-        if self.page is None:
-            self.page = log.default_page
+        if self.page_session is None:
+            self.page_session = log.default_page
         self._file_dependencies = []
         """
         A list of files which were used to build the current log. When ever
@@ -139,6 +143,10 @@ class VisualLogBuilder:
         """
         Extension to add replaceable, dynamic content cells
         """
+        self._widget: Union["WidgetLogger", None] = None
+        """
+        Extension to add visual, interactive components 
+        """
 
     def build(self):
         """
@@ -147,7 +155,12 @@ class VisualLogBuilder:
         This is usually the function you want to override to implement your
         own page builder.
         """
-        pass
+        for key, value in self.__class__.__dict__.items():
+            attr = getattr(self, key)
+            if isinstance(attr, types.MethodType):
+                if "__log_cell" in attr.__dict__:
+                    cell_config = attr.__dict__["__log_cell"]
+                    self.cell.add(on_build=attr, **cell_config)
 
     def build_page(self):
         """
@@ -183,7 +196,7 @@ class VisualLogBuilder:
         """
         Clears the whole log (excluding headers and footers)
         """
-        self.page.clear()
+        self.page_session.clear()
 
     def embed(self, page: PageSession):
         """
@@ -191,7 +204,7 @@ class VisualLogBuilder:
 
         :param page: The source log page to embed
         """
-        self.page.embed(page)
+        self.page_session.embed(page)
 
     def evaluate(self, code: str, log_code: bool = True) -> Any:
         """
@@ -268,7 +281,7 @@ class VisualLogBuilder:
             return self
             # dict or list
         if isinstance(content, (list, dict)):
-            self.collection.log(content)
+            self.collection.add(content)
             return self
         self.log(str(content))
         if content is None or not isinstance(content, bytes):
@@ -475,6 +488,17 @@ class VisualLogBuilder:
             self._cell = CellLogger(self)
         return self._cell
 
+    @property
+    def widget(self) -> "WidgetLogger":
+        """
+        Methods to add interactive widgets to the log
+        """
+        from .extensions.widget_logger import WidgetLogger
+
+        if self._widget is None:
+            self._widget = WidgetLogger(self)
+        return self._widget
+
     def code(self, code: str) -> VisualLogBuilder:
         """
         Adds code to the log
@@ -623,7 +647,7 @@ class VisualLogBuilder:
         :param html_code: The html code
         :return: True if txt logging is enabled
         """
-        self.page.write_html(html_code)
+        self.page_session.write_html(html_code)
 
     def create_backup(self) -> VisualLogBackup:
         """
@@ -639,9 +663,9 @@ class VisualLogBuilder:
         :return: The backup data
         """
         self.flush()
-        if HTML not in self.page.log_formats:
+        if HTML not in self.page_session.log_formats:
             raise ValueError("At the moment only HTML backup is supported")
-        return VisualLogBackup(data=self.page.get_body(HTML))
+        return VisualLogBackup(data=self.page_session.get_body(HTML))
 
     def insert_backup(self, backup: VisualLogBackup):
         """
@@ -662,7 +686,7 @@ class VisualLogBuilder:
         :param no_break: If defined no line break will be added
         :return: True if txt logging is enabled
         """
-        self.page.write_md(md_code, no_break=no_break)
+        self.page_session.write_md(md_code, no_break=no_break)
 
     def add_txt(self, txt_code: str, console: bool = True, md: bool = False):
         """
@@ -677,13 +701,13 @@ class VisualLogBuilder:
         :param md: Defines if the text shall be added to markdown as well
         :return: True if txt logging is enabled
         """
-        return self.page.write_txt(txt_code, console, md)
+        return self.page_session.write_txt(txt_code, console, md)
 
     def handle_modified(self):
         """
         Is called when a new block of content has been inserted
         """
-        self.page.handle_modified()
+        self.page_session.handle_modified()
 
     def get_temp_path(self, relative: str | None = None) -> str:
         """
@@ -704,7 +728,7 @@ class VisualLogBuilder:
         :param name: The desired name
         :return: The effective name with which the data shall be stored
         """
-        return self.page.reserve_unique_name(name)
+        return self.page_session.reserve_unique_name(name)
 
     def flush(self) -> VisualLogBuilder:
         """
@@ -737,10 +761,10 @@ class VisualLogBuilder:
         A PageUpdateContext can be used via `with self.begin_update()` to automatically
         call end_update once the content block is left.
         """
-        self.page.begin_update()
+        self.page_session.begin_update()
 
     def end_update(self):
         """
         Ends the update mode
         """
-        self.page.end_update()
+        self.page_session.end_update()

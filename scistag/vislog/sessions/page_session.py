@@ -5,14 +5,14 @@ and provides methods to modify and extend this content.
 from __future__ import annotations
 
 import time
-import typing
+from typing import Union, TYPE_CHECKING, Callable
 from collections import Counter
 
 from scistag.common import StagLock
 from scistag.filestag import FileStag
-from scistag.vislog.common.visual_log_element import VisualLogElement
+from scistag.vislog.common.log_element import LogElement, LogElementReference
 
-ROOT_DOM_ELEMENT = "includedContent"
+ROOT_DOM_ELEMENT = "vlbody"
 "Defines the root element in the HTML page containing the main site's data"
 
 # Definition of output types
@@ -25,12 +25,13 @@ TXT = "txt"
 MD = "md"
 "Markdown output"
 
-ROOT_ELEMENT_NAME = "body"
+ROOT_ELEMENT_NAME = "vlbody"
 """Defines the name of a page's root element"""
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from scistag.vislog.visual_log import VisualLog
     from scistag.vislog.common.page_update_context import PageUpdateContext
+    from scistag.vislog import VisualLogBuilder
 
 
 class PageSession:
@@ -42,6 +43,7 @@ class PageSession:
     def __init__(
         self,
         log: "VisualLog",
+        builder: Union["VisualLogBuilder", None],
         log_formats: set[str],
         index_name: str,
         target_dir: str,
@@ -51,6 +53,7 @@ class PageSession:
     ):
         """
         :param log: The target log instance
+        :param builder: The log builder instance
         :param log_formats: The supported logging formats as string set
         :param index_name: The name of the index file
         :param target_dir: The target directory
@@ -64,13 +67,15 @@ class PageSession:
         """Defines the list of supported formats"""
         self.log: "VisualLog" = log
         """The target log instance"""
-        self._logs = VisualLogElement(
+        self.builder: Union["VisualLogBuilder", None] = builder
+        """The builder which is used to create the page's content"""
+        self._logs = LogElement(
             name=ROOT_ELEMENT_NAME, output_formats=sorted(self.log_formats)
         )
         """
         Defines the single log elements
         """
-        self._log_backup: VisualLogElement | None = None
+        self._log_backup: LogElement | None = None
         """
         Defines a copy of the current data
         """
@@ -82,13 +87,9 @@ class PageSession:
         "Lock for multithread secure access to the latest page update"
         self._backup_lock = StagLock()
         "Lock for multithread secure access to the latest page update backup"
-        self._event_lock = StagLock()
-        """
-        Event handling lock
-        """
-        self.cur_element: VisualLogElement = self._logs
+        self.cur_element: LogElement = self._logs
         """Defines the current target element"""
-        self.element_stack: list[VisualLogElement] = []
+        self.element_stack: list[LogElement] = []
         """Stag of previous elements which were previously a target"""
         self._html_export = HTML in self.log_formats
         "Defines if HTML gets exported"
@@ -100,7 +101,7 @@ class PageSession:
         "Defines the log's index file name"
         self._txt_filename = self.target_dir + f"/{self.index_name}.txt"
         "The name of the txt file to which we shall save"
-        self._html_filename = self.target_dir + f"/{self.index_name}.html"
+        self.html_filename = self.target_dir + f"/{self.index_name}.html"
         "The name of the html file to which we shall save"
         self._md_filename = self.target_dir + f"/{self.index_name}.md"
         "The name of the markdown file to which we shall save"
@@ -123,10 +124,11 @@ class PageSession:
         self._update_context_counter = 0
         """Defines if the page is currently in an updating state.         
         See :meth:`begin_update`"""
-        self.last_client_update_time = 0.0
-        """Timestamp when the client updated the page the last time"""
         self.last_client_id: str = ""
         """The client's ID the last time it requested events"""
+        self.element_update_times: dict[str, float] = {}
+        """Contains for every element the time stamp when it was updated the last 
+        time"""
         self.old_client_ids: set[str] = set()
         """Previously connected client IDs"""
 
@@ -261,9 +263,7 @@ class PageSession:
                 return self._page_backups[format_type]
             return b""
 
-    def get_root_element(
-        self, backup: bool | None = None
-    ) -> (StagLock, VisualLogElement):
+    def get_root_element(self, backup: bool | None = None) -> (StagLock, LogElement):
         """
         Returns the current, active root element and it's access lock
         :param backup: Defines if the backup or default element shall be used.
@@ -279,7 +279,7 @@ class PageSession:
         else:
             return self._page_lock, self._logs
 
-    def get_element(
+    def render_element(
         self, name: str | None, output_format: str = HTML, backup: bool | None = None
     ) -> (float, bytes):
         """
@@ -398,11 +398,11 @@ class PageSession:
             # store html
             if (
                 self._html_export
-                and self._html_filename is not None
-                and len(self._html_filename) > 0
+                and self.html_filename is not None
+                and len(self.html_filename) > 0
                 and HTML in formats
             ):
-                FileStag.save(self._html_filename, self.get_page(HTML))
+                FileStag.save(self.html_filename, self.get_page(HTML))
                 # store markdown
             if (
                 self.md_export
@@ -474,7 +474,7 @@ class PageSession:
         case of the builder `with builder.begin_update()` to automatically call
         end_update once the content block is left.
         """
-        with self._backup_lock:
+        with self._page_lock, self._backup_lock:
             self._update_context_counter += 1
             if self._update_context_counter == 1:
                 self.create_log_backup()
@@ -494,6 +494,7 @@ class PageSession:
         Is called when the client changed, e.g. because the page was reloaded
         """
         self.last_client_update_time = 0.0
+        self.element_update_times = {}
 
     def get_events_js(self, client_id: str) -> [dict, bytes | None]:
         """
@@ -503,7 +504,7 @@ class PageSession:
         :param client_id: The client's unique ID
         :return: Header data, Content data
         """
-        with self._event_lock:
+        with self._page_lock:
             if self.last_client_id != client_id:  # page reloaded
                 if client_id in self.old_client_ids:
                     return (
@@ -518,16 +519,40 @@ class PageSession:
                 self.old_client_ids.add(client_id)
             self.last_client_id = client_id
             self.log.last_page_request = time.time()
-            update_time, data = self.get_element("body", HTML)
-            if self.last_client_update_time < update_time:
-                self.last_client_update_time = update_time
+
+            access_lock, root_element = self.get_root_element()
+            with access_lock:
+                element_list = root_element.list_elements_recursive()
+                # ensure all elements are at least known
+                for cur_element_ref in element_list:
+                    if cur_element_ref.path not in self.element_update_times:
+                        self.element_update_times[cur_element_ref.path] = 0.0
+                modified_element_ref: LogElementReference | None = None
+                change_time = 0.0
+                for cur_element_ref in element_list:
+                    if (
+                        self.element_update_times[cur_element_ref.path]
+                        < cur_element_ref.element.last_direct_change_time
+                    ):
+                        modified_element_ref = cur_element_ref
+                        change_time = cur_element_ref.element.last_direct_change_time
+                        break
+                if modified_element_ref is None:
+                    return {}, None
+                path_start = modified_element_ref.path + "."
+                for element_name in self.element_update_times.keys():
+                    if (
+                        element_name == modified_element_ref.path
+                        or element_name.startswith(path_start)
+                    ):
+                        self.element_update_times[element_name] = change_time
+                data = modified_element_ref.element.build(HTML)
                 return {
                     "action": "setContent",
-                    "targetElement": ROOT_DOM_ELEMENT,
+                    "targetElement": modified_element_ref.name,
                 }, data
-        return {}, None
 
-    def begin_sub_element(self, name: str) -> VisualLogElement:
+    def begin_sub_element(self, name: str) -> LogElement:
         """
         Begins a new sub element and sets it as writing target.
 
@@ -542,7 +567,7 @@ class PageSession:
         self.cur_element = new_element
         return new_element
 
-    def enter_element(self, element: VisualLogElement):
+    def enter_element(self, element: LogElement):
         """
         Enters a previously created element to update it again
 
@@ -551,7 +576,7 @@ class PageSession:
         self.element_stack.append(self.cur_element)
         self.cur_element = element
 
-    def end_sub_element(self) -> VisualLogElement:
+    def end_sub_element(self) -> LogElement:
         """
         Sets the previous LogElement as new target
 

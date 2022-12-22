@@ -49,7 +49,7 @@ class TableContext(ElementContext):
         """
         The count of table rows and columns
         """
-        self.page.write_html(f'<table class="log_table">')
+        self.page.write_html(f'<table d="vl_log_table">')
         self.page.write_txt("\n", md=False)
         self.page.write_md("<table>")
         self._entered: bool = False
@@ -360,7 +360,7 @@ class TableLogger(BuilderExtension):
         :param index: Defines if the table has an index column
         :param header: Defines if the table has a header
         """
-        code = '<table class="log_table">\n'
+        code = '<table class="vl_log_table">\n'
         for row_index, row in enumerate(data):
             tabs = "\t"
             code += f"{tabs}<tr>\n"

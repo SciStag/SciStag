@@ -26,7 +26,7 @@ class ElementContext:
         """
         self.builder = builder
         """The build element which executes the page rendering"""
-        self.page = builder.page
+        self.page = builder.page_session
         """The target page in which the data is stored"""
         self.closing_code: dict = closing_code
         """The code which shall be appended when this context is closed"""

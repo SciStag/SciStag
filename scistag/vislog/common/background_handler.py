@@ -21,5 +21,5 @@ class BackgroundHandler(ManagedThread):
         self.log = log
 
     def run_loop(self):
-        self.log._run_log_mt(True, True, wait=True)
+        self.log._run_log_mt(True, wait=True)
         self.terminate()

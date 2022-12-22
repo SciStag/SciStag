@@ -24,7 +24,7 @@ class BuilderExtension:
         """
         The log object
         """
-        self.page = builder.page
+        self.page = builder.page_session
         """
         Defines the target page which holds the page content for each data type
         """

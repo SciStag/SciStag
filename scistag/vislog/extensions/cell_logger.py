@@ -5,81 +5,13 @@ of replaceable logging areas.
 
 from __future__ import annotations
 
-from scistag.vislog import BuilderExtension, VisualLogBuilder
+from typing import TYPE_CHECKING, Union
 
-from typing import TYPE_CHECKING
+from scistag.vislog import BuilderExtension, VisualLogBuilder
+from scistag.vislog.widgets.cell import Cell
 
 if TYPE_CHECKING:
-    from scistag.vislog.sessions.page_session import PageSession
-
-
-class Cell:
-    """
-    The content cell defines a region within the log which can either be logged
-    to surround a logical content area or for dynamic updating specific regions of
-    the log.
-
-    In HTML files it is represented with a div region.
-    """
-
-    def __init__(self, builder: VisualLogBuilder):
-        self.builder = builder
-        """The builder which created and owns us"""
-        self.page: PageSession = self.builder.page
-        """The page which stores the content"""
-        self.cell_name = builder.page.reserve_unique_name("cell", 4)
-        """The cell's unique name"""
-        self.element = self.page.begin_sub_element(self.cell_name)
-        """Defines the element which will store the cell's data"""
-        self._initial = True
-        """Defines if this is the initial entering turn (which will add e.g. the
-        div region to the html output)"""
-        self._closed = False
-        """Defines if the element was closed (left) already after it was entered"""
-        self.page.write_html(f'<div id="{self.cell_name}">\n')
-
-    def enter(self) -> Cell:
-        """
-        Enters the region and sets it as the page's new writing target
-
-        :return: Self
-        """
-        if not self._initial:
-            self.page.enter_element(self.element)
-            self._closed = False
-        return self
-
-    def leave(self) -> Cell:
-        """
-        Leaves the current cell after it was entered.
-
-        :return Self:
-        """
-        if self._closed:
-            return self
-        self._closed = True
-        if self._initial:
-            self._initial = False
-            self.page.end_sub_element()
-            self.page.write_html(f"</div><!-- {self.cell_name} -->\n")
-        else:
-            self.page.end_sub_element()
-        return self
-
-    def clear(self) -> Cell:
-        """
-        Clears the cells content
-
-        :return: Self
-        """
-        self.element.clear()
-        return self
-
-    def __enter__(self) -> Cell:
-        return self.enter()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.leave()
+    from scistag.vislog.widgets.cell import CellOnBuildCallback
 
 
 class CellLogger(BuilderExtension):
@@ -98,22 +30,68 @@ class CellLogger(BuilderExtension):
         """
         super().__init__(builder)
 
-    def begin(self) -> Cell:
+    def begin(
+        self,
+        progressive: bool = False,
+        interval_s: float | None = None,
+        continuous: bool = False,
+    ) -> Cell:
         """
         Begins a new content cell to which you can add content with any logging
         function and can update this content at any later point in time.
 
+        :param progressive: Defines if the cell shall be updated progressively.
+
+            Data will be visible as soon as the line was executed rather than at
+            the end of the cell's build function.
+        :param interval_s: The update interval of the cell in seconds.
+
+            The cell will be updated at a maximum update interval either when the
+            cell.invalidate() method is called or when the cell is flagged as
+            continuous.
+        :param continuous: Defines if the cell shall updated automatically with the
+            interval defined.
         :return: The content cell reference
         """
-        cell = Cell(self.builder)
+        cell = Cell(
+            builder=self.builder,
+            progressive=progressive,
+            interval_s=interval_s,
+            continuous=continuous,
+        )
         return cell
 
-    def add(self) -> Cell:
+    def add(
+        self,
+        progressive: bool = False,
+        interval_s: float | None = None,
+        continuous: bool = False,
+        on_build: Union["CellOnBuildCallback", None] = None,
+    ) -> Cell:
         """
         Adds an empty content cell without filling it with content and returns it.
 
+        :param progressive: Defines if the cell shall be updated progressively.
+
+            Data will be visible as soon as the line was executed rather than at
+            the end of the cell's build function.
+        :param interval_s: The update interval of the cell in seconds.
+
+            The cell will be updated at a maximum update interval either when the
+            cell.invalidate() method is called or when the cell is flagged as
+            continuous.
+        :param continuous: Defines if the cell shall updated automatically with the
+            interval defined.
+        :param on_build: The method to be called when ever the cell was invalidated
+            or if the update mode is set to continuous.
         :return: The content cell reference.
         """
-        cell = Cell(self.builder)
+        cell = Cell(
+            builder=self.builder,
+            progressive=progressive,
+            interval_s=interval_s,
+            continuous=continuous,
+            on_build=on_build,
+        )
         cell.leave()
         return cell

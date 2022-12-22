@@ -18,8 +18,17 @@ def test_widgets():
         nonlocal clicked
         clicked = True
 
-    button = log.add_button("Abutton", "Click me", on_click=lambda event: set_clicked())
+    button = log.default_builder.widget.add_button(
+        "Abutton", "Click me", on_click=lambda event: set_clicked()
+    )
     assert isinstance(button, LButton)
-    log.add_event(LEvent("Abutton", CLICK_EVENT_TYPE))
-    log.handle_event_list()
+    log.default_builder.widget.add_event(
+        LEvent(
+            name=button.name,
+            event_type=CLICK_EVENT_TYPE,
+            builder=log.default_builder,
+            widget=button,
+        )
+    )
+    log.default_builder.widget.handle_event_list()
     assert clicked

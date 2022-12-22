@@ -6,7 +6,6 @@ from __future__ import annotations
 import os
 import shutil
 import time
-from collections import Counter
 from typing import TYPE_CHECKING, Callable, Union, Type, Literal
 
 import scistag
@@ -22,11 +21,8 @@ if TYPE_CHECKING:
     from scistag.webstag.server import WebStagService
     from scistag.vislog.renderers.log_renderer import LogRenderer
     from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
-    from scistag.vislog.widgets.log_widget import LWidget
-    from scistag.vislog.widgets.log_button import LButton
     from scistag.vislog.visual_log_builder import VisualLogBuilder
     from scistag.vislog.common import LogStatistics
-    from scistag.vislog.widgets.log_event import LEvent
 
 # Error messages
 TABLE_PIPE = "|"
@@ -121,27 +117,26 @@ class VisualLog:
     def __init__(
         self,
         title: str = "SciStag - VisualLog",
-        target_dir: str = "./logs",
-        index_name: str = "index",
         app: Literal["cute"] | None = None,
         start_browser: bool = False,
         resolution: Size2D | None = None,
-        formats_out: set[str] | None = None,
         ref_dir: str | None = None,
         tmp_dir: str | None = None,
         clear_target_dir: bool = False,
-        log_to_disk=False,
-        log_to_stdout=False,
-        embed_images: bool | None = None,
         continuous_write=False,
         refresh_time_s=0.5,
+        formats_out: set[str] | None = None,
+        embed_images: bool | None = None,
+        filetype: str | tuple[str, int] = "png",
         max_fig_size: Size2DTypes | None = None,
-        image_format: str | tuple[str, int] = "png",
-        image_quality: int = 90,
         cache_dir: str | None = None,
         cache_version: int = 1,
         cache_name: str = "",
         auto_reload: bool | BuilderTypes = False,
+        target_dir: str = "./logs",
+        index_name: str = "index",
+        log_to_disk=False,
+        log_to_stdout=False,
     ):
         """
         :param target_dir: The output directory
@@ -186,7 +181,7 @@ class VisualLog:
             The lower the time the more often the page is refreshed.
         :param max_fig_size: The optimum, maximum width and height for
             embedded figures and images
-        :param image_format: The default output image format to store images
+        :param filetype: The default output image format to store images
             and figures with. "png" by default.
 
             You can also pass the image format and image quality in a tuple
@@ -195,9 +190,6 @@ class VisualLog:
             Alternatively "jpg" or "bmp" can be used (to minimize the bandwidth
             or in the later case if you are the intranet w/ unlimited bandwidth
             and want to host it live at maximum performance).
-        :param image_quality: The default image output quality. 90 by default.
-
-            Values between 0 and 100 are valid.
         :param cache_version: The cache version. 1 by default.
 
             When ever you change this version all old cache values will be
@@ -299,10 +291,12 @@ class VisualLog:
         self.embed_images = (
             embed_images if embed_images is not None else MD not in formats_out
         )
-        if isinstance(image_format, tuple):  # unpack tuple if required
-            image_format, image_quality = image_format
+        if isinstance(filetype, tuple):  # unpack tuple if required
+            filetype, image_quality = filetype
+        else:
+            image_quality = 90
         "If defined images will be embedded directly into the HTML code"
-        self.image_format = image_format
+        self.image_format = filetype
         "The default image type to use for storage"
         self.image_quality = image_quality
         "The image compression quality"
@@ -325,10 +319,6 @@ class VisualLog:
         self._server: Union["WebStagServer", None] = None
         "The web server (if one was being started via :meth:`run_server`)"
         # Statistics
-        self._events = []
-        "List of unhandled events"
-        self._widgets = {}
-        "Set of widgets"
         self.log_to_stdout = log_to_stdout
         "Defines if all log messages shall also be send to stdout via print"
         if do_auto_reload:
@@ -347,6 +337,7 @@ class VisualLog:
 
         self.default_page = PageSession(
             log=self,
+            builder=None,
             log_formats=self.log_formats,
             index_name=index_name,
             target_dir=self.target_dir,
@@ -360,6 +351,7 @@ class VisualLog:
         self.default_builder: VisualLogBuilder = VisualLogBuilder(
             self, page_session=self.default_page
         )
+        self.default_page.builder = self.default_builder
         """
         The default builder. It let's you easily add content the log without
         the need of any callbacks.
@@ -399,15 +391,6 @@ class VisualLog:
                 auto_reload=True,
                 auto_reload_stag_level=2,
             )
-
-    def load_old_logs(self) -> bool:
-        """
-        Tries to load the old logs from disk so they can be hosted via
-            :meth:`run_server`.
-
-        :return: True if the logs could be loaded
-        """
-        return False
 
     def terminate(self):
         """
@@ -573,9 +556,8 @@ class VisualLog:
         public_ips: str | list[str] | None = None,
         builder: BuilderTypes | None = None,
         continuous: bool | None = None,
-        wait: bool = False,
+        wait: bool = True,
         auto_clear: bool | None = None,
-        overwrite: bool | None = None,
         mt: bool = True,
         test: bool = False,
         server_logs: bool = False,
@@ -632,13 +614,6 @@ class VisualLog:
             difference that the builder function is just called once.
         :param auto_clear: Defines if then log shall be cleared automatically
             when being rebuild with `continuous=True`.
-        :param overwrite: If set to False it will only call the `builder`
-            function if there is no recent version of the log stored on
-            disk.
-
-            This way you can host the log results of a (potentially)
-            long-running data engineering or ML training session without
-            accidentally re-running it.
         :param mt: If set to true the server will be started in a
             background thread and the method will return asap.
 
@@ -705,7 +680,7 @@ class VisualLog:
                     "Continuous mode is not supported yet by auto-reload"
                 )
             self._run_builder(builder)
-            self.handle_event_list()
+            self.handle_page_events()
             VisualLogAutoReloader.start(
                 log=self,
                 host_name=host_name,
@@ -736,8 +711,6 @@ class VisualLog:
             else:
                 if not mt:
                     raise ValueError(_CONTINUOUS_REQUIRED_BG_THREAD)
-                if overwrite is not None and not overwrite:
-                    raise ValueError(_CONTINUOUS_REQUIRES_OVERWRITE)
         else:
             continuous = False
         if public_ips is not None:  # clean public IPs
@@ -774,25 +747,22 @@ class VisualLog:
                     f"the auto-reloader"
                 )
                 print("\n")
-        overwrite = overwrite if overwrite is not None else True
         if not continuous and not mt:  # if the server will block execute
             # once here, otherwise after the server started
             if builder is not None:  # call once
-                if overwrite is True or not self.load_old_logs():
-                    self._run_builder(builder)
-                    self.handle_event_list()
-                    self.default_page.write_to_disk()
+                self._run_builder(builder)
+                self.handle_page_events()
+                self.default_page.write_to_disk()
         mt = mt and not test
         server.start(mt=mt, test=test)
         self._start_app_or_browser(real_log=self, url=self.local_live_url)
-        self._run_log_mt(mt, overwrite, wait)
+        self._run_log_mt(mt, wait)
 
-    def _run_log_mt(self, mt: bool, overwrite: bool, wait: bool):
+    def _run_log_mt(self, mt: bool, wait: bool):
         """
         Runs the log updating when the log itself runs in the background
 
         :param mt: Defines if multi-threading is being used
-        :param overwrite: Defines if the old logs may be overwritten
         :param wait: Defines if the thread shall wait till the log is terminated
         """
         if self._continuous_build:
@@ -800,10 +770,9 @@ class VisualLog:
             self._run_continuous(auto_clear, self._builder_handler)
         elif mt:
             if self._builder_handler is not None:  # call once
-                if overwrite is True or not self.load_old_logs():
-                    self._run_builder(self._builder_handler)
-                    self.handle_event_list()
-                    self.default_page.write_to_disk()
+                self._run_builder(self._builder_handler)
+                self.handle_page_events()
+                self.default_page.write_to_disk()
             if wait:
                 self.sleep()
 
@@ -877,7 +846,7 @@ class VisualLog:
                     "Continuous mode is not supported yet by auto-reload"
                 )
             self._run_builder(builder)
-            self.handle_event_list()
+            self.handle_page_events()
             VisualLogAutoReloader.start(log=self, host_name=None, _stack_level=2)
             return True
         if continuous is None:
@@ -893,17 +862,14 @@ class VisualLog:
         if not continuous:
             overwrite = overwrite if overwrite is not None else True
             if builder is not None:  # call once
-                if overwrite is True or not self.load_old_logs():
-                    self._run_builder(builder)
-                    self.handle_event_list()
-                    self.default_page.write_to_disk()
-                else:
-                    return False
+                self._run_builder(builder)
+                self.handle_page_events()
+                self.default_page.write_to_disk()
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
         if self.log_to_disk and HTML in self.log_formats and self._start_browser:
-            self._start_app_or_browser(self, url=self.default_page._html_filename)
+            self._start_app_or_browser(self, url=self.default_page.html_filename)
             return True
 
     def _run_builder(self, builder: BuilderTypes | None = None):
@@ -1010,7 +976,11 @@ class VisualLog:
         if not self.testing:
             print(SLEEPING_TEXT_MESSAGE)
         while not self._shall_terminate:
-            time.sleep(self.refresh_time_s)
+            next_event = self.handle_page_events()
+            max_sleep_time = self.refresh_time_s
+            if next_event is not None:
+                max_sleep_time = max(min(max_sleep_time, next_event - time.time()), 0)
+            time.sleep(max_sleep_time)
 
     def _run_continuous(self, auto_clear: bool, builder: BuilderCallback):
         """
@@ -1030,7 +1000,7 @@ class VisualLog:
             if auto_clear:
                 self.clear()
             self._run_builder(builder)
-            self.handle_event_list()
+            self.handle_page_events()
             self.default_page.write_to_disk()
             cur_time = time.time()
             while cur_time < next_update:
@@ -1039,6 +1009,20 @@ class VisualLog:
             # try to keep the frequency but never build up debt:
             next_update = max(next_update + self.refresh_time_s, cur_time)
             self.update_statistics(cur_time)
+
+    def handle_page_events(self) -> float | None:
+        """
+        Handles the events for all known pages
+
+        :return: The timestamp at which we assume the next event to occur
+        """
+        next_event = None
+        for page in self.pages:
+            next_event_time = page.builder.widget.handle_event_list()
+            if next_event_time is not None:
+                if next_event is None or next_event_time < next_event:
+                    next_event = next_event_time
+        return next_event
 
     @property
     def server(self) -> "WebStagServer":
@@ -1142,77 +1126,6 @@ class VisualLog:
             if auto_reload_cache is None
             else auto_reload_cache
         )
-
-    def add_event(self, event: "LEvent"):
-        """
-        Adds an event to the event queue which will be handled before and
-        after the next re-build (or loop turn in case of a continuous log).
-
-        :param event: The new event
-        """
-        with self._general_lock:
-            self._events.append(event)
-            self.cache.set(LOG_EVENT_CACHE_NAME, self._events)
-
-    def handle_event_list(self):
-        """
-        Handles all queued events and clears the event queue
-        """
-        with self._general_lock:
-            event_list = self._events
-            self._events = []
-            self.cache.set(LOG_EVENT_CACHE_NAME, self._events)
-        for element in event_list:
-            self.handle_event(element)
-
-    def handle_event(self, event: "LEvent"):
-        """
-        Handles a single event and forwards it to the correct widget
-
-        :param event: The event to be handled
-        """
-        if event.name in self._widgets:
-            self._widgets[event.name].handle_event(event)
-
-    def get_events(self, clear: bool = False) -> list["LEvent"]:
-        """
-        Returns the current list of events
-
-        :param clear: Defines if all events shall be removed afterwards
-        :return: The event list
-        """
-        with self._general_lock:
-            event_list = list(self._events)
-            if clear:
-                self._events = []
-                self.cache.set(LOG_EVENT_CACHE_NAME, self._events)
-            return event_list
-
-    def register_widget(self, name: str, widget: "LWidget"):
-        """
-        Registers a widget which is able to receive events
-
-        :param name: The name of the widget to register
-        :param widget: The widget
-        """
-        self._widgets[name] = widget
-
-    def add_button(
-        self, name: str, caption: str, on_click: Union[Callable, None] = None
-    ) -> "LButton":
-        """
-        Adds a button to the log which can be clicked and raise a click event.
-
-        :param name: The button's name
-        :param caption: The button's caption
-        :param on_click: The function to be called when the button is clicked
-        :return: The button widget
-        """
-        from scistag.vislog.widgets.log_button import LButton
-
-        new_button = LButton(self, name, caption=caption, on_click=on_click)
-        new_button.write()
-        return new_button
 
     def invalidate(self):
         """

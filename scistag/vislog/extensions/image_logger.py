@@ -42,7 +42,7 @@ class ImageLogger(BuilderExtension):
         download: bool = False,
         scaling: float = 1.0,
         max_width: int | float | None = None,
-        format: str | tuple[str, int] | None = None,
+        filetype: str | tuple[str, int] | None = None,
         optical_scaling: float = 1.0,
         html_linebreak=True,
     ):
@@ -66,7 +66,7 @@ class ImageLogger(BuilderExtension):
             - float = Scale the image to the defined percentual size of the
                 max_fig_size, 1.0 = max_fig_size
 
-        :param format: The image format, with our without quality grade
+        :param filetype: The image format, with our without quality grade
             e.g. "jpg" or ("jpg", 90).
 
             Has no effect if the image was already as bytes stream.
@@ -128,11 +128,11 @@ class ImageLogger(BuilderExtension):
             encoded_image = source
         else:
             img_format, quality = self.log.image_format, self.log.image_quality
-            if format is not None:
-                if isinstance(format, tuple):
-                    img_format, quality = format
+            if filetype is not None:
+                if isinstance(filetype, tuple):
+                    img_format, quality = filetype
                 else:
-                    img_format = format
+                    img_format = filetype
             encoded_image = source.encode(filetype=img_format, quality=quality)
         # store on disk if required
         if self.log.log_to_disk:
