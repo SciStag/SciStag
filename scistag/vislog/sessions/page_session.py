@@ -280,7 +280,10 @@ class PageSession:
             return self._page_lock, self._logs
 
     def render_element(
-        self, name: str | None, output_format: str = HTML, backup: bool | None = None
+        self,
+        name: str | None = None,
+        output_format: str = HTML,
+        backup: bool | None = None,
     ) -> (float, bytes):
         """
         Returns the element at given node, starting with the root element

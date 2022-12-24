@@ -97,7 +97,7 @@ class Cell(LWidget):
         of interval_s"""
         self._next_tick = None
         """The next tick at which the cell shall be updated"""
-        self._last_invalidation = None
+        self._last_invalidation = time.time()
         """The time when the cell was invalidated the last time"""
         if self.interval_s is not None and self.continuous:
             self._next_tick = time.time() + self.interval_s

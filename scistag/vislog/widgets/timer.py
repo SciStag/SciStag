@@ -3,7 +3,6 @@ Implements the class :class:`LTimer` which lets the user set up a time which is 
 scheduled once or in a defined interval.
 """
 
-
 from __future__ import annotations
 
 import time
@@ -17,6 +16,9 @@ TIMER_LOOP_EVENT_TYPE_IDENTIFIER = "TIMER_TICK_EVENT"
 
 class LTimerTickEvent(LEvent):
     """The tick event is triggered by a LTimer in the configured frequency"""
+
+    def __init__(self, **kwargs):
+        super().__init__(event_type=TIMER_LOOP_EVENT_TYPE_IDENTIFIER, **kwargs)
 
 
 class LTimer(LWidget):
@@ -96,11 +98,6 @@ class LTimer(LWidget):
                 self.next_execution = cur_time
         else:
             self.next_execution = None
-        event = LTimerTickEvent(
-            self.sub_element.name,
-            event_type=TIMER_LOOP_EVENT_TYPE_IDENTIFIER,
-            widget=self,
-            builder=self.builder,
-        )
+        event = LTimerTickEvent(widget=self)
         self.raise_event(event)
         return self.next_execution

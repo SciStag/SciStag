@@ -164,6 +164,8 @@ class WebCache:
             for cur_file in files:
                 full_name = cls.cache_dir + cur_file
                 stat = os.stat(full_name)
+                if os.path.isdir(full_name):
+                    continue
                 if cur_time - stat.st_mtime > cls.max_general_age:
                     os.remove(full_name)
                 else:

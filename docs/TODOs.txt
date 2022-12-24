@@ -1,6 +1,7 @@
 -- TODO NOTES --
 
-- BUG: CollectionLogger.log does not correctly log lists nested in lists
+- Add unit tests for yet completely missing areas and remove them from the omit list
+- PageSession or LogBuilder specific cache
 - Move VisualLog options to separate class, further extract elements
 - Allow VisuaLog to exchange single parts of a page rather than the whole page
 - Switching to Black for code formatting

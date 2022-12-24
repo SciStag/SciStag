@@ -26,11 +26,29 @@ def test_scan():
     """
     base_dir = os.path.normpath(os.path.dirname(__file__) + "/..")
 
-    source = FileSource.from_source(base_dir, recursive=False, fetch_file_list=True)
+    filter_callback = lambda fi: not any(
+        [
+            "visual_micro" not in fi.element.filename,
+            "log" not in fi.element.filename,
+            "temp" not in fi.element.filename,
+        ]
+    )
+
+    source = FileSource.from_source(
+        base_dir,
+        recursive=False,
+        fetch_file_list=True,
+        filter_callback=filter_callback,
+    )
     assert len(source._file_list) >= 1
     assert len(source._file_list) < 20
 
-    source = FileSource.from_source(base_dir, recursive=True, fetch_file_list=True)
+    source = FileSource.from_source(
+        base_dir,
+        recursive=True,
+        fetch_file_list=True,
+        filter_callback=filter_callback,
+    )
     assert len(source._file_list) >= 90
     assert len(source._file_list) < 550
 
@@ -78,7 +96,7 @@ def test_sharing():
     """
     helper_count = 3
 
-    base_dir = os.path.normpath(os.path.dirname(__file__) + "/..")
+    base_dir = os.path.normpath(os.path.dirname(__file__))
     full_list = FileSource.from_source(
         base_dir, fetch_file_list=True, search_mask="*.py"
     )._file_list
