@@ -7,6 +7,7 @@ import pytest
 from ...common.test_data import TestConstants
 from ...emojistag import render_emoji
 from ...imagestag import Colors
+from ...vislog import VisualLog
 from . import vl
 
 
@@ -33,6 +34,23 @@ def test_image():
     vl.image(source=image_data.to_canvas(), name="stag_canvas")
     # insert image via pixel data
     vl.image(source=image_data.get_pixels(), name="stag_canvas_2")
+    # insert image via pixel data scaled
+    vl.image(source=image_data.encode("jpg"), name="stag_canvas_2", scaling=0.7)
+    # insert image scaled with maximum width
+    vl.image(source=image_data.get_pixels(), name="stag_canvas_2", max_width=200)
+    with pytest.raises(ValueError):
+        # insert image scaled
+        vl.image(
+            source=image_data.get_pixels(),
+            name="stag_canvas_2",
+            max_width=200,
+            scaling=0.5,
+        )
+    with pytest.raises(ValueError):
+        # insert image scaled (float)
+        vl.image(source=image_data.get_pixels(), name="stag_canvas_2", max_width=199.8)
+    # insert image scaled (float)
+    vl.image(source=image_data.get_pixels(), name="stag_canvas_2", max_width=0.5)
     # test using general assert
     vl.test.assert_val(
         "assert_stag", image_data, hash_val="4e5e428357fcf315f25b148747d633db"
@@ -75,3 +93,18 @@ def test_image():
     )
     vl.test.begin("image.logviaadd")
     vl.add(image_data)
+    # testing file type
+    vl.image(source=image_data, filetype="jpg")
+    # testing file type
+    vl.image(source=image_data, filetype=("jpg", 70))
+    # testing scaled image reference
+    vl.image(TestConstants.STAG_URL, "anotherStag_1", max_width=128)
+    # testing scaled image reference
+    vl.image(TestConstants.STAG_URL, "anotherStag_1", max_width=0.5)
+    with pytest.raises(ValueError):
+        # testing scaled image reference
+        vl.image(TestConstants.STAG_URL, "anotherStag_1", max_width=100.0)
+
+    out_log = VisualLog(embed_images=False).default_builder
+    out_log.image(source=image_data, filetype="jpg")
+    # testing file type

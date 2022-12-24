@@ -317,7 +317,7 @@ class PageSession:
             )
             return latest_update, element.build(output_format)
 
-    def get_body(self, format_type: str) -> bytes:
+    def get_body(self, format_type: str = HTML) -> bytes:
         """
         Returns the latest body data.
 

@@ -366,7 +366,7 @@ class VisualLog:
             with VisualLog() as vl:
                 v.title("Hello world') 
         """
-        self.testing = False
+        self._testing = False
         """
         Defines if the log is run in test mode and e.g. shall not spawn a
         real http server
@@ -661,8 +661,8 @@ class VisualLog:
         :param kwargs: Additional parameters which shall be passed to the
             WebStagServer upon creation.
         """
-        test = self.testing or test
-        self.testing = test
+        test = self._testing or test
+        self._testing = test
         if builder is not None:
             builder = self.prepare_builder(builder, self.default_page)
         self._auto_clear = auto_clear
@@ -753,17 +753,17 @@ class VisualLog:
                 self._run_builder(builder)
                 self.handle_page_events()
                 self.default_page.write_to_disk()
-        mt = mt and not test
-        server.start(mt=mt, test=test)
+        server.start(mt=mt and not test, test=test)
         self._start_app_or_browser(real_log=self, url=self.local_live_url)
-        self._run_log_mt(mt, wait)
+        self._run_log_mt(mt, wait, test=test)
 
-    def _run_log_mt(self, mt: bool, wait: bool):
+    def _run_log_mt(self, mt: bool, wait: bool, test: bool = False):
         """
         Runs the log updating when the log itself runs in the background
 
         :param mt: Defines if multi-threading is being used
         :param wait: Defines if the thread shall wait till the log is terminated
+        :param test: Defines if the server runs in test mode
         """
         if self._continuous_build:
             auto_clear = self._auto_clear if self._auto_clear is not None else True
@@ -835,6 +835,10 @@ class VisualLog:
         self._continuous_build = continuous
         self._builder_handler = builder
         self.start_time = time.time()
+        if self.log_to_disk and HTML in self.log_formats:
+            self.urls.append(
+                "file://" + self.default_page.html_filename.replace("\\", "/")
+            )
         if not isinstance(auto_reload, bool) or auto_reload:
             self._auto_reload = True
             from scistag.vislog.auto_reloader.visual_log_auto_reloader import (
@@ -860,17 +864,16 @@ class VisualLog:
             if overwrite is not None and not overwrite:
                 raise ValueError(_CONTINUOUS_REQUIRES_OVERWRITE)
         if not continuous:
-            overwrite = overwrite if overwrite is not None else True
-            if builder is not None:  # call once
-                self._run_builder(builder)
-                self.handle_page_events()
-                self.default_page.write_to_disk()
+            self._run_builder(builder)
+            self.handle_page_events()
+            self.default_page.write_to_disk()
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
-        if self.log_to_disk and HTML in self.log_formats and self._start_browser:
-            self._start_app_or_browser(self, url=self.default_page.html_filename)
-            return True
+        if self.log_to_disk and HTML in self.log_formats:
+            if self._start_browser:
+                self._start_app_or_browser(self, url=self.default_page.html_filename)
+                return True
 
     def _run_builder(self, builder: BuilderTypes | None = None):
         """
@@ -896,12 +899,12 @@ class VisualLog:
         :return: The prepared build object
         """
         if isinstance(builder, type):
-            builder: Type[VisualLogBuilder] | VisualLogBuilder
-            builder = builder(log=self, page_session=page_session)
             from .visual_log_builder import VisualLogBuilder
 
+            builder: Type[VisualLogBuilder] | VisualLogBuilder
+            builder = builder(log=self, page_session=page_session)
             if not isinstance(builder, VisualLogBuilder):
-                raise ValueError("No valid VisualLogBuilder base " "class provided")
+                raise TypeError("No valid VisualLogBuilder base class provided")
         return builder
 
     def _start_app_or_browser(self, real_log: VisualLog, url: str):
@@ -930,7 +933,7 @@ class VisualLog:
                 from scistag.cutestag import cute_available
 
                 if not cute_available():
-                    raise RuntimeError(_ERROR_INSTALL_CUTE)
+                    raise AssertionError(_ERROR_INSTALL_CUTE)
                 if self._auto_reload:
                     raise NotImplementedError(_ERROR_NO_APP_AUTO_RELOAD)
                 from scistag.cutestag.browser import CuteBrowserApp
@@ -940,15 +943,16 @@ class VisualLog:
 
                 bg_handler = BackgroundHandler(self)
                 bg_handler.start()
-                if not self.testing:
+                if not self._testing:
                     app.run()
                     self.server.kill()  # kill flask
                 self.terminate()  # kill self
                 bg_handler.terminate()  # kill bg thread
-                if not self.testing:
-                    exit(0)
-                else:
+                if self._testing:
                     return
+                # pragma: no-cover
+                if not self._testing:
+                    exit(0)
             raise ValueError(f"Unknown application type: {self._app}")
 
     def kill_server(self) -> bool:
@@ -973,14 +977,15 @@ class VisualLog:
         terminated by Ctrl-L or by an exit button added to the log or a quit
         call triggered.
         """
-        if not self.testing:
-            print(SLEEPING_TEXT_MESSAGE)
+        print(SLEEPING_TEXT_MESSAGE)
         while not self._shall_terminate:
             next_event = self.handle_page_events()
             max_sleep_time = self.refresh_time_s
             if next_event is not None:
                 max_sleep_time = max(min(max_sleep_time, next_event - time.time()), 0)
             time.sleep(max_sleep_time)
+            if self._testing:
+                break
 
     def _run_continuous(self, auto_clear: bool, builder: BuilderCallback):
         """

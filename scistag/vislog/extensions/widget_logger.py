@@ -93,7 +93,7 @@ class WidgetLogger(BuilderExtension):
             self._events = []
         return event_list
 
-    def add_button(
+    def button(
         self,
         name: str = "",
         caption: str = "",
@@ -136,7 +136,7 @@ class WidgetLogger(BuilderExtension):
         """
         from scistag.vislog.widgets.timer import LTimer
 
-        new_button = LTimer(
+        new_timer = LTimer(
             self.builder,
             name=name,
             on_tick=on_tick,
@@ -144,5 +144,5 @@ class WidgetLogger(BuilderExtension):
             delays_s=delays_s,
             enforce=enforce,
         )
-        new_button.insert_into_page()
-        return new_button
+        new_timer.insert_into_page()
+        return new_timer

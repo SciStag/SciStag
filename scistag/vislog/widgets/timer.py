@@ -61,7 +61,7 @@ class LTimer(LWidget):
         """The initial delay in seconds"""
         self.enforce = enforce
         """Defines if the frequency shall be enforced"""
-        super().__init__(builder=builder, name=name)
+        super().__init__(builder=builder, name=name, is_view=False)
         self.next_execution = time.time() + (
             self.delays_s if delays_s is not None else 0.0
         )

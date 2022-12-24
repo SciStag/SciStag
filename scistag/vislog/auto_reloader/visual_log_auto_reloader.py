@@ -205,7 +205,7 @@ class VisualLogAutoReloader:
         cls.update_content()
         mt = server_params.pop("mt", True)
         if host_name is not None:
-            cls.main_log.testing = cls.testing
+            cls.main_log._testing = cls.testing
             cls.main_log.run_server(
                 host_name=host_name,
                 port=port,

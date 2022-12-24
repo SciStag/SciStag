@@ -4,7 +4,7 @@ Tests the cell feature
 import time
 
 from scistag.common.time import sleep_min
-from scistag.vislog import VisualLog
+from scistag.vislog import VisualLog, VisualLogBuilder, cell
 from scistag.vislog.widgets.timer import LTimerTickEvent
 
 
@@ -54,6 +54,9 @@ def test_cell_updating():
         nonlocal once_counter, vl
         vl.log(f"CellBuildOnce {once_counter}")
         once_counter += 1
+        vl.page_session.begin_sub_element("testElement")
+        vl.log("Nested content")
+        vl.page_session.end_sub_element()
 
     cell = vl.cell.add(interval_s=0.05, continuous=True, on_build=count_on)
     cell_prog = vl.cell.add(
@@ -80,3 +83,41 @@ def test_cell_updating():
     assert b"CellBuildOnce 1" in vp.render_element()[1]
     # trigger unknown event
     cell.handle_event(LTimerTickEvent(name=cell.name, widget=cell))
+    assert b"Nested content" in vp.render_element()[1]
+
+    out_list = []
+    result_list = vp.get_root_element()[1].list_elements_recursive("", target=out_list)
+    assert out_list is result_list
+    assert len(out_list) == 5
+
+
+class SugarBuilder(VisualLogBuilder):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.counter = 0
+
+    @cell
+    def title_part(self):
+        self.title("A title")
+
+    @cell(interval_s=0.0)
+    def content(self):
+        self.log("Hello world")
+
+    @cell(interval_s=0.02, continuous=True)
+    def adding_content(self):
+        self.counter += 1
+        self.log(f"Counter {self.counter}")
+
+
+def test_cell_sugar():
+    """
+    Tests the cell sugar functionality with which you can add content to a log via
+    decorators.
+    """
+    log = VisualLog()
+    log.run(builder=SugarBuilder)
+    content = log.default_page.get_page("html")
+    assert b"A title" in content
+    assert b"Hello world" in content
+    assert b"Counter " in content

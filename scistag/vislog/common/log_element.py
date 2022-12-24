@@ -83,8 +83,6 @@ class LogElement:
             added
         :param data: The data to add
         """
-        if not isinstance(data, bytes):
-            breakpoint()
         self.last_direct_change_time = time.time()
         self.direct_modifications += 1
         self.total_modifications += 1

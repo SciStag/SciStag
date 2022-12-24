@@ -72,4 +72,6 @@ class MarkdownLogger(BuilderExtension):
         data = FileStag.load_text(source, encoding=encoding)
         if data is not None:
             self.add(data)
+        else:
+            raise ValueError("Invalid file data")
         return self.builder

@@ -285,7 +285,7 @@ class VisualLogBuilder:
             return self
         self.log(str(content))
         if content is None or not isinstance(content, bytes):
-            raise ValueError("Data type not supported")
+            raise TypeError("Data type not supported")
         return self
 
     def title(self, text: str) -> VisualLogBuilder:

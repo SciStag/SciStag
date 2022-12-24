@@ -67,7 +67,7 @@ class Size2D:
         elif value is None:
             self.width = self.height = 0.0
         else:
-            raise ValueError("Incompatible data type")
+            raise TypeError("Incompatible data type")
 
     def __str__(self):
         return f"Size2D({self.width},{self.height})"

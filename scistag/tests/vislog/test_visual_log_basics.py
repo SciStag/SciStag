@@ -1,5 +1,6 @@
 import os.path
 import shutil
+import time
 from logging import ERROR
 from sys import platform
 from unittest import mock
@@ -64,7 +65,7 @@ def test_add_and_links():
     vl.add(123.456)
     vl.add([123, 456])
     vl.add({"someProp": "someVal"})
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         vl.add(Color(22, 33, 44))
     with pytest.raises(ValueError):
         vl.add(b"12345")
@@ -358,7 +359,12 @@ def test_printing():
         log.default_page.write_txt("txt")
         log.default_page.write_md("md")
         assert printer.called
-    log.default_page.render()
+        log.default_page.render()
+        static_url = log.local_static_url
+        assert static_url is None
+        log.run(builder=lambda _: None)
+        static_url = log.local_static_url
+        assert static_url.startswith("file://")
 
 
 def test_backup():
@@ -380,6 +386,16 @@ def test_start_browser():
     """
     with mock.patch("webbrowser.open") as open_browser:
         vis_log = VisualLog(start_browser=True, refresh_time_s=0.05)
+        with mock.patch.object(
+            vis_log.default_builder.widget,
+            "handle_event_list",
+            lambda: time.time() + 0.01,
+        ):
+            vis_log.run_server(test=True, show_urls=False)
+        vis_log._start_app_or_browser(real_log=vis_log, url=vis_log.local_live_url)
+        assert open_browser.called
+    with mock.patch("webbrowser.open") as open_browser:
+        vis_log = VisualLog(start_browser=True, refresh_time_s=0.05)
         vis_log.run_server(test=True, show_urls=False)
         vis_log._start_app_or_browser(real_log=vis_log, url=vis_log.local_live_url)
         assert open_browser.called
@@ -391,6 +407,10 @@ def test_start_browser():
             vis_log = VisualLog(app="cute", refresh_time_s=0.05)
             vis_log.run_server(test=True, show_urls=False)
             assert not open_browser.called
+        with mock.patch("webbrowser.open") as open_browser:
+            with pytest.raises(ValueError):
+                vis_log = VisualLog(app="unknownapp", refresh_time_s=0.05)
+                vis_log.run_server(test=True, show_urls=False)
 
 
 def test_dependencies():

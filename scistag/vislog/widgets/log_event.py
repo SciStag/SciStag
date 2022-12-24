@@ -18,11 +18,11 @@ class LEvent:
     Defines a single event raised by an interactive log page
     """
 
-    name: Union[str, None]
-    "Name of the component which triggered the event"
     widget: "LWidget"
     "The component which triggered the event"
     event_type: str
     "The type of the event"
     builder: Union["VisualLogBuilder", None] = None
     "The log builder which triggered the event"
+    name: Union[str, None] = None
+    "Name of the component which triggered the event"
