@@ -68,6 +68,7 @@ def test_events():
     assert vp.last_client_id == "12345"
     last_time = vp.element_update_times["vlbody"]
     vp.reset_client()
+    sleep_min(1.0 / 15)
     vp.get_events_js("4567")
     assert (
         b"Session was opened in another browser or tab." in vp.get_events_js("12345")[1]
