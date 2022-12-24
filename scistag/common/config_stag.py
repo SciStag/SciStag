@@ -23,7 +23,7 @@ class ConfigStag:
         cls, cur_branch: dict, source: str | list[str], may_create=True
     ) -> dict | None:
         """
-        Returns the branch for a specific path in the format mainBranch.subBranch.nextBranch.
+        Returns the branch for a specific path in the filetype mainBranch.subBranch.nextBranch.
 
         If may_create is set to true all missing branches in between will be created. If not and the path can not
         be resolved None will be returned.

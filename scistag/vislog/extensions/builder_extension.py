@@ -24,6 +24,10 @@ class BuilderExtension:
         """
         The log object
         """
+        self.page = builder.page_session
+        """
+        Defines the target page which holds the page content for each data type
+        """
 
     def add_dependency(self, filename: str):
         """

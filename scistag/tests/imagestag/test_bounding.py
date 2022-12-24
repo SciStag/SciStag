@@ -35,7 +35,7 @@ def test_size2d():
     with pytest.raises(ValueError):
         # noinspection PyTypeChecker
         Size2D((45, 68, 79))
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         # noinspection PyTypeChecker
         Size2D("str")
     assert Size2D(0, 0).is_empty()

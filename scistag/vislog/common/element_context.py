@@ -25,8 +25,13 @@ class ElementContext:
         :param builder: The builder object with which we write to the log
         """
         self.builder = builder
+        """The build element which executes the page rendering"""
+        self.page = builder.page_session
+        """The target page in which the data is stored"""
         self.closing_code: dict = closing_code
+        """The code which shall be appended when this context is closed"""
         self._closed = False
+        """Defines if the context has been closed already"""
 
     def __enter__(self):
         return self
@@ -40,18 +45,17 @@ class ElementContext:
         self._closed = True
         from scistag.vislog import VisualLog
 
-        log: VisualLog = self.builder.target_log
         for key, value in self.closing_code.items():
-            if key in log.log_formats:
+            if key in self.page.log_formats:
                 from scistag.vislog.visual_log import HTML, MD, TXT
 
                 if key == HTML:
-                    log.write_html(value)
+                    self.page.write_html(value)
                 elif key == MD:
-                    log.write_md(value)
+                    self.page.write_md(value)
                 elif key == TXT:
-                    log.write_txt(value)
-        log.clip_logs()
+                    self.page.write_txt(value)
+        self.page.handle_modified()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()

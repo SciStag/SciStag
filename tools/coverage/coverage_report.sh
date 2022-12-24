@@ -8,8 +8,9 @@ cd $ROOT_DIR
 echo "Executing unit tests and creating coverage report..."
 export TEST_RELEASE=1
 export TEST_GIT_INTEGRITY=1
-poetry run coverage run -m pytest ./scistag/tests
-poetry run coverage report -m
-coverage html
+poetry run pytest --cov=. --dist=loadfile -n auto ./scistag/tests
+# poetry run coverage run -m pytest ./scistag/tests
+# poetry run coverage report -m
+poetry run coverage html
 cd $CUR_DIR
 echo "Moving to original directory ${CUR_DIR}..."

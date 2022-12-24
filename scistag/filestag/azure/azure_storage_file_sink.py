@@ -88,7 +88,7 @@ class AzureStorageFileSink(FileSink):
                 ).get_connection_string()
                 service = BlobServiceClient.from_connection_string(connection_string)
             else:
-                raise ValueError("Connection string has the wrong format")
+                raise ValueError("Connection string has the wrong filetype")
         if service is None:
             raise ValueError("No service client or url provided")
         if container is None or not isinstance(container, str) or len(container) == 0:

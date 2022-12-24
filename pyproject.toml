@@ -98,7 +98,8 @@ pytest-order = "^1.0.1"
 pytest-xdist = "^2.5.0"
 pre-commit = "^2.20.0"
 coveralls = "^3.3.1"
-black = { version = "^22.10.0", extras = ["d"] }
+black = { version = "^22.10.0", extras = ["d", "jupyter"] }
+pytest-cov = "^4.0.0"
 
 [tool.poetry.group.docu]
 optional = true
@@ -114,6 +115,21 @@ importtime-waterfall = { version = "1.0.0" }
 
 [tool.coverage.run]
 omit = [".*", "*/site-packages/*",
+    "*/__main__.py",
+    "scistag/mediastag/video_source.py",
+    "scistag/imagestag/html_renderer.py",
+    "scistag/webstag/server/flask_server/flask_common.py",
+    "scistag/mediastag/video_source_camera.py",
+    "scistag/mediastag/video_source_datastag.py",
+    "scistag/mediastag/video_source_movie.py",
+    "scistag/mediastag/camera_cv2.py",
+    "scistag/common/list_helper.py",
+    "scistag/imagestag/formatted_text.py",
+    "scistag/imagestag/pandas_renderer.py",
+    "scistag/mediastag/__init__.py",
+    "scistag/shapestag/polygon.py",
+    "scistag/shapestag/shape_list.py",
+    "scistag/vislog/widgets/timer.py",
     "*/config-*.py",
     "*/config.py",
     "*/cutestag/*",
@@ -135,6 +151,8 @@ exclude_lines = ["pragma: no cover",
     "def __repr__",
     "pass",
     "if self.debug",
+    "if not self._testing",
+    "if self._testing",
     "if not _UNIT_TESTING:",
     "if TYPE_CHECKING:",
     "raise AssertionError",

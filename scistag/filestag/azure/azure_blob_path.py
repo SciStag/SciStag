@@ -47,8 +47,8 @@ class AzureBlobPath(BaseModel):
 
         :param connection_string: The connection string.
 
-            This string can either be in official format, starting with
-            DefaultEndpoints... or in the FileStag format
+            This string can either be in official filetype, starting with
+            DefaultEndpoints... or in the FileStag filetype
             azure://DefaultEndpoints... and can optionally contain the container
             name after a slash and either the blob name or search mask after
             an additional slash.
@@ -103,12 +103,12 @@ class AzureBlobPath(BaseModel):
         cls, url: str, insert_key: bool = True
     ) -> tuple[str, str, str] | None:
         """
-        Splits an Azure url of the format ``azure://CONNECTION_STRING_INCLUDING_KEY/container_name`` into its
+        Splits an Azure url of the filetype ``azure://CONNECTION_STRING_INCLUDING_KEY/container_name`` into its
         components.
 
         :param url: The URL
         :param insert_key: If true a referenced key using for example
-            {{env.ENVIRONMENT_VARIABLE}} as format will automatically be
+            {{env.ENVIRONMENT_VARIABLE}} as filetype will automatically be
             inserted. True by default.
         :return: ConnectionString, ContainerName, SearchPath. If the container
             name or the search path are not provided, empty strings will be

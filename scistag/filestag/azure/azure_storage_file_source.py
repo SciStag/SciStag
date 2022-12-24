@@ -3,6 +3,9 @@ Implements the :class:`AzureStorageFileSource` class which allows iterating
 files stored in an Azure Blob Storage
 """
 from __future__ import annotations
+
+import uuid
+from io import BytesIO
 from typing import TYPE_CHECKING, Union
 from collections.abc import Iterable
 from scistag.filestag.azure.azure_blob_path import AzureBlobPath
@@ -15,7 +18,7 @@ from scistag.filestag.file_source_iterator import FileSourceIterator
 from scistag.filestag.protocols import is_azure_storage_source
 
 if TYPE_CHECKING:
-    from azure.storage.blob import BlobServiceClient, ContainerClient
+    from azure.storage.blob import BlobServiceClient, ContainerClient, BlobBlock
 
 
 class AzureStorageFileSource(FileSource):
@@ -37,7 +40,7 @@ class AzureStorageFileSource(FileSource):
 
     def __init__(self, source: str, tag_filter: str | None = None, **params):
         """
-        :param source: The source data definition, awaiting the following format:
+        :param source: The source data definition, awaiting the following filetype:
             ``azure://CONNECTION_STRING_INCLUDING_KEY/container_name`` or
             ``azure://CONNECTION_STRING_INCLUDING_KEY/container_name/searchPath``
         :param tag_filter: The tag filter to search files by a tag. None by default. See
@@ -57,6 +60,12 @@ class AzureStorageFileSource(FileSource):
             )
 
         self.blob_path = AzureBlobPath.from_string(source)
+        self.threads_per_mb = 0.10
+        """The count of threads to wind up per megabyte being downloaded.
+        
+        By default one thread per 10 megabyte of data"""
+        self.max_threads = 8
+        """The maximum count of parallel threads per download"""
         assert len(self.blob_path.container_name) or self.blob_path.sas_url is not None
         if self.blob_path.is_sas():
             from azure.storage.blob import BlobServiceClient, ContainerClient
@@ -116,8 +125,12 @@ class AzureStorageFileSource(FileSource):
         if not self.handle_file_list_filter(entry):
             return None
         try:
+            concurrences = min(
+                max(0, int(round(entry.file_size / self.threads_per_mb))),
+                self.max_threads,
+            )
             return self.container_client.download_blob(
-                self.search_path + filename
+                self.search_path + filename, max_concurrency=concurrences
             ).readall()
         except ResourceNotFoundError:
             return None

@@ -50,7 +50,7 @@ class TaskThread(ManagedThread):
         Override this method with your own task handling method.
         """
         self._task_event.wait(0.1)
-        if self._task_event.isSet():
+        if self._task_event.is_set():
             self._task_event.clear()
         with self._access_lock:
             task = self._tasks.pop() if len(self._tasks) else None

@@ -5,7 +5,8 @@ adding data in a VisualLog.
 
 from __future__ import annotations
 
-from typing import Optional, Any, TYPE_CHECKING, Union
+import types
+from typing import Any, TYPE_CHECKING, Union
 import io
 
 import html
@@ -16,19 +17,23 @@ import filetype
 import numpy as np
 from pydantic import BaseModel
 
-from scistag.imagestag import Image, Canvas, PixelFormat, Size2D
+from scistag.imagestag import Image, Size2D
 
-from scistag.vislog.visual_log import VisualLog, MD, TXT, HTML, TABLE_PIPE
+from scistag.vislog.visual_log import VisualLog, HTML
 from scistag.plotstag import Figure, Plot, MPHelper
 
 if TYPE_CHECKING:
     import pandas as pd
     from matplotlib import pyplot as plt
+    from scistag.vislog.sessions.page_session import PageSession
+    from scistag.vislog.common.page_update_context import PageUpdateContext
     from scistag.vislog.extensions.pyplot_log_context import PyPlotLogContext
     from scistag.vislog.extensions.markdown_logger import MarkdownLogger
     from scistag.vislog.extensions.pandas_logger import PandasLogger
     from scistag.vislog.extensions.numpy_logger import NumpyLogger
+    from scistag.vislog.extensions.cell_logger import CellLogger
     from scistag.vislog.extensions.collection_logger import CollectionLogger
+    from scistag.vislog.extensions.widget_logger import WidgetLogger
 
 LogableContent = Union[
     str,
@@ -68,11 +73,19 @@ class VisualLogBuilder:
     documentation creation.
     """
 
-    def __init__(self, log: "VisualLog"):
+    def __init__(
+        self, log: "VisualLog", page_session: Union["PageSession", None] = None
+    ):
         """
         :param log: The log to which the content shall be added.
         """
         self.target_log: "VisualLog" = log
+        self.page_session = page_session
+        """
+        Defines the target page which will store this builder's data
+        """
+        if self.page_session is None:
+            self.page_session = log.default_page
         self._file_dependencies = []
         """
         A list of files which were used to build the current log. When ever
@@ -126,6 +139,14 @@ class VisualLogBuilder:
         """
         Extension to log lists and dictionaries
         """
+        self._cell: Union["CellLogger", None] = None
+        """
+        Extension to add replaceable, dynamic content cells
+        """
+        self._widget: Union["WidgetLogger", None] = None
+        """
+        Extension to add visual, interactive components 
+        """
 
     def build(self):
         """
@@ -134,7 +155,12 @@ class VisualLogBuilder:
         This is usually the function you want to override to implement your
         own page builder.
         """
-        pass
+        for key, value in self.__class__.__dict__.items():
+            attr = getattr(self, key)
+            if isinstance(attr, types.MethodType):
+                if "__log_cell" in attr.__dict__:
+                    cell_config = attr.__dict__["__log_cell"]
+                    self.cell.add(on_build=attr, **cell_config)
 
     def build_page(self):
         """
@@ -170,15 +196,15 @@ class VisualLogBuilder:
         """
         Clears the whole log (excluding headers and footers)
         """
-        self.target_log.clear()
+        self.page_session.clear()
 
-    def embed(self, log: VisualLog):
+    def embed(self, page: PageSession):
         """
         Embeds another VisualLog's content into this one
 
-        :param log: The source log
+        :param page: The source log page to embed
         """
-        self.target_log.embed(log)
+        self.page_session.embed(page)
 
     def evaluate(self, code: str, log_code: bool = True) -> Any:
         """
@@ -255,11 +281,11 @@ class VisualLogBuilder:
             return self
             # dict or list
         if isinstance(content, (list, dict)):
-            self.collection.log(content)
+            self.collection.add(content)
             return self
         self.log(str(content))
         if content is None or not isinstance(content, bytes):
-            raise ValueError("Data type not supported")
+            raise TypeError("Data type not supported")
         return self
 
     def title(self, text: str) -> VisualLogBuilder:
@@ -290,7 +316,7 @@ class VisualLogBuilder:
             else:
                 self.add_md(f"{text}\\")
             self.add_txt(text)
-        self.clip_logs()
+        self.handle_modified()
         return self
 
     def link(self, text: str, link: str) -> VisualLogBuilder:
@@ -312,7 +338,7 @@ class VisualLogBuilder:
             else:
                 self.add_md(f"{text}\\")
             self.add_txt(text)
-        self.clip_logs()
+        self.handle_modified()
         return self
 
     def br(self) -> VisualLogBuilder:
@@ -353,7 +379,7 @@ class VisualLogBuilder:
             character = "=" if level < 2 else "-"
             self.add_txt(character * len(text))
         self.add_txt("")
-        self.clip_logs()
+        self.handle_modified()
         return self
 
     def sub_x3(self, text: str) -> VisualLogBuilder:
@@ -404,7 +430,7 @@ class VisualLogBuilder:
         """
         self.add_md(code)
         self.add_html(code + "\n")
-        self.clip_logs()
+        self.handle_modified()
         return self
 
     @property
@@ -451,6 +477,28 @@ class VisualLogBuilder:
             self._collection = CollectionLogger(self)
         return self._collection
 
+    @property
+    def cell(self) -> "CellLogger":
+        """
+        Methods to add dynamic content regions to the log
+        """
+        from .extensions.cell_logger import CellLogger
+
+        if self._cell is None:
+            self._cell = CellLogger(self)
+        return self._cell
+
+    @property
+    def widget(self) -> "WidgetLogger":
+        """
+        Methods to add interactive widgets to the log
+        """
+        from .extensions.widget_logger import WidgetLogger
+
+        if self._widget is None:
+            self._widget = WidgetLogger(self)
+        return self._widget
+
     def code(self, code: str) -> VisualLogBuilder:
         """
         Adds code to the log
@@ -467,7 +515,7 @@ class VisualLogBuilder:
         )
         self.add_md(f"```\n{code}\n```")
         self.add_txt(code)
-        self.clip_logs()
+        self.handle_modified()
         return self
 
     @staticmethod
@@ -599,7 +647,7 @@ class VisualLogBuilder:
         :param html_code: The html code
         :return: True if txt logging is enabled
         """
-        self.target_log.write_html(html_code)
+        self.page_session.write_html(html_code)
 
     def create_backup(self) -> VisualLogBackup:
         """
@@ -615,9 +663,9 @@ class VisualLogBuilder:
         :return: The backup data
         """
         self.flush()
-        if HTML not in self.target_log.log_formats:
+        if HTML not in self.page_session.log_formats:
             raise ValueError("At the moment only HTML backup is supported")
-        return VisualLogBackup(data=self.target_log.get_body(HTML))
+        return VisualLogBackup(data=self.page_session.get_body(HTML))
 
     def insert_backup(self, backup: VisualLogBackup):
         """
@@ -638,7 +686,7 @@ class VisualLogBuilder:
         :param no_break: If defined no line break will be added
         :return: True if txt logging is enabled
         """
-        self.target_log.write_md(md_code, no_break=no_break)
+        self.page_session.write_md(md_code, no_break=no_break)
 
     def add_txt(self, txt_code: str, console: bool = True, md: bool = False):
         """
@@ -653,13 +701,13 @@ class VisualLogBuilder:
         :param md: Defines if the text shall be added to markdown as well
         :return: True if txt logging is enabled
         """
-        return self.target_log.write_txt(txt_code, console, md)
+        return self.page_session.write_txt(txt_code, console, md)
 
-    def clip_logs(self):
+    def handle_modified(self):
         """
-        Clips the logging files (e.g. if they are limited in length)
+        Is called when a new block of content has been inserted
         """
-        self.target_log.clip_logs()
+        self.page_session.handle_modified()
 
     def get_temp_path(self, relative: str | None = None) -> str:
         """
@@ -680,7 +728,7 @@ class VisualLogBuilder:
         :param name: The desired name
         :return: The effective name with which the data shall be stored
         """
-        return self.target_log.reserve_unique_name(name)
+        return self.page_session.reserve_unique_name(name)
 
     def flush(self) -> VisualLogBuilder:
         """
@@ -701,3 +749,22 @@ class VisualLogBuilder:
             default only local files are observed.
         """
         self._file_dependencies.append(filename)
+
+    def begin_update(self) -> "PageUpdateContext":
+        """
+        Can be called at the beginning of a larger update block, e.g. if a page
+        is completely cleared and re-built to prevent page flickering.
+
+        Will automatically created a backup of the page's previous state and will
+        return this update until end_update is called as often as begin_update.
+
+        A PageUpdateContext can be used via `with self.begin_update()` to automatically
+        call end_update once the content block is left.
+        """
+        self.page_session.begin_update()
+
+    def end_update(self):
+        """
+        Ends the update mode
+        """
+        self.page_session.end_update()

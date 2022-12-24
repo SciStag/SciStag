@@ -8,6 +8,9 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING
 
+from scistag.vislog.visual_log import HTML
+from scistag.webstag.server import WebResponse
+
 if TYPE_CHECKING:
     from scistag.vislog import VisualLog
 
@@ -37,9 +40,9 @@ class VisualLogService:
         event_name = params.pop("name", "")
         event_type = params.pop("type", "")
         if len(event_name):
-            from scistag.vislog.log_event import LogEvent
+            from scistag.vislog.widgets.log_event import LEvent
 
-            self.log.add_event(LogEvent(name=event_name, event_type=event_type))
+            self.log.add_event(LEvent(name=event_name, event_type=event_type))
             return "OK"
         return "Bad request", 400
 
@@ -47,7 +50,18 @@ class VisualLogService:
         """
         Returns the most recent index.html
         """
-        return self.log.get_page("html")
+        return self.log.default_page.get_page(format_type=HTML)
+
+    def get_events(self, *path, sessionId: str) -> WebResponse:
+        """
+        Returns the page's newest events which shall be executed in JavaScript in the
+        script liveLog/defaultLive_view.html
+        """
+        event_header, event_body = self.log.default_page.get_events_js(sessionId)
+        if event_body is None:  # nothing changed?
+            return WebResponse(body=b"", status=304)
+        response = WebResponse(body=event_body, headers=event_header)
+        return response
 
     def get_pid(self):
         """

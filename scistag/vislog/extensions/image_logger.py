@@ -18,6 +18,18 @@ if TYPE_CHECKING:
     from scistag.vislog.visual_log import VisualLog
     from scistag.vislog.visual_log_builder import VisualLogBuilder
 
+MAXIMUM_IMAGE_WIDTH = 8096
+"""
+The absolute maximum width of an image
+"""
+
+MAX_SIZE_ERROR = (
+    f"The maximum image width is {MAXIMUM_IMAGE_WIDTH} pixels. "
+    f"Note that a max_width passed as floating point is "
+    f"handled as scaling factor relative to the log's maximum"
+    f"width."
+)
+
 
 class ImageLogger(BuilderExtension):
     """
@@ -42,7 +54,7 @@ class ImageLogger(BuilderExtension):
         download: bool = False,
         scaling: float = 1.0,
         max_width: int | float | None = None,
-        format: str | tuple[str, int] | None = None,
+        filetype: str | tuple[str, int] | None = None,
         optical_scaling: float = 1.0,
         html_linebreak=True,
     ):
@@ -66,7 +78,7 @@ class ImageLogger(BuilderExtension):
             - float = Scale the image to the defined percentual size of the
                 max_fig_size, 1.0 = max_fig_size
 
-        :param format: The image format, with our without quality grade
+        :param filetype: The image format, with our without quality grade
             e.g. "jpg" or ("jpg", 90).
 
             Has no effect if the image was already as bytes stream.
@@ -115,6 +127,8 @@ class ImageLogger(BuilderExtension):
                 scaling = None
                 if isinstance(max_width, float):
                     max_width = int(round(self.builder.max_fig_size.width * max_width))
+                    if max_width >= MAXIMUM_IMAGE_WIDTH:
+                        raise ValueError(MAX_SIZE_ERROR)
                 max_size = (max_width, None)
             if not isinstance(source, Image):
                 source = Image(source)
@@ -128,11 +142,11 @@ class ImageLogger(BuilderExtension):
             encoded_image = source
         else:
             img_format, quality = self.log.image_format, self.log.image_quality
-            if format is not None:
-                if isinstance(format, tuple):
-                    img_format, quality = format
+            if filetype is not None:
+                if isinstance(filetype, tuple):
+                    img_format, quality = filetype
                 else:
-                    img_format = format
+                    img_format = filetype
             encoded_image = source.encode(filetype=img_format, quality=quality)
         # store on disk if required
         if self.log.log_to_disk:
@@ -144,18 +158,18 @@ class ImageLogger(BuilderExtension):
             embed_data = self._build_get_embedded_image(encoded_image)
             file_location = embed_data
         if len(file_location):
-            self.log.write_html(
+            self.page.write_html(
                 f'<img src="{file_location}" {size_definition}>{html_lb}\n'
             )
-        if self.log.log_txt_images and self.log.txt_export:
+        if self.log.log_txt_images and self.page.txt_export:
             if not isinstance(source, Image):
                 source = Image(source)
             max_width = min(max(source.width / 1024 * 80, 1), 80)
-            self.log.write_txt(source.to_ascii(max_width=max_width))
-            self.log.write_txt(f"Image: {alt_text}\n")
+            self.page.write_txt(source.to_ascii(max_width=max_width))
+            self.page.write_txt(f"Image: {alt_text}\n")
         else:
-            self.log.write_txt(f"\n[IMAGE][{alt_text}]\n")
-        self.log.clip_logs()
+            self.page.write_txt(f"\n[IMAGE][{alt_text}]\n")
+        self.page.handle_modified()
 
     def _insert_image_reference(
         self,
@@ -186,18 +200,22 @@ class ImageLogger(BuilderExtension):
         if scaling != 1.0 or html_scaling != 1.0 or max_width is not None:
             image = Image(source)
             if max_width is not None:
+                if isinstance(max_width, float):
+                    max_width = int(round(self.builder.max_fig_size.width * max_width))
+                    if max_width >= MAXIMUM_IMAGE_WIDTH:
+                        raise ValueError(MAX_SIZE_ERROR)
                 scaling = max_width / image.width
             width, height = (
                 int(round(image.width * scaling * html_scaling)),
                 int(round(image.height * scaling * html_scaling)),
             )
-            self.log.write_html(
+            self.page.write_html(
                 f'<img src="{source}" with={width} height={height}>{html_lb}'
             )
         else:
-            self.log.write_html(f'<img src="{source}">{html_lb}')
-        self.log.write_md(f"![{name}]({source})\n")
-        self.log.write_txt(f"\n[IMAGE][{alt_text}]\n")
+            self.page.write_html(f'<img src="{source}">{html_lb}')
+        self.page.write_md(f"![{name}]({source})\n")
+        self.page.write_txt(f"\n[IMAGE][{alt_text}]\n")
 
     def _log_image_to_disk(
         self, filename: str, name: str, source: bytes | Image, encoded_image
@@ -230,8 +248,8 @@ class ImageLogger(BuilderExtension):
                 FileStag.save(target_filename, encoded_image)
         if not self.log.embed_images:
             file_location = FilePath.basename(target_filename)
-        if self.log.md_export:
-            self.log.write_md(f"![{name}]({FilePath.basename(target_filename)})\n")
+        if self.page.md_export:
+            self.page.write_md(f"![{name}]({FilePath.basename(target_filename)})\n")
         return file_location
 
     @staticmethod
@@ -253,4 +271,4 @@ class ImageLogger(BuilderExtension):
 
         :return: True if they do
         """
-        return self.log.md_export or not self.log.embed_images
+        return self.page.md_export or not self.log.embed_images

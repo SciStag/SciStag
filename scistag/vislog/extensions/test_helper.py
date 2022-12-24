@@ -148,7 +148,7 @@ class TestHelper(BuilderExtension):
             df.to_csv(output, lineterminator="\n")
             result_hash_val = hashlib.md5(output.getvalue()).hexdigest()
             if result_hash_val != hash_val:
-                self.builder.target_log.write_to_disk()
+                self.page.write_to_disk()
                 raise AssertionError(
                     "Hash mismatch - "
                     f"Found: {result_hash_val} - "
@@ -205,7 +205,7 @@ class TestHelper(BuilderExtension):
             bytes_val = data.tobytes()
             result_hash_val = hashlib.md5(bytes_val).hexdigest()
             if result_hash_val != hash_val:
-                self.builder.target_log.write_to_disk()
+                self.page.write_to_disk()
                 raise AssertionError(
                     "Hash mismatch - "
                     f"Found: {result_hash_val} - "
@@ -312,7 +312,7 @@ class TestHelper(BuilderExtension):
                 f"⚠️Hash validation failed!\nValue: " f"{value}\nAssumed: {assumed}",
                 level="error",
             )
-            self.builder.target_log.write_to_disk()
+            self.builder.target_log.default_page.write_to_disk()
             raise AssertionError(
                 "Hash mismatch - " f"Found: {value}\n" f"Assumed: {assumed}"
             )
@@ -327,8 +327,8 @@ class TestHelper(BuilderExtension):
             {
                 "name": checkpoint_name,
                 "lengths": [
-                    len(b"".join(value))
-                    for key, value in self.builder.target_log._logs.items()
+                    len(self.target_log.default_page._logs.build(key))
+                    for key in sorted(self.builder.target_log.log_formats)
                 ],
             }
         )
@@ -348,9 +348,9 @@ class TestHelper(BuilderExtension):
         difference = b""
         index = 0
         keys = []
-        for key, value in self.builder.target_log._logs.items():
+        for key in sorted(self.builder.target_log.log_formats):
             length = lengths[index]
-            data = b"".join(value)
+            data = self.target_log.default_page._logs.build(key)
             index += 1
             if not isinstance(data, bytes):
                 continue

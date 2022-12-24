@@ -1,18 +1,18 @@
-<!-- Auto-reloader - reloads a page with a given internal to asap visualize
-  modifications in Visual Studio Code's or PyCharm's HTML live view -->
-<html lang="en">
-<head>
-    <title>{{ title }}</title>
-</head>
-
 <script>
     pageUpdateTimeout = {{ reload_timeout }};
     pageUpdateFrequency = {{ reload_frequency }};
     pageRetryFrequency = {{ retry_frequency }};
-    let lastData = ""
+    let uniqueSessionId = `s${performance.now()}${Math.random().toString().slice(5)}`.replace('.', '')
+    console.log("Starting session " + uniqueSessionId)
+    let vl_fetch_url = "{{ reload_url }}?sessionId=" + uniqueSessionId
+
+    function handle_set_content(headers, data) {
+        let targetElement = headers.get("targetElement")
+        document.getElementById(targetElement).innerHTML = data;
+    }
 
     function fetch_newest_page() {
-        fetch("{{ reload_url }}", {
+        fetch(vl_fetch_url, {
             method: "GET",
             keepalive: true,
             timeout: pageUpdateTimeout,
@@ -21,10 +21,11 @@
             if (res.status !== 200) {
                 return;
             }
+            lastUpdateTimeStamps = res.headers.get("timestamp")
             res.text().then(data => {
-                if (data.includes("</body>") && lastData !== data) {
-                    document.getElementById('includedContent').innerHTML = data;
-                    lastData = data;
+                let action = res.headers.get("action")
+                if (action === "setContent") {
+                    handle_set_content(res.headers, data)
                 }
             })
         }).catch(function (error) { // just try again until server recovered
@@ -33,12 +34,8 @@
     }
 </script>
 
-<body>
-<div id="includedContent"></div>
+<div id="vlbody"></div>
 
 <script>
     setTimeout(fetch_newest_page, pageUpdateFrequency);
 </script>
-</body>
-
-</html>

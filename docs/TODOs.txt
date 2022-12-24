@@ -1,6 +1,7 @@
 -- TODO NOTES --
 
-- BUG: CollectionLogger.log does not correctly log lists nested in lists
+- Add unit tests for yet completely missing areas and remove them from the omit list
+- PageSession or LogBuilder specific cache
 - Move VisualLog options to separate class, further extract elements
 - Allow VisuaLog to exchange single parts of a page rather than the whole page
 - Switching to Black for code formatting
@@ -30,3 +31,6 @@
 - Test for creating Color from HSV
 - Granting access to Material Design icons
 - Fast histogram visualization via PlotStag
+- VisualLog init start_browser does not fail even if the disk is neither hosted nor stored on disk
+- Passing format to VisualLogBuilder logging functions instead of explicitly passing
+md=True or False

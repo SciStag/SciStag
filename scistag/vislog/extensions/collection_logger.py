@@ -23,7 +23,7 @@ class CollectionLogger(BuilderExtension):
         :param builder: The builder we are using to write to the log
         """
         super().__init__(builder)
-        self.log = self.__call__
+        self.add = self.__call__
 
     def __call__(self, data: dict | list):
         """
@@ -40,6 +40,6 @@ class CollectionLogger(BuilderExtension):
         options.identifier_postfix = ": **"
         dict_tree = str(TextTree.from_collection(data, options=options))
         self.builder.md(dict_tree, exclude_targets={"txt"})
-        if self.target_log.txt_export:
+        if self.builder.page_session.txt_export:
             dict_tree_txt = str(TextTree.from_collection(data))
             self.builder.add_txt(dict_tree_txt)

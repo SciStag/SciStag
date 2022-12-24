@@ -57,9 +57,12 @@ class WebStagServiceBlueprint(Blueprint):
         )
         w_response: WebResponse = self.service.handle_unified_request(fw_request)
         r = Response(w_response.body, status=w_response.status)
+        headers = w_response.headers if w_response.headers is not None else {}
         if not w_response.cache:
             r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
             r.headers["Pragma"] = "no-cache"
             r.headers["Expires"] = "0"
             r.headers["Cache-Control"] = "public, max-age=0"
+            for key, value in headers.items():
+                r.headers[key] = value
         return r

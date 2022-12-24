@@ -1,5 +1,6 @@
 import os.path
 import shutil
+import time
 from logging import ERROR
 from sys import platform
 from unittest import mock
@@ -64,7 +65,7 @@ def test_add_and_links():
     vl.add(123.456)
     vl.add([123, 456])
     vl.add({"someProp": "someVal"})
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         vl.add(Color(22, 33, 44))
     with pytest.raises(ValueError):
         vl.add(b"12345")
@@ -195,7 +196,7 @@ def test_different_setups(_):
     log: VisualLog = VisualLog(
         max_fig_size=(128, 128),
         log_to_disk=False,
-        image_format=("jpg", 80),
+        filetype=("jpg", 80),
         continuous_write=True,
     )
     assert not log.log_to_disk
@@ -203,33 +204,34 @@ def test_different_setups(_):
     assert log.image_format == "jpg" and log.image_quality == 80
     log.terminate()
     assert log._shall_terminate
-    log.set_log_limit(5)
-    assert log._log_limit == 5
-    assert log._log_stag[-1].log_limit == 5
-    for content_count in range(7):
-        log.default_builder.log("Test")
-    assert len(log._logs["html"]) < 6
+    # TODO New log limit test with new component based approach
+    #    log.set_log_limit(5)
+    #    assert log._log_limit == 5
+    #    assert log._log_stag[-1].log_limit == 5
+    #    for content_count in range(7):
+    #        log.default_builder.log("Test")
+    #    assert len(log._logs["html"]) < 6
 
     log: VisualLog = VisualLog(
         max_fig_size=(128, 128),
         log_to_disk=False,
-        image_format=("jpg", 80),
+        filetype=("jpg", 80),
         continuous_write=True,
     )
     a_console = Console()
     log.add_console(a_console)
     log.default_builder.log("Console text")
-    log.write_to_disk()
+    log.default_page.write_to_disk()
     log.flush()  # just another name for write_to_disk as of now
-    assert log.get_page("wdwdd") == b""
-    assert b"Console text" in log.get_body("html")
-    assert log.get_body("wdwdd") == b""
-    log.render(formats=None)  # enforce fetch
-    log.write_to_disk(formats=None, render=False)
+    assert log.default_page.get_page("wdwdd") == b""
+    assert b"Console text" in log.default_page.get_body("html")
+    assert log.default_page.get_body("wdwdd") == b""
+    log.default_page.render(formats=None)  # enforce fetch
+    log.default_page.write_to_disk(formats=None, render=False)
 
     # log without html
     no_html_log = VisualLog(formats_out={"txt"})
-    no_html_log.write_html("shouldnt be logged")
+    no_html_log.default_page.write_html("shouldnt be logged")
     vl = no_html_log.default_builder
     vl.log("should be logged")
     with no_html_log as vl:
@@ -238,32 +240,10 @@ def test_different_setups(_):
 
 def test_static_file():
     log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, image_format=("jpg", 80)
+        max_fig_size=(128, 128), log_to_disk=False, filetype=("jpg", 80)
     )
     log.add_static_file("testFile.bin", "bHello world")
     assert log.get_file("testFile.bin") == "bHello world"
-
-
-@patch("builtins.print")
-def test_sub_logs(_):
-    log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, image_format=("jpg", 80)
-    )
-    log.default_builder.log("MainLog")
-    log.begin_sub_log("SubLogA")
-    log.default_builder.log("SubLogA")
-    log.end_sub_log()
-    log.begin_sub_log("SubLogB", max_fig_size=(128, 128))
-    log.default_builder.log("SubLogB")
-    log.end_sub_log()
-    log.finalize()
-    assert b"SubLogA" in log.sub_log_data["SubLogA"]["html"]
-    assert b"SubLogB" in log.sub_log_data["SubLogB"]["html"]
-    with pytest.raises(AssertionError):
-        log.end_sub_log()
-    with pytest.raises(AssertionError):
-        for x in range(101):
-            log.begin_sub_log("tooManyRecursions")
 
 
 def test_runner():
@@ -272,9 +252,9 @@ def test_runner():
     :return:
     """
     log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, image_format=("jpg", 80)
+        max_fig_size=(128, 128), log_to_disk=False, filetype=("jpg", 80)
     )
-    assert log.invalid == False
+    assert not log.invalid
     log.invalidate()
     assert log.invalid
 
@@ -285,10 +265,10 @@ def test_statistics():
     :return:
     """
     log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, image_format=("jpg", 80)
+        max_fig_size=(128, 128), log_to_disk=False, filetype=("jpg", 80)
     )
     log.default_builder.log_statistics()
-    body = log.render().get_body("html")
+    body = log.default_page.render().get_body("html")
     assert b"total updates" in body
 
 
@@ -308,7 +288,7 @@ def test_simple_logging():
     cl.log("This is an error", level=LogLevel.ERROR)
     cl.log("This is also an error", level="error")
     cl.log(None)
-    vl.embed(log.render())
+    vl.embed(log.default_page.render())
 
 
 def test_adv_logging():
@@ -343,7 +323,7 @@ def test_clear_log():
         formats_out={"html", "md"},
     )
     log.default_builder.log("Something")
-    log.write_to_disk()
+    log.default_page.write_to_disk()
     data = log.get_file("index.md")
     assert log.get_file("../../evil/index.md") is None
     assert len(data) >= 5
@@ -354,7 +334,7 @@ def test_clear_log():
         clear_target_dir=True,
         formats_out={"html", "md"},
     )
-    new_log.write_to_disk()
+    new_log.default_page.write_to_disk()
     data = FileStag.load(f"{bp}/clogs/index.md")
     assert len(data) <= 5
 
@@ -375,11 +355,16 @@ def test_printing():
     )
     log.add_console(console)
     with mock.patch("builtins.print") as printer:
-        log.write_html("<br>")
-        log.write_txt("txt")
-        log.write_md("md")
+        log.default_page.write_html("<br>")
+        log.default_page.write_txt("txt")
+        log.default_page.write_md("md")
         assert printer.called
-    log.render()
+        log.default_page.render()
+        static_url = log.local_static_url
+        assert static_url is None
+        log.run(builder=lambda _: None)
+        static_url = log.local_static_url
+        assert static_url.startswith("file://")
 
 
 def test_backup():
@@ -392,13 +377,23 @@ def test_backup():
     vl.sub_test("inserting backups")
     vl.test.checkpoint("log.title")
     vl.insert_backup(backup)
-    vl.test.assert_cp_diff(hash_val="ce44db53fa376147f10abb4f5967a152")
+    vl.test.assert_cp_diff(hash_val="b4c6a2e280126abb4b4cd7361e2dd102")
 
 
 def test_start_browser():
     """
     Tests the browser startup
     """
+    with mock.patch("webbrowser.open") as open_browser:
+        vis_log = VisualLog(start_browser=True, refresh_time_s=0.05)
+        with mock.patch.object(
+            vis_log.default_builder.widget,
+            "handle_event_list",
+            lambda: time.time() + 0.01,
+        ):
+            vis_log.run_server(test=True, show_urls=False)
+        vis_log._start_app_or_browser(real_log=vis_log, url=vis_log.local_live_url)
+        assert open_browser.called
     with mock.patch("webbrowser.open") as open_browser:
         vis_log = VisualLog(start_browser=True, refresh_time_s=0.05)
         vis_log.run_server(test=True, show_urls=False)
@@ -412,6 +407,10 @@ def test_start_browser():
             vis_log = VisualLog(app="cute", refresh_time_s=0.05)
             vis_log.run_server(test=True, show_urls=False)
             assert not open_browser.called
+        with mock.patch("webbrowser.open") as open_browser:
+            with pytest.raises(ValueError):
+                vis_log = VisualLog(app="unknownapp", refresh_time_s=0.05)
+                vis_log.run_server(test=True, show_urls=False)
 
 
 def test_dependencies():

@@ -43,22 +43,21 @@ class TableContext(ElementContext):
                     for col in row:
                         ...
         """
+        closing_code = {"html": "</table><br>", "md": "</table><br>", "txt": "\n"}
+        super().__init__(builder, closing_code)
         self.size = size
         """
         The count of table rows and columns
         """
-        log = builder.target_log
-        log.write_html(f'<table class="log_table">')
-        log.write_txt("\n", md=False)
-        log.write_md("<table>")
+        self.page.write_html(f'<table d="vl_log_table">')
+        self.page.write_txt("\n", md=False)
+        self.page.write_md("<table>")
         self._entered: bool = False
         "Defines if the table was entered already"
-        closing_code = {"html": "</table><br>", "md": "</table><br>", "txt": "\n"}
-        super().__init__(builder, closing_code)
 
     def __enter__(self) -> TableContext:
         if self._entered:
-            return
+            return self
         self._entered = True
         return self
 
@@ -220,15 +219,14 @@ class TableRowContext(ElementContext):
 
     def __init__(self, table: "TableContext"):
         """
-        :param builder: The builder object with which we write to the log
+        :param table: The table context within which the row shall be added
         """
-        self.table = table
-        log = self.table.builder.target_log
-        log.write_html(f"<tr>\n")
-        log.write_txt("| ", md=False)
-        log.write_md("<tr>\n", no_break=True)
         closing_code = {"html": "</tr>", "md": "</tr>", "txt": "\n"}
         super().__init__(table.builder, closing_code)
+        self.table = table
+        self.page.write_html(f"<tr>\n")
+        self.page.write_txt("| ", md=False)
+        self.page.write_md("<tr>\n", no_break=True)
 
     def __enter__(self) -> TableRowContext:
         return self
@@ -260,7 +258,7 @@ class TableRowContext(ElementContext):
         :return: The column context to be entered via `with row.add_col():...`
         """
         if content is not None:
-            self.builder.target_log.write_html(f"<td>")
+            self.page.write_html(f"<td>")
             if isinstance(content, Callable):
                 content()
             else:
@@ -269,7 +267,7 @@ class TableRowContext(ElementContext):
                     self.builder.md(content)
                 else:
                     self.builder.add(content)
-            self.builder.target_log.write_html("</td>")
+            self.page.write_html("</td>")
             return None
 
         return TableColumnContext(self.builder)
@@ -302,12 +300,11 @@ class TableColumnContext(ElementContext):
         """
         :param builder: The builder object with which we write to the log
         """
-        log = builder.target_log
-        log.write_html(f"<td>\n")
-        log.write_txt("| ", md=False)
-        log.write_md(f"<td>", no_break=True)
         closing_code = {"html": "</td>", "md": "</td>", "txt": " |\n"}
         super().__init__(builder, closing_code)
+        self.page.write_html(f"<td>\n")
+        self.page.write_txt("| ", md=False)
+        self.page.write_md(f"<td>", no_break=True)
 
     def __enter__(self) -> TableColumnContext:
         return self
@@ -363,7 +360,7 @@ class TableLogger(BuilderExtension):
         :param index: Defines if the table has an index column
         :param header: Defines if the table has a header
         """
-        code = '<table class="log_table">\n'
+        code = '<table class="vl_log_table">\n'
         for row_index, row in enumerate(data):
             tabs = "\t"
             code += f"{tabs}<tr>\n"
@@ -386,19 +383,19 @@ class TableLogger(BuilderExtension):
                 tabs = tabs[0:-1]
             code += f"{tabs}</tr>\n"
         code += "</table>\n"
-        self.target_log.write_html(code)
+        self.page.write_html(code)
         for row in data:
             row_text = "| "
             for index, col in enumerate(row):
                 col = str(col)
                 row_text += col + " | "
-            self.target_log.write_txt(row_text, md=False)
+            self.page.write_txt(row_text, md=False)
         for row_index, row in enumerate(data):
             row_text = "| "
             for index, col in enumerate(row):
                 col = str(col)
                 row_text += col + " | "
-            self.target_log.write_md(row_text)
+            self.page.write_md(row_text)
             if row_index == 0:
-                self.target_log.write_md("|" + "---|" * len(row))
+                self.page.write_md("|" + "---|" * len(row))
         return self

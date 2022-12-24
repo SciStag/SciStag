@@ -16,7 +16,7 @@ class Env:
         """
         Loads an environment file located at str and applies it
 
-        The file is usually named .env and has the format key=value where a
+        The file is usually named .env and has the filetype key=value where a
         key value pair is defined per line.
 
         :param path: The file's path.

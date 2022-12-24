@@ -25,7 +25,7 @@ class VideoRetrievalThread(Thread):
 
     def run(self) -> None:
         self.camera.handle_initialize_camera()
-        while not self.kill_event.isSet():
+        while not self.kill_event.is_set():
             timestamp, image = self.camera.handle_fetch()
             if image is not None:
                 self.camera.set_image(timestamp, image)

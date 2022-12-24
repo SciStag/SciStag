@@ -274,7 +274,7 @@ class AddonManager:
 
         :param filter_mask: The addons to search for. Can contains *
             and ? placeholders.
-        :return: A dictionary of the format str: str for every matched addon
+        :return: A dictionary of the filetype str: str for every matched addon
             and it's corresponding FileStag path,
             e.g. `{"emojis.512": "zip://@addons.emojis.512/"}`
         """

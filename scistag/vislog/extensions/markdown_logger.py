@@ -56,7 +56,7 @@ class MarkdownLogger(BuilderExtension):
             self.builder.add_html(parsed + "\n")
         if TXT not in exclude_targets:
             self.builder.add_txt(text)
-        self.builder.clip_logs()
+        self.builder.handle_modified()
         return self.builder
 
     def embed(self, source: FileSourceTypes, encoding="utf-8") -> VisualLogBuilder:
@@ -72,4 +72,6 @@ class MarkdownLogger(BuilderExtension):
         data = FileStag.load_text(source, encoding=encoding)
         if data is not None:
             self.add(data)
+        else:
+            raise ValueError("Invalid file data")
         return self.builder

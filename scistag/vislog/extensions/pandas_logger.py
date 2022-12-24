@@ -87,4 +87,4 @@ class PandasLogger(BuilderExtension):
             else:
                 self.builder.add_md(string_table)
             self.builder.add_txt(string_table)
-        self.builder.target_log.clip_logs()
+        self.page.handle_modified()

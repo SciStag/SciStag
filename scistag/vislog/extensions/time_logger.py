@@ -22,8 +22,7 @@ class TimeLogger(BuilderExtension):
         :param builder: The builder object with which we write to the log
         """
         super().__init__(builder)
-        self._log = self.builder.target_log
-        self.log = self.__call__
+        self.show = self.__call__
 
     def __call__(self, prefix: str = "", postfix: str = "") -> VisualLogBuilder:
         """

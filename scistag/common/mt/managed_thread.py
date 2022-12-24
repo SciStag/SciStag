@@ -63,9 +63,9 @@ class ManagedThread(Thread):
         Executes run_loop until :meth:`terminate` is called from another thread.
         """
         try:
-            if self.terminate_event.isSet():
+            if self.terminate_event.is_set():
                 return
-            while not self.terminate_event.isSet():
+            while not self.terminate_event.is_set():
                 self.run_loop()
         except KeyboardInterrupt:
             pass
