@@ -18,6 +18,18 @@ if TYPE_CHECKING:
     from scistag.vislog.visual_log import VisualLog
     from scistag.vislog.visual_log_builder import VisualLogBuilder
 
+MAXIMUM_IMAGE_WIDTH = 8096
+"""
+The absolute maximum width of an image
+"""
+
+MAX_SIZE_ERROR = (
+    f"The maximum image width is {MAXIMUM_IMAGE_WIDTH} pixels. "
+    f"Note that a max_width passed as floating point is "
+    f"handled as scaling factor relative to the log's maximum"
+    f"width."
+)
+
 
 class ImageLogger(BuilderExtension):
     """
@@ -115,6 +127,8 @@ class ImageLogger(BuilderExtension):
                 scaling = None
                 if isinstance(max_width, float):
                     max_width = int(round(self.builder.max_fig_size.width * max_width))
+                    if max_width >= MAXIMUM_IMAGE_WIDTH:
+                        raise ValueError(MAX_SIZE_ERROR)
                 max_size = (max_width, None)
             if not isinstance(source, Image):
                 source = Image(source)
@@ -186,6 +200,10 @@ class ImageLogger(BuilderExtension):
         if scaling != 1.0 or html_scaling != 1.0 or max_width is not None:
             image = Image(source)
             if max_width is not None:
+                if isinstance(max_width, float):
+                    max_width = int(round(self.builder.max_fig_size.width * max_width))
+                    if max_width >= MAXIMUM_IMAGE_WIDTH:
+                        raise ValueError(MAX_SIZE_ERROR)
                 scaling = max_width / image.width
             width, height = (
                 int(round(image.width * scaling * html_scaling)),
