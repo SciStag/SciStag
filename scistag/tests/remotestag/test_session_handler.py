@@ -4,6 +4,7 @@ Tests the class SessionHandler which handles remote execution user sessions
 import time
 from uuid import UUID
 
+from scistag.common.time import sleep_min
 from scistag.remotestag import SessionHandler, Session, SessionConfig
 
 
@@ -36,7 +37,7 @@ def test_session_handler():
     SessionHandler.shared_handler.garbage_collect()
     session.session_timeout = 2.0
     SessionHandler.shared_handler.garbage_collect()
-    time.sleep(0.05)
+    sleep_min(0.05)
     session.session_timeout = 0.05
     SessionHandler.shared_handler.garbage_collect()
 

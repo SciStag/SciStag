@@ -5,6 +5,7 @@ import time
 from threading import Thread
 from unittest import mock
 
+from scistag.common.time import sleep_min
 from scistag.vislog import VisualLog, VisualLogBuilder
 from scistag.vislog.auto_reloader.visual_log_auto_reloader import VisualLogAutoReloader
 
@@ -16,7 +17,7 @@ def test_log_runner_basics():
     log = VisualLog()
     log.default_stat_update_frequency = 0.2
     log.update_statistics(time.time())
-    time.sleep(0.25)
+    sleep_min(0.25)
     log.update_statistics(time.time())
     statistics = log.get_statistics()
     assert statistics.update_rate >= 0

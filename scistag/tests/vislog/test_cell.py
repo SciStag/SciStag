@@ -3,6 +3,7 @@ Tests the cell feature
 """
 import time
 
+from scistag.common.time import sleep_min
 from scistag.vislog import VisualLog
 from scistag.vislog.widgets.timer import LTimerTickEvent
 
@@ -64,7 +65,7 @@ def test_cell_updating():
     assert b"CellBuild 0" in vp.render_element()[1]
     assert b"CellBuildOnce 0" in vp.render_element()[1]
     assert b"CellBuildProg 0" in vp.render_element()[1]
-    time.sleep(0.05)
+    sleep_min(0.05)
     vl.widget.handle_event_list()
     vl.widget.handle_event_list()
     assert b"CellBuild 1" in vp.render_element()[1]
@@ -74,7 +75,7 @@ def test_cell_updating():
     rendering = vp.render_element()[1]
     assert b"CellBuild 2" in rendering and b"CellBuild 1" not in rendering
     assert b"CellBuildProg 2" in rendering and b"CellBuildProg 1" in rendering
-    time.sleep(0.05)
+    sleep_min(0.05)
     vl.widget.handle_event_list()
     assert b"CellBuildOnce 1" in vp.render_element()[1]
     # trigger unknown event

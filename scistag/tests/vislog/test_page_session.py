@@ -5,6 +5,7 @@ import time
 
 import pytest
 
+from scistag.common.time import sleep_min
 from scistag.vislog import VisualLog
 from scistag.vislog.common.log_element import LogElement
 
@@ -72,13 +73,13 @@ def test_events():
         b"Session was opened in another browser or tab." in vp.get_events_js("12345")[1]
     )
     vl.log("1234")
-    time.sleep(1.0 / 15)
+    sleep_min(1.0 / 15)
     vp.get_events_js("4567")
     assert last_time != vp.element_update_times["vlbody"]
     last_time = vp.element_update_times["vlbody"]
     vp.begin_sub_element("subelement")
     vl.log("Hello world")
     vp.end_sub_element()
-    time.sleep(1.0 / 15)
+    sleep_min(1.0 / 15)
     vp.get_events_js("4567")
     assert last_time != vp.element_update_times["vlbody"]

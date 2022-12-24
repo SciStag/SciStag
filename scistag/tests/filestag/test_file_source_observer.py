@@ -4,6 +4,7 @@ Tests the FileObserver class
 import shutil
 import time
 
+from scistag.common.time import sleep_min
 from scistag.filestag import FileStag, FilePath, FileSource, FileObserver
 
 
@@ -24,10 +25,10 @@ def test_file_source_observer(tmp_path):
     hash_val = fs_obs.__hash__()
     assert fs_obs.__hash__() == hash_val
     FileStag.save(tar_dir + "/testb.bin", b"789")
-    time.sleep(0.05)
+    sleep_min(0.05)
     assert hash_val != fs_obs.__hash__()
     hash_val = fs_obs.__hash__()
-    time.sleep(0.05)
+    sleep_min(0.05)
     FileStag.save(tar_dir + "/testc.bin", b"555")
     assert hash_val != fs_obs.__hash__()
 
@@ -38,6 +39,6 @@ def test_file_source_observer(tmp_path):
     fs_obs.add(single_file)
     FileStag.save(single_file, b"123")
     hash_val = fs_obs.__hash__()
-    time.sleep(0.05)
+    sleep_min(0.05)
     FileStag.save(single_file, b"456")
     assert hash_val != fs_obs.__hash__()

@@ -5,6 +5,7 @@ import os.path
 import time
 from threading import Thread
 
+from scistag.common.time import sleep_min
 from scistag.vislog.auto_reloader.visual_log_auto_reloader import VisualLogAutoReloader
 
 
@@ -30,20 +31,20 @@ class AutoReloadTestThread(Thread):
         start_time = time.time()
         # just spend time
         while VisualLogAutoReloader.get_test_client() is None:
-            time.sleep(0.1)
+            sleep_min(0.01)
             if time.time() - start_time > self.max_wait_time:
                 self.failed = True
                 VisualLogAutoReloader.terminate()
                 return
         # cause an error
-        time.sleep(0.11)
+        sleep_min(0.11)
         self.write_dummy_log("121332ThisIsCausingAnError")
-        time.sleep(0.11)
+        sleep_min(0.11)
         # create a healthy file again
         self.write_dummy_log("abc=123")
         while time.time() - start_time < self.duration:
-            time.sleep(0.11)
-        time.sleep(0.11)
+            sleep_min(0.11)
+        sleep_min(0.11)
         VisualLogAutoReloader.terminate()
         VisualLogAutoReloader.testing = False
 

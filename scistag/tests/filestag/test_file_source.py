@@ -17,6 +17,7 @@ from scistag.filestag import FileSource, FileStag, FilePath, FileSink
 
 from . import vl
 from ...common import ESSENTIAL_DATA_ARCHIVE_NAME
+from ...common.time import sleep_min
 from ...filestag.file_source import FileSourcePathOptions, FileListEntry
 
 
@@ -328,11 +329,11 @@ def test_hash(tmp_path):
     source.refresh()
     assert source.get_hash() == hash_val
     source.refresh()
-    for tries in range(20):
+    for tries in range(15):
         FileStag.save(tar_dir + "/testb.bin", b"789")
         if source.get_hash() != hash_val:
             break
-        time.sleep(0.1)
+        sleep_min(0.1)
         source.refresh()
     assert not source.get_hash() == hash_val
     hash_val = source.get_hash(max_content_size=10)
