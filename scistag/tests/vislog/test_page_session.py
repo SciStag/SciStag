@@ -77,6 +77,7 @@ def test_events():
     vp.get_events_js("4567")
     assert last_time != vp.element_update_times["vlbody"]
     last_time = vp.element_update_times["vlbody"]
+    sleep_min(1.0 / 15)
     vp.begin_sub_element("subelement")
     vl.log("Hello world")
     vp.end_sub_element()
