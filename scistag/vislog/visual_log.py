@@ -124,7 +124,7 @@ class VisualLog:
         tmp_dir: str | None = None,
         clear_target_dir: bool = False,
         continuous_write=False,
-        refresh_time_s=0.5,
+        refresh_time_s=0.25,
         formats_out: set[str] | None = None,
         embed_images: bool | None = None,
         filetype: str | tuple[str, int] = "png",
@@ -1023,7 +1023,7 @@ class VisualLog:
         """
         next_event = None
         for page in self.pages:
-            next_event_time = page.builder.widget.handle_event_list()
+            next_event_time = page.handle_events()
             if next_event_time is not None:
                 if next_event is None or next_event_time < next_event:
                     next_event = next_event_time

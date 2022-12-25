@@ -105,6 +105,10 @@ class VisualLogAutoReloader:
         :param log: The new log of the current run
         """
         cls._embedded_log = log
+        if cls.main_log is not None:
+            cls.main_log.default_page._set_redirect_event_receiver(
+                cls._embedded_log.default_page
+            )
 
     @classmethod
     def update_content(cls):
@@ -202,6 +206,7 @@ class VisualLogAutoReloader:
         # Setup and run the server which will then host our (live) log's
         # content and stay alive during the restarts.
         cls.setup()
+        VisualLogAutoReloader.set_log(log)
         cls.update_content()
         mt = server_params.pop("mt", True)
         if host_name is not None:
@@ -211,6 +216,7 @@ class VisualLogAutoReloader:
                 port=port,
                 public_ips=public_ips,
                 url_prefix=url_prefix,
+                wait=False,
                 mt=mt,
                 **server_params,
             )
@@ -290,7 +296,7 @@ class VisualLogAutoReloader:
         if new_content is None:
             new_content = b""
         try:
-            cls._embedded_log.default_builder.widget.handle_event_list()
+            cls._embedded_log.default_page.handle_events()
             if cls.content == new_content and not cls._embedded_log.invalid:
                 return
             cls.content = new_content

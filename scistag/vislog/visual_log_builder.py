@@ -160,7 +160,9 @@ class VisualLogBuilder:
             if isinstance(attr, types.MethodType):
                 if "__log_cell" in attr.__dict__:
                     cell_config = attr.__dict__["__log_cell"]
-                    self.cell.add(on_build=attr, **cell_config)
+                    new_cell = self.cell.add(
+                        on_build=attr, **cell_config, _builder_method=attr
+                    )
 
     def build_page(self):
         """
@@ -341,13 +343,14 @@ class VisualLogBuilder:
         self.handle_modified()
         return self
 
-    def br(self) -> VisualLogBuilder:
+    def br(self, repetition=1) -> VisualLogBuilder:
         """
         Inserts a simple line break
 
+        :param repetition: The count of linebreaks
         :return: The builder
         """
-        self.add_html("<br>")
+        self.add_html("<br>" * repetition)
         self.add_txt(" ", md=True)
         return self
 

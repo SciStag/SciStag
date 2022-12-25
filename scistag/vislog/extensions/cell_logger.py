@@ -5,7 +5,7 @@ of replaceable logging areas.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union, Callable
 
 from scistag.vislog import BuilderExtension, VisualLogBuilder
 from scistag.vislog.widgets.cell import Cell
@@ -29,6 +29,10 @@ class CellLogger(BuilderExtension):
         :param builder: The builder we are using to write to the log
         """
         super().__init__(builder)
+        self.cells: dict[str, Cell] = {}
+        """
+        Dictionary of all registered cells
+        """
 
     def begin(
         self,
@@ -67,6 +71,7 @@ class CellLogger(BuilderExtension):
         interval_s: float | None = None,
         continuous: bool = False,
         on_build: Union["CellOnBuildCallback", None] = None,
+        _builder_method: Union[Callable, None] = None,
     ) -> Cell:
         """
         Adds an empty content cell without filling it with content and returns it.
@@ -84,6 +89,7 @@ class CellLogger(BuilderExtension):
             interval defined.
         :param on_build: The method to be called when ever the cell was invalidated
             or if the update mode is set to continuous.
+        :param _builder_method: The object method to which this cell is attached
         :return: The content cell reference.
         """
         cell = Cell(
@@ -92,6 +98,37 @@ class CellLogger(BuilderExtension):
             interval_s=interval_s,
             continuous=continuous,
             on_build=on_build,
+            _builder_method=_builder_method,
         )
         cell.leave()
         return cell
+
+    def __setitem__(self, key: str, value: Cell):
+        """
+        Registers a cell so it can be accessed by other functions
+
+        :param key: The cell's name
+        :param value: The cell
+        """
+        self.cells[key] = value
+
+    def __getitem__(self, item) -> Cell:
+        """
+        Returns a registered cell
+
+        :param item: The cell's name
+        :return: The Cell object
+        """
+        return self.cells[item]
+
+    def __len__(self):
+        """
+        Returns the count of registered cells
+        """
+        return len(self.cells)
+
+    def __contains__(self, item):
+        """
+        Returns if a cell with given name does exist
+        """
+        return item in self.cells

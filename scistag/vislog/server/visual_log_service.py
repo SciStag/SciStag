@@ -37,12 +37,9 @@ class VisualLogService:
 
         :param params: The query parameters
         """
-        event_name = params.pop("name", "")
-        event_type = params.pop("type", "")
-        if len(event_name):
-            from scistag.vislog.widgets.log_event import LEvent
-
-            self.log.add_event(LEvent(name=event_name, event_type=event_type))
+        event_type = params.get("type", "")
+        if len(event_type):
+            self.log.default_page.handle_client_event(**params)
             return "OK"
         return "Bad request", 400
 

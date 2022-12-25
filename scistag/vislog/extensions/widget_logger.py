@@ -4,10 +4,12 @@ or sliders to a log.
 """
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Union, Callable
 
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 from scistag.vislog.widgets import LButton, LWidget, LEvent
+from scistag.vislog.widgets.log_button import CLICK_EVENT_TYPE, LClickEvent
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
@@ -146,3 +148,19 @@ class WidgetLogger(BuilderExtension):
         )
         new_timer.insert_into_page()
         return new_timer
+
+    def handle_client_event(self, **params):
+        """
+        Handles a client event (sent from JavaScript)
+
+        :param params: The event parameters
+        """
+        event_type = params.pop("type", "")
+        widget_name = params.pop("name", "")
+        if event_type.startswith("widget_"):
+
+            all_widgets = self.find_all_widgets()
+            if widget_name in all_widgets:
+                widget = all_widgets[widget_name]
+                if event_type == CLICK_EVENT_TYPE:
+                    widget.raise_event(LClickEvent(widget=widget))

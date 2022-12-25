@@ -1,7 +1,7 @@
 <script>
-    pageUpdateTimeout = {{ reload_timeout }};
-    pageUpdateFrequency = {{ reload_frequency }};
-    pageRetryFrequency = {{ retry_frequency }};
+    let pageUpdateTimeout = {{ reload_timeout }};
+    let pageUpdateFrequency = {{ reload_frequency }};
+    let pageRetryFrequency = {{ retry_frequency }};
     let uniqueSessionId = `s${performance.now()}${Math.random().toString().slice(5)}`.replace('.', '')
     console.log("Starting session " + uniqueSessionId)
     let vl_fetch_url = "{{ reload_url }}?sessionId=" + uniqueSessionId
@@ -21,7 +21,7 @@
             if (res.status !== 200) {
                 return;
             }
-            lastUpdateTimeStamps = res.headers.get("timestamp")
+            pageUpdateFrequency = parseInt(res.headers.get("vlRefreshTime"))
             res.text().then(data => {
                 let action = res.headers.get("action")
                 if (action === "setContent") {

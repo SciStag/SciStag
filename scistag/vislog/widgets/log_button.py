@@ -6,13 +6,26 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Union
 
 from scistag.vislog.widgets.log_widget import LWidget
+from scistag.vislog.widgets.log_event import LEvent
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
-    from scistag.vislog.widgets.log_event import LEvent
 
-CLICK_EVENT_TYPE = "click"
+CLICK_EVENT_TYPE = "widget_click"
 "Defines an event which is risen by a button click"
+
+
+class LClickEvent(LEvent):
+    """
+    A click event which is triggered when a widget was clicked
+    """
+
+    def __init__(self, widget: LWidget, **params):
+        """
+        :param widget: The widget such as a LButton which was clicked
+        :param params: Additional parameters
+        """
+        super().__init__(event_type=CLICK_EVENT_TYPE, widget=widget, **params)
 
 
 class LButton(LWidget):
@@ -39,7 +52,7 @@ class LButton(LWidget):
         "The buttons caption"
         from scistag.vislog.widgets.log_event import LEvent
 
-        self.on_click: Union[Callable[[LEvent], None], None] = on_click
+        self.on_click: Union[Callable, None] = on_click
         "The function to be called when the button is clicked"
 
     def write(self):
@@ -51,6 +64,6 @@ class LButton(LWidget):
     def handle_event(self, event: "LEvent"):
         if event.event_type == CLICK_EVENT_TYPE:
             if self.on_click is not None:
-                self.on_click(event)
+                self.on_click()
             return
         super().handle_event(event)

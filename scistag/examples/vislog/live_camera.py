@@ -1,6 +1,5 @@
 """
-A demo which shows how to host a log via http and how to update it's content
-continuously using a callback.
+A demo which shows how to visualize a live camera stream inside a log.
 """
 from __future__ import annotations
 import os
@@ -33,30 +32,30 @@ class LiveCameraDemo(VisualLogBuilder):
         self.title(f"Webcam Demo")
 
     @cell(interval_s=1.0 / 160, continuous=True)
-    def update_image(self):
+    def live_image_view(self):
+        # try to fetch the newest image from the stream
         self.frame_timestamp, new_image = self.video_source.get_image(
             self.frame_timestamp
         )
+        # new image available? normalize it's size to ~1 Megapixel
         if new_image is not None:
-            # new image available? normalize it's size to ~1 Megapixel
             self.last_image = new_image.resized_ext(max_size=(1024, 1024))
-        if self.last_image is not None:
-            self.image(self.last_image, "LiveView", filetype=("jpg", 80))
-            self.br().log_statistics()
-        else:
+        # every received any image yet?
+        if self.last_image is None:
             self.log("Did not receive any image yet :(")
+            return
+        self.image(self.last_image, "LiveView", filetype=("jpg", 80))
+        # TODO Statistics moved to cell and need to be updated
+        self.br().log_statistics()
 
 
 if VisualLog.is_main():
     FRAME_RATE = 60.0  # update as fast as possible
     test_log = VisualLog(
         "Webcam Demo",
-        refresh_time_s=1.0 / FRAME_RATE,
         start_browser=os.environ.get("DEMO_VISLOG_BROWSER", "1") == "1",
     )
     test_log.run_server(
-        continuous=False,  # update continuously
-        auto_clear=False,  # clear log for us each turn
         url_prefix="/webcamDemo",  # host at /webCamDemo
         builder=LiveCameraDemo,
     )  # our update func

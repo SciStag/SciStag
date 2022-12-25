@@ -12,6 +12,7 @@ import time
 from typing import Union, Callable
 
 from scistag.vislog import VisualLogBuilder
+from scistag.vislog.common.log_element import LogElement
 from scistag.vislog.sessions.page_session import PageSession
 from scistag.vislog.widgets import LWidget, LEvent
 
@@ -55,6 +56,7 @@ class Cell(LWidget):
         continuous: bool = False,
         progressive: bool = False,
         on_build: CellOnBuildCallback = None,
+        _builder_method: Union[Callable, None] = None,
     ):
         """
         :param builder: The builder object we are attached to
@@ -65,10 +67,14 @@ class Cell(LWidget):
             to the log. If progressive is set to true the cell will not be cleared upon
             a build call.
         :param on_build: The callback to be called when the cell shall be build
+        :param _builder_method: The object method to which this cell is attached
         """
+        if _builder_method is not None:
+            _builder_method.__dict__["cell"] = self
+            builder.cell[_builder_method.__name__] = self
         builder.begin_update()
         name = builder.page_session.reserve_unique_name("cell", digits=4)
-        builder.page_session.write_html(f'<div id="{name}">\n')
+        builder.page_session.write_html(f'<div id="{name}" class="vl_log_cell">\n')
         super().__init__(builder=builder, name="cell", explicit_name=name)
         self.cell_name = name
         self.page_session.enter_element(self.sub_element)
@@ -101,7 +107,6 @@ class Cell(LWidget):
         """The time when the cell was invalidated the last time"""
         if self.interval_s is not None and self.continuous:
             self._next_tick = time.time() + self.interval_s
-
         self.build()
 
     def enter(self) -> Cell:
@@ -152,10 +157,12 @@ class Cell(LWidget):
             self.enter()
         if not self.progressive:
             self.clear()
-        self.sub_element.add_data("html", b'<div class="vl_log_cell">')
+        if not self.progressive:
+            self.sub_element.add_data("html", b"<div>")
         event = CellBuildEvent(name=self.name, widget=self, builder=self.builder)
         self.raise_event(event)
-        self.sub_element.add_data("html", b"</div>")
+        if not self.progressive:
+            self.sub_element.add_data("html", b"</div>")
         if opened:
             self.leave()
 
@@ -192,7 +199,7 @@ class Cell(LWidget):
         if self._next_tick is None:
             return None
         cur_time = time.time()
-        if cur_time >= self._next_tick:
+        if cur_time >= self._next_tick and not self.progressive:
             self.build()
         if self.continuous:
             self._next_tick += self.interval_s

@@ -2,6 +2,7 @@
 
 - Add unit tests for yet completely missing areas and remove them from the omit list
 - PageSession or LogBuilder specific cache
+- Adding layouting possibilities to VisLog, e.g. centering, relative scaling etc.
 - Move VisualLog options to separate class, further extract elements
 - Allow VisuaLog to exchange single parts of a page rather than the whole page
 - Switching to Black for code formatting

@@ -13,6 +13,7 @@ def cell(
     func: MethodType | FunctionType | None = None,
     interval_s: float | None = None,
     continuous: bool = False,
+    progressive: bool = False,
 ):
     """
     Decorates a method or function within the current VisualLogBuilder subclass or
@@ -26,6 +27,7 @@ def cell(
         cell.invalidate() method is called or when the cell is flagged as continuous.
     :param continuous: Defines if the cell shall updated automatically with the
         interval defined.
+    :param progressive: Defines if the cell is progressive and extends itself
     :return: The decorated method or function
     """
 
@@ -37,7 +39,12 @@ def cell(
         :return: The wrapped method
         """
         func_o.__setattr__(
-            "__log_cell", {"interval_s": interval_s, "continuous": continuous}
+            "__log_cell",
+            {
+                "interval_s": interval_s,
+                "continuous": continuous,
+                "progressive": progressive,
+            },
         )
         return func_o
 

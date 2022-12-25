@@ -131,6 +131,13 @@ class PageSession:
         time"""
         self.old_client_ids: set[str] = set()
         """Previously connected client IDs"""
+        self.next_event_time = time.time()
+        """The timestamp at which we think the next event will occur"""
+        self.minimum_refresh_time = 0.01
+        """The lowest allowed refresh time in seconds"""
+        self._event_target_page: PageSession | None = None
+        """Page to which all events shall be forwarded. Required if the page is
+        embedded in another lock, e.g. when using an auto reloader"""
 
     def create_log_backup(self):
         """
@@ -504,12 +511,28 @@ class PageSession:
         :return: Header data, Content data
         """
         with self._page_lock:
+            if self._event_target_page is not None:
+                return self._event_target_page.get_events_js(client_id)
+        cur_time = time.time()
+        refresh_time = 0.5
+        if (
+            self.next_event_time is not None
+            and self.next_event_time - cur_time < refresh_time
+        ):
+            refresh_time = self.next_event_time - cur_time
+            if refresh_time < self.minimum_refresh_time:
+                refresh_time = self.minimum_refresh_time
+
+        refresh_time_ms = int(round(refresh_time * 1000))  # convert refresh time to ms
+
+        with self._page_lock:
             if self.last_client_id != client_id:  # page reloaded
                 if client_id in self.old_client_ids:
                     return (
                         {
                             "action": "setContent",
                             "targetElement": ROOT_DOM_ELEMENT,
+                            "vlRefreshTime": refresh_time_ms,
                         },
                         b"Session was opened in another browser or tab. "
                         b"Please close this one",
@@ -517,7 +540,7 @@ class PageSession:
                 self.reset_client()
                 self.old_client_ids.add(client_id)
             self.last_client_id = client_id
-            self.log.last_page_request = time.time()
+            self.log.last_page_request = cur_time
 
             access_lock, root_element = self.get_root_element()
             with access_lock:
@@ -549,6 +572,7 @@ class PageSession:
                 return {
                     "action": "setContent",
                     "targetElement": modified_element_ref.name,
+                    "vlRefreshTime": refresh_time_ms,
                 }, data
 
     def begin_sub_element(self, name: str) -> LogElement:
@@ -588,3 +612,39 @@ class PageSession:
             )
         self.cur_element = self.element_stack.pop()
         return self.cur_element
+
+    def handle_events(self) -> float | None:
+        """
+        Handles the events
+
+        :return: The timestamp at which we assume the next event to occur
+        """
+        with self._page_lock:
+            if self._event_target_page is not None:
+                self._event_target_page.handle_events()
+        next_event: float | None = None
+        next_event_time = self.builder.widget.handle_event_list()
+        if next_event_time is not None:
+            if next_event is None or next_event_time < next_event:
+                next_event = next_event_time
+        self.next_event_time = next_event_time
+        return next_event
+
+    def handle_client_event(self, **params):
+        """
+        Handles a client event (sent from JavaScript)
+
+        :param params: The event parameters
+        """
+        with self._page_lock:
+            if self._event_target_page is not None:
+                self._event_target_page.handle_client_event(**params)
+                return
+        event_type = params.get("type", "")
+        if event_type.startswith("widget_"):
+            with self._page_lock:
+                self.builder.widget.handle_client_event(**params)
+
+    def _set_redirect_event_receiver(self, target_page: PageSession):
+        with self._page_lock:
+            self._event_target_page = target_page
