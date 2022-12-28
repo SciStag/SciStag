@@ -3,8 +3,8 @@ Tests the log basic widgets
 """
 from scistag.common.time import sleep_min
 from scistag.vislog import VisualLog
-from scistag.vislog.widgets.log_event import LEvent
-from scistag.vislog.widgets.log_button import LButton, CLICK_EVENT_TYPE
+from scistag.vislog.widgets.event import LEvent
+from scistag.vislog.widgets.button import LButton, CLICK_EVENT_TYPE
 from scistag.vislog.widgets.timer import LTimer
 
 

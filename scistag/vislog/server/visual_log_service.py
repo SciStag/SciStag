@@ -5,6 +5,7 @@ content via http.
 
 from __future__ import annotations
 
+import json
 import os
 from typing import TYPE_CHECKING
 
@@ -49,11 +50,15 @@ class VisualLogService:
         """
         return self.log.default_page.get_page(format_type=HTML)
 
-    def get_events(self, *path, sessionId: str) -> WebResponse:
+    def events(self, *path, sessionId: str, body: bytes | None = b"") -> WebResponse:
         """
         Returns the page's newest events which shall be executed in JavaScript in the
         script liveLog/defaultLive_view.html
         """
+        if len(body):
+            json_data = json.loads(body.decode("utf-8"))
+            values = json_data.get("values", {})
+            self.log.default_page.update_values_js(sessionId, values)
         event_header, event_body = self.log.default_page.get_events_js(sessionId)
         if event_body is None:  # nothing changed?
             return WebResponse(body=b"", status=304)

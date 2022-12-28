@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
     from scistag.vislog.visual_log_builder import VisualLogBuilder
     from scistag.vislog.common import LogStatistics
+    from scistag.vislog.options import LogOptions
 
 # Error messages
 TABLE_PIPE = "|"
@@ -137,6 +138,8 @@ class VisualLog:
         index_name: str = "index",
         log_to_disk=False,
         log_to_stdout=False,
+        debug: bool = False,
+        options: "LogOptions" | None = None,
     ):
         """
         :param target_dir: The output directory
@@ -204,7 +207,20 @@ class VisualLog:
             provide the whole path via cache_dir.
         :param auto_reload: Defines if this log will be executed in auto_reload
             mode in its cache should be update and restored each turn.
+        :param debug: If set to true additional debug logging will be enabled
+        :param options: Defines the full set of options.
+
+            Explicitly via parameter passed values will override the corresponding
+            values in the options set.
         """
+        from scistag.vislog.options import LogOptions
+
+        self.options = LogOptions() if options is None else options.copy(deep=True)
+        """
+        Defines the log's configuration
+        """
+        if debug:
+            self.options.debug.enable()
         self._general_lock = StagLock()
         """
         Access lock to handle the page's events
@@ -476,6 +492,7 @@ class VisualLog:
             "retry_frequency": 100,
             "reload_frequency": int(self.refresh_time_s * 1000),
             "reload_url": "events",
+            "vl_log_updates": self.options.debug.html_client.log_updates,
             "scistag_version": scistag.__version__,
         }
         template = environment.from_string(
@@ -550,11 +567,11 @@ class VisualLog:
 
     def run_server(
         self,
+        builder: BuilderTypes | None = None,
         host_name: str = "127.0.0.1",
         port: int | tuple[int, int] = 8010,
         url_prefix: str = "",
         public_ips: str | list[str] | None = None,
-        builder: BuilderTypes | None = None,
         continuous: bool | None = None,
         wait: bool = True,
         auto_clear: bool | None = None,
@@ -572,6 +589,15 @@ class VisualLog:
         This way you can either provide the log as a static website or
         even update it dynamically and
 
+        :param builder: An (optional) function to be called to build or
+            (repetitively) rebuild the log's content.
+
+            The function can be called once - if continuous=False was passed,
+            continuously with a frequency of :attr:`refresh_time_s`
+            (as passed to the constructor) if continuous=True was passed.
+
+            Instead of passing a builder callback you can as well as also
+            just fill the log with content before running :meth:`run_server`.
         :param host_name: The IP(s) to listen at.
 
             - 127.0.0.1 = Local access only (default) as
@@ -589,15 +615,6 @@ class VisualLog:
 
             If you pass "auto" as ip the public IP will be auto-detected via
             ipify.
-        :param builder: An (optional) function to be called to build or
-            (repetitively) rebuild the log's content.
-
-            The function can be called once - if continuous=False was passed,
-            continuously with a frequency of :attr:`refresh_time_s`
-            (as passed to the constructor) if continuous=True was passed.
-
-            Instead of passing a builder callback you can as well as also
-            just fill the log with content before running :meth:`run_server`.
         :param continuous: Defines if the run_server shall run until
             :meth:`terminate` was called to update the logs content
             continuously.

@@ -146,6 +146,7 @@ class Cell(LWidget):
         :return: Self
         """
         self.sub_element.clear()
+        self.sub_element.flags["widget"] = self
         return self
 
     def build(self):
@@ -199,8 +200,11 @@ class Cell(LWidget):
         if self._next_tick is None:
             return None
         cur_time = time.time()
-        if cur_time >= self._next_tick and not self.progressive:
-            self.build()
+        if cur_time >= self._next_tick:
+            if not self.progressive:
+                self.build()
+        else:
+            return self._next_tick
         if self.continuous:
             self._next_tick += self.interval_s
             self._next_tick = max(self._next_tick, cur_time)  # ensure no debt is build

@@ -30,13 +30,14 @@ class NumpyLogger(BuilderExtension):
         super().__init__(builder)
         self.show = self.__call__
 
-    def __call__(self, data: "np.ndarray", max_digits=2):
+    def __call__(self, data: "np.ndarray", max_digits=2, br: bool = True):
         """
         Adds a numpy matrix or vector to the log
 
         :param data: The data frame
         :param max_digits: The number of digits with which the numbers shall be
             formatted.
+        :param br: Defines if the table shall be followed by a line break
         """
         if len(data.shape) >= 3:
             raise ValueError("Too many dimensions")
@@ -48,4 +49,4 @@ class NumpyLogger(BuilderExtension):
             data = [
                 [f"{round(element, max_digits)}" for element in row] for row in data
             ]
-        self.builder.table(data)
+        self.builder.table(data, br=br)

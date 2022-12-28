@@ -56,7 +56,7 @@ class ImageLogger(BuilderExtension):
         max_width: int | float | None = None,
         filetype: str | tuple[str, int] | None = None,
         optical_scaling: float = 1.0,
-        html_linebreak=True,
+        br=True,
     ):
         """
         Adds an image to the log.
@@ -85,7 +85,7 @@ class ImageLogger(BuilderExtension):
         :param optical_scaling: Defines the factor with which the image shall
             be visualized on the html page without really rescaling the image
             itself and thus giving the possibility to zoom in the browser.
-        :param html_linebreak: Defines if a linebreak shall be inserted after
+        :param br: Defines if a linebreak shall be inserted after
             the image.
         """
         if not self.log.log_images:
@@ -96,7 +96,7 @@ class ImageLogger(BuilderExtension):
             alt_text = name
         if isinstance(source, np.ndarray):
             source = Image(source, pixel_format=pixel_format)
-        html_lb = "<br>" if html_linebreak else ""
+        html_lb = "<br>" if br else ""
         if isinstance(source, str):
             if (
                 not source.lower().startswith("http")
@@ -111,7 +111,7 @@ class ImageLogger(BuilderExtension):
                     alt_text,
                     scaling=scaling,
                     max_width=max_width,
-                    html_linebreak=html_linebreak,
+                    html_linebreak=br,
                 )
                 return
         filename = self.builder.reserve_unique_name(name)

@@ -12,7 +12,7 @@ import scistag.tests
 
 REPO_SIZE_LIMIT = 2500000
 "The maximum repo limit of non-ignored files in byte"
-REPO_DIR_COUNT_LIMIT = 300
+REPO_DIR_COUNT_LIMIT = 350
 "The maximum number of directories in the repo"
 REPO_FILE_COUNT_LIMIT = 520
 "The maximum number of files in the repo"

@@ -50,12 +50,4 @@ class LiveCameraDemo(VisualLogBuilder):
 
 
 if VisualLog.is_main():
-    FRAME_RATE = 60.0  # update as fast as possible
-    test_log = VisualLog(
-        "Webcam Demo",
-        start_browser=os.environ.get("DEMO_VISLOG_BROWSER", "1") == "1",
-    )
-    test_log.run_server(
-        url_prefix="/webcamDemo",  # host at /webCamDemo
-        builder=LiveCameraDemo,
-    )  # our update func
+    test_log = VisualLog("Webcam Demo").run_server(builder=LiveCameraDemo)

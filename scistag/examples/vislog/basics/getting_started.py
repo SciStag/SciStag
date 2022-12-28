@@ -146,4 +146,4 @@ class DemoBuilder(VisualLogBuilder):
 
 
 if VisualLog.is_main():
-    VisualLog(auto_reload=DemoBuilder, start_browser=True)  # No archived files needed
+    VisualLog(auto_reload=DemoBuilder)  # No archived files needed

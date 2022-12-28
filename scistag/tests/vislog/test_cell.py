@@ -77,7 +77,7 @@ def test_cell_updating():
     cell_prog.build()
     rendering = vp.render_element()[1]
     assert b"CellBuild 2" in rendering and b"CellBuild 1" not in rendering
-    assert b"CellBuildProg 2" in rendering and b"CellBuildProg 1" in rendering
+    assert b"CellBuildProg 1" in rendering
     sleep_min(0.05)
     vl.widget.handle_event_list()
     assert b"CellBuildOnce 1" in vp.render_element()[1]

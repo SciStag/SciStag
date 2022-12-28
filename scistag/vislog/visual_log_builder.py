@@ -18,6 +18,8 @@ import numpy as np
 from pydantic import BaseModel
 
 from scistag.imagestag import Image, Size2D
+from scistag.vislog.log_elements import HTMLCode
+from scistag.vislog.options import LogOptions
 
 from scistag.vislog.visual_log import VisualLog, HTML
 from scistag.plotstag import Figure, Plot, MPHelper
@@ -74,7 +76,7 @@ class VisualLogBuilder:
     """
 
     def __init__(
-        self, log: "VisualLog", page_session: Union["PageSession", None] = None
+            self, log: "VisualLog", page_session: Union["PageSession", None] = None
     ):
         """
         :param log: The log to which the content shall be added.
@@ -146,6 +148,10 @@ class VisualLogBuilder:
         self._widget: Union["WidgetLogger", None] = None
         """
         Extension to add visual, interactive components 
+        """
+        self.options: LogOptions = log.options.copy(deep=True)
+        """
+        Defines the builder's options
         """
 
     def build(self):
@@ -227,13 +233,16 @@ class VisualLogBuilder:
                 self.code(code)
         return result
 
-    def add(self, content: LogableContent) -> VisualLogBuilder:
+    def add(self, content: LogableContent, br: bool = False) -> VisualLogBuilder:
         """
         Adds the provided content to the log.
 
         Supports a large variety of types. All supported types can also
         easily be embedded into tables and divs via the provided add_row
         and add_col methods.
+
+        Note that in different to the method :meth:`text` adding a text will not
+        result in a linebreak by default for a single row text element.
 
         :param content: The data to be logged.
 
@@ -246,8 +255,20 @@ class VisualLogBuilder:
             * Nunpy Arrays
             * Common Python types such as dicts and dists, strings, floats and
                 ints.
+        :param br: Defines if the element shall be followed by a linebreak
+            (if supported), false by default.
         :return: The builder
         """
+        # pandas content frame
+        import pandas as pd
+
+        if hasattr(content, "to_html") and not isinstance(content,
+                                                          (pd.DataFrame, pd.Series)):
+            self.html(content.to_html())
+            return self
+        if hasattr(content, "to_md"):
+            self.md(content.to_md())
+            return self
         if isinstance(content, bytes):
             try:
                 ft = filetype.guess(content)
@@ -262,30 +283,28 @@ class VisualLogBuilder:
                 raise ValueError(f"Data of filetype {ft} not supported")
         # image
         if isinstance(content, Image):
-            self.image(content)
+            self.image(content, br=br)
             return self
         # figure
         if isinstance(content, Figure):
-            self.figure(content)
+            self.figure(content, br=br)
             return self
-        # pandas content frame
-        import pandas as pd
 
         if isinstance(content, (pd.DataFrame, pd.Series)):
             self.pd(content)
             return self
         # numpy array
         if isinstance(content, np.ndarray):
-            self.np(content)
+            self.np(content, br=br)
             return self
         if isinstance(content, (str, int, float)):
-            self.text(content)
+            self.text(content, br=br)
             return self
             # dict or list
         if isinstance(content, (list, dict)):
             self.collection.add(content)
             return self
-        self.log(str(content))
+        self.text(str(content), br=br)
         if content is None or not isinstance(content, bytes):
             raise TypeError("Data type not supported")
         return self
@@ -300,33 +319,48 @@ class VisualLogBuilder:
         self.sub(text, level=1)
         return self
 
-    def text(self, text: str) -> VisualLogBuilder:
+    def text(self, text: str, br: bool = True) -> VisualLogBuilder:
         """
         Adds a text to the log
 
         :param text: The text to add to the log
+        :param br: Defines if a linebreak shall be printed in case of a single
+            row text element.
         :return: The builder
         """
         if not isinstance(text, str):
             text = str(text)
         lines = html.escape(text)
         lines = lines.split("\n")
-        for index, text in enumerate(lines):
-            self.add_html(f"{text}<br>\n")
-            if index == len(lines) - 1:
-                self.add_md(f"{text}\n")
-            else:
-                self.add_md(f"{text}\\")
-            self.add_txt(text)
+        if br:
+            for index, text in enumerate(lines):
+                self.add_html(f"{text}<br>\n")
+                if index == len(lines) - 1:
+                    self.add_md(f"{text}\n")
+                else:
+                    self.add_md(f"{text}\\")
+                self.add_txt(text)
+        else:  # no line break
+            for index, text in enumerate(lines):
+                if index == len(lines) - 1:
+                    self.add_html(f"{text}")
+                    self.add_md(f"{text}")
+                    self.add_md(f"{text}")
+                else:  # only break if there is really an explicit line break
+                    self.add_html(f"{text}<br>\n")
+                    self.add_md(f"{text}\n")
+                    self.add_md(f"{text}\\")
+                self.add_txt(text)
         self.handle_modified()
         return self
 
-    def link(self, text: str, link: str) -> VisualLogBuilder:
+    def link(self, text: str, link: str, br: bool = False) -> VisualLogBuilder:
         """
         Adds a hyperlink to the log
 
         :param text: The text to add to the log
         :param link: The link target
+        :param br: Defines if a linebreak shall be inserted after the link
         :return: The builder
         """
         if not isinstance(text, str):
@@ -334,11 +368,14 @@ class VisualLogBuilder:
         lines = html.escape(text)
         lines = lines.split("\n")
         for index, text in enumerate(lines):
-            self.add_html(f'<a href="{link}">{text}</a><br>\n')
+            last_line = index == len(lines) - 1
+            do_break = br or not last_line
+            break_char = "<br>\n" if do_break else ""
+            self.add_html(f'<a href="{link}">{text}</a>{break_char}')
             if index == len(lines) - 1:
                 self.add_md(f"[{text}]({link})")
             else:
-                self.add_md(f"{text}\\")
+                self.add_md(f"{text}\\", no_break=not do_break)
             self.add_txt(text)
         self.handle_modified()
         return self
@@ -425,12 +462,14 @@ class VisualLogBuilder:
         self.add_txt("---", md=True)
         return self
 
-    def html(self, code: str) -> VisualLogBuilder:
+    def html(self, code: str | HTMLCode) -> VisualLogBuilder:
         """
         Adds a html section. (only to targets supporting html)
 
         :param code: The html code to parse
         """
+        if isinstance(code, HTMLCode):
+            code = HTMLCode.to_html()
         self.add_md(code)
         self.add_html(code + "\n")
         self.handle_modified()
@@ -548,11 +587,12 @@ class VisualLogBuilder:
         )
 
     def figure(
-        self,
-        figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
-        name: str | None = None,
-        alt_text: str | None = None,
-        _out_image_data: io.IOBase | None = None,
+            self,
+            figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
+            name: str | None = None,
+            alt_text: str | None = None,
+            _out_image_data: io.IOBase | None = None,
+            br: bool = False,
     ):
         """
         Adds a figure to the log
@@ -563,6 +603,7 @@ class VisualLogBuilder:
             not be displayed.
         :param _out_image_data: Receives the image data if provided (for
             debugging and assertion purposes)
+        :param br: Defines if the figure shall be followed by a linebreak
         """
         if name is None:
             name = "figure"
@@ -570,7 +611,7 @@ class VisualLogBuilder:
             return
         if isinstance(figure, (Figure, Plot)):
             image = figure.render()
-            self.image(image, name, alt_text=alt_text)
+            self.image(image, name, alt_text=alt_text, br=br)
             if _out_image_data is not None:
                 _out_image_data.write(
                     image.encode(
@@ -586,10 +627,13 @@ class VisualLogBuilder:
         image_data = MPHelper.figure_to_png(figure, transparent=False)
         if _out_image_data is not None:
             _out_image_data.write(image_data)
-        self.image(image_data, name, alt_text=alt_text)
+        self.image(image_data, name, alt_text=alt_text, br=br)
 
     def pyplot(
-        self, assertion_name: str | None = None, assertion_hash: str | None = None
+            self,
+            assertion_name: str | None = None,
+            assertion_hash: str | None = None,
+            br: bool = False,
     ) -> "PyPlotLogContext":
         """
         Opens a matplotlib context to add a figure directly to the plot.
@@ -602,6 +646,7 @@ class VisualLogBuilder:
             identifier.
         :param assertion_hash: If the figure shall be asserted via hash the
             hash value of its image's pixels.
+        :param br: Defines if the figure shall be followed by a linebreak.
 
         ..  code-block:
 
@@ -614,7 +659,7 @@ class VisualLogBuilder:
         from scistag.vislog.extensions.pyplot_log_context import PyPlotLogContext
 
         log_context = PyPlotLogContext(
-            self, assertion_name=assertion_name, assertion_hash=assertion_hash
+            self, assertion_name=assertion_name, assertion_hash=assertion_hash, br=br
         )
         return log_context
 

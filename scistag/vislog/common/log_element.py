@@ -149,6 +149,7 @@ class LogElement:
         self.data: dict[str, list[bytes | LogElement]] = {
             element: [b""] for element in self.data.keys()
         }
+        self.flags = {}
 
     def clone(self, parent=None) -> LogElement:
         """
@@ -198,7 +199,7 @@ class LogElement:
             LogElementReference(name=self.name, path=path + self.name, element=self)
         )
         for _, value in self.sub_elements.items():
-            value.list_elements_recursive(path=self.name + ".", target=target)
+            value.list_elements_recursive(path=path + self.name + ".", target=target)
         return target
 
     def __contains__(self, item):

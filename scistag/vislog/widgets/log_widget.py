@@ -4,13 +4,13 @@ widgets which can be visualized within the live-area of a VisualLivelog.
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
-from scistag.vislog.common.log_element import LogElement
+from inspect import signature
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
-    from scistag.vislog.widgets.log_event import LEvent
+    from scistag.vislog.widgets.event import LEvent
 
 
 class LWidget:
@@ -75,7 +75,6 @@ class LWidget:
         """
         Is called for each event received by the web server
         """
-        raise NotImplementedError("Not implemented")
 
     def __bool__(self):
         """
@@ -101,3 +100,28 @@ class LWidget:
         :param event: The event to be triggered and handled
         """
         self.handle_event(event)
+
+    def call_event_handler(self, event_handler: Callable, event: LEvent):
+        """
+        Calls the provided event handler. Analyzes if the callable takes parameters
+        or not and calls it accordingly with our without event details.
+
+        :param event_handler: The callback method
+        :param event: The event
+        """
+        _ = self
+        if event_handler is None:
+            return
+        sig = signature(event_handler)
+        if len(sig.parameters):
+            event_handler(event)
+        else:
+            event_handler()
+
+    def get_value(self) -> int | float | bool | None:
+        """
+        Returns the widget's current value (if it does have one)
+
+        :return: The widget's value
+        """
+        return None

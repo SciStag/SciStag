@@ -42,11 +42,23 @@ table.vl_log_table {
     padding: 8px;
     border: 1px solid;
     background-color: white;
-    text-align: left;
+    text-align: center;
 }
+
 table.vl_log_table td, table.vl_log_table th {
-    padding: 6px;
     border: 1px solid black;
+}
+
+table.vl_log_table_seamless {
+    border-collapse: collapse;
+    padding: 0;
+    border: None;
+    background-color: white;
+    text-align: center;
+}
+
+table.vl_log_table_seamless td, table.vl_log_table_seamless th {
+    border: None;
 }
 
 

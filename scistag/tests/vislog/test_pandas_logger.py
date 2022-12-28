@@ -75,5 +75,5 @@ def test_dataframe():
     vl.test.assert_cp_diff("625d2b1958c13dd6ec8303b4dcb70eb2")
 
     vl.test.checkpoint("pd.df.add")
-    vl.add(df)
+    vl.add(df, br=True)
     vl.test.assert_cp_diff("625d2b1958c13dd6ec8303b4dcb70eb2")

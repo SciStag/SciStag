@@ -59,19 +59,19 @@ def test_add_and_links():
     :return:
     """
     vl.test.checkpoint("log.link")
-    vl.link("SciStag", "https://github.com/scistag/scistag")
-    vl.add("Test text")
-    vl.add(123)
-    vl.add(123.456)
-    vl.add([123, 456])
-    vl.add({"someProp": "someVal"})
+    vl.link("SciStag", "https://github.com/scistag/scistag").br()
+    vl.add("Test text", True)
+    vl.add(123, br=True)
+    vl.add(123.456, br=True)
+    vl.add([123, 456], br=True)
+    vl.add({"someProp": "someVal"}, br=True)
     with pytest.raises(TypeError):
-        vl.add(Color(22, 33, 44))
+        vl.add(Color(22, 33, 44), br=True)
     with pytest.raises(ValueError):
-        vl.add(b"12345")
-    vl.test.assert_cp_diff(hash_val="d46775dc24d6c892a989c1e2481a7887")
+        vl.add(b"12345", br=True)
+    vl.test.assert_cp_diff(hash_val='e0ba08efeccb3320086a5b493be726e2')
     vl.test.checkpoint("log.link_adv")
-    vl.link("Multiline\nLink", "https://github.com/scistag/scistag")
+    vl.link("Multiline\nLink", "https://github.com/scistag/scistag", br=True)
     vl.test.assert_cp_diff(hash_val="9ebcc1aada224b97a34d223ae5da4875")
     assert vl.max_fig_size.width > 100
 

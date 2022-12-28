@@ -10,6 +10,7 @@ from .extensions.builder_extension import BuilderExtension
 from .common.log_statistics import LogStatistics
 from .extensions.cell_sugar import cell
 from .extensions.cell_logger import Cell
+from .log_elements import HTMLCode, MDCode
 
 __all__ = [
     "VisualLog",
@@ -20,4 +21,6 @@ __all__ = [
     "BuilderExtension",
     "cell",
     "Cell",
+    "HTMLCode",
+    "MDCode",
 ]

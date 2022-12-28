@@ -11,6 +11,7 @@ from collections import Counter
 from scistag.common import StagLock
 from scistag.filestag import FileStag
 from scistag.vislog.common.log_element import LogElement, LogElementReference
+from scistag.vislog.options import LogOptions
 
 ROOT_DOM_ELEMENT = "vlbody"
 "Defines the root element in the HTML page containing the main site's data"
@@ -107,7 +108,9 @@ class PageSession:
         "The name of the markdown file to which we shall save"
         self.continuous_write = continuous_write
         self.log_to_stdout = log_to_stdout
+        "Defines if basic log entries shall also be logged to stdout"
         self.log_to_disk = log_to_disk
+        "Define if the result shall be logged to disk"
         self._page_backups: dict[str, bytes] = {}
         """
         A backup of the latest rendered page of each dynamic data type
@@ -138,6 +141,28 @@ class PageSession:
         self._event_target_page: PageSession | None = None
         """Page to which all events shall be forwarded. Required if the page is
         embedded in another lock, e.g. when using an auto reloader"""
+        self.last_user_interaction = time.time()
+        """Defines the time when the user last interacted with this page"""
+        self.user_interaction_performance_duration_s = 2.0
+        """Defines the duration in seconds for how long the refresh time is boosted
+        when the user actively interacted with the session"""
+        self.user_interaction_refresh_time = 0.05
+        """Defines the (maximum) refresh time in seconds to which the refresh is is
+        decreased when the user interacted with the session"""
+        self.options: LogOptions | None = (
+            builder.options if builder is not None else None
+        )
+        """Defines the log's options"""
+
+    def set_builder(self, builder: VisualLogBuilder):
+        """
+        Assigns a new builder object to the page session
+        :param builder: The builder object
+        """
+        self.builder = builder
+        self.options: LogOptions | None = (
+            builder.options if builder is not None else None
+        )
 
     def create_log_backup(self):
         """
@@ -502,6 +527,22 @@ class PageSession:
         """
         self.element_update_times = {}
 
+    def update_values_js(self, client_id: str, values: dict) -> bool:
+        """
+        Updates all element values with the data provided by the client
+
+        :param client_id: The client id
+        :param values: The new key, value dictionary
+        """
+        with self._page_lock:
+            if self._event_target_page is not None:
+                return self._event_target_page.update_values_js(client_id, values)
+        with self._page_lock:
+            if self.last_client_id != client_id:  # page reloaded
+                return False
+            self.builder.widget.sync_values(values)
+        return True
+
     def get_events_js(self, client_id: str) -> [dict, bytes | None]:
         """
         Returns the newest events which need to be handled on client side
@@ -514,7 +555,12 @@ class PageSession:
             if self._event_target_page is not None:
                 return self._event_target_page.get_events_js(client_id)
         cur_time = time.time()
-        refresh_time = 0.5
+        refresh_time = self.log.refresh_time_s
+        if (
+            cur_time - self.last_user_interaction
+            < self.user_interaction_performance_duration_s
+        ):
+            refresh_time = min(self.user_interaction_refresh_time, refresh_time)
         if (
             self.next_event_time is not None
             and self.next_event_time - cur_time < refresh_time
@@ -648,3 +694,10 @@ class PageSession:
     def _set_redirect_event_receiver(self, target_page: PageSession):
         with self._page_lock:
             self._event_target_page = target_page
+
+    def update_last_user_interaction(self):
+        """
+        Is called when the user interacted with a widget. Temporarily decreases the
+        reaction time.
+        """
+        self.last_user_interaction = time.time()
