@@ -6,7 +6,7 @@ widgets which can be visualized within the live-area of a VisualLivelog.
 from __future__ import annotations
 
 from inspect import signature
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Any
 
 from scistag.vislog.options import LWidgetOptions
 
@@ -140,3 +140,10 @@ class LWidget:
             if not hasattr(self.options, key):
                 raise KeyError(f"Unknown option attribute {key}")
             self.options.__setattr__(key, value)
+
+    def sync_value(self, new_value: Any):
+        """
+        Updates the value after modifications on client side
+
+        :param new_value: The new value
+        """

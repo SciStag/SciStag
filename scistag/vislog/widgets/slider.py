@@ -7,32 +7,12 @@ from typing import TYPE_CHECKING, Callable, Union
 
 from scistag.vislog.log_elements import HTMLCode
 from scistag.vislog.options import LSliderOptions
+from scistag.vislog.widgets.base_events import LValueChangedEvent
 from scistag.vislog.widgets.log_widget import LWidget
 from scistag.vislog.widgets.event import LEvent
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import LogBuilder
-
-VALUE_CHANGE_EVENT_TYPE = "widget_value_change"
-"Defines an event which is risen by a value change, e.g. of a slider or a combo box"
-
-
-class LValueChangeEvent(LEvent):
-    """
-    An event which is triggered when the value of an object changed
-    """
-
-    def __init__(self, widget: LWidget, value, **params):
-        """
-        :param widget: The widget such as a LButton which was modified
-        :param value: The new value
-        :param params: Additional parameters
-        """
-        super().__init__(event_type=VALUE_CHANGE_EVENT_TYPE, widget=widget, **params)
-        self.value = value
-
-    value: int | float | str
-    """The widget's new value"""
 
 
 class LSlider(LWidget):
@@ -132,37 +112,7 @@ class LSlider(LWidget):
         )
         value_html = ""
         if self.options.show_value:
-            scaled_value = self._value * self.options.value_scaling
-            scaled_value = f"{scaled_value:0.{self.options.value_max_digits}f}"
-            scaled_value = scaled_value.rstrip("0").rstrip(".")
-            if len(scaled_value) == 0:
-                scaled_value = "0"
-            value = (
-                f"{self.options.value_prefix}{scaled_value}{self.options.value_postfix}"
-            )
-            if self.options.value_edit_field:
-                edit_style = "width: 44pt;"
-                if self.options.value_bold:
-                    edit_style += "font-weight: bold;"
-                value_html = (
-                    f'<input type="number" id="{out_name}" '
-                    f'style="{edit_style}"'
-                    f'step="{self.stepping}" min="{self.min_value}" '
-                    f'max="{self.max_value}" '
-                    f'value="{self.value}"'
-                    f'oninput="document.'
-                    f"getElementById('{self.name}').value=this.value\" />"
-                )
-            else:
-                value_html = f"<output id='{out_name}'>{value}</output>"
-            if self.options.value_bold:
-                value_html = "<b>" + value_html + "</b>"
-            if self.options.show_value == "custom":
-                self.html_value_code = value_html
-                html += "</span>"
-            elif not self.options.vertical:
-                html += " " + value_html
-                html += "</span>"
+            html, value_html = self._setup_value_display(html, out_name)
         if self.options.vertical:
             if len(value_html) > 0:
                 self.builder.table(
@@ -173,11 +123,59 @@ class LSlider(LWidget):
                 self.builder.html(html)
         else:
             self.builder.html(html)
-            if self.options.vertical and len(value_html) > 0:
-                self.builder.html(f"{value_html}")
+
+    def _setup_value_display(self, html, out_name):
+        """
+        Setups an element which always visualizes the slider's current value, either
+        as a simple text or as an editable field.
+
+        :param html: The current html code for the widget
+        :param out_name: The widget's name in the DOM
+        :return: The html code of the whole widget, the html code of the value display
+        """
+        scaled_value = self._value * self.options.value_scaling
+        scaled_value = f"{scaled_value:0.{self.options.value_max_digits}f}"
+        scaled_value = scaled_value.rstrip("0").rstrip(".")
+        if len(scaled_value) == 0:
+            scaled_value = "0"
+        value = f"{self.options.value_prefix}{scaled_value}{self.options.value_postfix}"
+        if self.options.value_edit_field:
+            value_html = self._setup_edit_field(out_name)
+        else:
+            value_html = f"<output id='{out_name}'>{value}</output>"
+        if self.options.value_bold:
+            value_html = "<b>" + value_html + "</b>"
+        if self.options.show_value == "custom":
+            self.html_value_code = value_html
+            html += "</span>"
+        elif not self.options.vertical:
+            html += " " + value_html
+            html += "</span>"
+        return html, value_html
+
+    def _setup_edit_field(self, out_name):
+        """
+        Setups an edit field in which the number can be entered via keyboard
+
+        :param out_name: The output name of the main field
+        :return: The html code for the edit field
+        """
+        edit_style = "width: 44pt;"
+        if self.options.value_bold:
+            edit_style += "font-weight: bold;"
+        value_html = (
+            f'<input type="number" id="{out_name}" '
+            f'style="{edit_style}"'
+            f'step="{self.stepping}" min="{self.min_value}" '
+            f'max="{self.max_value}" '
+            f'value="{self.value}"'
+            f'oninput="document.'
+            f"getElementById('{self.name}').value=this.value\" />"
+        )
+        return value_html
 
     def handle_event(self, event: "LEvent"):
-        if event.event_type == VALUE_CHANGE_EVENT_TYPE:
+        if isinstance(event, LValueChangedEvent):
             self.call_event_handler(self.on_change, event)
         super().handle_event(event)
 
@@ -188,22 +186,26 @@ class LSlider(LWidget):
         """
         return self._value
 
-    @value.setter
-    def value(self, new_val: float | int):
+    def sync_value(self, new_value: float | int):
+        """
+        Updates the value after modifications on client side
+
+        :param new_value: The new value
+        """
         val_range = self.max_value - self.min_value
         if val_range == 0.0:
             return
         tolerance = val_range / 1000.0
         if isinstance(self._value, float):
-            new_val = float(new_val)
-            if abs(self._value - new_val) < tolerance:
+            new_value = float(new_value)
+            if abs(self._value - new_value) < tolerance:
                 return
         else:
-            new_val = int(round(float(new_val)))
-            if self._value == new_val:
+            new_value = int(round(float(new_value)))
+            if self._value == new_value:
                 return
-        self._value = new_val
-        change_event = LValueChangeEvent(widget=self, value=new_val)
+        self._value = new_value
+        change_event = LValueChangedEvent(widget=self, value=new_value)
         self.raise_event(change_event)
 
     def get_value(self) -> int | float | bool | None:

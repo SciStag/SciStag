@@ -168,5 +168,5 @@ class WidgetLogger(BuilderExtension):
                     cur_value = widget.get_value()
                     if cur_value is None:
                         continue
-                    widget.value = value
+                    widget.sync_value(value)
                     self.builder.page_session.update_last_user_interaction()
