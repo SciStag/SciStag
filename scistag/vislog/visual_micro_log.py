@@ -1,5 +1,5 @@
 """
-Implements VisualMicroLock - a replacement for the VisualLogBuilder logging
+Implements VisualMicroLock - a replacement for the LogBuilder logging
 interface of the SciStag package for platforms which are not capable of loading
 of the full library such as MicroPython .
 
@@ -17,7 +17,7 @@ For more details see https://github.com/scistag/scistag
 
 class VisualMicroLock:
     """
-    VisualMicroLock is a replacement for the VisualLogBuilder class
+    VisualMicroLock is a replacement for the LogBuilder class
     of the SciStag Python package to easily port an application using
     VirtualLog for logging to platforms which are not capable of
     loading of the full SciStag library such as MicroPython.
@@ -28,10 +28,10 @@ class VisualMicroLock:
     ..  code-block:python
 
         try:
-            from scistag.vislog import VisualLog, VisualLogBuilder
+            from scistag.vislog import VisualLog, LogBuilder
             VisualLog.setup_mocks()
         except ModuleNotFoundError:
-            from visual_log_mock import VisualLog, VisualLogBuilder
+            from visual_log_mock import VisualLog, LogBuilder
     """
 
     def __init__(self, log_to_std_out=True):
@@ -40,19 +40,19 @@ class VisualMicroLock:
             to stdout.
         """
         self.title = self.text
-        "Replacement for :meth:`VisualLogBuilder.title`"
+        "Replacement for :meth:`LogBuilder.title`"
         self.sub = self.text
-        "Replacement for :meth:`VisualLogBuilder.sub`"
+        "Replacement for :meth:`LogBuilder.sub`"
         self.sub_x3 = self.text
-        "Replacement for :meth:`VisualLogBuilder.sub_x3`"
+        "Replacement for :meth:`LogBuilder.sub_x3`"
         self.sub_x4 = self.text
-        "Replacement for :meth:`VisualLogBuilder.sub_x4`"
+        "Replacement for :meth:`LogBuilder.sub_x4`"
         self.sub_test = self.text
-        "Replacement for :meth:`VisualLogBuilder.sub_test`"
+        "Replacement for :meth:`LogBuilder.sub_test`"
         self.md = self.text
-        "Replacement for :meth:`VisualLogBuilder.md`"
+        "Replacement for :meth:`LogBuilder.md`"
         self.html = self.text
-        "Replacement for :meth:`VisualLogBuilder.html`"
+        "Replacement for :meth:`LogBuilder.html`"
         self.log_to_stdout = log_to_std_out
         "Defines if the simple output shall be directed to stdout"
         self.print_method = lambda text, end=None: print(text, end=end)
@@ -86,7 +86,7 @@ class VisualMicroLock:
 
     def text(self, text: str, *args, **kwargs):
         """
-        Replacement for :meth:`VisualLogBuilder.text` and all similar
+        Replacement for :meth:`LogBuilder.text` and all similar
         functions. Suppresses all parameters except the text.
 
         :param text: The text to be logged

@@ -16,7 +16,7 @@ from scistag.vislog.extensions.builder_extension import BuilderExtension
 if TYPE_CHECKING:
     from scistag.imagestag import PixelFormat
     from scistag.vislog.visual_log import VisualLog
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 MAXIMUM_IMAGE_WIDTH = 8096
 """
@@ -36,7 +36,7 @@ class ImageLogger(BuilderExtension):
     Helper class for storing images in a VisualLog
     """
 
-    def __init__(self, builder: "VisualLogBuilder"):
+    def __init__(self, builder: "LogBuilder"):
         """
         :param builder: The log builder object we are logging with
         """

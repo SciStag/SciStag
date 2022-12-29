@@ -12,7 +12,7 @@ HORIZONTAL_ALIGNMENTS = Literal["left", "center", "right", "l", "c", "r"]
 "Definition of different horizontal alignments"
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 
 class AlignmentLogger(BuilderExtension):
@@ -20,7 +20,7 @@ class AlignmentLogger(BuilderExtension):
     Helper class for adjusting the alignment of elements inside the log
     """
 
-    def __init__(self, builder: "VisualLogBuilder"):
+    def __init__(self, builder: "LogBuilder"):
         """
         :param builder: The builder object with which we write to the log
         """
@@ -28,7 +28,7 @@ class AlignmentLogger(BuilderExtension):
         self.show = self.__call__
 
     def __call__(
-            self, hor_align: HORIZONTAL_ALIGNMENTS | None = None
+        self, hor_align: HORIZONTAL_ALIGNMENTS | None = None
     ) -> ElementContext:
         """
         Horizontally aligns the element

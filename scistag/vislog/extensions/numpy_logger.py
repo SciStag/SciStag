@@ -1,12 +1,12 @@
 """
-Implements the :class:`NumpyLogger` extension for VisualLogBuilder to log
+Implements the :class:`NumpyLogger` extension for LogBuilder to log
 numpy data such as matrices and vectors.
 """
 from __future__ import annotations
 
 import typing
 
-from scistag.vislog import BuilderExtension, VisualLogBuilder
+from scistag.vislog import BuilderExtension, LogBuilder
 
 if typing.TYPE_CHECKING:
     import numpy as np
@@ -23,7 +23,7 @@ class NumpyLogger(BuilderExtension):
     ways.
     """
 
-    def __init__(self, builder: VisualLogBuilder):
+    def __init__(self, builder: LogBuilder):
         """
         :param builder: The builder we are using to write to the log
         """

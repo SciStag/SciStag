@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union, Callable
 
-from scistag.vislog import BuilderExtension, VisualLogBuilder
+from scistag.vislog import BuilderExtension, LogBuilder
 from scistag.vislog.widgets.cell import Cell
 
 if TYPE_CHECKING:
@@ -24,7 +24,7 @@ class CellLogger(BuilderExtension):
     to update diagrams.
     """
 
-    def __init__(self, builder: VisualLogBuilder):
+    def __init__(self, builder: LogBuilder):
         """
         :param builder: The builder we are using to write to the log
         """

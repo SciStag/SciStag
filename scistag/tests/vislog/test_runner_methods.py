@@ -8,7 +8,7 @@ from unittest import mock
 import pytest
 
 from scistag.common.time import sleep_min
-from scistag.vislog import VisualLog, VisualLogBuilder
+from scistag.vislog import VisualLog, LogBuilder
 from scistag.vislog.auto_reloader.visual_log_auto_reloader import VisualLogAutoReloader
 
 
@@ -28,14 +28,14 @@ def test_log_runner_basics():
         assert log.is_main()
 
 
-class DummyBuilder(VisualLogBuilder):
+class DummyBuilder(LogBuilder):
     def build(self):
         self.add("Some content")
         if self.target_log.get_statistics().update_counter == 2:
             self.target_log.terminate()
 
 
-def builder_callback(vl: VisualLogBuilder):
+def builder_callback(vl: LogBuilder):
     vl.clear()
     vl.log("Some function content")
     vl.log(vl.target_log.max_fig_size)

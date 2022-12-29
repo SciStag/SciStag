@@ -3,10 +3,10 @@ This demo shows how to add a simple button control to the log and update content
 whenever the button was clicked.
 """
 
-from scistag.vislog import VisualLog, VisualLogBuilder, cell
+from scistag.vislog import VisualLog, LogBuilder, cell
 
 
-class ButtonLog(VisualLogBuilder):
+class ButtonLog(LogBuilder):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.counter = 0

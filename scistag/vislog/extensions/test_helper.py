@@ -20,7 +20,7 @@ from scistag.filestag import FileStag, FilePath
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 
 class TestHelper(BuilderExtension):
@@ -28,7 +28,7 @@ class TestHelper(BuilderExtension):
     Defines helper functions to write VisualLog based regression and unit tests
     """
 
-    def __init__(self, builder: "VisualLogBuilder"):
+    def __init__(self, builder: "LogBuilder"):
         """
         :param builder: The actual logging writer object we use to write
             the document
@@ -360,7 +360,7 @@ class TestHelper(BuilderExtension):
         result_hash_val = hashlib.md5(difference).hexdigest()
         self.hash_check_log(result_hash_val, hash_val)
 
-    def begin(self, text: str) -> "VisualLogBuilder":
+    def begin(self, text: str) -> "LogBuilder":
         """
         Defines the beginning of a test
         :param text: The name to log

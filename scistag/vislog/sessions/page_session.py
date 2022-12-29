@@ -32,7 +32,7 @@ ROOT_ELEMENT_NAME = "vlbody"
 if TYPE_CHECKING:
     from scistag.vislog.visual_log import VisualLog
     from scistag.vislog.common.page_update_context import PageUpdateContext
-    from scistag.vislog import VisualLogBuilder
+    from scistag.vislog import LogBuilder
 
 
 class PageSession:
@@ -44,7 +44,7 @@ class PageSession:
     def __init__(
         self,
         log: "VisualLog",
-        builder: Union["VisualLogBuilder", None],
+        builder: Union["LogBuilder", None],
         log_formats: set[str],
         index_name: str,
         target_dir: str,
@@ -68,7 +68,7 @@ class PageSession:
         """Defines the list of supported formats"""
         self.log: "VisualLog" = log
         """The target log instance"""
-        self.builder: Union["VisualLogBuilder", None] = builder
+        self.builder: Union["LogBuilder", None] = builder
         """The builder which is used to create the page's content"""
         self._logs = LogElement(
             name=ROOT_ELEMENT_NAME, output_formats=sorted(self.log_formats)
@@ -154,7 +154,7 @@ class PageSession:
         )
         """Defines the log's options"""
 
-    def set_builder(self, builder: VisualLogBuilder):
+    def set_builder(self, builder: LogBuilder):
         """
         Assigns a new builder object to the page session
         :param builder: The builder object

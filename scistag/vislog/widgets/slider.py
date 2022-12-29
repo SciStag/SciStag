@@ -11,7 +11,7 @@ from scistag.vislog.widgets.log_widget import LWidget
 from scistag.vislog.widgets.event import LEvent
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 VALUE_CHANGE_EVENT_TYPE = "widget_value_change"
 "Defines an event which is risen by a value change, e.g. of a slider or a combo box"
@@ -43,7 +43,7 @@ class LSlider(LWidget):
 
     def __init__(
         self,
-        builder: "VisualLogBuilder",
+        builder: "LogBuilder",
         value: float | int,
         min_value: float | int,
         max_value: float | int,

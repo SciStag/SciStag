@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Callable
 from scistag.vislog.options import LWidgetOptions
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
     from scistag.vislog.widgets.event import LEvent
 
 
@@ -22,7 +22,7 @@ class LWidget:
 
     def __init__(
         self,
-        builder: "VisualLogBuilder",
+        builder: "LogBuilder",
         name: str,
         is_view: bool = True,
         explicit_name: str | None = None,

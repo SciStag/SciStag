@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     from scistag.webstag.server import WebStagService
     from scistag.vislog.renderers.log_renderer import LogRenderer
     from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
     from scistag.vislog.common import LogStatistics
     from scistag.vislog.options import LogOptions
 
@@ -80,18 +80,18 @@ CUTE_APP = "cute"
 MAIN_LOG = "mainLog"
 "The name of the main log"
 
-BuilderCallback = Callable[["VisualLogBuilder"], None]
+BuilderCallback = Callable[["LogBuilder"], None]
 """
 Type definition for a function which can be passed to VisualLog's initializer
 to be called once or continuously to update the log.
 """
 
-BuilderTypes = Union[BuilderCallback, "VisualLogBuilder", Type["VisualLogBuilder"]]
+BuilderTypes = Union[BuilderCallback, "LogBuilder", Type["LogBuilder"]]
 """
 The supported builder callback types.
  
-Either a function which can be called, a VisualLogBuilder object provided by
-the user or a class of a VisualLogBuilder ancestor class of which we shall
+Either a function which can be called, a LogBuilder object provided by
+the user or a class of a LogBuilder ancestor class of which we shall
 created an instance.
 """
 
@@ -349,7 +349,7 @@ class VisualLog:
         "THe last time the _update rate was computed as time stamp"
         self._update_rate: float = 0
         # The last computed updated rate in updates per second
-        from .visual_log_builder import VisualLogBuilder
+        from .visual_log_builder import LogBuilder
 
         self.default_page = PageSession(
             log=self,
@@ -364,7 +364,7 @@ class VisualLog:
         """Defines the initial default target page in which the page data ia stored"""
         self.pages = [self.default_page]
         """A list of all currently active pages"""
-        self.default_builder: VisualLogBuilder = VisualLogBuilder(
+        self.default_builder: LogBuilder = LogBuilder(
             self, page_session=self.default_page
         )
         self.default_page.builder = self.default_builder
@@ -910,18 +910,18 @@ class VisualLog:
         Prepapres the builder to be used for this log
 
         :param builder: The build helper, either a function which fills the
-            log or an ancestor of VisualLogBuilder implementing at least the
+            log or an ancestor of LogBuilder implementing at least the
             build_body method to do the same.
         :param page_session: Defines the target page to which the builder shall write
         :return: The prepared build object
         """
         if isinstance(builder, type):
-            from .visual_log_builder import VisualLogBuilder
+            from .visual_log_builder import LogBuilder
 
-            builder: Type[VisualLogBuilder] | VisualLogBuilder
+            builder: Type[LogBuilder] | LogBuilder
             builder = builder(log=self, page_session=page_session)
-            if not isinstance(builder, VisualLogBuilder):
-                raise TypeError("No valid VisualLogBuilder base class provided")
+            if not isinstance(builder, LogBuilder):
+                raise TypeError("No valid LogBuilder base class provided")
         return builder
 
     def _start_app_or_browser(self, real_log: VisualLog, url: str):
@@ -1210,16 +1210,16 @@ class VisualLog:
         """
         Creates a set of files in the defined directory which contain
         replacements for the essential logging classes such as VisualLog,
-        VisualLogBuilder etc. which can be used on systems without
+        LogBuilder etc. which can be used on systems without
         a valid SciStag installation such as MicroPython.
 
         ..  code-block:python
 
             try:
-                from scistag.vislog import VisualLog, VisualLogBuilder
+                from scistag.vislog import VisualLog, LogBuilder
                 VisualLog.setup_mocks()
             except ModuleNotFoundError:
-                from visual_log_mock import VisualLog, VisualLogBuilder
+                from visual_log_mock import VisualLog, LogBuilder
         """
         from .visual_micro_log import VisualMicroLock
 
@@ -1237,7 +1237,7 @@ class VisualLog:
         """
         return False
 
-    def __enter__(self) -> "VisualLogBuilder":
+    def __enter__(self) -> "LogBuilder":
         """
         Returns the default builder
 

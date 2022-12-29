@@ -6,7 +6,7 @@ contexts.
 
 from __future__ import annotations
 
-from scistag.vislog import VisualLogBuilder
+from scistag.vislog import LogBuilder
 
 
 class ElementContext:
@@ -20,7 +20,7 @@ class ElementContext:
     context is left or the :meth:`close` method is called explicitly.
     """
 
-    def __init__(self, builder: "VisualLogBuilder", closing_code: {}):
+    def __init__(self, builder: "LogBuilder", closing_code: {}):
         """
         :param builder: The builder object with which we write to the log
         """

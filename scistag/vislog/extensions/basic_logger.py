@@ -10,7 +10,7 @@ from scistag.logstag import LogLevel
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 
 class BasicLogger(BuilderExtension):
@@ -18,7 +18,7 @@ class BasicLogger(BuilderExtension):
     Helper class for classic logging via info, debug, warning etc.
     """
 
-    def __init__(self, builder: "VisualLogBuilder"):
+    def __init__(self, builder: "LogBuilder"):
         """
         :param builder: The builder object with which we write to the log
         """
@@ -40,7 +40,7 @@ class BasicLogger(BuilderExtension):
         }
         "Colors for the single log levels"
 
-    def _log_advanced(self, text, level: LogLevel) -> VisualLogBuilder:
+    def _log_advanced(self, text, level: LogLevel) -> LogBuilder:
         """
         Detects tables and other objects in a log and pretty prints the tables
         while keeping the other log data intact
@@ -94,7 +94,7 @@ class BasicLogger(BuilderExtension):
         detect_objects: bool = False,
         no_break: bool = False,
         space: str = " ",
-    ) -> VisualLogBuilder:
+    ) -> LogBuilder:
         """
         Adds a log text to the log
 
@@ -159,7 +159,7 @@ class BasicLogger(BuilderExtension):
         self.builder.handle_modified()
         return self.builder
 
-    def info(self, *args, **kwargs) -> VisualLogBuilder:
+    def info(self, *args, **kwargs) -> LogBuilder:
         """
         Logs an info text
 
@@ -169,7 +169,7 @@ class BasicLogger(BuilderExtension):
         self.add(*args, **kwargs, level=LogLevel.INFO)
         return self.builder
 
-    def debug(self, *args, **kwargs) -> VisualLogBuilder:
+    def debug(self, *args, **kwargs) -> LogBuilder:
         """
         Logs an info text
 
@@ -179,7 +179,7 @@ class BasicLogger(BuilderExtension):
         self.add(*args, **kwargs, level=LogLevel.DEBUG)
         return self.builder
 
-    def warning(self, *args, **kwargs) -> VisualLogBuilder:
+    def warning(self, *args, **kwargs) -> LogBuilder:
         """
         Logs an info text
 
@@ -189,7 +189,7 @@ class BasicLogger(BuilderExtension):
         self.add(*args, **kwargs, level=LogLevel.WARNING)
         return self.builder
 
-    def error(self, *args, **kwargs) -> VisualLogBuilder:
+    def error(self, *args, **kwargs) -> LogBuilder:
         """
         Logs an info text
 
@@ -199,7 +199,7 @@ class BasicLogger(BuilderExtension):
         self.add(*args, **kwargs, level=LogLevel.ERROR)
         return self.builder
 
-    def critical(self, *args, **kwargs) -> VisualLogBuilder:
+    def critical(self, *args, **kwargs) -> LogBuilder:
         """
         Logs a critical error
 

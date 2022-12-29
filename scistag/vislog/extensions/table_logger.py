@@ -24,7 +24,7 @@ TABLE_CLASS_SEAMLESS = "vl_log_table_seamless"
 "CSS style for a basic table without visible lines and padding"
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 ColumnContent = Union[
     str, int, float, Callable, Image, Figure, np.ndarray, DataFrame, Series, dict, list
@@ -53,7 +53,7 @@ class TableContext(ElementContext):
 
     def __init__(
         self,
-        builder: "VisualLogBuilder",
+        builder: "LogBuilder",
         size: tuple[int, int] | None = None,
         style: LTableStyle | None = None,
         seamless: bool | None = None,
@@ -340,7 +340,7 @@ class TableColumnContext(ElementContext):
     Automatically adds the beginning and ending of a column to the log
     """
 
-    def __init__(self, builder: "VisualLogBuilder"):
+    def __init__(self, builder: "LogBuilder"):
         """
         :param builder: The builder object with which we write to the log
         """
@@ -359,7 +359,7 @@ class TableLogger(BuilderExtension):
     Helper class for storing tables inside a log
     """
 
-    def __init__(self, builder: VisualLogBuilder):
+    def __init__(self, builder: LogBuilder):
         """
         :param builder: The builder object with which we write to the log
         """
@@ -421,7 +421,7 @@ class TableLogger(BuilderExtension):
 
             Each row has to provide the same count of columns.
 
-            The data type has to be a type supported by :meth:`VisualLogBuilder.add`.
+            The data type has to be a type supported by :meth:`LogBuilder.add`.
 
             You can also pass a single list of values which is by default interpreted
             to be horizontal so each entry represents a column. See orientation.

@@ -1,12 +1,12 @@
 """
-Implements the :class:`PandasLogger` extension for VisualLogBuilder to log
+Implements the :class:`PandasLogger` extension for LogBuilder to log
 Pandas DataFrames, DataSeries and statistics about them to a log.
 """
 from __future__ import annotations
 
 import typing
 
-from scistag.vislog import BuilderExtension, VisualLogBuilder
+from scistag.vislog import BuilderExtension, LogBuilder
 
 if typing.TYPE_CHECKING:
     import pandas as pd
@@ -18,7 +18,7 @@ class PandasLogger(BuilderExtension):
     and statistics about data to the log.
     """
 
-    def __init__(self, builder: VisualLogBuilder):
+    def __init__(self, builder: LogBuilder):
         """
         :param builder: The builder we are using to write to the log
         """

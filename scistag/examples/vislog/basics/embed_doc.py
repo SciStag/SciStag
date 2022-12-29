@@ -4,10 +4,10 @@ and automatically let the document being rebuilt when ever you can any of
 these files.
 """
 
-from scistag.vislog import VisualLog, VisualLogBuilder
+from scistag.vislog import VisualLog, LogBuilder
 
 
-class MyPage(VisualLogBuilder):
+class MyPage(LogBuilder):
     """
     A basic landing page
     """

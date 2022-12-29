@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 
 class PyPlotLogContext:
@@ -17,12 +17,12 @@ class PyPlotLogContext:
     When the context is left it adds the latest figure to the VisualLog
     it is associated to.
 
-    Is created via VisualLogBuilder.pyplot, see :meth:`VisualLogBuilder.pyplot`
+    Is created via LogBuilder.pyplot, see :meth:`LogBuilder.pyplot`
     """
 
     def __init__(
         self,
-        target_log: "VisualLogBuilder",
+        target_log: "LogBuilder",
         assertion_name: str | None = None,
         assertion_hash: str | None = None,
         br: bool = False,

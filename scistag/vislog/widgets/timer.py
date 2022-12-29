@@ -8,7 +8,7 @@ from __future__ import annotations
 import time
 from typing import Callable, Union
 
-from scistag.vislog import VisualLogBuilder
+from scistag.vislog import LogBuilder
 from scistag.vislog.widgets import LWidget, LEvent
 
 TIMER_LOOP_EVENT_TYPE_IDENTIFIER = "TIMER_TICK_EVENT"
@@ -32,7 +32,7 @@ class LTimer(LWidget):
 
     def __init__(
         self,
-        builder: "VisualLogBuilder",
+        builder: "LogBuilder",
         interval_s: float | None = None,
         delays_s: float | None = None,
         on_tick: Union[Callable, None] = None,

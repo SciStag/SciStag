@@ -9,11 +9,11 @@ from math import ceil
 import numpy as np
 import pandas as pd
 
-from scistag.vislog import VisualLog, VisualLogBuilder
+from scistag.vislog import VisualLog, LogBuilder
 from scistag.emojistag import EmojiDb, render_emoji
 
 
-class DemoBuilder(VisualLogBuilder):
+class DemoBuilder(LogBuilder):
     def build(self):
         self.md(
             """

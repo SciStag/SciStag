@@ -1,6 +1,6 @@
 """
 Implements helper functions for the easy definition of log cells, so functions of
-a VisualLogBuilder which are automatically called in the build process if they are
+a LogBuilder which are automatically called in the build process if they are
 decorated with @cell.
 """
 
@@ -16,7 +16,7 @@ def cell(
     progressive: bool = False,
 ):
     """
-    Decorates a method or function within the current VisualLogBuilder subclass or
+    Decorates a method or function within the current LogBuilder subclass or
     file as cell which will automatically be added to the log in the order of
     declaration.
 

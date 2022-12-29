@@ -14,7 +14,7 @@ from scistag.vislog.widgets.slider import LSlider
 from scistag.vislog.widgets.button import CLICK_EVENT_TYPE, LClickEvent
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 
 class WidgetLogger(BuilderExtension):
@@ -23,7 +23,7 @@ class WidgetLogger(BuilderExtension):
     or sliders
     """
 
-    def __init__(self, builder: "VisualLogBuilder"):
+    def __init__(self, builder: "LogBuilder"):
         """
         :param builder: The builder object with which we write to the log
         """

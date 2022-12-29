@@ -6,7 +6,7 @@ Defines helper class to log custom elements to a log such as HTML or Makrdown
 class HTMLCode:
     """
     Helper class to explicitly identify a string as html code so functions such as
-    :meth:`VisualLogBuilder.add` can identify it accordingly.
+    :meth:`LogBuilder.add` can identify it accordingly.
     """
 
     def __init__(self, code: str):
@@ -30,7 +30,7 @@ class HTMLCode:
 class MDCode:
     """
     Helper class to explicitly identify a string as Markdown code so functions such as
-    :meth:`VisualLogBuilder.add` can identify it accordingly.
+    :meth:`LogBuilder.add` can identify it accordingly.
     """
 
     def __init__(self, code: str):

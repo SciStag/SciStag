@@ -4,10 +4,10 @@ A demo which shows how to visualize a live camera stream inside a log.
 from __future__ import annotations
 import os
 
-from scistag.vislog import VisualLog, VisualLogBuilder, cell
+from scistag.vislog import VisualLog, LogBuilder, cell
 
 
-class LiveCameraDemo(VisualLogBuilder):
+class LiveCameraDemo(LogBuilder):
     """
     A simple demo which shows the live image of your first USB camera in your
     browser.

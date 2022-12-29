@@ -9,7 +9,7 @@ from scistag.vislog.widgets.log_widget import LWidget
 from scistag.vislog.widgets.event import LEvent
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 CLICK_EVENT_TYPE = "widget_click"
 "Defines an event which is risen by a button click"
@@ -36,7 +36,7 @@ class LButton(LWidget):
 
     def __init__(
         self,
-        builder: "VisualLogBuilder",
+        builder: "LogBuilder",
         name: str,
         caption: str = "",
         on_click: Union[Callable, None] = None,

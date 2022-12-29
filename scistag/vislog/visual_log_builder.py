@@ -1,5 +1,5 @@
 """
-Defines the class :class:`VisualLogBuilder` which is the main interface for
+Defines the class :class:`LogBuilder` which is the main interface for
 adding data in a VisualLog.
 """
 
@@ -67,17 +67,17 @@ class VisualLogBackup(BaseModel):
     "The logs html representation"
 
 
-class VisualLogBuilder:
+class LogBuilder:
     """
-    Defines an interface to all major log writing functions
-    for the creation of a VisualLog document.
+    Defines the central element to dynamically build and update a log document.
 
-    Can be overwritten to be provided as callback target for dynamic
-    documentation creation.
+    It provides all basic log writing functions, embeds LogBuilderExtensions for
+    advanced logging and styling such as .align, .table or .image and manages
+    the whole event flow, from updating dynamic cells to reacting to user interactions.
     """
 
     def __init__(
-            self, log: "VisualLog", page_session: Union["PageSession", None] = None
+        self, log: "VisualLog", page_session: Union["PageSession", None] = None
     ):
         """
         :param log: The log to which the content shall be added.
@@ -238,7 +238,7 @@ class VisualLogBuilder:
                 self.code(code)
         return result
 
-    def add(self, content: LogableContent, br: bool = False) -> VisualLogBuilder:
+    def add(self, content: LogableContent, br: bool = False) -> LogBuilder:
         """
         Adds the provided content to the log.
 
@@ -268,7 +268,7 @@ class VisualLogBuilder:
         import pandas as pd
 
         if hasattr(content, "to_html") and not isinstance(
-                content, (pd.DataFrame, pd.Series)
+            content, (pd.DataFrame, pd.Series)
         ):
             self.html(content.to_html())
             return self
@@ -315,7 +315,7 @@ class VisualLogBuilder:
             raise TypeError("Data type not supported")
         return self
 
-    def title(self, text: str) -> VisualLogBuilder:
+    def title(self, text: str) -> LogBuilder:
         """
         Adds a title to the log
 
@@ -325,7 +325,7 @@ class VisualLogBuilder:
         self.sub(text, level=1)
         return self
 
-    def text(self, text: str, br: bool = True) -> VisualLogBuilder:
+    def text(self, text: str, br: bool = True) -> LogBuilder:
         """
         Adds a text to the log
 
@@ -360,7 +360,7 @@ class VisualLogBuilder:
         self.handle_modified()
         return self
 
-    def link(self, text: str, link: str, br: bool = False) -> VisualLogBuilder:
+    def link(self, text: str, link: str, br: bool = False) -> LogBuilder:
         """
         Adds a hyperlink to the log
 
@@ -386,7 +386,7 @@ class VisualLogBuilder:
         self.handle_modified()
         return self
 
-    def br(self, repetition=1) -> VisualLogBuilder:
+    def br(self, repetition=1) -> LogBuilder:
         """
         Inserts a simple line break
 
@@ -397,7 +397,7 @@ class VisualLogBuilder:
         self.add_txt(" ", md=True)
         return self
 
-    def page_break(self) -> VisualLogBuilder:
+    def page_break(self) -> LogBuilder:
         """
         Inserts a page break
 
@@ -407,7 +407,7 @@ class VisualLogBuilder:
         self.add_txt(f"\n{'_' * 40}\n", md=True)
         return self
 
-    def sub(self, text: str, level: int = 2) -> VisualLogBuilder:
+    def sub(self, text: str, level: int = 2) -> LogBuilder:
         """
         Adds a sub title to the log
 
@@ -428,7 +428,7 @@ class VisualLogBuilder:
         self.handle_modified()
         return self
 
-    def sub_x3(self, text: str) -> VisualLogBuilder:
+    def sub_x3(self, text: str) -> LogBuilder:
         """
         Adds a subtitle to the log
 
@@ -438,7 +438,7 @@ class VisualLogBuilder:
         self.sub(text, level=3)
         return self
 
-    def sub_x4(self, text: str) -> VisualLogBuilder:
+    def sub_x4(self, text: str) -> LogBuilder:
         """
         Adds a subtitle to the log
 
@@ -448,7 +448,7 @@ class VisualLogBuilder:
         self.sub(text, level=4)
         return self
 
-    def sub_test(self, text: str) -> VisualLogBuilder:
+    def sub_test(self, text: str) -> LogBuilder:
         """
         Adds a subtest section to the log
 
@@ -458,7 +458,7 @@ class VisualLogBuilder:
         self.sub(text, level=4)
         return self
 
-    def hr(self) -> VisualLogBuilder:
+    def hr(self) -> LogBuilder:
         """
         Adds a horizontal rule to the document
 
@@ -468,7 +468,7 @@ class VisualLogBuilder:
         self.add_txt("---", md=True)
         return self
 
-    def html(self, code: str | HTMLCode) -> VisualLogBuilder:
+    def html(self, code: str | HTMLCode) -> LogBuilder:
         """
         Adds a html section. (only to targets supporting html)
 
@@ -558,7 +558,7 @@ class VisualLogBuilder:
             self._align = AlignmentLogger(self)
         return self._align
 
-    def code(self, code: str) -> VisualLogBuilder:
+    def code(self, code: str) -> LogBuilder:
         """
         Adds code to the log
 
@@ -604,12 +604,12 @@ class VisualLogBuilder:
         )
 
     def figure(
-            self,
-            figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
-            name: str | None = None,
-            alt_text: str | None = None,
-            _out_image_data: io.IOBase | None = None,
-            br: bool = False,
+        self,
+        figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
+        name: str | None = None,
+        alt_text: str | None = None,
+        _out_image_data: io.IOBase | None = None,
+        br: bool = False,
     ):
         """
         Adds a figure to the log
@@ -647,10 +647,10 @@ class VisualLogBuilder:
         self.image(image_data, name, alt_text=alt_text, br=br)
 
     def pyplot(
-            self,
-            assertion_name: str | None = None,
-            assertion_hash: str | None = None,
-            br: bool = False,
+        self,
+        assertion_name: str | None = None,
+        assertion_hash: str | None = None,
+        br: bool = False,
     ) -> "PyPlotLogContext":
         """
         Opens a matplotlib context to add a figure directly to the plot.
@@ -720,7 +720,7 @@ class VisualLogBuilder:
         returned from a helper process or node to the main process and
         be inserted in the main log.
 
-        See :meth:`VisualLogBuilder.insert_backup`
+        See :meth:`LogBuilder.insert_backup`
 
         Note:
         At the moment only the HTML data can be backuped and inserted.
@@ -795,7 +795,7 @@ class VisualLogBuilder:
         """
         return self.page_session.reserve_unique_name(name)
 
-    def flush(self) -> VisualLogBuilder:
+    def flush(self) -> LogBuilder:
         """
         Finalizes the pages so they can be dumped and/or read
 

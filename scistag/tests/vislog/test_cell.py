@@ -4,7 +4,7 @@ Tests the cell feature
 import time
 
 from scistag.common.time import sleep_min
-from scistag.vislog import VisualLog, VisualLogBuilder, cell
+from scistag.vislog import VisualLog, LogBuilder, cell
 from scistag.vislog.widgets.timer import LTimerTickEvent
 
 
@@ -91,7 +91,7 @@ def test_cell_updating():
     assert len(out_list) == 5
 
 
-class SugarBuilder(VisualLogBuilder):
+class SugarBuilder(LogBuilder):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.counter = 0

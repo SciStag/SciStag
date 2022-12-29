@@ -11,7 +11,7 @@ from __future__ import annotations
 import time
 from typing import Union, Callable
 
-from scistag.vislog import VisualLogBuilder
+from scistag.vislog import LogBuilder
 from scistag.vislog.common.log_element import LogElement
 from scistag.vislog.sessions.page_session import PageSession
 from scistag.vislog.widgets import LWidget, LEvent
@@ -51,7 +51,7 @@ class Cell(LWidget):
 
     def __init__(
         self,
-        builder: VisualLogBuilder,
+        builder: LogBuilder,
         interval_s: float | None = None,
         continuous: bool = False,
         progressive: bool = False,

@@ -2,10 +2,10 @@
 Demo showing the usage of a slider widget
 """
 
-from scistag.vislog import VisualLog, VisualLogBuilder, cell
+from scistag.vislog import VisualLog, LogBuilder, cell
 
 
-class SliderDemo(VisualLogBuilder):
+class SliderDemo(LogBuilder):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.val = 0.3
