@@ -8,6 +8,8 @@ from __future__ import annotations
 from inspect import signature
 from typing import TYPE_CHECKING, Callable
 
+from scistag.vislog.options import LWidgetOptions
+
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import VisualLogBuilder
     from scistag.vislog.widgets.event import LEvent
@@ -55,6 +57,8 @@ class LWidget:
             name=name
         )
         self.sub_element.flags["widget"] = self
+        self.options = LWidgetOptions()
+        "The widget's options"
 
     def insert_into_page(self):
         """
@@ -125,3 +129,14 @@ class LWidget:
         :return: The widget's value
         """
         return None
+
+    def apply_options(self, arguments: dict):
+        """
+        Applies the remaining options passed as arguments into the widget's options
+
+        :param arguments: The additional arguments
+        """
+        for key, value in arguments.items():
+            if not hasattr(self.options, key):
+                raise KeyError(f"Unknown option attribute {key}")
+            self.options.__setattr__(key, value)

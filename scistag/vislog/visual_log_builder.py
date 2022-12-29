@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from scistag.vislog.extensions.cell_logger import CellLogger
     from scistag.vislog.extensions.collection_logger import CollectionLogger
     from scistag.vislog.extensions.widget_logger import WidgetLogger
+    from scistag.vislog.extensions.alignment_logger import AlignmentLogger
 
 LogableContent = Union[
     str,
@@ -148,6 +149,10 @@ class VisualLogBuilder:
         self._widget: Union["WidgetLogger", None] = None
         """
         Extension to add visual, interactive components 
+        """
+        self._align: Union["AlignmentLogger", None] = None
+        """
+        Extension to align elements 
         """
         self.options: LogOptions = log.options.copy(deep=True)
         """
@@ -262,8 +267,9 @@ class VisualLogBuilder:
         # pandas content frame
         import pandas as pd
 
-        if hasattr(content, "to_html") and not isinstance(content,
-                                                          (pd.DataFrame, pd.Series)):
+        if hasattr(content, "to_html") and not isinstance(
+                content, (pd.DataFrame, pd.Series)
+        ):
             self.html(content.to_html())
             return self
         if hasattr(content, "to_md"):
@@ -540,6 +546,17 @@ class VisualLogBuilder:
         if self._widget is None:
             self._widget = WidgetLogger(self)
         return self._widget
+
+    @property
+    def align(self) -> "AlignmentLogger":
+        """
+        Methods to align elements, e.g. to the right or to the center
+        """
+        from .extensions.alignment_logger import AlignmentLogger
+
+        if self._align is None:
+            self._align = AlignmentLogger(self)
+        return self._align
 
     def code(self, code: str) -> VisualLogBuilder:
         """

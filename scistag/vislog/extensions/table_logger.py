@@ -52,12 +52,12 @@ class TableContext(ElementContext):
     """
 
     def __init__(
-            self,
-            builder: "VisualLogBuilder",
-            size: tuple[int, int] | None = None,
-            style: LTableStyle | None = None,
-            seamless: bool | None = None,
-            br: bool = True,
+        self,
+        builder: "VisualLogBuilder",
+        size: tuple[int, int] | None = None,
+        style: LTableStyle | None = None,
+        seamless: bool | None = None,
+        br: bool = True,
     ):
         """
         :param builder: The builder object with which we write to the log
@@ -142,7 +142,7 @@ class TableContext(ElementContext):
         return iterator
 
     def add_row(
-            self, content: list[ColumnContent] | None = None
+        self, content: list[ColumnContent] | None = None
     ) -> Union["TableRowContext", None]:
         """
         Adds a new row context to the table.
@@ -295,7 +295,7 @@ class TableRowContext(ElementContext):
         return self.iter_cols(self.table.size[0])
 
     def add_col(
-            self, content: ColumnContent | None = None
+        self, content: ColumnContent | None = None
     ) -> Union["TableColumnContext", None]:
         """
         Adds a new column to the row
@@ -367,11 +367,11 @@ class TableLogger(BuilderExtension):
         self.show = self.__call__
 
     def begin(
-            self,
-            size: tuple[int, int] | None = None,
-            style: LTableStyle | None = None,
-            seamless: bool | None = None,
-            br: bool = True,
+        self,
+        size: tuple[int, int] | None = None,
+        style: LTableStyle | None = None,
+        seamless: bool | None = None,
+        br: bool = True,
     ):
         """
         Creates a table logging context
@@ -404,14 +404,14 @@ class TableLogger(BuilderExtension):
         )
 
     def __call__(
-            self,
-            data: list[list[Any]] | list[Any],
-            orientation: Literal["vert", "hor"] = "hor",
-            index: bool = False,
-            header: bool = False,
-            style: LTableStyle | None = None,
-            seamless: bool | None = None,
-            br: bool = True,
+        self,
+        data: list[list[Any]] | list[Any],
+        orientation: Literal["vert", "hor"] = "hor",
+        index: bool = False,
+        header: bool = False,
+        style: LTableStyle | None = None,
+        seamless: bool | None = None,
+        br: bool = True,
     ):
         """
         Adds a table to the log.
@@ -458,7 +458,7 @@ class TableLogger(BuilderExtension):
                         if index and col_index == 0:
                             code += "<b>"
                         major_cell = (
-                                row_index == 0 and header or col_index == 0 and index
+                            row_index == 0 and header or col_index == 0 and index
                         )
                         if major_cell:
                             code += f"<b>{cur_data}</b>"
@@ -472,12 +472,12 @@ class TableLogger(BuilderExtension):
                     tabs = tabs[0:-1]
 
     def simple_table(
-            self,
-            data: list[list[str | int | float | bool]],
-            orientation: Literal["vert", "hor"] = "hor",
-            index=False,
-            header=False,
-            br: bool = True,
+        self,
+        data: list[list[str | int | float | bool]],
+        orientation: Literal["vert", "hor"] = "hor",
+        index=False,
+        header=False,
+        br: bool = True,
     ):
         """
         Adds a table simple table to the log which is represented in ASCII style

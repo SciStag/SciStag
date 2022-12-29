@@ -57,7 +57,7 @@ PySide6-Addons = { version = "^6.4.1", optional = true }
 [tool.poetry.extras]
 logstag = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib"]
 datastag = ["pyarrow"]
-webstaag = ["requests"]
+webstag = ["requests"]
 svg = ["CairoSVG"]
 opencv = ["opencv-contrib-python"]
 flask = ["Flask", "gunicorn"]

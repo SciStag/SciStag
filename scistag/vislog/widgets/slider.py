@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Union
 
 from scistag.vislog.log_elements import HTMLCode
-from scistag.vislog.styles.slider_style import LSliderStyle
+from scistag.vislog.options import LSliderOptions
 from scistag.vislog.widgets.log_widget import LWidget
 from scistag.vislog.widgets.event import LEvent
 
@@ -42,16 +42,17 @@ class LSlider(LWidget):
     """
 
     def __init__(
-            self,
-            builder: "VisualLogBuilder",
-            value: float | int,
-            min_value: float | int,
-            max_value: float | int,
-            stepping: float | int | None = None,
-            on_change: Union[Callable, None] = None,
-            name: str = "Slider",
-            style: LSliderStyle | None = None,
-            insert: bool = True,
+        self,
+        builder: "VisualLogBuilder",
+        value: float | int,
+        min_value: float | int,
+        max_value: float | int,
+        stepping: float | int | None = None,
+        on_change: Union[Callable, None] = None,
+        name: str = "Slider",
+        options: LSliderOptions | None = None,
+        insert: bool = True,
+        **kwargs,
     ):
         """
         :param builder: The log builder to which the button shall be added
@@ -65,6 +66,8 @@ class LSlider(LWidget):
         :param name: The slider's unique name, for easier debugging
         :param style: The slider's style
         :param insert: Defines if the element shall be inserted into the log
+        :param kwargs: Additional arguments will override the corresponding settings
+            in the :class:`LSliderOptions`.
         """
         super().__init__(name=name, builder=builder)
         self._value = value
@@ -77,11 +80,14 @@ class LSlider(LWidget):
         "The slider's stepping size"
         self.on_change = on_change
         """The event to be called when the slider's value was modified"""
-        self.style: LSliderStyle = style if style is not None else LSliderStyle()
-        """The slider's style.
+        self.options: LSliderOptions = (
+            options if options is not None else LSliderOptions()
+        )
+        """The slider's options.
         
         Note that modifications to the style after the widget's creation do usually 
         not affect the widget anymore as it was already written to the log"""
+        self.apply_options(kwargs)
         self.html_value_code: HTMLCode = HTMLCode("")
         """
         Contains the HTML code which visualizes the value. If style.show_value
@@ -96,60 +102,68 @@ class LSlider(LWidget):
     def write(self):
         script = f"""vl_handle_value_changed('{self.name}', this.value);"""
         out_name = self.name + "_out"
-        if self.style.show_value == "custom" or self.style.show_value:
+        if self.options.show_value == "custom" or self.options.show_value:
             script += (
-                f"document.getElementById('{out_name}').value = '{self.style.value_prefix}'+("
-                f"parseFloat((this.value*{self.style.value_scaling})."
-                f"toFixed({self.style.value_max_digits}))+'{self.style.value_postfix}')"
+                f"document.getElementById('{out_name}').value = '{self.options.value_prefix}'+("
+                f"parseFloat((this.value*{self.options.value_scaling})."
+                f"toFixed({self.options.value_max_digits}))+'{self.options.value_postfix}')"
             )
-        if self.style.vertical:
-            v_width = self.style.vertical_width
-            v_height = self.style.vertical_height
-            style = f"height:{v_height}; width:{v_width}; " \
-                    f"-webkit-appearance: slider-vertical; "
+        if self.options.vertical:
+            v_width = self.options.vertical_width
+            v_height = self.options.vertical_height
+            style = (
+                f"height:{v_height}; width:{v_width}; "
+                f"-webkit-appearance: slider-vertical; "
+            )
         else:
-            h_width = self.style.horizontal_width
-            h_height = self.style.horizontal_height
+            h_width = self.options.horizontal_width
+            h_height = self.options.horizontal_height
             style = f"width:{h_width}; height:{h_height};"
-            style += 'vertical-align: middle;'
+            style += "vertical-align: middle;"
         html = ""
-        if not self.style.vertical:
+        if not self.options.vertical:
             html += "<span style='vertical-align: middle'>"
-        html += f'<input id="{self.name}" type="range" value="{self._value}" ' \
-                f'step="{self.stepping}" min="{self.min_value}" ' \
-                f'max="{self.max_value}" ' \
-                f'style="{style}" ' \
-                f'oninput="{script}" />'
+        html += (
+            f'<input id="{self.name}" type="range" value="{self._value}" '
+            f'step="{self.stepping}" min="{self.min_value}" '
+            f'max="{self.max_value}" '
+            f'style="{style}" '
+            f'oninput="{script}" />'
+        )
         value_html = ""
-        if self.style.show_value:
-            scaled_value = self._value * self.style.value_scaling
-            scaled_value = f"{scaled_value:0.{self.style.value_max_digits}f}"
+        if self.options.show_value:
+            scaled_value = self._value * self.options.value_scaling
+            scaled_value = f"{scaled_value:0.{self.options.value_max_digits}f}"
             scaled_value = scaled_value.rstrip("0").rstrip(".")
             if len(scaled_value) == 0:
                 scaled_value = "0"
-            value = f"{self.style.value_prefix}{scaled_value}{self.style.value_postfix}"
-            if self.style.value_edit_field:
+            value = (
+                f"{self.options.value_prefix}{scaled_value}{self.options.value_postfix}"
+            )
+            if self.options.value_edit_field:
                 edit_style = "width: 44pt;"
-                if self.style.value_bold:
+                if self.options.value_bold:
                     edit_style += "font-weight: bold;"
-                value_html = f'<input type="number" id="{out_name}" ' \
-                             f'style="{edit_style}"'\
-                             f'step="{self.stepping}" min="{self.min_value}" ' \
-                             f'max="{self.max_value}" ' \
-                             f'value="{self.value}"' \
-                             f'oninput="document.' \
-                             f'getElementById(\'{self.name}\').value=this.value" />'
+                value_html = (
+                    f'<input type="number" id="{out_name}" '
+                    f'style="{edit_style}"'
+                    f'step="{self.stepping}" min="{self.min_value}" '
+                    f'max="{self.max_value}" '
+                    f'value="{self.value}"'
+                    f'oninput="document.'
+                    f"getElementById('{self.name}').value=this.value\" />"
+                )
             else:
                 value_html = f"<output id='{out_name}'>{value}</output>"
-            if self.style.value_bold:
+            if self.options.value_bold:
                 value_html = "<b>" + value_html + "</b>"
-            if self.style.show_value == "custom":
+            if self.options.show_value == "custom":
                 self.html_value_code = value_html
                 html += "</span>"
-            elif not self.style.vertical:
+            elif not self.options.vertical:
                 html += " " + value_html
                 html += "</span>"
-        if self.style.vertical:
+        if self.options.vertical:
             if len(value_html) > 0:
                 self.builder.table(
                     [[HTMLCode(html)], [HTMLCode(f"{value_html}")]],
@@ -159,7 +173,7 @@ class LSlider(LWidget):
                 self.builder.html(html)
         else:
             self.builder.html(html)
-            if self.style.vertical and len(value_html) > 0:
+            if self.options.vertical and len(value_html) > 0:
                 self.builder.html(f"{value_html}")
 
     def handle_event(self, event: "LEvent"):

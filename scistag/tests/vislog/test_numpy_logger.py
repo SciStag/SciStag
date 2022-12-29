@@ -71,10 +71,10 @@ def test_np_logging():
     vl.test.begin("Numpy matrix")
     vl.np(np.identity(3), max_digits=4)
     vl.br()
-    vl.test.assert_cp_diff('43b628c140448094e860c8a20c3152e6')
+    vl.test.assert_cp_diff("43b628c140448094e860c8a20c3152e6")
     vl.test.checkpoint("numpy.add")
     vl.add(np.identity(3))
-    vl.test.assert_cp_diff('d961087d4bd7d9cef00efc64259e81f8')
+    vl.test.assert_cp_diff("d961087d4bd7d9cef00efc64259e81f8")
 
     with pytest.raises(ValueError):
         vl.np(np.zeros((128, 128)))

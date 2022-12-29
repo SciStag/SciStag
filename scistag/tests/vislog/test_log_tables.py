@@ -20,13 +20,13 @@ def test_basics_logging_methods():
             for index in range(3):
                 with row.add_col():
                     vl.add("Test")
-    vl.test.assert_cp_diff(hash_val='a43a100d2f5d7e2dc4ecbf083f52ee29')
+    vl.test.assert_cp_diff(hash_val="a43a100d2f5d7e2dc4ecbf083f52ee29")
     vl.br()
     vl.test.checkpoint("log.table.fullrow")
     table = vl.table.begin()
     table.add_row(["1", 2, 3.0])
     table.close()
-    vl.test.assert_cp_diff(hash_val='39108210430d0247f047296aefa3728a')
+    vl.test.assert_cp_diff(hash_val="39108210430d0247f047296aefa3728a")
 
 
 def test_table_enumeration():
@@ -40,12 +40,12 @@ def test_table_enumeration():
     for row_index, row in enumerate(vl.table.begin(size=(4, 3))):
         for col_index, col in enumerate(row):
             vl.log(f"{col_index}x{row_index}")
-    vl.test.assert_cp_diff(hash_val='ae00c82d946891740e8d208eb0201c64')
+    vl.test.assert_cp_diff(hash_val="ae00c82d946891740e8d208eb0201c64")
     vl.test.checkpoint("log.table.iter_pass_size")
     for row_index, row in enumerate(vl.table.begin().iter_rows(3)):
         for col_index, col in enumerate(row.iter_cols(4)):
             vl.log(f"{col_index}x{row_index}")
-    vl.test.assert_cp_diff(hash_val='ae00c82d946891740e8d208eb0201c64')
+    vl.test.assert_cp_diff(hash_val="ae00c82d946891740e8d208eb0201c64")
 
     with pytest.raises(ValueError):
         with vl.table.begin() as table:
@@ -72,7 +72,7 @@ def test_table_creation():
     vl.test.begin("Table logging direct")
     vl.test.checkpoint("log.table.direct")
     vl.table.show([[1, 2, 3], [4, 5, 6]], index=True)
-    vl.test.assert_cp_diff(hash_val='639972b496c78629bbb9b4d4786ed40b')
+    vl.test.assert_cp_diff(hash_val="639972b496c78629bbb9b4d4786ed40b")
 
     vl.test.checkpoint("log.table.add_col")
     for row_index, row in enumerate(vl.table.begin().iter_rows(3)):
@@ -80,4 +80,4 @@ def test_table_creation():
         row.add_col("456")
         row.add_col(lambda: vl.log.info("789"))
         row.add_col(MDCode("**Markdown**"))
-    vl.test.assert_cp_diff(hash_val='c96f6f53cdd5c2a69180d641ad2c4766')
+    vl.test.assert_cp_diff(hash_val="c96f6f53cdd5c2a69180d641ad2c4766")

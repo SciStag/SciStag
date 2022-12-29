@@ -8,8 +8,14 @@ from typing import Union, Literal
 
 from pydantic import BaseModel
 
+from scistag.vislog.options.widget_options import LWidgetOptions
 
-class LSliderStyle(BaseModel):
+
+class LSliderOptions(LWidgetOptions):
+    """
+    Defines an LSlider's options
+    """
+
     show_value: Union[bool, Literal["custom"]] = True
     """Defines if the value shall be shown next to the slider.
     
@@ -39,7 +45,7 @@ class LSliderStyle(BaseModel):
     horizontal_height: str = "32pt"
     """The height in horizontal mode"""
 
-    def copy(self) -> LSliderStyle:
+    def copy(self) -> LSliderOptions:
         """
         Creates a copy of the style
 

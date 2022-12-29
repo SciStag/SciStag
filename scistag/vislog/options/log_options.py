@@ -4,7 +4,7 @@ Defines the configuration options for VisualLog and associated classes
 
 from pydantic import BaseModel, Field
 
-from scistag.vislog.styles.slider_style import LSliderStyle
+from scistag.vislog.options import LSliderOptions
 
 
 class HtmlClientDebugOptions(BaseModel):
@@ -35,7 +35,7 @@ class LogStyles(BaseModel):
     Defines the default style for all elements
     """
 
-    slider: LSliderStyle = Field(default_factory=LSliderStyle)
+    slider: LSliderOptions = Field(default_factory=LSliderOptions)
 
 
 class LogOptions(BaseModel):

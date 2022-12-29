@@ -22,17 +22,22 @@ class SliderDemo(VisualLogBuilder):
             self.val = slider.value
             self.value.cell.invalidate()
 
-        style = self.options.style.slider.copy()
-        style.show_value = True
-        style.vertical = False
-        style.value_max_digits = 2
-        style.value_bold = True
         self.text("Contrast ", br=False)
         slider = self.widget.slider(
-            self.val, 0.1, 2.0, stepping=0.1, on_change=change_val, style=style
+            self.val,
+            0.1,
+            2.0,
+            stepping=0.1,
+            on_change=change_val,
+            show_value=True,
+            vertical=False,
+            value_max_digits=2,
+            value_bold=True,
         )
         self.hr()
+        with self.align.left():
+            self.text("Just a test")
 
 
 if VisualLog.is_main():
-    VisualLog(refresh_time_s=0.001).run_server(SliderDemo)
+    VisualLog().run_server(SliderDemo, auto_reload=True)
