@@ -8,7 +8,7 @@ from scistag.vislog.sessions.page_session import PageSession
 class PageUpdateContext:
     """
     Helper class to automatically finalize a synchronized update block of a
-    VisualLogBuilder or PageSession. See :meth:`PageSession.begin_update`
+    LogBuilder or PageSession. See :meth:`PageSession.begin_update`
     """
 
     def __init__(self, page_session: PageSession):

@@ -5,6 +5,7 @@ content via http.
 
 from __future__ import annotations
 
+import json
 import os
 from typing import TYPE_CHECKING
 
@@ -37,12 +38,9 @@ class VisualLogService:
 
         :param params: The query parameters
         """
-        event_name = params.pop("name", "")
-        event_type = params.pop("type", "")
-        if len(event_name):
-            from scistag.vislog.widgets.log_event import LEvent
-
-            self.log.add_event(LEvent(name=event_name, event_type=event_type))
+        event_type = params.get("type", "")
+        if len(event_type):
+            self.log.default_page.handle_client_event(**params)
             return "OK"
         return "Bad request", 400
 
@@ -52,11 +50,15 @@ class VisualLogService:
         """
         return self.log.default_page.get_page(format_type=HTML)
 
-    def get_events(self, *path, sessionId: str) -> WebResponse:
+    def events(self, *path, sessionId: str, body: bytes | None = b"") -> WebResponse:
         """
         Returns the page's newest events which shall be executed in JavaScript in the
         script liveLog/defaultLive_view.html
         """
+        if len(body):
+            json_data = json.loads(body.decode("utf-8"))
+            values = json_data.get("values", {})
+            self.log.default_page.update_values_js(sessionId, values)
         event_header, event_body = self.log.default_page.get_events_js(sessionId)
         if event_body is None:  # nothing changed?
             return WebResponse(body=b"", status=304)

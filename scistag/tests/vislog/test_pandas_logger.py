@@ -75,5 +75,10 @@ def test_dataframe():
     vl.test.assert_cp_diff("625d2b1958c13dd6ec8303b4dcb70eb2")
 
     vl.test.checkpoint("pd.df.add")
-    vl.add(df)
+    vl.add(df, br=True)
     vl.test.assert_cp_diff("625d2b1958c13dd6ec8303b4dcb70eb2")
+
+    vl.test.checkpoint("pd.df.row_limit")
+    # log with limited count of rows
+    vl.pd(df, max_rows=2)
+    vl.test.assert_cp_diff("b2502d7714d9cff3025c43b5e5d009fa")

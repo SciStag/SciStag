@@ -1,12 +1,12 @@
 """
 Implements the class :class:`MarkdownLogger` which adds Markdown
-support to the VisualLogBuilder.
+support to the LogBuilder.
 """
 
 from __future__ import annotations
 
 from scistag.filestag import FileStag, FileSourceTypes
-from scistag.vislog import VisualLogBuilder, BuilderExtension
+from scistag.vislog import LogBuilder, BuilderExtension
 from scistag.vislog.visual_log import MD, HTML, TXT
 
 
@@ -16,7 +16,7 @@ class MarkdownLogger(BuilderExtension):
     files to a VisualLog.
     """
 
-    def __init__(self, builder: VisualLogBuilder):
+    def __init__(self, builder: LogBuilder):
         """
         :param builder: The builder object with which we write to the log
         """
@@ -25,7 +25,7 @@ class MarkdownLogger(BuilderExtension):
 
     def __call__(
         self, text: str, exclude_targets: set[str] | None = None
-    ) -> VisualLogBuilder:
+    ) -> LogBuilder:
         """
         Adds a markdown section.
 
@@ -59,7 +59,7 @@ class MarkdownLogger(BuilderExtension):
         self.builder.handle_modified()
         return self.builder
 
-    def embed(self, source: FileSourceTypes, encoding="utf-8") -> VisualLogBuilder:
+    def embed(self, source: FileSourceTypes, encoding="utf-8") -> LogBuilder:
         """
         Embeds a markdown file into the log
 

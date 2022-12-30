@@ -8,7 +8,7 @@ from __future__ import annotations
 import time
 from typing import Callable, Union
 
-from scistag.vislog import VisualLogBuilder
+from scistag.vislog import LogBuilder
 from scistag.vislog.widgets import LWidget, LEvent
 
 TIMER_LOOP_EVENT_TYPE_IDENTIFIER = "TIMER_TICK_EVENT"
@@ -32,12 +32,13 @@ class LTimer(LWidget):
 
     def __init__(
         self,
-        builder: "VisualLogBuilder",
+        builder: "LogBuilder",
         interval_s: float | None = None,
         delays_s: float | None = None,
         on_tick: Union[Callable, None] = None,
         enforce: bool = False,
         name: str = "",
+        insert: bool = True,
     ):
         """
         :param builder: The builder to which the widget shall be added
@@ -52,6 +53,7 @@ class LTimer(LWidget):
             infinite loop.
         :param on_tick: The function to be called when the timer is triggered
         :param name: The timer's name
+        :param insert: Defines if the element shall be inserted into the log
         """
         self.loop_counter = 0
         """Defines the count of executed loops"""
@@ -67,6 +69,8 @@ class LTimer(LWidget):
         )
         """The time stamp of the next execution"""
         self.on_tick = on_tick
+        if insert:
+            self.insert_into_page()
 
     def write(self):
         pass  # nothing to write, we are just virtual

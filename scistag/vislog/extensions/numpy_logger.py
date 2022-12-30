@@ -1,12 +1,12 @@
 """
-Implements the :class:`NumpyLogger` extension for VisualLogBuilder to log
+Implements the :class:`NumpyLogger` extension for LogBuilder to log
 numpy data such as matrices and vectors.
 """
 from __future__ import annotations
 
 import typing
 
-from scistag.vislog import BuilderExtension, VisualLogBuilder
+from scistag.vislog import BuilderExtension, LogBuilder
 
 if typing.TYPE_CHECKING:
     import numpy as np
@@ -23,20 +23,21 @@ class NumpyLogger(BuilderExtension):
     ways.
     """
 
-    def __init__(self, builder: VisualLogBuilder):
+    def __init__(self, builder: LogBuilder):
         """
         :param builder: The builder we are using to write to the log
         """
         super().__init__(builder)
         self.show = self.__call__
 
-    def __call__(self, data: "np.ndarray", max_digits=2):
+    def __call__(self, data: "np.ndarray", max_digits=2, br: bool = True):
         """
         Adds a numpy matrix or vector to the log
 
         :param data: The data frame
         :param max_digits: The number of digits with which the numbers shall be
             formatted.
+        :param br: Defines if the table shall be followed by a line break
         """
         if len(data.shape) >= 3:
             raise ValueError("Too many dimensions")
@@ -48,4 +49,4 @@ class NumpyLogger(BuilderExtension):
             data = [
                 [f"{round(element, max_digits)}" for element in row] for row in data
             ]
-        self.builder.table(data)
+        self.builder.table(data, br=br)

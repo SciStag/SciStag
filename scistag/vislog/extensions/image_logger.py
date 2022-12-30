@@ -16,7 +16,7 @@ from scistag.vislog.extensions.builder_extension import BuilderExtension
 if TYPE_CHECKING:
     from scistag.imagestag import PixelFormat
     from scistag.vislog.visual_log import VisualLog
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 MAXIMUM_IMAGE_WIDTH = 8096
 """
@@ -36,7 +36,7 @@ class ImageLogger(BuilderExtension):
     Helper class for storing images in a VisualLog
     """
 
-    def __init__(self, builder: "VisualLogBuilder"):
+    def __init__(self, builder: "LogBuilder"):
         """
         :param builder: The log builder object we are logging with
         """
@@ -56,7 +56,7 @@ class ImageLogger(BuilderExtension):
         max_width: int | float | None = None,
         filetype: str | tuple[str, int] | None = None,
         optical_scaling: float = 1.0,
-        html_linebreak=True,
+        br=True,
     ):
         """
         Adds an image to the log.
@@ -85,7 +85,7 @@ class ImageLogger(BuilderExtension):
         :param optical_scaling: Defines the factor with which the image shall
             be visualized on the html page without really rescaling the image
             itself and thus giving the possibility to zoom in the browser.
-        :param html_linebreak: Defines if a linebreak shall be inserted after
+        :param br: Defines if a linebreak shall be inserted after
             the image.
         """
         if not self.log.log_images:
@@ -96,7 +96,7 @@ class ImageLogger(BuilderExtension):
             alt_text = name
         if isinstance(source, np.ndarray):
             source = Image(source, pixel_format=pixel_format)
-        html_lb = "<br>" if html_linebreak else ""
+        html_lb = "<br>" if br else ""
         if isinstance(source, str):
             if (
                 not source.lower().startswith("http")
@@ -111,7 +111,7 @@ class ImageLogger(BuilderExtension):
                     alt_text,
                     scaling=scaling,
                     max_width=max_width,
-                    html_linebreak=html_linebreak,
+                    html_linebreak=br,
                 )
                 return
         filename = self.builder.reserve_unique_name(name)
@@ -158,18 +158,18 @@ class ImageLogger(BuilderExtension):
             embed_data = self._build_get_embedded_image(encoded_image)
             file_location = embed_data
         if len(file_location):
-            self.page.write_html(
+            self.page_session.write_html(
                 f'<img src="{file_location}" {size_definition}>{html_lb}\n'
             )
-        if self.log.log_txt_images and self.page.txt_export:
+        if self.log.log_txt_images and self.page_session.txt_export:
             if not isinstance(source, Image):
                 source = Image(source)
             max_width = min(max(source.width / 1024 * 80, 1), 80)
-            self.page.write_txt(source.to_ascii(max_width=max_width))
-            self.page.write_txt(f"Image: {alt_text}\n")
+            self.page_session.write_txt(source.to_ascii(max_width=max_width))
+            self.page_session.write_txt(f"Image: {alt_text}\n")
         else:
-            self.page.write_txt(f"\n[IMAGE][{alt_text}]\n")
-        self.page.handle_modified()
+            self.page_session.write_txt(f"\n[IMAGE][{alt_text}]\n")
+        self.page_session.handle_modified()
 
     def _insert_image_reference(
         self,
@@ -209,13 +209,13 @@ class ImageLogger(BuilderExtension):
                 int(round(image.width * scaling * html_scaling)),
                 int(round(image.height * scaling * html_scaling)),
             )
-            self.page.write_html(
+            self.page_session.write_html(
                 f'<img src="{source}" with={width} height={height}>{html_lb}'
             )
         else:
-            self.page.write_html(f'<img src="{source}">{html_lb}')
-        self.page.write_md(f"![{name}]({source})\n")
-        self.page.write_txt(f"\n[IMAGE][{alt_text}]\n")
+            self.page_session.write_html(f'<img src="{source}">{html_lb}')
+        self.page_session.write_md(f"![{name}]({source})\n")
+        self.page_session.write_txt(f"\n[IMAGE][{alt_text}]\n")
 
     def _log_image_to_disk(
         self, filename: str, name: str, source: bytes | Image, encoded_image
@@ -248,8 +248,10 @@ class ImageLogger(BuilderExtension):
                 FileStag.save(target_filename, encoded_image)
         if not self.log.embed_images:
             file_location = FilePath.basename(target_filename)
-        if self.page.md_export:
-            self.page.write_md(f"![{name}]({FilePath.basename(target_filename)})\n")
+        if self.page_session.md_export:
+            self.page_session.write_md(
+                f"![{name}]({FilePath.basename(target_filename)})\n"
+            )
         return file_location
 
     @staticmethod
@@ -271,4 +273,4 @@ class ImageLogger(BuilderExtension):
 
         :return: True if they do
         """
-        return self.page.md_export or not self.log.embed_images
+        return self.page_session.md_export or not self.log.embed_images

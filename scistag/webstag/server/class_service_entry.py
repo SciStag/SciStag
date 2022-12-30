@@ -106,6 +106,10 @@ class WebClassServiceEntry:
         if path in self.methods or MISSING_FALLBACK_NAME in self.methods:
             method = self.methods.get(path, MISSING_FALLBACK_NAME)
             parameters = {}
+
+            if request.body is not None and len(request.body) > 0:
+                parameters["body"] = request.body
+
             for key, element in request.parameters.items():
                 parameters[key] = element
             try:

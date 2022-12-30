@@ -54,8 +54,8 @@ class AutoReloadTestThread(Thread):
         with open(f"{rel_path}/generic_module.py", "w") as text_file:
             text_file.write(
                 f"""
-from scistag.vislog import VisualLogBuilder, VisualLog
-def builder(vl: VisualLogBuilder):
+from scistag.vislog import LogBuilder, VisualLog
+def builder(vl: LogBuilder):
     vl.log("Hello testlog")
 {add_content}    
 log = VisualLog(auto_reload=builder)

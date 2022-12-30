@@ -9,11 +9,11 @@ from math import ceil
 import numpy as np
 import pandas as pd
 
-from scistag.vislog import VisualLog, VisualLogBuilder
+from scistag.vislog import VisualLog, LogBuilder
 from scistag.emojistag import EmojiDb, render_emoji
 
 
-class DemoBuilder(VisualLogBuilder):
+class DemoBuilder(LogBuilder):
     def build(self):
         self.md(
             """
@@ -146,4 +146,4 @@ class DemoBuilder(VisualLogBuilder):
 
 
 if VisualLog.is_main():
-    VisualLog(auto_reload=DemoBuilder, start_browser=True)  # No archived files needed
+    VisualLog(auto_reload=DemoBuilder)  # No archived files needed

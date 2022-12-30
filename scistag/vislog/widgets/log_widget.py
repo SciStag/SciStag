@@ -4,13 +4,15 @@ widgets which can be visualized within the live-area of a VisualLivelog.
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
-from scistag.vislog.common.log_element import LogElement
+from inspect import signature
+from typing import TYPE_CHECKING, Callable, Any
+
+from scistag.vislog.options import LWidgetOptions
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
-    from scistag.vislog.widgets.log_event import LEvent
+    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.widgets.event import LEvent
 
 
 class LWidget:
@@ -20,7 +22,7 @@ class LWidget:
 
     def __init__(
         self,
-        builder: "VisualLogBuilder",
+        builder: "LogBuilder",
         name: str,
         is_view: bool = True,
         explicit_name: str | None = None,
@@ -33,7 +35,7 @@ class LWidget:
         """
         if len(name) == 0:
             name = self.__class__.__qualname__
-        self.name = name
+        self.identifier = name
         "The widget's name"
         self.builder = builder
         "The log builder"
@@ -46,15 +48,17 @@ class LWidget:
         self.is_view = is_view
         "Defines if the widget is a UI component"
         name = (
-            self.builder.page_session.reserve_unique_name(self.name, digits=4)
+            self.builder.page_session.reserve_unique_name(self.identifier, digits=4)
             if explicit_name is None
             else explicit_name
         )
-        self.name = name
+        self.identifier = name
         self.sub_element = self.builder.page_session.cur_element.add_sub_element(
             name=name
         )
         self.sub_element.flags["widget"] = self
+        self.options = LWidgetOptions()
+        "The widget's options"
 
     def insert_into_page(self):
         """
@@ -75,7 +79,6 @@ class LWidget:
         """
         Is called for each event received by the web server
         """
-        raise NotImplementedError("Not implemented")
 
     def __bool__(self):
         """
@@ -101,3 +104,46 @@ class LWidget:
         :param event: The event to be triggered and handled
         """
         self.handle_event(event)
+
+    def call_event_handler(self, event_handler: Callable, event: LEvent):
+        """
+        Calls the provided event handler. Analyzes if the callable takes parameters
+        or not and calls it accordingly with our without event details.
+
+        :param event_handler: The callback method
+        :param event: The event
+        """
+        _ = self
+        if event_handler is None:
+            return
+        sig = signature(event_handler)
+        if len(sig.parameters):
+            event_handler(event)
+        else:
+            event_handler()
+
+    def get_value(self) -> int | float | bool | None:
+        """
+        Returns the widget's current value (if it does have one)
+
+        :return: The widget's value
+        """
+        return None
+
+    def apply_options(self, arguments: dict):
+        """
+        Applies the remaining options passed as arguments into the widget's options
+
+        :param arguments: The additional arguments
+        """
+        for key, value in arguments.items():
+            if not hasattr(self.options, key):
+                raise KeyError(f"Unknown option attribute {key}")
+            self.options.__setattr__(key, value)
+
+    def sync_value(self, new_value: Any):
+        """
+        Updates the value after modifications on client side
+
+        :param new_value: The new value
+        """

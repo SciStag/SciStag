@@ -43,7 +43,7 @@ class WebStagServiceBlueprint(Blueprint):
             path=path,
             method=cr.method,
             headers=dict(cr.headers),
-            body=None,
+            body=request.data,
             parameters=dict(cr.args),
             relative_path=path,
             base_url=cr.base_url,

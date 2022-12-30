@@ -20,7 +20,7 @@ from scistag.filestag import FileStag, FilePath
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 
 class TestHelper(BuilderExtension):
@@ -28,7 +28,7 @@ class TestHelper(BuilderExtension):
     Defines helper functions to write VisualLog based regression and unit tests
     """
 
-    def __init__(self, builder: "VisualLogBuilder"):
+    def __init__(self, builder: "LogBuilder"):
         """
         :param builder: The actual logging writer object we use to write
             the document
@@ -148,7 +148,7 @@ class TestHelper(BuilderExtension):
             df.to_csv(output, lineterminator="\n")
             result_hash_val = hashlib.md5(output.getvalue()).hexdigest()
             if result_hash_val != hash_val:
-                self.page.write_to_disk()
+                self.page_session.write_to_disk()
                 raise AssertionError(
                     "Hash mismatch - "
                     f"Found: {result_hash_val} - "
@@ -205,7 +205,7 @@ class TestHelper(BuilderExtension):
             bytes_val = data.tobytes()
             result_hash_val = hashlib.md5(bytes_val).hexdigest()
             if result_hash_val != hash_val:
-                self.page.write_to_disk()
+                self.page_session.write_to_disk()
                 raise AssertionError(
                     "Hash mismatch - "
                     f"Found: {result_hash_val} - "
@@ -360,7 +360,7 @@ class TestHelper(BuilderExtension):
         result_hash_val = hashlib.md5(difference).hexdigest()
         self.hash_check_log(result_hash_val, hash_val)
 
-    def begin(self, text: str) -> "VisualLogBuilder":
+    def begin(self, text: str) -> "LogBuilder":
         """
         Defines the beginning of a test
         :param text: The name to log

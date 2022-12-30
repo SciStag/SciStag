@@ -58,12 +58,17 @@ class WebStagService:
         self.set_service_blueprint(blue_print)
         # add routing rules
         blue_print.add_url_rule(
-            "/", None, blue_print.execute_service, defaults={"path": ""}
+            "/",
+            None,
+            blue_print.execute_service,
+            methods=["GET", "POST"],
+            defaults={"path": ""},
         )
         blue_print.add_url_rule(
             "/<path:path>",
             None,
             blue_print.execute_service,
+            methods=["GET", "POST"],
         )
 
     def handle_unified_request(self, request: WebRequest) -> WebResponse:

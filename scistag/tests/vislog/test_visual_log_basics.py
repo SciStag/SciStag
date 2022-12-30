@@ -1,3 +1,4 @@
+import io
 import os.path
 import shutil
 import time
@@ -13,10 +14,10 @@ import scistag.common
 from . import vl
 from ...emojistag import render_emoji
 from ...filestag import FilePath, FileStag
-from ...imagestag import Color
+from ...imagestag import Color, Image
 from ...logstag import LogLevel
 from ...logstag.console_stag import Console
-from ...vislog import VisualLog
+from ...vislog import VisualLog, HTMLCode
 from ...plotstag import Figure, MPLock
 
 
@@ -59,21 +60,36 @@ def test_add_and_links():
     :return:
     """
     vl.test.checkpoint("log.link")
-    vl.link("SciStag", "https://github.com/scistag/scistag")
-    vl.add("Test text")
-    vl.add(123)
-    vl.add(123.456)
-    vl.add([123, 456])
-    vl.add({"someProp": "someVal"})
+    vl.link("SciStag", "https://github.com/scistag/scistag").br()
+    vl.add("Test text", True)
+    vl.add(123, br=True)
+    vl.add(123.456, br=True)
+    vl.add([123, 456], br=True)
+    vl.add({"someProp": "someVal"}, br=True)
     with pytest.raises(TypeError):
-        vl.add(Color(22, 33, 44))
+        vl.add(Color(22, 33, 44), br=True)
     with pytest.raises(ValueError):
-        vl.add(b"12345")
-    vl.test.assert_cp_diff(hash_val="d46775dc24d6c892a989c1e2481a7887")
+        vl.add(b"12345", br=True)
+    with pytest.raises(ValueError):
+        test_image = Image(source=np.zeros((4, 4), dtype=np.uint8))
+        stream = io.BytesIO()
+        test_image.to_pil().save(stream, "tiff")
+        vl.add(stream.getvalue(), br=True)
+    vl.test.assert_cp_diff(hash_val="5b7dc6c9c321c843ff8fc54170269915")
     vl.test.checkpoint("log.link_adv")
-    vl.link("Multiline\nLink", "https://github.com/scistag/scistag")
-    vl.test.assert_cp_diff(hash_val="9ebcc1aada224b97a34d223ae5da4875")
+    vl.link("Multiline\nLink", "https://github.com/scistag/scistag").br()
+    vl.test.assert_cp_diff(hash_val="45abc6872d2c85a9c245c7c11d18f0d5")
     assert vl.max_fig_size.width > 100
+
+
+def test_html():
+    """
+    Tests adding html
+    """
+    vl.test.checkpoint("logbuilder.html")
+    vl.html("<b>A bold html text</b>")
+    vl.html(HTMLCode("<b>Another bold html text</b>"))
+    vl.test.assert_cp_diff("b87408f537be6834db17b518376c9451")
 
 
 def test_errors():
@@ -178,6 +194,8 @@ def test_text():
     vl.test.assert_val(
         "test_text", my_text, hash_val="0956d2fbd5d5c29844a4d21ed2f76e0c"
     )
+    vl.hr()
+    vl.log("Note: The following lines show a failed assertion on purpose for testing")
     with pytest.raises(AssertionError):
         vl.test.assert_text(
             "test_text", my_text, hash_val="0956d2fbd5d5c29844a4d21ed2f76e0a"
@@ -186,6 +204,17 @@ def test_text():
         vl.test.assert_val(
             "test_text", my_text, hash_val="0956d2fbd5d5c29844a4d21ed2f76e0a"
         )
+    vl.hr()
+    vl.test.checkpoint("ML text")
+    vl.test.begin("TextLogging")
+    vl.hr()
+    vl.text("Two lines\noftext", br=False)
+    vl.text("Follow up")
+    vl.hr()
+    vl.text("Two lines\noftext", br=True)
+    vl.text("Follow up")
+    vl.hr()
+    vl.test.assert_cp_diff("fc6af2a2db7a97ff982430ca891f4324")
 
 
 @patch("builtins.print")

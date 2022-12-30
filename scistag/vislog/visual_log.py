@@ -21,8 +21,9 @@ if TYPE_CHECKING:
     from scistag.webstag.server import WebStagService
     from scistag.vislog.renderers.log_renderer import LogRenderer
     from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
     from scistag.vislog.common import LogStatistics
+    from scistag.vislog.options import LogOptions
 
 # Error messages
 TABLE_PIPE = "|"
@@ -79,18 +80,18 @@ CUTE_APP = "cute"
 MAIN_LOG = "mainLog"
 "The name of the main log"
 
-BuilderCallback = Callable[["VisualLogBuilder"], None]
+BuilderCallback = Callable[["LogBuilder"], None]
 """
 Type definition for a function which can be passed to VisualLog's initializer
 to be called once or continuously to update the log.
 """
 
-BuilderTypes = Union[BuilderCallback, "VisualLogBuilder", Type["VisualLogBuilder"]]
+BuilderTypes = Union[BuilderCallback, "LogBuilder", Type["LogBuilder"]]
 """
 The supported builder callback types.
  
-Either a function which can be called, a VisualLogBuilder object provided by
-the user or a class of a VisualLogBuilder ancestor class of which we shall
+Either a function which can be called, a LogBuilder object provided by
+the user or a class of a LogBuilder ancestor class of which we shall
 created an instance.
 """
 
@@ -124,7 +125,7 @@ class VisualLog:
         tmp_dir: str | None = None,
         clear_target_dir: bool = False,
         continuous_write=False,
-        refresh_time_s=0.5,
+        refresh_time_s=0.25,
         formats_out: set[str] | None = None,
         embed_images: bool | None = None,
         filetype: str | tuple[str, int] = "png",
@@ -137,6 +138,8 @@ class VisualLog:
         index_name: str = "index",
         log_to_disk=False,
         log_to_stdout=False,
+        debug: bool = False,
+        options: "LogOptions" | None = None,
     ):
         """
         :param target_dir: The output directory
@@ -204,7 +207,20 @@ class VisualLog:
             provide the whole path via cache_dir.
         :param auto_reload: Defines if this log will be executed in auto_reload
             mode in its cache should be update and restored each turn.
+        :param debug: If set to true additional debug logging will be enabled
+        :param options: Defines the full set of options.
+
+            Explicitly via parameter passed values will override the corresponding
+            values in the options set.
         """
+        from scistag.vislog.options import LogOptions
+
+        self.options = LogOptions() if options is None else options.copy(deep=True)
+        """
+        Defines the log's configuration
+        """
+        if debug:
+            self.options.debug.enable()
         self._general_lock = StagLock()
         """
         Access lock to handle the page's events
@@ -333,7 +349,7 @@ class VisualLog:
         "THe last time the _update rate was computed as time stamp"
         self._update_rate: float = 0
         # The last computed updated rate in updates per second
-        from .visual_log_builder import VisualLogBuilder
+        from .visual_log_builder import LogBuilder
 
         self.default_page = PageSession(
             log=self,
@@ -348,10 +364,10 @@ class VisualLog:
         """Defines the initial default target page in which the page data ia stored"""
         self.pages = [self.default_page]
         """A list of all currently active pages"""
-        self.default_builder: VisualLogBuilder = VisualLogBuilder(
+        self.default_builder: LogBuilder = LogBuilder(
             self, page_session=self.default_page
         )
-        self.default_page.builder = self.default_builder
+        self.default_page.set_builder(self.default_builder)
         """
         The default builder. It let's you easily add content the log without
         the need of any callbacks.
@@ -476,6 +492,7 @@ class VisualLog:
             "retry_frequency": 100,
             "reload_frequency": int(self.refresh_time_s * 1000),
             "reload_url": "events",
+            "vl_log_updates": self.options.debug.html_client.log_updates,
             "scistag_version": scistag.__version__,
         }
         template = environment.from_string(
@@ -550,11 +567,11 @@ class VisualLog:
 
     def run_server(
         self,
+        builder: BuilderTypes | None = None,
         host_name: str = "127.0.0.1",
         port: int | tuple[int, int] = 8010,
         url_prefix: str = "",
         public_ips: str | list[str] | None = None,
-        builder: BuilderTypes | None = None,
         continuous: bool | None = None,
         wait: bool = True,
         auto_clear: bool | None = None,
@@ -572,6 +589,15 @@ class VisualLog:
         This way you can either provide the log as a static website or
         even update it dynamically and
 
+        :param builder: An (optional) function to be called to build or
+            (repetitively) rebuild the log's content.
+
+            The function can be called once - if continuous=False was passed,
+            continuously with a frequency of :attr:`refresh_time_s`
+            (as passed to the constructor) if continuous=True was passed.
+
+            Instead of passing a builder callback you can as well as also
+            just fill the log with content before running :meth:`run_server`.
         :param host_name: The IP(s) to listen at.
 
             - 127.0.0.1 = Local access only (default) as
@@ -589,15 +615,6 @@ class VisualLog:
 
             If you pass "auto" as ip the public IP will be auto-detected via
             ipify.
-        :param builder: An (optional) function to be called to build or
-            (repetitively) rebuild the log's content.
-
-            The function can be called once - if continuous=False was passed,
-            continuously with a frequency of :attr:`refresh_time_s`
-            (as passed to the constructor) if continuous=True was passed.
-
-            Instead of passing a builder callback you can as well as also
-            just fill the log with content before running :meth:`run_server`.
         :param continuous: Defines if the run_server shall run until
             :meth:`terminate` was called to update the logs content
             continuously.
@@ -893,18 +910,18 @@ class VisualLog:
         Prepapres the builder to be used for this log
 
         :param builder: The build helper, either a function which fills the
-            log or an ancestor of VisualLogBuilder implementing at least the
+            log or an ancestor of LogBuilder implementing at least the
             build_body method to do the same.
         :param page_session: Defines the target page to which the builder shall write
         :return: The prepared build object
         """
         if isinstance(builder, type):
-            from .visual_log_builder import VisualLogBuilder
+            from .visual_log_builder import LogBuilder
 
-            builder: Type[VisualLogBuilder] | VisualLogBuilder
+            builder: Type[LogBuilder] | LogBuilder
             builder = builder(log=self, page_session=page_session)
-            if not isinstance(builder, VisualLogBuilder):
-                raise TypeError("No valid VisualLogBuilder base class provided")
+            if not isinstance(builder, LogBuilder):
+                raise TypeError("No valid LogBuilder base class provided")
         return builder
 
     def _start_app_or_browser(self, real_log: VisualLog, url: str):
@@ -1023,7 +1040,7 @@ class VisualLog:
         """
         next_event = None
         for page in self.pages:
-            next_event_time = page.builder.widget.handle_event_list()
+            next_event_time = page.handle_events()
             if next_event_time is not None:
                 if next_event is None or next_event_time < next_event:
                     next_event = next_event_time
@@ -1193,16 +1210,16 @@ class VisualLog:
         """
         Creates a set of files in the defined directory which contain
         replacements for the essential logging classes such as VisualLog,
-        VisualLogBuilder etc. which can be used on systems without
+        LogBuilder etc. which can be used on systems without
         a valid SciStag installation such as MicroPython.
 
         ..  code-block:python
 
             try:
-                from scistag.vislog import VisualLog, VisualLogBuilder
+                from scistag.vislog import VisualLog, LogBuilder
                 VisualLog.setup_mocks()
             except ModuleNotFoundError:
-                from visual_log_mock import VisualLog, VisualLogBuilder
+                from visual_log_mock import VisualLog, LogBuilder
         """
         from .visual_micro_log import VisualMicroLock
 
@@ -1220,7 +1237,7 @@ class VisualLog:
         """
         return False
 
-    def __enter__(self) -> "VisualLogBuilder":
+    def __enter__(self) -> "LogBuilder":
         """
         Returns the default builder
 

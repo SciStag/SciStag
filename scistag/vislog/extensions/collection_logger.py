@@ -1,5 +1,5 @@
 """
-Implements the :class:`NumpyLogger` extension for VisualLogBuilder to log
+Implements the :class:`NumpyLogger` extension for LogBuilder to log
 numpy data such as matrices and vectors.
 """
 from __future__ import annotations
@@ -9,7 +9,7 @@ from scistag.common.trees.text_tree import (
     TextTreeBuilderOptions,
     TextTree,
 )
-from scistag.vislog import BuilderExtension, VisualLogBuilder
+from scistag.vislog import BuilderExtension, LogBuilder
 
 
 class CollectionLogger(BuilderExtension):
@@ -18,7 +18,7 @@ class CollectionLogger(BuilderExtension):
     such as standard :class:`list`s or :class:`dict`s.
     """
 
-    def __init__(self, builder: VisualLogBuilder):
+    def __init__(self, builder: LogBuilder):
         """
         :param builder: The builder we are using to write to the log
         """

@@ -11,6 +11,7 @@ from collections import Counter
 from scistag.common import StagLock
 from scistag.filestag import FileStag
 from scistag.vislog.common.log_element import LogElement, LogElementReference
+from scistag.vislog.options import LogOptions
 
 ROOT_DOM_ELEMENT = "vlbody"
 "Defines the root element in the HTML page containing the main site's data"
@@ -31,7 +32,7 @@ ROOT_ELEMENT_NAME = "vlbody"
 if TYPE_CHECKING:
     from scistag.vislog.visual_log import VisualLog
     from scistag.vislog.common.page_update_context import PageUpdateContext
-    from scistag.vislog import VisualLogBuilder
+    from scistag.vislog import LogBuilder
 
 
 class PageSession:
@@ -43,13 +44,13 @@ class PageSession:
     def __init__(
         self,
         log: "VisualLog",
-        builder: Union["VisualLogBuilder", None],
-        log_formats: set[str],
-        index_name: str,
-        target_dir: str,
-        continuous_write: bool,
-        log_to_stdout: bool,
-        log_to_disk: bool,
+        builder: Union["LogBuilder", None],
+        log_formats: set[str] | None = None,
+        index_name: str = "",
+        target_dir: str = "",
+        continuous_write: bool = False,
+        log_to_stdout: bool = False,
+        log_to_disk: bool = False,
     ):
         """
         :param log: The target log instance
@@ -63,11 +64,11 @@ class PageSession:
             console
         :param log_to_disk: Defines if the content shall be written to disk
         """
-        self.log_formats: set[str] = log_formats
+        self.log_formats: set[str] = log_formats if log_formats is not None else {HTML}
         """Defines the list of supported formats"""
         self.log: "VisualLog" = log
         """The target log instance"""
-        self.builder: Union["VisualLogBuilder", None] = builder
+        self.builder: Union["LogBuilder", None] = builder
         """The builder which is used to create the page's content"""
         self._logs = LogElement(
             name=ROOT_ELEMENT_NAME, output_formats=sorted(self.log_formats)
@@ -107,7 +108,9 @@ class PageSession:
         "The name of the markdown file to which we shall save"
         self.continuous_write = continuous_write
         self.log_to_stdout = log_to_stdout
+        "Defines if basic log entries shall also be logged to stdout"
         self.log_to_disk = log_to_disk
+        "Define if the result shall be logged to disk"
         self._page_backups: dict[str, bytes] = {}
         """
         A backup of the latest rendered page of each dynamic data type
@@ -124,13 +127,42 @@ class PageSession:
         self._update_context_counter = 0
         """Defines if the page is currently in an updating state.         
         See :meth:`begin_update`"""
-        self.last_client_id: str = ""
+        self.last_client_id: str = "local"
         """The client's ID the last time it requested events"""
         self.element_update_times: dict[str, float] = {}
         """Contains for every element the time stamp when it was updated the last 
         time"""
         self.old_client_ids: set[str] = set()
         """Previously connected client IDs"""
+        self.next_event_time = time.time()
+        """The timestamp at which we think the next event will occur"""
+        self.minimum_refresh_time = 0.01
+        """The lowest allowed refresh time in seconds"""
+        self._event_target_page: PageSession | None = None
+        """Page to which all events shall be forwarded. Required if the page is
+        embedded in another lock, e.g. when using an auto reloader"""
+        self.last_user_interaction = time.time()
+        """Defines the time when the user last interacted with this page"""
+        self.user_interaction_performance_duration_s = 2.0
+        """Defines the duration in seconds for how long the refresh time is boosted
+        when the user actively interacted with the session"""
+        self.user_interaction_refresh_time = 0.05
+        """Defines the (maximum) refresh time in seconds to which the refresh is is
+        decreased when the user interacted with the session"""
+        self.options: LogOptions | None = (
+            builder.options if builder is not None else None
+        )
+        """Defines the log's options"""
+
+    def set_builder(self, builder: LogBuilder):
+        """
+        Assigns a new builder object to the page session
+        :param builder: The builder object
+        """
+        self.builder = builder
+        self.options: LogOptions | None = (
+            builder.options if builder is not None else None
+        )
 
     def create_log_backup(self):
         """
@@ -495,6 +527,22 @@ class PageSession:
         """
         self.element_update_times = {}
 
+    def update_values_js(self, client_id: str, values: dict) -> bool:
+        """
+        Updates all element values with the data provided by the client
+
+        :param client_id: The client id
+        :param values: The new key, value dictionary
+        """
+        with self._page_lock:
+            if self._event_target_page is not None:
+                return self._event_target_page.update_values_js(client_id, values)
+        with self._page_lock:
+            if self.last_client_id != client_id:  # page reloaded
+                return False
+            self.builder.widget.sync_values(values)
+        return True
+
     def get_events_js(self, client_id: str) -> [dict, bytes | None]:
         """
         Returns the newest events which need to be handled on client side
@@ -504,12 +552,33 @@ class PageSession:
         :return: Header data, Content data
         """
         with self._page_lock:
+            if self._event_target_page is not None:
+                return self._event_target_page.get_events_js(client_id)
+        cur_time = time.time()
+        refresh_time = self.log.refresh_time_s
+        if (
+            cur_time - self.last_user_interaction
+            < self.user_interaction_performance_duration_s
+        ):
+            refresh_time = min(self.user_interaction_refresh_time, refresh_time)
+        if (
+            self.next_event_time is not None
+            and self.next_event_time - cur_time < refresh_time
+        ):
+            refresh_time = self.next_event_time - cur_time
+            if refresh_time < self.minimum_refresh_time:
+                refresh_time = self.minimum_refresh_time
+
+        refresh_time_ms = int(round(refresh_time * 1000))  # convert refresh time to ms
+
+        with self._page_lock:
             if self.last_client_id != client_id:  # page reloaded
                 if client_id in self.old_client_ids:
                     return (
                         {
                             "action": "setContent",
                             "targetElement": ROOT_DOM_ELEMENT,
+                            "vlRefreshTime": refresh_time_ms,
                         },
                         b"Session was opened in another browser or tab. "
                         b"Please close this one",
@@ -517,7 +586,7 @@ class PageSession:
                 self.reset_client()
                 self.old_client_ids.add(client_id)
             self.last_client_id = client_id
-            self.log.last_page_request = time.time()
+            self.log.last_page_request = cur_time
 
             access_lock, root_element = self.get_root_element()
             with access_lock:
@@ -549,6 +618,7 @@ class PageSession:
                 return {
                     "action": "setContent",
                     "targetElement": modified_element_ref.name,
+                    "vlRefreshTime": refresh_time_ms,
                 }, data
 
     def begin_sub_element(self, name: str) -> LogElement:
@@ -588,3 +658,46 @@ class PageSession:
             )
         self.cur_element = self.element_stack.pop()
         return self.cur_element
+
+    def handle_events(self) -> float | None:
+        """
+        Handles the events
+
+        :return: The timestamp at which we assume the next event to occur
+        """
+        with self._page_lock:
+            if self._event_target_page is not None:
+                self._event_target_page.handle_events()
+        next_event: float | None = None
+        next_event_time = self.builder.widget.handle_event_list()
+        if next_event_time is not None:
+            if next_event is None or next_event_time < next_event:
+                next_event = next_event_time
+        self.next_event_time = next_event_time
+        return next_event
+
+    def handle_client_event(self, **params):
+        """
+        Handles a client event (sent from JavaScript)
+
+        :param params: The event parameters
+        """
+        with self._page_lock:
+            if self._event_target_page is not None:
+                self._event_target_page.handle_client_event(**params)
+                return
+        event_type = params.get("type", "")
+        if event_type.startswith("widget_"):
+            with self._page_lock:
+                self.builder.widget.handle_client_event(**params)
+
+    def _set_redirect_event_receiver(self, target_page: PageSession):
+        with self._page_lock:
+            self._event_target_page = target_page
+
+    def update_last_user_interaction(self):
+        """
+        Is called when the user interacted with a widget. Temporarily decreases the
+        reaction time.
+        """
+        self.last_user_interaction = time.time()

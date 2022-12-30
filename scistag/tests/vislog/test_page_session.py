@@ -8,6 +8,8 @@ import pytest
 from scistag.common.time import sleep_min
 from scistag.vislog import VisualLog
 from scistag.vislog.common.log_element import LogElement
+from scistag.vislog.sessions.page_session import PageSession
+from scistag.vislog.widgets.button import CLICK_EVENT_TYPE
 
 
 def test_page_session_backup():
@@ -85,3 +87,16 @@ def test_events():
     sleep_min(1.0 / 15)
     vp.get_events_js("4567")
     assert last_time != vp.element_update_times["vlbody"]
+
+    dummy_page = PageSession(log=vp.log, builder=vp.builder)
+    vp._set_redirect_event_receiver(dummy_page)
+    vp.handle_events()
+    vp.get_events_js(vp.last_client_id)
+    vp.update_values_js(vp.last_client_id, {})
+    vp.update_values_js(vp.last_client_id, {"notExiting": ""})
+    test_button = vl.widget.button()
+    vp.update_values_js(vp.last_client_id, {test_button.identifier: "123"})
+    vp.handle_client_event(type=CLICK_EVENT_TYPE, name=test_button.identifier)
+    vp.handle_client_event(type="widget_not_existing", name=test_button.identifier)
+    vp.handle_client_event(type=CLICK_EVENT_TYPE, name="not_existing")
+    vp.update_values_js("newClientId", {})

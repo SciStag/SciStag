@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import VisualLogBuilder
+    from scistag.vislog.visual_log_builder import LogBuilder
 
 
 class PyPlotLogContext:
@@ -17,14 +17,15 @@ class PyPlotLogContext:
     When the context is left it adds the latest figure to the VisualLog
     it is associated to.
 
-    Is created via VisualLogBuilder.pyplot, see :meth:`VisualLogBuilder.pyplot`
+    Is created via LogBuilder.pyplot, see :meth:`LogBuilder.pyplot`
     """
 
     def __init__(
         self,
-        target_log: "VisualLogBuilder",
+        target_log: "LogBuilder",
         assertion_name: str | None = None,
         assertion_hash: str | None = None,
+        br: bool = False,
     ):
         """
         :param target_log: Defines the target into which we shall log
@@ -32,6 +33,9 @@ class PyPlotLogContext:
             identifier.
         :param assertion_hash: If the figure shall be asserted via hash the
             hash value of its image's pixels.
+        :param br: Defines if the figure shall be followed by a linebreak.
+
+            This value has no impact in assertion mode.
         """
         from scistag.plotstag import MPLock
 
@@ -51,6 +55,8 @@ class PyPlotLogContext:
         If the figure shall be asserted via hash the hash value of its image's 
         pixels.
         """
+        self.br = br
+        """Defines if a linebreak shall be printed after the figure"""
 
     def __enter__(self):
         self.plt_handle = self.mp_lock.__enter__()
@@ -58,7 +64,7 @@ class PyPlotLogContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.assertion_name is None:  # basic logging?
-            self.target_log.figure(self.plt_handle.gcf())
+            self.target_log.figure(self.plt_handle.gcf(), br=self.br)
         else:  # logging with assert
             self.target_log.test.assert_figure(
                 self.assertion_name, self.plt_handle.gcf(), hash_val=self.assertion_hash
