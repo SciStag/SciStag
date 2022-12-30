@@ -9,17 +9,18 @@ import pytest
 from scistag.vislog import VisualLog
 
 tar_dir = os.path.dirname(__file__)
-if os.path.exists(f"{tar_dir}/visual_micro_log.py"):
-    os.remove(f"{tar_dir}/visual_micro_log.py")
 
 
-def test_micro_log():
+def test_micro_log(tmp_path):
     """
     Tests the micro log basics
     """
-    VisualLog.setup_micro_log(f"{tar_dir}")
-    VisualLog.setup_micro_log(f"{tar_dir}")
-    assert os.path.exists(f"{tar_dir}/visual_micro_log.py")
+
+    ml_path = str(tmp_path) + "/"
+
+    VisualLog.setup_micro_log(f"{ml_path}")
+    VisualLog.setup_micro_log(f"{ml_path}")
+    assert os.path.exists(f"{ml_path}/visual_micro_log.py")
 
     from scistag.vislog.visual_micro_log import VisualMicroLock
 

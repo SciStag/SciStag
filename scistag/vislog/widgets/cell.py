@@ -160,7 +160,7 @@ class Cell(LWidget):
             self.clear()
         if not self.progressive:
             self.sub_element.add_data("html", b"<div>")
-        event = CellBuildEvent(name=self.name, widget=self, builder=self.builder)
+        event = CellBuildEvent(name=self.identifier, widget=self, builder=self.builder)
         self.raise_event(event)
         if not self.progressive:
             self.sub_element.add_data("html", b"</div>")

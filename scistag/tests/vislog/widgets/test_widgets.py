@@ -25,7 +25,7 @@ def test_widgets():
     assert isinstance(button, LButton)
     log.default_builder.widget.add_event(
         LEvent(
-            name=button.name,
+            name=button.identifier,
             event_type=CLICK_EVENT_TYPE,
             builder=log.default_builder,
             widget=button,
@@ -50,4 +50,18 @@ def test_widgets():
     timer.insert_into_page()  # should do just nothing
 
     timer = LTimer(name="", builder=log.default_builder)
-    assert "LTimer" in timer.name
+    assert "LTimer" in timer.identifier
+
+
+def test_widget_logger():
+    """
+    Advanced widget logger tests
+    """
+    log = VisualLog().default_builder
+    not_existing = LEvent(
+        name="unknown", event_type="unknown", builder=log, widget=None
+    )
+    assert not log.widget.handle_event(not_existing, {})
+    log.widget._events.append(not_existing)
+    log.widget.get_events(clear=True)
+    assert len(log.widget._events) == 0

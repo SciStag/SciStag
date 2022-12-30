@@ -82,7 +82,7 @@ def test_cell_updating():
     vl.widget.handle_event_list()
     assert b"CellBuildOnce 1" in vp.render_element()[1]
     # trigger unknown event
-    cell.handle_event(LTimerTickEvent(name=cell.name, widget=cell))
+    cell.handle_event(LTimerTickEvent(name=cell.identifier, widget=cell))
     assert b"Nested content" in vp.render_element()[1]
 
     out_list = []

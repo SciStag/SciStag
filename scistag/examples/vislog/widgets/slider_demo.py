@@ -35,7 +35,7 @@ class SliderDemo(LogBuilder):
             value_bold=True,
         )
         self.hr()
-        with self.align.left():
+        with self.align.left:
             self.text("Just a test")
 
 

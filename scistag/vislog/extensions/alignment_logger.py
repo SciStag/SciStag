@@ -44,6 +44,8 @@ class AlignmentLogger(BuilderExtension):
             hor_align = "center"
         elif hor_align.startswith("r"):
             hor_align = "right"
+        else:
+            raise ValueError(f"Unknown alignment {hor_align}")
         self.builder.add_md(f'<div style="text-align:{hor_align};">')
         self.builder.add_html(f'<div style="text-align:{hor_align};">')
         context = ElementContext(
@@ -51,6 +53,7 @@ class AlignmentLogger(BuilderExtension):
         )
         return context
 
+    @property
     def left(self) -> ElementContext:
         """
         Shortcut for .align("left")
@@ -59,6 +62,7 @@ class AlignmentLogger(BuilderExtension):
         """
         return self("left")
 
+    @property
     def right(self) -> ElementContext:
         """
         Shortcut for .align("right")
@@ -67,6 +71,7 @@ class AlignmentLogger(BuilderExtension):
         """
         return self("right")
 
+    @property
     def center(self) -> ElementContext:
         """
         Shortcut for .align("center")

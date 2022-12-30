@@ -5,6 +5,7 @@ Defines the configuration options for VisualLog and associated classes
 from pydantic import BaseModel, Field
 
 from scistag.vislog.options import LSliderOptions
+from scistag.vislog.options.table_options import LTableOptions
 
 
 class HtmlClientDebugOptions(BaseModel):
@@ -36,6 +37,9 @@ class LogStyles(BaseModel):
     """
 
     slider: LSliderOptions = Field(default_factory=LSliderOptions)
+    """Default options for a slider"""
+    table: LTableOptions = Field(default_factory=LTableOptions)
+    """Default options for a table"""
 
 
 class LogOptions(BaseModel):

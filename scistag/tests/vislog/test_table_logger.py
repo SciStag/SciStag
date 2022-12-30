@@ -6,7 +6,8 @@ import sys
 import pytest
 
 from . import vl
-from ...vislog import MDCode
+from ...vislog import MDCode, VisualLog
+from ...vislog.options import LTableOptions
 
 
 def test_basics_logging_methods():
@@ -81,3 +82,45 @@ def test_table_creation():
         row.add_col(lambda: vl.log.info("789"))
         row.add_col(MDCode("**Markdown**"))
     vl.test.assert_cp_diff(hash_val="c96f6f53cdd5c2a69180d641ad2c4766")
+
+
+def test_content_logging():
+    """
+    Tests the logging of content directly provided to the table function to the log
+    """
+    vl.test.checkpoint("table_logging")
+    with vl.table.begin() as table:
+        table.add_row(123)
+        table.add_row([456, 789])
+
+    vl.table([123, 456])  # log a horizontal, single row table
+    vl.table([123, 456], orientation="ver")  # log a vertical, single column table
+    vl.table.simple_table([[123, 456], [789, "123"], [45.678, True]], header=True)
+    vl.table.simple_table([123, 456])  # single, horizontal
+    vl.table.simple_table([456.78, 910], orientation="ver", br=False, index=True)
+    # single, vertical
+    vl.test.assert_cp_diff("720a197267211a92106b2fd36137e9fd")
+
+
+def test_custom_class():
+    """
+    Tests using custom class and styles
+
+    :return:
+    """
+    options = LTableOptions()
+
+    temp_log = VisualLog()
+    temp_log.default_builder.test.checkpoint("custom_css_table")
+
+    with temp_log.default_builder.table.begin(
+        options=options,
+        html_class="table.{{C}} td {border: 1px solid red; padding: 40px}",
+    ) as table:
+        table.add_row(["Test", "Test2"])
+        table.add_row(["Test3", "Test4"])
+
+    temp_log.default_builder.test.assert_cp_diff("04510a4cc7c7437f21be330285701fd2")
+
+    backup = temp_log.default_builder.create_backup()
+    vl.insert_backup(backup)

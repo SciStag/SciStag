@@ -16,12 +16,7 @@ from scistag.vislog.common.element_context import ElementContext
 from scistag.imagestag import Image
 from scistag.plotstag import Figure
 from . import BuilderExtension
-
-TABLE_CLASS_DEFAULT = "vl_log_table"
-"CSS style for a basic table"
-
-TABLE_CLASS_SEAMLESS = "vl_log_table_seamless"
-"CSS style for a basic table without visible lines and padding"
+from ..options import LTableOptions
 
 if TYPE_CHECKING:
     from scistag.vislog.visual_log_builder import LogBuilder
@@ -30,20 +25,6 @@ ColumnContent = Union[
     str, int, float, Callable, Image, Figure, np.ndarray, DataFrame, Series, dict, list
 ]
 "Defines the types for potential content of a column"
-
-
-class LTableStyle(BaseModel):
-    """Defines the tables visual appearance"""
-
-    seamless: bool = False
-    """Defines if the table shall be visualized seamless, without padding and visible
-    borders"""
-    padding: Union[str, None] = None
-    """Defines custom padding"""
-    element_class: Union[str, None] = None
-    """Explicit table class definition"""
-    html_style: str = ""
-    """Custom style"""
 
 
 class TableContext(ElementContext):
@@ -55,7 +36,8 @@ class TableContext(ElementContext):
         self,
         builder: "LogBuilder",
         size: tuple[int, int] | None = None,
-        style: LTableStyle | None = None,
+        options: LTableOptions | None = None,
+        html_class: str | None = None,
         seamless: bool | None = None,
         br: bool = True,
     ):
@@ -69,7 +51,9 @@ class TableContext(ElementContext):
                 for row in vl.table.begin(size=(3,3)):
                     for col in row:
                         ...
-        :param style: Defines the table's style
+        :param options: Defines the table's options
+        :param html_class: The html class to be used for the table or the style code,
+            see :meth:`LogBuilder.style.css`.
         :param seamless: Defines if the table shall be seamless, without visible borders
             and padding.
         :param br: Defines if the table shall be followed by a line break
@@ -85,30 +69,23 @@ class TableContext(ElementContext):
         """
         The count of table rows and columns
         """
-        self.style = LTableStyle() if style is None else style.copy(deep=True)
+        self.options = (
+            builder.options.style.table.clone() if options is None else options
+        )
         if seamless is not None:
-            self.style.seamless = seamless
-        table_class = self.style.element_class
-        if table_class is None:
-            if self.style.seamless:
-                table_class = TABLE_CLASS_SEAMLESS
-            else:
-                table_class = TABLE_CLASS_DEFAULT
-        html_style = self.style.html_style
-        if self.style.padding is not None:
-            html_style = ";".join([html_style, f"padding:{self.style.padding}"])
-        html_style = f' style="{html_style}"' if len(self.style.html_style) else ""
+            self.options.seamless = seamless
+        if html_class is not None:
+            self.options.html_class = self.builder.style.ensure_css_class(
+                html_class, "vl_table_style"
+            )
+        table_class = self.options.get_html_class()
+        html_style = self.options.html_style
+        html_style = f' style="{html_style}"' if len(html_style) > 0 else ""
         self.page.write_html(f"<table class={table_class}{html_style}>")
         self.page.write_txt("\n", md=False)
         self.page.write_md(f'<table class="{table_class}"{html_style}>')
         self._entered: bool = False
         "Defines if the table was entered already"
-
-    def __enter__(self) -> TableContext:
-        if self._entered:
-            return self
-        self._entered = True
-        return self
 
     def __iter__(self) -> "TableRowIterator":
         """
@@ -160,7 +137,7 @@ class TableContext(ElementContext):
         if content is not None:
             self.builder.html("<tr>")
             if not isinstance(content, list):
-                content = list[content]
+                content = [content]
             for element in content:
                 self.builder.html("<td>")
                 self.builder.add(element)
@@ -369,8 +346,9 @@ class TableLogger(BuilderExtension):
     def begin(
         self,
         size: tuple[int, int] | None = None,
-        style: LTableStyle | None = None,
+        options: LTableOptions | None = None,
         seamless: bool | None = None,
+        html_class: str | None = None,
         br: bool = True,
     ):
         """
@@ -385,6 +363,10 @@ class TableLogger(BuilderExtension):
                             with row.add_col():
                                 vl.log(col_index)
 
+            alternatively:
+            with vl.table as table:
+                ...
+
         :param size: The table's dimensions (cols x rows) (if known in advance)
 
             If provided you can fill the table's contents via
@@ -393,14 +375,21 @@ class TableLogger(BuilderExtension):
                 for row in vl.table.begin(size=(3,3)):
                     for col in row:
                         ...
-        :param style: Defines the table's style
+        :param options: Defines the table's style
         :param seamless: Defines if the table shall be seamless, without visible borders
             and padding.
+        :param html_class: The html class to be used for the table or the CSS code
+            to generate a new class, see :meth:`StyleContext.ensure_css_class`
         :param br: Defines if the table shall be followed by a line break
         :return: The logging context
         """
         return TableContext(
-            self.builder, size=size, style=style, seamless=seamless, br=br
+            self.builder,
+            size=size,
+            options=options,
+            seamless=seamless,
+            html_class=html_class,
+            br=br,
         )
 
     def __call__(
@@ -409,7 +398,8 @@ class TableLogger(BuilderExtension):
         orientation: Literal["vert", "hor"] = "hor",
         index: bool = False,
         header: bool = False,
-        style: LTableStyle | None = None,
+        options: LTableOptions | None = None,
+        html_class: str | None = None,
         seamless: bool | None = None,
         br: bool = True,
     ):
@@ -429,7 +419,9 @@ class TableLogger(BuilderExtension):
             either "vert"ical or "hor"izontal.
         :param index: Defines if the table has an index column
         :param header: Defines if the table has a header
-        :param style: Defines the table's style
+        :param options: Defines the table's style
+        :param html_class: The html class to be used for the table or the CSS code
+            to generate a new class, see :meth:`StyleContext.ensure_css_class`
         :param seamless: Defines if the table shall be seamless, without visible borders
             and padding.
         :param br: Defines if the table shall be followed by a line break
@@ -444,8 +436,9 @@ class TableLogger(BuilderExtension):
         tc = TableContext(
             self.builder,
             size=(col_count, row_count),
-            style=style,
+            options=options,
             seamless=seamless,
+            html_class=html_class,
             br=br,
         )
         with tc:
@@ -478,7 +471,7 @@ class TableLogger(BuilderExtension):
         index=False,
         header=False,
         br: bool = True,
-    ):
+    ) -> LogBuilder:
         """
         Adds a table simple table to the log which is represented in ASCII style
         in txt and Markdown logs. It's fields may only contain simple types and it
@@ -526,21 +519,21 @@ class TableLogger(BuilderExtension):
         code += "</table>\n"
         if br:
             code += "<br>"
-        self.page.write_html(code)
+        self.page_session.write_html(code)
         # txt
         for row in data:
             row_text = "| "
             for index, col in enumerate(row):
                 col = str(col)
                 row_text += col + " | "
-            self.page.write_txt(row_text, md=False)
+            self.page_session.write_txt(row_text, md=False)
         # markdown
         for row_index, row in enumerate(data):
             row_text = "| "
             for index, col in enumerate(row):
                 col = str(col)
                 row_text += col + " | "
-            self.page.write_md(row_text)
+            self.page_session.write_md(row_text)
             if row_index == 0:
-                self.page.write_md("|" + "---|" * len(row))
-        return self
+                self.page_session.write_md("|" + "---|" * len(row))
+        return self.builder

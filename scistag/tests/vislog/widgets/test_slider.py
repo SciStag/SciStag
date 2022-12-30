@@ -24,6 +24,8 @@ def test_slider_embedding():
         nonlocal event_called_w_event
         event_called_w_event = True
 
+    vl.test.checkpoint("addingSliders")
+
     hor_slider = vl.widget.slider(
         5, 20, 30, on_change=event_handler_with_event, value_bold=True
     )
@@ -47,9 +49,7 @@ def test_slider_embedding():
         vl, 2.0, 1.0, 5.0, on_change=event_handler, options=options
     )
     vl.flush()
-    page = vl.page_session.get_body("html")
-    assert b"<input id=" in page
-    assert b'type="range' in page
+    vl.test.assert_cp_diff("26be611ee3e4ed32c1e5ec4e49b9d4a7")
     assert vert_slider.get_value() == 0.2
     assert not event_called
     vert_slider.sync_value(0.2)
@@ -59,6 +59,9 @@ def test_slider_embedding():
     assert not event_called_w_event
     hor_slider.sync_value(5)
     assert not event_called_w_event
-    hor_slider.sync_value(9)
+
+    values = {hor_slider.identifier: 6}
+    vl.page_session.update_values_js(vl.page_session.last_client_id, values)
+
     assert event_called_w_event
     zero_slider.sync_value(2.0)

@@ -367,7 +367,7 @@ class VisualLog:
         self.default_builder: LogBuilder = LogBuilder(
             self, page_session=self.default_page
         )
-        self.default_page.builder = self.default_builder
+        self.default_page.set_builder(self.default_builder)
         """
         The default builder. It let's you easily add content the log without
         the need of any callbacks.

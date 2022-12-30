@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from scistag.vislog.extensions.collection_logger import CollectionLogger
     from scistag.vislog.extensions.widget_logger import WidgetLogger
     from scistag.vislog.extensions.alignment_logger import AlignmentLogger
+    from scistag.vislog.extensions.style_context import StyleContext
 
 LogableContent = Union[
     str,
@@ -153,6 +154,11 @@ class LogBuilder:
         self._align: Union["AlignmentLogger", None] = None
         """
         Extension to align elements 
+        """
+        self._style: Union["StyleContext", None] = None
+        """
+        Extension to temporarily modify the style of the current log region or cell
+        and to insert custom CSS code into the document.
         """
         self.options: LogOptions = log.options.copy(deep=True)
         """
@@ -276,13 +282,12 @@ class LogBuilder:
             self.md(content.to_md())
             return self
         if isinstance(content, bytes):
-            try:
-                ft = filetype.guess(content)
-            except TypeError:
+            ft = filetype.guess(content)
+            if ft is None:
                 raise ValueError(f"Data type could not be detected")
             from scistag.imagestag.image import SUPPORTED_IMAGE_FILETYPES
 
-            if ft is not None and ft.extension in SUPPORTED_IMAGE_FILETYPES:
+            if ft.extension in SUPPORTED_IMAGE_FILETYPES:
                 self.image(content)
                 return self
             else:
@@ -311,9 +316,7 @@ class LogBuilder:
             self.collection.add(content)
             return self
         self.text(str(content), br=br)
-        if content is None or not isinstance(content, bytes):
-            raise TypeError("Data type not supported")
-        return self
+        raise TypeError("Data type not supported")
 
     def title(self, text: str) -> LogBuilder:
         """
@@ -360,30 +363,18 @@ class LogBuilder:
         self.handle_modified()
         return self
 
-    def link(self, text: str, link: str, br: bool = False) -> LogBuilder:
+    def link(self, content: Any, link: str) -> LogBuilder:
         """
         Adds a hyperlink to the log
 
-        :param text: The text to add to the log
+        :param content: The text or content to add to the log
         :param link: The link target
-        :param br: Defines if a linebreak shall be inserted after the link
         :return: The builder
         """
-        if not isinstance(text, str):
-            text = str(text)
-        lines = html.escape(text)
-        lines = lines.split("\n")
-        for index, text in enumerate(lines):
-            last_line = index == len(lines) - 1
-            do_break = br or not last_line
-            break_char = "<br>\n" if do_break else ""
-            self.add_html(f'<a href="{link}">{text}</a>{break_char}')
-            if index == len(lines) - 1:
-                self.add_md(f"[{text}]({link})")
-            else:
-                self.add_md(f"{text}\\", no_break=not do_break)
-            self.add_txt(text)
-        self.handle_modified()
+
+        self.add_html(f'<a href="{link}">')
+        self.add(content)
+        self.add_html("</a>")
         return self
 
     def br(self, repetition=1) -> LogBuilder:
@@ -475,7 +466,7 @@ class LogBuilder:
         :param code: The html code to parse
         """
         if isinstance(code, HTMLCode):
-            code = HTMLCode.to_html()
+            code = code.to_html()
         self.add_md(code)
         self.add_html(code + "\n")
         self.handle_modified()
@@ -557,6 +548,18 @@ class LogBuilder:
         if self._align is None:
             self._align = AlignmentLogger(self)
         return self._align
+
+    @property
+    def style(self) -> "StyleContext":
+        """
+        Extension to temporarily modify the style of the current log region or cell
+        and to insert custom CSS code into the document.
+        """
+        from .extensions.style_context import StyleContext
+
+        if self._style is None:
+            self._style = StyleContext(self)
+        return self._style
 
     def code(self, code: str) -> LogBuilder:
         """

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union, Callable
 
+from scistag.vislog.common.log_element import LogElementReference
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 from scistag.vislog.widgets import LButton, LWidget, LEvent
 from scistag.vislog.widgets.timer import LTimer
@@ -67,22 +68,25 @@ class WidgetLogger(BuilderExtension):
         :return: A list of all widgets
         """
         widgets: dict[str, LWidget] = {}
-        all_elements = self.page.cur_element.list_elements_recursive()
+        all_elements = self.page_session.cur_element.list_elements_recursive()
         for element in all_elements:
             if "widget" in element.element.flags:
-                widget = element.element.flags["widget"]
+                widget: LWidget = element.element.flags["widget"]
                 widgets[element.name] = widget
         return widgets
 
-    def handle_event(self, event: "LEvent", widgets: dict[str, LWidget]):
+    def handle_event(self, event: "LEvent", widgets: dict[str, LWidget]) -> bool:
         """
         Handles a single event and forwards it to the correct widget
 
         :param event: The event to be handled
         :param widgets: A dictionary of all known widgets
+        :return: True if the widget could be found
         """
         if event.name in widgets:
             widgets[event.name].handle_event(event)
+            return True
+        return False
 
     def get_events(self, clear: bool = False) -> list["LEvent"]:
         """
@@ -145,13 +149,11 @@ class WidgetLogger(BuilderExtension):
         """
         event_type = params.pop("type", "")
         widget_name = params.pop("name", "")
-        if event_type.startswith("widget_"):
-
-            all_widgets = self.find_all_widgets()
-            if widget_name in all_widgets:
-                widget = all_widgets[widget_name]
-                if event_type == CLICK_EVENT_TYPE:
-                    widget.raise_event(LClickEvent(widget=widget))
+        all_widgets = self.find_all_widgets()
+        if widget_name in all_widgets:
+            widget = all_widgets[widget_name]
+            if event_type == CLICK_EVENT_TYPE:
+                widget.raise_event(LClickEvent(widget=widget))
 
     def sync_values(self, values: dict):
         """

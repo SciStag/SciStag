@@ -35,7 +35,7 @@ class LWidget:
         """
         if len(name) == 0:
             name = self.__class__.__qualname__
-        self.name = name
+        self.identifier = name
         "The widget's name"
         self.builder = builder
         "The log builder"
@@ -48,11 +48,11 @@ class LWidget:
         self.is_view = is_view
         "Defines if the widget is a UI component"
         name = (
-            self.builder.page_session.reserve_unique_name(self.name, digits=4)
+            self.builder.page_session.reserve_unique_name(self.identifier, digits=4)
             if explicit_name is None
             else explicit_name
         )
-        self.name = name
+        self.identifier = name
         self.sub_element = self.builder.page_session.cur_element.add_sub_element(
             name=name
         )

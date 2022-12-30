@@ -4,11 +4,11 @@ Pandas DataFrames, DataSeries and statistics about them to a log.
 """
 from __future__ import annotations
 
-import typing
+from typing import TYPE_CHECKING
 
 from scistag.vislog import BuilderExtension, LogBuilder
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     import pandas as pd
 
 
@@ -55,31 +55,20 @@ class PandasLogger(BuilderExtension):
         if name is None:
             name = "dataframe"
         if self.use_pretty_html_table:
-            try:
-                import pretty_html_table
+            import pretty_html_table
 
-                html_code = pretty_html_table.build_table(
-                    df, self.html_table_style, index=index
-                )
-            # pragma: no-cover
-            except ModuleNotFoundError:
-                html_code = df.to_html(index=index)
+            html_code = pretty_html_table.build_table(
+                df, self.html_table_style, index=index
+            )
         else:
             html_code = df.to_html(index=index)
         self.builder.add_html(html_code + "\n")
         if self.use_tabulate:
-            try:
-                import tabulate
-
-                md_table = df.to_markdown(index=index, tablefmt=self.md_table_format)
-                self.builder.add_md(md_table)
-                self.builder.add_txt(
-                    df.to_markdown(index=index, tablefmt=self.txt_table_format) + "\n"
-                )
-                return
-            # pragma: no-cover
-            except ModuleNotFoundError:
-                pass
+            md_table = df.to_markdown(index=index, tablefmt=self.md_table_format)
+            self.builder.add_md(md_table)
+            self.builder.add_txt(
+                df.to_markdown(index=index, tablefmt=self.txt_table_format) + "\n"
+            )
         else:
             string_table = df.to_string(index=index) + "\n"
             if self.target_log.markdown_html:
@@ -87,4 +76,4 @@ class PandasLogger(BuilderExtension):
             else:
                 self.builder.add_md(string_table)
             self.builder.add_txt(string_table)
-        self.page.handle_modified()
+        self.page_session.handle_modified()

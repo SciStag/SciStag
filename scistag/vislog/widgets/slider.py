@@ -61,7 +61,7 @@ class LSlider(LWidget):
         self.on_change = on_change
         """The event to be called when the slider's value was modified"""
         self.options: LSliderOptions = (
-            options if options is not None else LSliderOptions()
+            options if options is not None else builder.options.style.slider.clone()
         )
         """The slider's options.
         
@@ -80,8 +80,8 @@ class LSlider(LWidget):
             self.insert_into_page()
 
     def write(self):
-        script = f"""vl_handle_value_changed('{self.name}', this.value);"""
-        out_name = self.name + "_out"
+        script = f"""vl_handle_value_changed('{self.identifier}', this.value);"""
+        out_name = self.identifier + "_out"
         if self.options.show_value == "custom" or self.options.show_value:
             script += (
                 f"document.getElementById('{out_name}').value = '{self.options.value_prefix}'+("
@@ -104,7 +104,7 @@ class LSlider(LWidget):
         if not self.options.vertical:
             html += "<span style='vertical-align: middle'>"
         html += (
-            f'<input id="{self.name}" type="range" value="{self._value}" '
+            f'<input id="{self.identifier}" type="range" value="{self._value}" '
             f'step="{self.stepping}" min="{self.min_value}" '
             f'max="{self.max_value}" '
             f'style="{style}" '
@@ -170,7 +170,7 @@ class LSlider(LWidget):
             f'max="{self.max_value}" '
             f'value="{self.value}"'
             f'oninput="document.'
-            f"getElementById('{self.name}').value=this.value\" />"
+            f"getElementById('{self.identifier}').value=this.value\" />"
         )
         return value_html
 

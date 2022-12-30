@@ -37,7 +37,7 @@ class LButton(LWidget):
     def __init__(
         self,
         builder: "LogBuilder",
-        name: str,
+        name: str = "button",
         caption: str = "",
         on_click: Union[Callable, None] = None,
         insert: bool = True,
@@ -62,7 +62,7 @@ class LButton(LWidget):
 
     def write(self):
         html = f"""
-            <input class="greenButton" type="button" value="{self.caption}" onclick="fetch('triggerEvent?name={self.name}&type={CLICK_EVENT_TYPE}')" />
+            <input class="greenButton" type="button" value="{self.caption}" onclick="fetch('triggerEvent?name={self.identifier}&type={CLICK_EVENT_TYPE}')" />
             """
         self.builder.html(html)
 

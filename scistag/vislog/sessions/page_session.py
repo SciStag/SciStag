@@ -45,12 +45,12 @@ class PageSession:
         self,
         log: "VisualLog",
         builder: Union["LogBuilder", None],
-        log_formats: set[str],
-        index_name: str,
-        target_dir: str,
-        continuous_write: bool,
-        log_to_stdout: bool,
-        log_to_disk: bool,
+        log_formats: set[str] | None = None,
+        index_name: str = "",
+        target_dir: str = "",
+        continuous_write: bool = False,
+        log_to_stdout: bool = False,
+        log_to_disk: bool = False,
     ):
         """
         :param log: The target log instance
@@ -64,7 +64,7 @@ class PageSession:
             console
         :param log_to_disk: Defines if the content shall be written to disk
         """
-        self.log_formats: set[str] = log_formats
+        self.log_formats: set[str] = log_formats if log_formats is not None else {HTML}
         """Defines the list of supported formats"""
         self.log: "VisualLog" = log
         """The target log instance"""
@@ -127,7 +127,7 @@ class PageSession:
         self._update_context_counter = 0
         """Defines if the page is currently in an updating state.         
         See :meth:`begin_update`"""
-        self.last_client_id: str = ""
+        self.last_client_id: str = "local"
         """The client's ID the last time it requested events"""
         self.element_update_times: dict[str, float] = {}
         """Contains for every element the time stamp when it was updated the last 

@@ -148,7 +148,7 @@ class TestHelper(BuilderExtension):
             df.to_csv(output, lineterminator="\n")
             result_hash_val = hashlib.md5(output.getvalue()).hexdigest()
             if result_hash_val != hash_val:
-                self.page.write_to_disk()
+                self.page_session.write_to_disk()
                 raise AssertionError(
                     "Hash mismatch - "
                     f"Found: {result_hash_val} - "
@@ -205,7 +205,7 @@ class TestHelper(BuilderExtension):
             bytes_val = data.tobytes()
             result_hash_val = hashlib.md5(bytes_val).hexdigest()
             if result_hash_val != hash_val:
-                self.page.write_to_disk()
+                self.page_session.write_to_disk()
                 raise AssertionError(
                     "Hash mismatch - "
                     f"Found: {result_hash_val} - "

@@ -45,10 +45,10 @@ class LSliderOptions(LWidgetOptions):
     horizontal_height: str = "32pt"
     """The height in horizontal mode"""
 
-    def copy(self) -> LSliderOptions:
+    def clone(self) -> LSliderOptions:
         """
-        Creates a copy of the style
+        Creates a deep copy of the style
 
         :return: The style copy
         """
-        return super().copy(deep=True)
+        return self.copy(deep=True)
