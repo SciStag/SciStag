@@ -77,6 +77,11 @@ class WebClassServiceEntry:
                         if not hasattr(attr, "wsflags"):
                             attr.__dict__["ws_flags"] = {}
                         attr.__dict__["ws_flags"]["methods"] = {"GET"}
+                    if name.startswith("post_"):
+                        name = name[5:]
+                        if not hasattr(attr, "wsflags"):
+                            attr.__dict__["ws_flags"] = {}
+                        attr.__dict__["ws_flags"]["methods"] = {"POST"}
                     external_name_split = name.split("_")
                     elements = [external_name_split[0]] + [
                         element.title() for element in external_name_split[1:]
@@ -103,15 +108,15 @@ class WebClassServiceEntry:
             path_elements = path_elements[1:]
         else:
             path_elements = []
+        found: bool = False
+        result = None
+        parameters = {}
+        if request.body is not None and len(request.body) > 0:
+            parameters["body"] = request.body
+        for key, element in request.parameters.items():
+            parameters[key] = element
         if path in self.methods or MISSING_FALLBACK_NAME in self.methods:
             method = self.methods.get(path, MISSING_FALLBACK_NAME)
-            parameters = {}
-
-            if request.body is not None and len(request.body) > 0:
-                parameters["body"] = request.body
-
-            for key, element in request.parameters.items():
-                parameters[key] = element
             try:
                 if self.multithread:  # no lock needed?
                     result = method(*path_elements, **parameters)
@@ -120,12 +125,20 @@ class WebClassServiceEntry:
                         result = method(*path_elements, **parameters)
             except TypeError:
                 return WebResponse(body="Invalid parameters provided", status=400)
-            if result is None:
-                return WebResponse(body="OK")
-            if isinstance(result, tuple) and len(result) >= 2:
-                assert isinstance(result[1], int)  # Verify HTTP code
-                return WebResponse(body=result[0], status=result[1])
-            if isinstance(result, WebResponse):
-                return result
-            return WebResponse(body=result)
-        return WebResponse(body="Method not found", status=404)
+            found = True
+        if not found and hasattr(self.main_object, "handle_missing"):
+            if self.multithread:  # no lock needed?
+                result = self.main_object.handle_missing(request)
+            else:
+                with self.access_lock:  # lock!
+                    result = self.main_object.handle_missing(request)
+            found = True
+        if found:
+            if result is not None:
+                if isinstance(result, tuple) and len(result) >= 2:
+                    assert isinstance(result[1], int)  # Verify HTTP code
+                    return WebResponse(body=result[0], status=result[1])
+                if isinstance(result, WebResponse):
+                    return result
+                return WebResponse(body=result)
+        return WebResponse(body="404 - File not found :-(", status=404)

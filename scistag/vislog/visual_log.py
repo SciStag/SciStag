@@ -324,14 +324,11 @@ class VisualLog:
             HTML: HtmlLogRenderer(title=self._title)
         }
         "The renderers for the single supported formats"
-        self.static_files: dict[str, bytes] = {}
-        "Statically hosted files for a pure web based provision of the log"
-        self._shall_terminate = False
+        self._terminated = False
         """
         Defines if the log service shall be terminated, e.g if it's running
         endlessly via :meth:`run` or :meth:`run_server`.
         """
-        self._provide_live_view()  # setup live view html page
         self._server: Union["WebStagServer", None] = None
         "The web server (if one was being started via :meth:`run_server`)"
         # Statistics
@@ -410,41 +407,20 @@ class VisualLog:
 
     def terminate(self):
         """
-        Sets the termination state to true so that if the log was
-        initialized with the flag `continuous=True` it can be terminated
-        from within the logging function.
+        Sets the termination state to true to request all remaining processes to
+        cancel their execution.
         """
         with self._general_lock:
-            self._shall_terminate = True
+            self._terminated = True
 
-    def add_static_file(self, filename: str, content: bytes):
+    @property
+    def terminated(self):
         """
-        Provides a file statically, e.g. to provide it via a
-            VisualLiveLogServer.
-
-        Multi-thread safe function.
-
-        :param filename: The name of the data to add
-        :param content: The file's content
+        Defines if the current logging process shall be terminated and all remaining
+        tasks shall be cancelled.
         """
         with self._general_lock:
-            self.static_files[filename] = content
-
-    def get_file(self, filename: str) -> bytes | None:
-        """
-        Tries to receive a file created by this log, either stored locally
-        or in memory via :meth:`add_static_file`.
-
-        :param filename: The file's name
-        :return: The file's content (if available)
-        """
-        with self._general_lock:
-            if filename in self.static_files:
-                return self.static_files[filename]
-            abs_filename = os.path.abspath(self.target_dir + "/" + filename)
-            if not abs_filename.startswith(self.target_dir):
-                return None
-            return FileStag.load(abs_filename)
+            return self._terminated
 
     def add_console(self, console: Console):
         """
@@ -469,46 +445,6 @@ class VisualLog:
         The maximum figure size in pixels
         """
         return Size2D(self._max_fig_size)
-
-    def _provide_live_view(self):
-        """
-        Assembles a website file which automatically updates the
-        logged html file as often as possible when ever it is updated
-        on disk.
-        """
-        base_path = self._get_module_path()
-        css = FileStag.load(base_path + "/css/visual_log.css")
-        if self.log_to_disk:
-            FileStag.save(f"{self.target_dir}/css/visual_log.css", css, create_dir=True)
-        self.add_static_file("css/visual_log.css", css)
-        import jinja2
-
-        environment = jinja2.Environment()
-        css = FileStag.load_text(FilePath.absolute_comb("css/visual_log.css"))
-        properties = {
-            "css": css,
-            "title": self._title,
-            "reload_timeout": 2000,
-            "retry_frequency": 100,
-            "reload_frequency": int(self.refresh_time_s * 1000),
-            "reload_url": "events",
-            "vl_log_updates": self.options.debug.html_client.log_updates,
-            "scistag_version": scistag.__version__,
-        }
-        template = environment.from_string(
-            FileStag.load_text(base_path + "/templates/liveLog/default_liveView.html")
-        )
-        header_template = environment.from_string(
-            FileStag.load_text(base_path + "/templates/liveLog/live_header.html")
-        )
-        footer_template = environment.from_string(
-            FileStag.load_text(base_path + "/templates/liveLog/live_footer.html")
-        )
-        rendered_header = header_template.render(**properties)
-        rendered_lv = template.render(**properties)
-        rendered_footer = footer_template.render(**properties)
-        rendered_lv = rendered_header + rendered_lv + rendered_footer
-        self.add_static_file("liveView.html", rendered_lv.encode("utf-8"))
 
     def get_temp_path(self, relative: str | None = None) -> str:
         """
@@ -995,7 +931,7 @@ class VisualLog:
         call triggered.
         """
         print(SLEEPING_TEXT_MESSAGE)
-        while not self._shall_terminate:
+        while not self._terminated:
             next_event = self.handle_page_events()
             max_sleep_time = self.refresh_time_s
             if next_event is not None:
@@ -1017,7 +953,7 @@ class VisualLog:
             self._update_counter += 1
             self._total_update_counter += 1
             with self._general_lock:
-                if self._shall_terminate:
+                if self._terminated:
                     break
             if auto_clear:
                 self.clear()

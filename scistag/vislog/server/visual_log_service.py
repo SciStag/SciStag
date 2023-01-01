@@ -10,7 +10,7 @@ import os
 from typing import TYPE_CHECKING
 
 from scistag.vislog.visual_log import HTML
-from scistag.webstag.server import WebResponse
+from scistag.webstag.server import WebResponse, WebRequest
 
 if TYPE_CHECKING:
     from scistag.vislog import VisualLog
@@ -72,9 +72,11 @@ class VisualLogService:
         """
         return f"{os.getpid()}"
 
-    def live(self):
+    def handle_missing(self, request: WebRequest):
         """
-        Returns the most recent liveView.html
-        :return:
+        Is called when the request wasn't handled otherwise
+
+        :param request: The web request
+        :return: The response
         """
-        return self.log.get_file("liveView.html")
+        return self.log.default_page.handle_web_request(request)

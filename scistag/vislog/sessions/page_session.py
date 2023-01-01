@@ -12,6 +12,7 @@ from scistag.common import StagLock
 from scistag.filestag import FileStag
 from scistag.vislog.common.log_element import LogElement, LogElementReference
 from scistag.vislog.options import LogOptions
+from scistag.webstag.server import WebRequest
 
 ROOT_DOM_ELEMENT = "vlbody"
 "Defines the root element in the HTML page containing the main site's data"
@@ -701,3 +702,13 @@ class PageSession:
         reaction time.
         """
         self.last_user_interaction = time.time()
+
+    def handle_web_request(self, request: WebRequest):
+        """
+        Is called when the request wasn't handled otherwise
+
+        :param request: The web request
+        :return: The response
+        """
+        with self._page_lock:
+            return self.builder.service.handle_web_request(request)

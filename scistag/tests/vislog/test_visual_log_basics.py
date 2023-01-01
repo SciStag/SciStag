@@ -232,7 +232,7 @@ def test_different_setups(_):
     assert log.max_fig_size == (128, 128)
     assert log.image_format == "jpg" and log.image_quality == 80
     log.terminate()
-    assert log._shall_terminate
+    assert log._terminated
     # TODO New log limit test with new component based approach
     #    log.set_log_limit(5)
     #    assert log._log_limit == 5
@@ -265,14 +265,6 @@ def test_different_setups(_):
     vl.log("should be logged")
     with no_html_log as vl:
         vl.log("text")
-
-
-def test_static_file():
-    log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, filetype=("jpg", 80)
-    )
-    log.add_static_file("testFile.bin", "bHello world")
-    assert log.get_file("testFile.bin") == "bHello world"
 
 
 def test_runner():

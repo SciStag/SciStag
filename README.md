@@ -152,3 +152,12 @@ SciStag is developed by Michael Ikemann / [@Alyxion](https://github.com/Alyxion)
 . - Feel free to reach out to me
 via [LinkedIn](https://www.linkedin.com/in/michael-ikemann/).
 
+## Thanks
+
+Big thanks go out to the following people and institutions for their direct or 
+indirect support:
+* [Zühlke Engineering](https://zuehlke.com/) for all
+  the support over the last 4 years, the awesome culture and letting me form the future with you.
+* [Shree Nayar](http://www.cs.columbia.edu/~nayar/) for his outstanding in-depth guides and papers in the area of Computer Vision
+* [Joseph Zimmerman](https://www.smashingmagazine.com/author/joseph-zimmerman/) - for his JavaScript guides
+* ... and all I have forgotten ;)

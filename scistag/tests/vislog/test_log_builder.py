@@ -29,3 +29,10 @@ def test_backup():
     log_c = VisualLog(formats_out={"txt"})
     with pytest.raises(ValueError):
         log_c.default_builder.create_backup()
+
+
+def test_static_file():
+    log_a = VisualLog()
+    builder = log_a.default_builder
+    builder.service.publish("testFile.bin", b"Hello world")
+    assert builder.service.get_file("testFile.bin") == b"Hello world"

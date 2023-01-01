@@ -5,6 +5,7 @@ adding data in a VisualLog.
 
 from __future__ import annotations
 
+import os.path
 import types
 from typing import Any, TYPE_CHECKING, Union
 import io
@@ -17,6 +18,8 @@ import filetype
 import numpy as np
 from pydantic import BaseModel
 
+import scistag
+from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Image, Size2D
 from scistag.vislog.log_elements import HTMLCode
 from scistag.vislog.options import LogOptions
@@ -38,6 +41,7 @@ if TYPE_CHECKING:
     from scistag.vislog.extensions.widget_logger import WidgetLogger
     from scistag.vislog.extensions.alignment_logger import AlignmentLogger
     from scistag.vislog.extensions.style_context import StyleContext
+    from scistag.vislog.extensions.service_extension import LogServiceExtension
 
 LogableContent = Union[
     str,
@@ -58,7 +62,7 @@ for tables, lists and divs.
 """
 
 
-class VisualLogBackup(BaseModel):
+class LogBackup(BaseModel):
     """
     Contains the backup of a log and all necessary data to integrate it into
     another log.
@@ -160,10 +164,19 @@ class LogBuilder:
         Extension to temporarily modify the style of the current log region or cell
         and to insert custom CSS code into the document.
         """
+        from scistag.vislog.extensions.service_extension import LogServiceExtension
+
+        self._service: LogServiceExtension = LogServiceExtension(builder=self)
+        """
+        The service extension for hosting static files and services
+        """
         self.options: LogOptions = log.options.copy(deep=True)
         """
         Defines the builder's options
         """
+        self._title = self.target_log._title
+        """The website's title"""
+        self._provide_live_view()
 
     def build(self):
         """
@@ -561,6 +574,13 @@ class LogBuilder:
             self._style = StyleContext(self)
         return self._style
 
+    @property
+    def service(self) -> "LogServiceExtension":
+        """
+        Extension which allows the publishing of files and individual web services
+        """
+        return self._service
+
     def code(self, code: str) -> LogBuilder:
         """
         Adds code to the log
@@ -717,7 +737,7 @@ class LogBuilder:
         """
         self.page_session.write_html(html_code)
 
-    def create_backup(self) -> VisualLogBackup:
+    def create_backup(self) -> LogBackup:
         """
         Creates a backup of the log's content so it can for example be
         returned from a helper process or node to the main process and
@@ -733,9 +753,9 @@ class LogBuilder:
         self.flush()
         if HTML not in self.page_session.log_formats:
             raise ValueError("At the moment only HTML backup is supported")
-        return VisualLogBackup(data=self.page_session.get_body(HTML))
+        return LogBackup(data=self.page_session.get_body(HTML))
 
-    def insert_backup(self, backup: VisualLogBackup):
+    def insert_backup(self, backup: LogBackup):
         """
         Inserts another log's backup in this log
 
@@ -818,6 +838,50 @@ class LogBuilder:
         """
         self._file_dependencies.append(filename)
 
+    def _provide_live_view(self):
+        """
+        Assembles a website file which automatically updates the
+        logged html file as often as possible when ever it is updated
+        on disk.
+        """
+        base_path = os.path.dirname(__file__)
+        css = FileStag.load(base_path + "/css/visual_log.css")
+        if self.page_session.log_to_disk:
+            FileStag.save(
+                f"{self.page_session.target_dir}/css/visual_log.css",
+                css,
+                create_dir=True,
+            )
+        self.service.publish("css/visual_log.css", css)
+        import jinja2
+
+        environment = jinja2.Environment()
+        css = FileStag.load_text(FilePath.absolute_comb("css/visual_log.css"))
+        properties = {
+            "css": css,
+            "title": self._title,
+            "reload_timeout": 2000,
+            "retry_frequency": 100,
+            "reload_frequency": 100,
+            "reload_url": "events",
+            "vl_log_updates": self.options.debug.html_client.log_updates,
+            "scistag_version": scistag.__version__,
+        }
+        template = environment.from_string(
+            FileStag.load_text(base_path + "/templates/liveLog/default_liveView.html")
+        )
+        header_template = environment.from_string(
+            FileStag.load_text(base_path + "/templates/liveLog/live_header.html")
+        )
+        footer_template = environment.from_string(
+            FileStag.load_text(base_path + "/templates/liveLog/live_footer.html")
+        )
+        rendered_header = header_template.render(**properties)
+        rendered_lv = template.render(**properties)
+        rendered_footer = footer_template.render(**properties)
+        rendered_lv = rendered_header + rendered_lv + rendered_footer
+        self.service.publish("liveView.html", rendered_lv.encode("utf-8"))
+
     def begin_update(self) -> "PageUpdateContext":
         """
         Can be called at the beginning of a larger update block, e.g. if a page
@@ -829,10 +893,28 @@ class LogBuilder:
         A PageUpdateContext can be used via `with self.begin_update()` to automatically
         call end_update once the content block is left.
         """
-        self.page_session.begin_update()
+        return self.page_session.begin_update()
 
     def end_update(self):
         """
         Ends the update mode
         """
         self.page_session.end_update()
+
+    def terminate(self):
+        """
+        Sets the termination state to true to request all remaining processes to
+        cancel their execution.
+
+        Note that in order to terminate the whole application or server you need
+        to call the log's termination function in case of multi-session applications.
+        """
+        self.log.target_log.terminate()
+
+    @property
+    def terminated(self):
+        """
+        Defines if the current log session shall be terminated and all remaining
+        tasks shall be cancelled.
+        """
+        return self.target_log.terminated
