@@ -1,8 +1,28 @@
 let vlUploadUpdateProgress = {}; // Holds the upload state for all upload widgets
+let vlUploadId = {}; // Holds IDs for each upload progress
+
+// Based upon https://stackoverflow.com/questions/105034/how-do-i-create-a-guid-uuid
+// from Jeff Ward
+let guidLut = [];
+for (let i = 0; i < 256; i++) {
+    guidLut[i] = (i < 16 ? '0' : '') + (i).toString(16);
+}
+
+function vlCreateGuid() {
+    let d0 = Math.random() * 0xffffffff | 0;
+    let d1 = Math.random() * 0xffffffff | 0;
+    let d2 = Math.random() * 0xffffffff | 0;
+    let d3 = Math.random() * 0xffffffff | 0;
+    return guidLut[d0 & 0xff] + guidLut[d0 >> 8 & 0xff] + guidLut[d0 >> 16 & 0xff] + guidLut[d0 >> 24 & 0xff] + '-' +
+        guidLut[d1 & 0xff] + guidLut[d1 >> 8 & 0xff] + '-' + guidLut[d1 >> 16 & 0x0f | 0x40] + guidLut[d1 >> 24 & 0xff] + '-' +
+        guidLut[d2 & 0x3f | 0x80] + guidLut[d2 >> 8 & 0xff] + '-' + guidLut[d2 >> 16 & 0xff] + guidLut[d2 >> 24 & 0xff] +
+        guidLut[d3 & 0xff] + guidLut[d3 >> 8 & 0xff] + guidLut[d3 >> 16 & 0xff] + guidLut[d3 >> 24 & 0xff];
+}
 
 function vlFileDropAreaInitializeProgress(widget, numFiles) {
     let progressBar = document.getElementById(widget.id + '_PROGRESS')
     vlUploadUpdateProgress[widget.id] = []
+    vlUploadId[widget.id] = vlCreateGuid()
     widget.dataset.uploadProgress = []
     progressBar.value = 0
 
@@ -31,9 +51,13 @@ function vlFileDropAreaHandleFilesForUpload(widget, files) {
 }
 
 function vlDropAreaPreview(widget, file) {
-    let widget_gallery_name = widget.id + "_GALLERY"
-    console.log(file.name)
-    let reader = new FileReader()
+    let widget_gallery_name = widget.id + "_GALLERY";
+    let file_extension = file.name.split(".").pop().toLowerCase();
+    let image_extensions = ["bmp", "jpg", "jpeg", "gif", "png"];
+    if (image_extensions.indexOf(file_extension) === -1) {
+        return
+    }
+    let reader = new FileReader();
     reader.readAsDataURL(file)
     reader.onloadend = function () {
         let img = document.createElement('img')
@@ -62,16 +86,18 @@ function vlDropAreaUploadFile(widget, file, index) {
         }
     })
 
+    formData.append("widget", widget.id)
+    formData.append("uploadId", vlUploadId[widget.id])
     formData.append("fileIndex", index)
-    formData.append("fileCount", len(vlUploadUpdateProgress[widget.id]))
+    formData.append("fileCount", vlUploadUpdateProgress[widget.id].length)
     formData.append('file', file)
     xhr.send(formData)
 }
 
 function vlSetupFileDropArea(widget) {
     function handleDrop(e) {
-        var dt = e.dataTransfer
-        var files = dt.files
+        let dt = e.dataTransfer
+        let files = dt.files
         vlFileDropAreaHandleFilesForUpload(widget, files)
     }
 
@@ -85,7 +111,8 @@ function vlSetupFileDropArea(widget) {
     // Highlight drop area when item is dragged over it
     ;['dragenter', 'dragover'].forEach(eventName => {
         dropArea.addEventListener(eventName, highlight, false)
-    });['dragleave', 'drop'].forEach(eventName => {
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
         dropArea.addEventListener(eventName, unhighlight, false)
     })
     // Handle dropped files

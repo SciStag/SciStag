@@ -345,8 +345,8 @@ def test_clear_log():
     )
     log.default_builder.log("Something")
     log.default_page.write_to_disk()
-    data = log.get_file("index.md")
-    assert log.get_file("../../evil/index.md") is None
+    data = log.default_builder.service.get_file("index.md")
+    assert log.default_builder.service.get_file("../../evil/index.md") is None
     assert len(data) >= 5
     assert FilePath.exists(f"{bp}/clogs")
     new_log = VisualLog(

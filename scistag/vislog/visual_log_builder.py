@@ -41,7 +41,10 @@ if TYPE_CHECKING:
     from scistag.vislog.extensions.widget_logger import WidgetLogger
     from scistag.vislog.extensions.alignment_logger import AlignmentLogger
     from scistag.vislog.extensions.style_context import StyleContext
-    from scistag.vislog.extensions.service_extension import LogServiceExtension
+    from scistag.vislog.extensions.service_extension import (
+        LogServiceExtension,
+        PublishingInfo,
+    )
 
 LogableContent = Union[
     str,
@@ -175,6 +178,20 @@ class LogBuilder:
         Defines the builder's options
         """
         self._title = self.target_log._title
+
+        # add upload widget extension
+        path = FilePath.dirname(__file__)
+        self.publish(
+            "vl_file_upload.css",
+            path + "/templates/extensions/upload/vl_file_upload.css",
+        )
+        self.publish(
+            "vl_file_upload.js",
+            path + "/templates/extensions/upload/vl_file_upload.js",
+        )
+        self.service.register_css("VlUploadWidget", "vl_file_upload.css")
+        self.service.register_js("VlUploadWidget", "vl_file_upload.js")
+
         """The website's title"""
         self._provide_live_view()
 
@@ -763,6 +780,22 @@ class LogBuilder:
         """
         self.add_html(backup.data)
 
+    def publish(self, path: str, content: bytes | str, **kwargs) -> "PublishingInfo":
+        """
+        Publishes a result data file.
+
+        If the log is stored to disk the result data will be stored in the log's
+        directory. If sub paths are used missing paths will automatically be created.
+
+        If the log is not stored to disk the file is available at the URLs provided
+        in the returned result.
+
+        :param path: The relative path at which the data or service shall be provided
+        :param content: The file's content (if provided as bytes string) or the file's
+            path.
+        """
+        return self.service.publish(path, content, **kwargs)
+
     def add_md(self, md_code: str, no_break: bool = False):
         """
         Adds markdown code directly of the markdown section of this log.
@@ -857,8 +890,10 @@ class LogBuilder:
 
         environment = jinja2.Environment()
         css = FileStag.load_text(FilePath.absolute_comb("css/visual_log.css"))
+        custom_code = self.service.get_embedding_code()
         properties = {
             "css": css,
+            "VL_CUSTOM_CODE": custom_code,
             "title": self._title,
             "reload_timeout": 2000,
             "retry_frequency": 100,

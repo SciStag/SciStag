@@ -8,6 +8,9 @@ from __future__ import annotations
 from inspect import signature
 from typing import TYPE_CHECKING, Callable, Any
 
+import jinja2
+
+from scistag.filestag import FileStag, FilePath
 from scistag.vislog.options import LWidgetOptions
 
 if TYPE_CHECKING:
@@ -147,3 +150,40 @@ class LWidget:
 
         :param new_value: The new value
         """
+
+    def render(
+        self, source: str, replacements: dict | None = None, **parameters
+    ) -> str:
+        """
+        Renders a Jinja template and returns its result.
+
+        Following variables are defined by default.
+        * DEMO_MODE = False
+        * WIDGET_NAME = The widget's name
+
+        In addition, all occurrences of "VL_WIDGET_NAME" will be exchanged by the
+        widget's generic identifier prior rendering.
+
+        :param source: The path of the file to be rendered.
+
+            You can use {{TEMPLATES}} in the file path to refer to VisLog's HTML
+            template directory.
+        :param replacements: List of strings to search for and to replace with
+            other content.
+        :param parameters: The parameters to be passed into the Jinja renderer
+        :return: The rendered code
+        """
+
+        source = source.replace(
+            "{{TEMPLATES}}", FilePath.dirname(__file__) + "/../templates/"
+        )
+        environment = jinja2.Environment()
+        code = FileStag.load_text(source)
+        code = code.replace("VL_WIDGET_NAME", self.identifier)
+        if replacements is not None:
+            for key, value in replacements:
+                code = code.replace(key, value)
+        template = environment.from_string(code)
+        config_variables = {"DEMO_MODE": False}
+        rendered = template.render(**config_variables, **parameters)
+        return rendered

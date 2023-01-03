@@ -9,6 +9,44 @@ from dataclasses import dataclass
 
 
 @dataclass
+class FileAttachment:
+    """
+    Defines a file attachment attached to a :class:`WebRequest`
+    """
+
+    filename: str | None = None
+    """Defines the element's filename (if known)"""
+    data: bytes | None = None
+    """Defines the element's data. In case of an error this can be None"""
+    mimetype: str | None = None
+    """Defines the element's mimetype - if provided"""
+
+    def freeze(self) -> FileAttachment:
+        """
+        Receives all content from the client and freezes the data.
+
+        If you intend to collect file attachments received from a client and user it
+        at some later point in time you need to call this method to ensure all data was
+        transferred. It will convert a dynamic data stream to an in-memory storage
+        of the file data if required.
+
+        :return: Self
+        """
+        return self
+
+    def save_to(self, target: str) -> bool:
+        """
+        Saves the attachment to the file path defined
+
+        :param target: The target name
+        :return: True on success
+        """
+        from scistag.filestag import FileStag
+
+        return FileStag.save(target, data=self.data)
+
+
+@dataclass
 class WebRequest:
     """
     Defines the parameters of a web request
@@ -22,6 +60,10 @@ class WebRequest:
     "The request method, e.g. GET, POST, PUT etc."
     headers: dict
     "The headers passed in"
+    form: dict
+    "The requests form data"
+    files: list[FileAttachment]
+    "List of attached files"
     body: Union[bytes, None]
     "The body data of the POST request"
     parameters: dict

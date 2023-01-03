@@ -23,7 +23,7 @@ DEFAULT_CELL_UPDATE_INTERVAL = 0.25
 "The default update interval for cells if no other value is passed"
 
 
-class CellBuildEvent(LEvent):
+class LCellBuildEvent(LEvent):
     """
     Event which is triggered when a cell shall rebuild
     """
@@ -160,7 +160,7 @@ class Cell(LWidget):
             self.clear()
         if not self.progressive:
             self.sub_element.add_data("html", b"<div>")
-        event = CellBuildEvent(name=self.identifier, widget=self, builder=self.builder)
+        event = LCellBuildEvent(name=self.identifier, widget=self, builder=self.builder)
         self.raise_event(event)
         if not self.progressive:
             self.sub_element.add_data("html", b"</div>")

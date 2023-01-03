@@ -389,9 +389,13 @@ class PageSession:
         with self._page_lock:
             self._body_backups = bodies
         # store html
+        custom_code = self.builder.service.get_embedding_code().encode("utf-8")
         if HTML in formats:
             self.set_latest_page(
-                HTML, self.log._renderers[HTML].build_page(bodies[HTML])
+                HTML,
+                self.log._renderers[HTML].build_page(
+                    bodies[HTML], custom_code=custom_code
+                ),
             )
         # store markdown
         if MD in formats:

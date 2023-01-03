@@ -13,6 +13,25 @@
         vl_values[element] = String(value); // store value for next sync
     }
 
+    // Based upon https://stackoverflow.com/questions/2592092/executing-script-elements-inserted-with-innerhtml
+    function setInnerHTML(elm, html) {
+        elm.innerHTML = html;
+
+        Array.from(elm.querySelectorAll("script"))
+            .forEach(oldScriptEl => {
+                const newScriptEl = document.createElement("script");
+
+                Array.from(oldScriptEl.attributes).forEach(attr => {
+                    newScriptEl.setAttribute(attr.name, attr.value)
+                });
+
+                const scriptText = document.createTextNode(oldScriptEl.innerHTML);
+                newScriptEl.appendChild(scriptText);
+
+                oldScriptEl.parentNode.replaceChild(newScriptEl, oldScriptEl);
+            });
+    }
+
     /** Handles if the server sent a content change request */
     function vl_handle_set_content(headers, data) {
         let targetElement = headers.get("targetElement")
@@ -22,9 +41,9 @@
             return;
         }
         {% if vl_log_updates %}
-        console.log("Updating "+targetElement);
+            console.log("Updating " + targetElement);
         {% endif %}
-        element.innerHTML = data;
+        setInnerHTML(element, data)
     }
 
     /** Is called on intervals and asks the server for modifications. The sleep time

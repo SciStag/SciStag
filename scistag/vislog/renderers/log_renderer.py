@@ -45,7 +45,10 @@ class LogRenderer:
         """
         import scistag
 
-        return {"title": self.title, "scistag_version": scistag.__version__}
+        return {
+            "title": self.title,
+            "scistag_version": scistag.__version__,
+        }
 
     def set_body_template(self, template: str, **params):
         """
@@ -93,14 +96,15 @@ class LogRenderer:
             **self.get_rendering_variables(), **params
         ).encode("utf-8")
 
-    def build_page(self, body) -> bytes:
+    def build_page(self, body, custom_code) -> bytes:
         """
         Combines the head's header, body and footer to a full html page
 
         :param body: The page's body
+        :param custom_code: Custom code to be inserted
         :return: The full, deliverable page
         """
-        return b"".join([self.header_rendered, body, self.footer_rendered])
+        return b"".join([self.header_rendered, custom_code, body, self.footer_rendered])
 
     def build_body(self, log_data: bytes) -> bytes:
         """

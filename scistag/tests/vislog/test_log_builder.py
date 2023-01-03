@@ -35,4 +35,4 @@ def test_static_file():
     log_a = VisualLog()
     builder = log_a.default_builder
     builder.service.publish("testFile.bin", b"Hello world")
-    assert builder.service.get_file("testFile.bin") == b"Hello world"
+    assert builder.service.get_file("testFile.bin").body == b"Hello world"

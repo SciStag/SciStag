@@ -18,3 +18,5 @@ class WebResponse:
     "Defines if the response may be cached"
     headers: dict | None = None
     "Defines the header elements to be returned"
+    mimetype: str | None = None
+    "The response's mime type"
