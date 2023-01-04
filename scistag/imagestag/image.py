@@ -428,8 +428,8 @@ class Image(ImageBase):
                 raise ValueError("Can not combine a tuple factor " "with keep_aspect")
             if fill_area:
                 factor = max([size[0] / self.width, size[1] / self.height])
-                virtual_size = int(round(factor * self.width)), int(
-                    round(factor * self.height)
+                virtual_size = max(int(round(factor * self.width)), 1), max(
+                    int(round(factor * self.height)), 1
                 )
                 ratio = size[0] / virtual_size[0], size[1] / virtual_size[1]
                 used_pixels = int(round(self.width * ratio[0])), int(
@@ -476,12 +476,15 @@ class Image(ImageBase):
             size = int(round(self.width * factor[0])), int(
                 round(self.height * factor[1])
             )
+            size = max(size[0], 1), max(size[1], 1)  # ensure non-zero size
         if factor is not None:
             if isinstance(factor, float):
                 factor = (factor, factor)
-            size = int(round(self.width * factor[0])), int(
-                round(self.height * factor[1])
+            size = (
+                int(round(self.width * factor[0])),
+                int(round(self.height * factor[1])),
             )
+            size = max(size[0], 1), max(size[1], 1)  # ensure non-zero size
         if not (size is not None and size[0] > 0 and size[1] > 0):
             raise ValueError("No valid rescaling parameters provided")
         if size != (self.width, self.height):
@@ -501,6 +504,10 @@ class Image(ImageBase):
                     int(round(self.width * factor[0])),
                     int(round(self.width * rs ** factor[1])),
                 )
+            bordered_image_size = (  # ensure non-zero size
+                max(1, bordered_image_size[0]),
+                max(1, bordered_image_size[1]),
+            )
         if bordered_image_size is not None:
             new_image = PIL.Image.new(handle.mode, bordered_image_size, int_color)
             position = (
@@ -541,8 +548,8 @@ class Image(ImageBase):
         else:
             raise ValueError("Neither a valid maximum width nor height passed")
         return (
-            int(round(org_size.width * scaling)),
-            int(round(org_size.height * scaling)),
+            max(int(round(org_size.width * scaling)), 1),
+            max(int(round(org_size.height * scaling)), 1),
         )
 
     def convert(

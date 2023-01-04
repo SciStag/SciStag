@@ -2,11 +2,10 @@ div.vl_file_drop_area {
   border: 2px dashed #ccc;
   border-radius: 20px;
   width: 480px;
-  margin: 50px auto;
   padding: 20px;
 }
 div.vl_file_drop_area.highlight {
-  border-color: purple;
+  border-color: blue;
 }
 p.vl_upload_info_line {
   margin-top: 0;

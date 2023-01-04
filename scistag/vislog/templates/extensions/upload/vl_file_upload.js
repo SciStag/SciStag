@@ -128,6 +128,6 @@ function vlSetupFileDropArea(widget) {
     }
 
     function unhighlight(e) {
-        dropArea.classList.remove('active')
+        dropArea.classList.remove('highlight')
     }
 }

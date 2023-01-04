@@ -24,8 +24,12 @@ from scistag.imagestag import Image, Size2D
 from scistag.vislog.log_elements import HTMLCode
 from scistag.vislog.options import LogOptions
 
-from scistag.vislog.visual_log import VisualLog, HTML
+from scistag.vislog.visual_log import VisualLog, HTML, MD
 from scistag.plotstag import Figure, Plot, MPHelper
+
+MIMETYPE_MARKDOWN = "text/markdown"
+
+MIMETYPE_HTML = "text/html"
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -274,7 +278,9 @@ class LogBuilder:
                 self.code(code)
         return result
 
-    def add(self, content: LogableContent, br: bool = False) -> LogBuilder:
+    def add(
+        self, content: LogableContent, br: bool = False, mimetype: str | None = None
+    ) -> LogBuilder:
         """
         Adds the provided content to the log.
 
@@ -298,6 +304,8 @@ class LogBuilder:
                 ints.
         :param br: Defines if the element shall be followed by a linebreak
             (if supported), false by default.
+        :param mimetype: Defines the explicit mime type and applies it
+            were possible such as parsing text provided as text/markdown or text/html.
         :return: The builder
         """
         # pandas content frame
@@ -339,14 +347,19 @@ class LogBuilder:
             self.np(content, br=br)
             return self
         if isinstance(content, (str, int, float)):
-            self.text(content, br=br)
-            return self
-            # dict or list
+            content = str(content)
+        # dict or list
         if isinstance(content, (list, dict)):
             self.collection.add(content)
             return self
+        if mimetype is not None:
+            if mimetype == MIMETYPE_HTML or mimetype == HTML:
+                self.html(str(content), linebreak=br)
+                return self
+            if mimetype == MIMETYPE_MARKDOWN or mimetype == MD:
+                self.md(str(content))
+                return self
         self.text(str(content), br=br)
-        raise TypeError("Data type not supported")
 
     def title(self, text: str) -> LogBuilder:
         """
@@ -489,16 +502,17 @@ class LogBuilder:
         self.add_txt("---", md=True)
         return self
 
-    def html(self, code: str | HTMLCode) -> LogBuilder:
+    def html(self, code: str | HTMLCode, linebreak: bool = True) -> LogBuilder:
         """
         Adds a html section. (only to targets supporting html)
 
         :param code: The html code to parse
+        :param linebreak: Defines if a line break shall be inserted after the code
         """
         if isinstance(code, HTMLCode):
             code = code.to_html()
-        self.add_md(code)
-        self.add_html(code + "\n")
+        self.add_md(code, no_break=not linebreak)
+        self.add_html(code + ("\n" if linebreak else ""))
         self.handle_modified()
         return self
 

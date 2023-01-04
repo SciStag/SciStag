@@ -123,7 +123,7 @@ class BasicLogger(BuilderExtension):
         md_text = text
         if level is not None and level in self.level_tag:
             md_text = f"<b>{self.level_tag[level]}</b>: {text}"
-            text = self.level_tag[level] + ": " + text
+            text = self.level_tag[level] + " " + text
         escaped_text = self.builder.encode_html(text)
         if level in self.level_color:
             self.builder.add_html(

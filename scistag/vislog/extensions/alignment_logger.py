@@ -46,10 +46,12 @@ class AlignmentLogger(BuilderExtension):
             hor_align = "right"
         else:
             raise ValueError(f"Unknown alignment {hor_align}")
-        self.builder.add_md(f'<div style="text-align:{hor_align};">')
-        self.builder.add_html(f'<div style="text-align:{hor_align};">')
+        html = f'<div style="display: flex; justify-content: {hor_align}"><div>'
+        self.builder.add_md(html)
+        self.builder.add_html(html)
         context = ElementContext(
-            self.builder, closing_code={"html": "</div>", "md": "</div>", "txt": ""}
+            self.builder,
+            closing_code={"html": "</div></div>", "md": "</div></div>", "txt": ""},
         )
         return context
 

@@ -33,6 +33,10 @@ class LFileUploadEvent(LEvent):
     """Unique upload session ID"""
 
 
+OnFileUploadCallback = Union[Callable, Callable[[LFileUploadEvent], None]]
+"""Callback type definitions for callbacks of :attr:`LFileUpload.on_upload`"""
+
+
 class LFileUpload(LWidget):
     """
     The LButton adds a button the log which upon click triggers it's
@@ -44,6 +48,7 @@ class LFileUpload(LWidget):
         builder: "LogBuilder",
         name: str = "fileUpload",
         insert: bool = True,
+        on_upload: OnFileUploadCallback | None = None,
     ):
         """
         :param builder: The log builder to which the button shall be added
@@ -60,9 +65,7 @@ class LFileUpload(LWidget):
         """Unique identifier of the current upload session"""
         self._current_files: dict[int, FileAttachment] = {}
         """The current list of files uploaded so far"""
-        self.on_upload: Union[
-            Callable, Callable[[LFileUploadEvent], None]
-        ] | None = None
+        self.on_upload: OnFileUploadCallback | None = on_upload
         """Defines the function to be called when a file was uploaded"""
 
     def write(self):
@@ -71,6 +74,9 @@ class LFileUpload(LWidget):
 
     def handle_event(self, event: "LEvent"):
         super().handle_event(event)
+        if event.event_type == FILE_UPLOAD_EVENT_TYPE and event.widget == self:
+            if self.on_upload:
+                self.call_event_handler(self.on_upload, event)
 
     def handle_file_upload(self, request: WebRequest):
         """

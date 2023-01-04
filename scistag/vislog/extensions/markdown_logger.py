@@ -49,15 +49,48 @@ class MarkdownLogger(BuilderExtension):
         import markdown
         from markdown.extensions.tables import TableExtension
 
-        parsed = markdown.markdown(text, extensions=["tables"])
+        parsed = self.quick_parse(text)
+        if parsed is None:
+            parsed = markdown.markdown(text, extensions=["tables"])
         if MD not in exclude_targets:
             self.builder.add_md(text + "\n")
         if HTML not in exclude_targets:
+            if parsed.startswith("<p>") and parsed.endswith("</p>"):
+                parsed = parsed[3:-4]
             self.builder.add_html(parsed + "\n")
         if TXT not in exclude_targets:
             self.builder.add_txt(text)
         self.builder.handle_modified()
         return self.builder
+
+    @staticmethod
+    def quick_parse(text: str):
+        """
+        Tries to parse simple markdown
+
+        :param text: The text to be parsed
+        :return: The result if simple parsing was possible
+        """
+        parsed = None
+        spaceless = text.strip(" ")
+        if len(text) < 80 and "\n" not in text:
+            if spaceless.isalnum():  # just text
+                parsed = text
+            elif (  # bold
+                len(text)
+                and text.startswith("**")
+                and text.endswith("**")
+                and text[2:-2].strip(" ").isalnum()
+            ):
+                parsed = f"<strong>{text[2:-2]}</strong>"
+        elif (  # italic
+            len(text)
+            and text.startswith("*")
+            and text.endswith("*")
+            and text[1:-1].strip(" ").isalnum()
+        ):
+            parsed = f"<strong>{text[2:-2]}</strong>"
+        return parsed
 
     def embed(self, source: FileSourceTypes, encoding="utf-8") -> LogBuilder:
         """

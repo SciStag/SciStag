@@ -71,6 +71,7 @@ class Cell(LWidget):
         """
         if _builder_method is not None:
             _builder_method.__dict__["cell"] = self
+            _builder_method.__dict__["invalidate"] = lambda cell=self: cell.invalidate()
             builder.cell[_builder_method.__name__] = self
         builder.begin_update()
         name = builder.page_session.reserve_unique_name("cell", digits=4)
