@@ -81,3 +81,18 @@ class AlignmentLogger(BuilderExtension):
         :return: The context
         """
         return self("center")
+
+    @property
+    def text_center(self) -> ElementContext:
+        """
+        Shortcut for .align("center")
+
+        :return: The context
+        """
+        html = f'<div style="text-align:center">'
+        self.builder.add_html(html)
+        context = ElementContext(
+            self.builder,
+            closing_code={"html": "</div>", "md": "", "txt": ""},
+        )
+        return context

@@ -57,13 +57,13 @@ class Image(ImageBase):
     """
 
     def __init__(
-        self,
-        source: ImageSourceTypes | None = None,
-        framework: ImsFramework | Literal["PIL", "RAW", "CV"] = None,
-        pixel_format: PixelFormatTypes | None = None,
-        size: Size2DTypes | None = None,
-        bg_color: Color | None = None,
-        **params,
+            self,
+            source: ImageSourceTypes | None = None,
+            framework: ImsFramework | Literal["PIL", "RAW", "CV"] = None,
+            pixel_format: PixelFormatTypes | None = None,
+            size: Size2DTypes | None = None,
+            bg_color: Color | None = None,
+            **params,
     ):
         """
         :param source: The image source. Either a file name, a http URL,
@@ -154,11 +154,11 @@ class Image(ImageBase):
 
     @classmethod
     def _prepare_data_source(
-        cls,
-        framework: ImsFramework,
-        source: ImageSourceTypes,
-        pixel_format: PixelFormat,
-        **params,
+            cls,
+            framework: ImsFramework,
+            source: ImageSourceTypes,
+            pixel_format: PixelFormat,
+            **params,
     ):
         """
         Prepares and if necessary converts the data source to a supported format
@@ -171,9 +171,9 @@ class Image(ImageBase):
         if isinstance(source, cls):
             source = source.to_pil()
         if (
-            isinstance(source, np.ndarray)
-            and pixel_format == PixelFormat.BGR
-            and framework != ImsFramework.CV
+                isinstance(source, np.ndarray)
+                and pixel_format == PixelFormat.BGR
+                and framework != ImsFramework.CV
         ):
             source = cls.normalize_to_rgb(
                 source, keep_gray=True, input_format=pixel_format
@@ -182,7 +182,7 @@ class Image(ImageBase):
         # fetch from web if desired
         if isinstance(source, str):
             if source.startswith(HTTP_PROTOCOL_URL_HEADER) or source.startswith(
-                HTTPS_PROTOCOL_URL_HEADER
+                    HTTPS_PROTOCOL_URL_HEADER
             ):
                 params["cache"] = params.get("cache", True)
             source = FileStag.load(source, **params)
@@ -242,8 +242,8 @@ class Image(ImageBase):
         :return: True if the image currently in bgr or bgra format
         """
         return (
-            self.pixel_format == PixelFormat.BGR
-            or self.pixel_format == PixelFormat.BGRA
+                self.pixel_format == PixelFormat.BGR
+                or self.pixel_format == PixelFormat.BGRA
         )
 
     @property
@@ -288,18 +288,18 @@ class Image(ImageBase):
             return Image(self._pil_handle.crop(box=box))
         else:
             cropped = (
-                self._pixel_data[box[1] : box[3], box[0] : box[2], :]
+                self._pixel_data[box[1]: box[3], box[0]: box[2], :]
                 if len(self._pixel_data.shape) == 3
-                else self._pixel_data[box[1] : box[3] + 1, box[0] : box[2] + 1]
+                else self._pixel_data[box[1]: box[3] + 1, box[0]: box[2] + 1]
             )
             return Image(
                 cropped, framework=self.framework, pixel_format=self.pixel_format
             )
 
     def resize(
-        self,
-        size: Size2DTypes,
-        interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
+            self,
+            size: Size2DTypes,
+            interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
     ):
         """
         Resizes the image to given resolution (modifying this image directly)
@@ -335,9 +335,9 @@ class Image(ImageBase):
         self.__dict__["width"], self.__dict__["height"] = size
 
     def resized(
-        self,
-        size: Size2DTypes,
-        interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
+            self,
+            size: Size2DTypes,
+            interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
     ) -> Image:
         """
         Returns an image resized to given resolution
@@ -358,19 +358,19 @@ class Image(ImageBase):
             return Image(self.to_pil().resize(size, resample=resample_method))
 
     def resized_ext(
-        self,
-        size: Size2DTypes | None = None,
-        max_size: Size2DTypes
-        | int
-        | float
-        | tuple[int | None, int | None]
-        | None = None,
-        keep_aspect: bool = False,
-        target_aspect: float | None = None,
-        fill_area: bool = False,
-        factor: float | tuple[float, float] | None = None,
-        interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
-        background_color=Color(0.0, 0.0, 0.0, 1.0),
+            self,
+            size: Size2DTypes | None = None,
+            max_size: Size2DTypes
+                      | int
+                      | float
+                      | tuple[int | None, int | None]
+                      | None = None,
+            keep_aspect: bool = False,
+            target_aspect: float | None = None,
+            fill_area: bool = False,
+            factor: float | tuple[float, float] | None = None,
+            interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
+            background_color=Color(0.0, 0.0, 0.0, 1.0),
     ) -> Image:
         """
         Returns a resized variant of the image with many configuration
@@ -459,7 +459,7 @@ class Image(ImageBase):
                 "fill_area==True without keep_aspect==True has no effect. "
                 "If you anyway just want to "
                 + 'fill the whole area with the image just provide "size" and '
-                'set "fill_area" to False'
+                  'set "fill_area" to False'
             )
         if target_aspect is not None:
             factor = (1.0, 1.0) if factor is None else factor
@@ -470,7 +470,7 @@ class Image(ImageBase):
                     '"target_aspect" can not be combined with "size" but just '
                     "with factor. "
                     + 'Use "size" + "keep_aspect" instead if you know the desired '
-                    "target size already."
+                      "target size already."
                 )
             # if the image shall also be resized
             size = int(round(self.width * factor[0])), int(
@@ -519,7 +519,7 @@ class Image(ImageBase):
         return Image(handle)
 
     def compute_rescaled_size_from_max_size(
-        self, max_size, org_size: Size2D
+            self, max_size, org_size: Size2D
     ) -> tuple[int, int]:
         """
         Computes the new size of an image after rescaling with a given
@@ -553,7 +553,7 @@ class Image(ImageBase):
         )
 
     def convert(
-        self, pixel_format: PixelFormat | str, bg_fill: Union["Color", None] = None
+            self, pixel_format: PixelFormat | str, bg_fill: Union["Color", None] = None
     ) -> Image:
         """
         Converts the image's pixel format to another one for example from
@@ -674,6 +674,8 @@ class Image(ImageBase):
             pixel_data = np.array(image)
         if self.pixel_format == desired_format:
             return pixel_data
+        if self.pixel_format == PixelFormat.RGBA and desired_format == PixelFormat.RGB:
+            return pixel_data[:, :, 0:3]
         to_rgb = desired_format == PixelFormat.RGB or desired_format == PixelFormat.RGBA
         if self.pixel_format not in {PixelFormat.RGB, PixelFormat.RGBA} and to_rgb:
             return self.normalize_to_rgb(pixel_data, input_format=self.pixel_format)
@@ -801,10 +803,10 @@ class Image(ImageBase):
         return Canvas(target_image=self)
 
     def save(
-        self,
-        target: str,
-        quality: int = 90,
-        **params,
+            self,
+            target: str,
+            quality: int = 90,
+            **params,
     ):
         """
         Saves the image to disk
@@ -827,10 +829,10 @@ class Image(ImageBase):
             return data is not None
 
     def encode(
-        self,
-        filetype: str | tuple[str, int] = "png",
-        quality: int = 90,
-        background_color: Color | None = None,
+            self,
+            filetype: str | tuple[str, int] = "png",
+            quality: int = 90,
+            background_color: Color | None = None,
     ) -> bytes | None:
         """
         Compresses the image and returns the compressed file's data as bytes
@@ -850,16 +852,16 @@ class Image(ImageBase):
         image = self
         if isinstance(filetype, tuple):
             assert (
-                len(filetype) == 2
-                and isinstance(filetype[0], str)
-                and isinstance(filetype[1], int)
+                    len(filetype) == 2
+                    and isinstance(filetype[0], str)
+                    and isinstance(filetype[1], int)
             )
             filetype, quality = filetype
         filetype = filetype.lstrip(".").lower()
         if filetype == "jpg":
             filetype = "jpeg"
         if self.is_transparent() and (
-            filetype != "png" or background_color is not None
+                filetype != "png" or background_color is not None
         ):
             from scistag.imagestag import Canvas
 
@@ -938,8 +940,8 @@ class Image(ImageBase):
         :return: True if the image is transparent
         """
         return (
-            self.pixel_format == PixelFormat.BGRA
-            or self.pixel_format == PixelFormat.RGBA
+                self.pixel_format == PixelFormat.BGRA
+                or self.pixel_format == PixelFormat.RGBA
         )
 
     def get_raw_data(self) -> bytes:

@@ -20,10 +20,29 @@ class ElementContext:
     context is left or the :meth:`close` method is called explicitly.
     """
 
-    def __init__(self, builder: "LogBuilder", closing_code: {}):
+    def __init__(self, builder: "LogBuilder", closing_code: str | dict,
+                 opening_code: str | dict | None = None,
+                 html_only: bool = False):
         """
         :param builder: The builder object with which we write to the log
+        :param closing_code: The code to be inserted into the different output formats
+            when the element is closed.
+        :param opening_code: The code to be inserted into the different output formats
+            when the element is opened.
+        :param html_only: If provided the code will be inserted into the HTML and
+            the markdown output.
         """
+        if closing_code is not None and isinstance(closing_code, str):
+            closing_code = {"html": closing_code}
+            if html_only:
+                closing_code["md"] = closing_code["html"]
+        if opening_code is None:
+            opening_code = {}
+        if isinstance(opening_code, str):
+            opening_code = {"html": opening_code}
+            if html_only:
+                opening_code["md"] = opening_code["html"]
+
         self.builder = builder
         """The build element which executes the page rendering"""
         self.page = builder.page_session
@@ -32,6 +51,16 @@ class ElementContext:
         """The code which shall be appended when this context is closed"""
         self._closed = False
         """Defines if the context has been closed already"""
+        for key, value in opening_code.items():
+            if key in self.page.log_formats:
+                from scistag.vislog.visual_log import HTML, MD, TXT
+
+                if key == HTML:
+                    self.page.write_html(value)
+                elif key == MD:
+                    self.page.write_md(value)
+                elif key == TXT:
+                    self.page.write_txt(value)
 
     def __enter__(self):
         return self

@@ -5,10 +5,12 @@ currently active in which thread.
 from __future__ import annotations
 
 import threading
-from typing import Union
+from typing import Union, TYPE_CHECKING
 
 from scistag.common import StagLock
-from scistag.vislog import LogBuilder
+
+if TYPE_CHECKING:
+    from scistag.vislog import LogBuilder
 
 
 class LogBuilderRegistry:

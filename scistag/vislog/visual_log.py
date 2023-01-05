@@ -1065,15 +1065,28 @@ class VisualLog:
         return VisualLogAutoReloader.is_main(2)
 
     @staticmethod
-    def get_default_options() -> "LogOptions":
+    def get_default_options(log_to_disk: bool | None = None,
+                            formats: set[str] = None,
+                            single_file: bool | None = None) -> "LogOptions":
         """
         Returns the default log options
 
+        :param log_to_disk: Defines if the results shall be logged to disk
+        :param single_file: Defines if the output (of each output type) shall be
+            stored in a single file.
+        :param formats: Defines the output formats such as "html", "md" and "txt"
         :return: The default configuration which can be modified and then passed into
         the constructor of the log.
         """
         from scistag.vislog.options import LogOptions
-        return LogOptions()
+        options = LogOptions()
+        if formats is not None:
+            options.output.formats_out = formats
+        if log_to_disk is not None:
+            options.output.log_to_disk = log_to_disk
+        if single_file is not None:
+            options.output.single_file = single_file
+        return options
 
     @staticmethod
     def setup_micro_log(target_dir: str = "./"):

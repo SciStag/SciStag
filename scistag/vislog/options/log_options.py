@@ -133,7 +133,7 @@ class LogOutputOptions(BaseModel):
     tmp_dir: Union[str, None] = None
     """A directory in which temporary files can be stored. Will be deleted upon 
     finalization."""
-    clear_target_dir: bool = False
+    clear_target_dir: bool = True
     """Defines if the target dir shall be deleted before starting (take care!)"""
     formats_out: Union[set[str], None] = Field(default_factory=lambda: {"html"})
     """A set of the formats to export.
@@ -141,6 +141,9 @@ class LogOutputOptions(BaseModel):
         "html", "txt" (pure Text)  and "md" (markdown) are supported.
 
         By default only html files will be created."""
+    single_file: bool = True
+    """Defines if all content of the (non-live) output file shall be stored in a
+    single file"""
 
 
 class LogOptions(BaseModel):

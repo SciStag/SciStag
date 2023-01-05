@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from matplotlib import pyplot as plt
     from scistag.vislog.sessions.page_session import PageSession
     from scistag.vislog.common.page_update_context import PageUpdateContext
+    from .common.element_context import ElementContext
     from .extensions.test_helper import TestHelper
     from .extensions.pyplot_log_context import PyPlotLogContext
     from .extensions.markdown_logger import MarkdownLogger
@@ -50,6 +51,7 @@ if TYPE_CHECKING:
     from .extensions.time_logger import TimeLogger
     from .extensions.basic_logger import BasicLogger
     from .extensions.build_logger import BuildLogger
+    from .extensions.emoji_logger import EmojiLogger
     from .extensions.service_extension import (
         LogServiceExtension,
         PublishingInfo,
@@ -94,12 +96,12 @@ class LogBuilder:
     """
 
     def __init__(
-        self,
-        log: "VisualLog",
-        page_session: Union["PageSession", None] = None,
-        nested: bool = False,
-        params: dict | BaseModel | Any | None = None,
-        **kwargs,
+            self,
+            log: "VisualLog",
+            page_session: Union["PageSession", None] = None,
+            nested: bool = False,
+            params: dict | BaseModel | Any | None = None,
+            **kwargs,
     ):
         """
         :param log: The log to which the content shall be added.
@@ -144,6 +146,10 @@ class LogBuilder:
         self._time: Union["TimeLogger", None] = None
         """
         Helper class for time measuring and logging times to the log
+        """
+        self._emoji: Union["EmojiLogger", None] = None
+        """
+        Helper class for adding emojis to the log
         """
         self._log: Union["BasicLogger", None] = None
         """
@@ -304,7 +310,7 @@ class LogBuilder:
         return result
 
     def add(
-        self, content: LogableContent, br: bool = False, mimetype: str | None = None
+            self, content: LogableContent, br: bool = False, mimetype: str | None = None
     ) -> LogBuilder:
         """
         Adds the provided content to the log.
@@ -337,7 +343,7 @@ class LogBuilder:
         import pandas as pd
 
         if hasattr(content, "to_html") and not isinstance(
-            content, (pd.DataFrame, pd.Series)
+                content, (pd.DataFrame, pd.Series)
         ):
             self.html(content.to_html())
             return self
@@ -386,14 +392,41 @@ class LogBuilder:
                 return self
         self.text(str(content), br=br)
 
-    def title(self, text: str) -> LogBuilder:
+    def title(self, text: str = "") -> Union[LogBuilder, ElementContext]:
         """
         Adds a title to the log
 
         :param text: The title's text
+        :return: The builder if a text was passed, otherwise a context to insert
+            custom text and elements into the heading.
+        """
+        return self.sub(text, level=1)
+
+    def sub(self, text: str = "", level: int = 2) -> Union[LogBuilder, ElementContext]:
+        """
+        Adds a sub title to the log
+
+        :param text: The text to add to the log
+        :param level: The title level (0..5)
         :return: The builder
         """
-        self.sub(text, level=1)
+        if text == "":
+            from .common.element_context import ElementContext
+            return ElementContext(self, closing_code=f"</h{level}>",
+                                  opening_code=f"<h{level}>",
+                                  html_only=True)
+
+        assert 0 <= level <= 5
+        md_level = "#" * level
+        escaped_lines = html.escape(text)
+        for cur_row in escaped_lines.split("\n"):
+            self.add_html(f"<h{level}>{cur_row}</h{level}>\n")
+        self.add_md(f"{md_level} {text}")
+        if self.add_txt(text) and level <= 4:
+            character = "=" if level < 2 else "-"
+            self.add_txt(character * len(text))
+        self.add_txt("")
+        self.handle_modified()
         return self
 
     def text(self, text: str, br: bool = True) -> LogBuilder:
@@ -464,47 +497,6 @@ class LogBuilder:
         """
         self.add_html('<div style="break-after:page"></div>')
         self.add_txt(f"\n{'_' * 40}\n", md=True)
-        return self
-
-    def sub(self, text: str, level: int = 2) -> LogBuilder:
-        """
-        Adds a sub title to the log
-
-        :param text: The text to add to the log
-        :param level: The title level (0..5)
-        :return: The builder
-        """
-        assert 0 <= level <= 5
-        md_level = "#" * level
-        escaped_lines = html.escape(text)
-        for cur_row in escaped_lines.split("\n"):
-            self.add_html(f"<h{level}>{cur_row}</h{level}>\n")
-        self.add_md(f"{md_level} {text}")
-        if self.add_txt(text) and level <= 4:
-            character = "=" if level < 2 else "-"
-            self.add_txt(character * len(text))
-        self.add_txt("")
-        self.handle_modified()
-        return self
-
-    def sub_x3(self, text: str) -> LogBuilder:
-        """
-        Adds a subtitle to the log
-
-        :param text: The text to add to the log
-        :return: The builder
-        """
-        self.sub(text, level=3)
-        return self
-
-    def sub_x4(self, text: str) -> LogBuilder:
-        """
-        Adds a subtitle to the log
-
-        :param text: The text to add to the log
-        :return: The builder
-        """
-        self.sub(text, level=4)
         return self
 
     def sub_test(self, text: str) -> LogBuilder:
@@ -595,6 +587,17 @@ class LogBuilder:
         if self._time is None:
             self._time = TimeLogger(self)
         return self._time
+
+    @property
+    def emoji(self):
+        """
+        Provides methods to insert Emojis into the log
+        """
+        from .extensions.emoji_logger import EmojiLogger
+
+        if self._emoji is None:
+            self._emoji = EmojiLogger(self)
+        return self._emoji
 
     @property
     def log(self) -> "BasicLogger":
@@ -761,12 +764,12 @@ class LogBuilder:
         )
 
     def figure(
-        self,
-        figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
-        name: str | None = None,
-        alt_text: str | None = None,
-        _out_image_data: io.IOBase | None = None,
-        br: bool = False,
+            self,
+            figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
+            name: str | None = None,
+            alt_text: str | None = None,
+            _out_image_data: io.IOBase | None = None,
+            br: bool = False,
     ):
         """
         Adds a figure to the log
@@ -804,10 +807,10 @@ class LogBuilder:
         self.image(image_data, name, alt_text=alt_text, br=br)
 
     def pyplot(
-        self,
-        assertion_name: str | None = None,
-        assertion_hash: str | None = None,
-        br: bool = False,
+            self,
+            assertion_name: str | None = None,
+            assertion_hash: str | None = None,
+            br: bool = False,
     ) -> "PyPlotLogContext":
         """
         Opens a matplotlib context to add a figure directly to the plot.
@@ -859,18 +862,6 @@ class LogBuilder:
         """
         return text.replace("\n\r", "\n").replace("\n", "<br>")
 
-    def add_html(self, html_code: str | bytes):
-        """
-        Adds html code directly of the HTML section of this log.
-
-        Do not use this for logging to multiple output formats. For that
-        case use :meth:`html`.
-
-        :param html_code: The html code
-        :return: True if txt logging is enabled
-        """
-        self.page_session.write_html(html_code)
-
     def create_backup(self) -> LogBackup:
         """
         Creates a backup of the log's content so it can for example be
@@ -913,6 +904,20 @@ class LogBuilder:
         """
         return self.service.publish(path, content, **kwargs)
 
+    def add_html(self, html_code: str | bytes):
+        """
+        Adds html code directly of the HTML section of this log.
+
+        Do not use this for logging to multiple output formats. For that
+        case use :meth:`html`.
+
+        :param html_code: The html code
+        :return: True if txt logging is enabled
+        """
+        if self.md.html_only:
+            self.page_session.write_md(html_code, no_break=True)
+        self.page_session.write_html(html_code)
+
     def add_md(self, md_code: str, no_break: bool = False):
         """
         Adds markdown code directly of the markdown section of this log.
@@ -924,6 +929,8 @@ class LogBuilder:
         :param no_break: If defined no line break will be added
         :return: True if txt logging is enabled
         """
+        if self.md.html_only:
+            return
         self.page_session.write_md(md_code, no_break=no_break)
 
     def add_txt(self, txt_code: str, console: bool = True, md: bool = False):

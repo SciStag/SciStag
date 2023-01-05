@@ -342,7 +342,7 @@ class EmojiDb:
     @classmethod
     def find_emojis_by_name(
         cls, name_mask: str, md: bool = False, find_all: bool = False
-    ):
+    ) -> list[EmojiInfo]:
         """
         Returns all emojis which match the defined search pattern
 

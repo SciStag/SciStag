@@ -219,7 +219,7 @@ class PageSession:
         self.cur_element.add_data(HTML, html_code)
         return True
 
-    def write_md(self, md_code: str, no_break: bool = False):
+    def write_md(self, md_code: str | bytes, no_break: bool = False):
         """
         The markdown code to add
 
@@ -229,8 +229,11 @@ class PageSession:
         """
         if MD not in self.log_formats:
             return
-        new_text = md_code + ("" if no_break else "\n")
-        self.cur_element.add_data(MD, new_text.encode("utf-8"))
+        if isinstance(md_code, bytes):
+            self.cur_element.add_data(MD, md_code)
+        else:
+            new_text = md_code + ("" if no_break else "\n")
+            self.cur_element.add_data(MD, new_text.encode("utf-8"))
         return True
 
     def write_txt(self, txt_code: str, console: bool = True, md: bool = False):
