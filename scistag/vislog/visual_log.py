@@ -6,10 +6,13 @@ from __future__ import annotations
 import os
 import shutil
 import time
-from typing import TYPE_CHECKING, Callable, Union, Type, Literal
+from typing import TYPE_CHECKING, Callable, Union, Type, Literal, Any
+
+from pydantic import BaseModel
 
 import scistag
 from scistag.common import StagLock, Cache, StagApp
+from scistag.common.time import sleep_min
 from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Size2D, Size2DTypes
 from scistag.webstag.web_helper import WebHelper
@@ -95,6 +98,9 @@ the user or a class of a LogBuilder ancestor class of which we shall
 created an instance.
 """
 
+PARAMETER_TYPES = Union[dict, BaseModel, Any, None]
+"Set of parameter types which can be passed as params into a LogBuilder"
+
 
 class VisualLog:
     """
@@ -107,7 +113,7 @@ class VisualLog:
     To view the log live in your IDE next to your code:
     - Build the log via run_server.
     - For a detailed example see the camera-demo at
-        https://github.com/SciStag/SciStag/tree/main/scistag/examples/logstag
+        https://github.com/SciStag/SciStag/tree/main/scistag/examples/vislog
     - PyCharm: Ctrl-Shift-A -> Open Source Code From URL -> Paste the live
         url -> Click on the small PyCharm icon in the upper right corner
     - VS Code: Not supported yet. Open the /live URL above in a browser and
@@ -116,39 +122,21 @@ class VisualLog:
     """
 
     def __init__(
-        self,
-        title: str = "SciStag - VisualLog",
-        app: Literal["cute"] | None = None,
-        start_browser: bool = False,
-        resolution: Size2D | None = None,
-        ref_dir: str | None = None,
-        tmp_dir: str | None = None,
-        clear_target_dir: bool = False,
-        continuous_write=False,
-        refresh_time_s=0.25,
-        formats_out: set[str] | None = None,
-        embed_images: bool | None = None,
-        filetype: str | tuple[str, int] = "png",
-        max_fig_size: Size2DTypes | None = None,
-        cache_dir: str | None = None,
-        cache_version: int = 1,
-        cache_name: str = "",
-        auto_reload: bool | BuilderTypes = False,
-        target_dir: str = "./logs",
-        index_name: str = "index",
-        log_to_disk=False,
-        log_to_stdout=False,
-        debug: bool = False,
-        options: "LogOptions" | None = None,
+            self,
+            title: str = "SciStag - VisualLog",
+            app: Literal["cute"] | None = None,
+            start_browser: bool = False,
+            resolution: Size2D | None = None,
+            refresh_time_s=0.25,
+            cache_dir: str | None = None,
+            cache_version: int = 1,
+            cache_name: str = "",
+            auto_reload: bool | BuilderTypes = False,
+            debug: bool = False,
+            options: "LogOptions" | None = None,
     ):
         """
-        :param target_dir: The output directory
         :param title: The log's name
-        :param index_name: Defines the name of the log's index file. index by
-            default.
-
-            Extensions such as .html, .md and .txt will automatically
-            be added.
         :param app: Defines if the log shall behave like an application.
 
             In the future you will be able to pass here a application class
@@ -157,42 +145,9 @@ class VisualLog:
             an explicit installation of pyside6 (or above).
         :param start_browser: Defines if a browser shall be started when the
             log winds up a web server.
-        :param formats_out: A set of the formats to export.
-
-            "html", "txt" (pure Text)  and "md" (markdown) are supported.
-
-            By default only html files will be created.
-        :param ref_dir: The directory in which the reference data objects
-            can be stored.
-        :param tmp_dir: A directory in which temporary files can be stored.
-            Will be deleted upon finalization.
-        :param clear_target_dir: Defines if the target dir shall be deleted
-            before starting (take care!)
-        :param log_to_disk: Defines if the logger shall write it's results
-            to disk. False by default.
-        :param log_to_stdout: Defines if the system shall automatically log to
-            stdout via print as well. False by default.
-        :param embed_images: Defines if images shall be directly embedded into
-            the HTML log instead of being stored as separate files.
-
-            By default True if Markdown is not set as one of the "formats_out",
-            otherwise False by default as Markdown will need the files on disk.
-        :param continuous_write: Defines if the log shall be written to disk
-            after every added element. False by default.
         :param refresh_time_s: The time interval in seconds in which the
             auto-reloader html page (liveView.html) tries to refresh the page.
-            The lower the time the more often the page is refreshed.
-        :param max_fig_size: The optimum, maximum width and height for
-            embedded figures and images
-        :param filetype: The default output image format to store images
-            and figures with. "png" by default.
-
-            You can also pass the image format and image quality in a tuple
-            such as ("jpg", 60).
-
-            Alternatively "jpg" or "bmp" can be used (to minimize the bandwidth
-            or in the later case if you are the intranet w/ unlimited bandwidth
-            and want to host it live at maximum performance).
+            The lower the time the more often the page is refreshed (if required).
         :param cache_version: The cache version. 1 by default.
 
             When ever you change this version all old cache values will be
@@ -214,6 +169,11 @@ class VisualLog:
             values in the options set.
         """
         from scistag.vislog.options import LogOptions
+        import inspect
+
+        frm = inspect.stack()[1]
+        self.initial_module = inspect.getmodule(frm[0])
+        "Handle of the module from which this VisualLog instance was initialized"
 
         self.options = LogOptions() if options is None else options.copy(deep=True)
         """
@@ -228,16 +188,12 @@ class VisualLog:
         self.start_time = time.time()
         "The time stamp of when the log was creation"
         try:
-            if clear_target_dir and log_to_disk:
-                shutil.rmtree(target_dir)
+            if self.options.output.clear_target_dir and self.options.output.log_to_disk:
+                shutil.rmtree(self.options.output.target_dir)
         except FileNotFoundError:
             pass
-        if formats_out is None:
-            formats_out = {HTML}
-        self.index_name = index_name
-        """
-        The index file's name
-        """
+
+        formats_out = self.options.output.formats_out
         self._app = app
         "Defines the initial application to wind up with this log"
         self._resolution = resolution
@@ -255,13 +211,15 @@ class VisualLog:
         """
         self._title = title
         "The log's title"
-        self.target_dir = os.path.abspath(target_dir)
+        self.target_dir = os.path.abspath(self.options.output.target_dir)
         "The directory in which the logs shall be stored"
         # setup the cache
         do_auto_reload = (
-            isinstance(auto_reload, bool) and auto_reload
-        ) or auto_reload is not None
+                                 isinstance(auto_reload, bool) and auto_reload
+                         ) or auto_reload is not None
         self._setup_cache(do_auto_reload, cache_version, cache_dir, cache_name)
+        ref_dir = self.options.output.ref_dir
+        tmp_dir = self.options.output.tmp_dir
         self.ref_dir = FilePath.norm_path(
             self.target_dir + "/ref" if ref_dir is None else ref_dir
         )
@@ -270,10 +228,8 @@ class VisualLog:
             self.target_dir + "/temp" if tmp_dir is None else tmp_dir
         )
         "Output directory for temporary files"
-        if log_to_disk:
+        if self.options.output.log_to_disk:
             os.makedirs(self.target_dir, exist_ok=True)
-        self.log_to_disk = log_to_disk
-        "Defines if the images and the html data shall be written to disk"
         self.log_images = True
         "Defines if images shall be logged to disk"
         self.refresh_time_s = refresh_time_s
@@ -281,6 +237,9 @@ class VisualLog:
         The time interval with which the log shall be refreshed when using
         the liveViewer (see Live_view)
         """
+        max_fig_size = self.options.style.image.max_fig_size
+        embed_images = self.options.style.image.max_fig_size
+        filetype = self.options.style.image.default_filetype
         if max_fig_size is not None and not isinstance(max_fig_size, Size2D):
             max_fig_size = Size2D(max_fig_size)
         else:
@@ -298,8 +257,6 @@ class VisualLog:
         """
         Contains the log data for each output type
         """
-        self.continuous_write = continuous_write
-        "If defined the output logs will be updated after every log"
         self.markdown_html = True
         "Defines if markdown shall support html embedding"
         self.log_txt_images = True
@@ -318,11 +275,13 @@ class VisualLog:
         "The image compression quality"
         self._consoles: list[Console] = []
         "Attached consoles to which the data shall be logged"
+
         from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
 
         self._renderers: dict[str, "LogRenderer"] = {
             HTML: HtmlLogRenderer(title=self._title)
         }
+
         "The renderers for the single supported formats"
         self._terminated = False
         """
@@ -332,8 +291,6 @@ class VisualLog:
         self._server: Union["WebStagServer", None] = None
         "The web server (if one was being started via :meth:`run_server`)"
         # Statistics
-        self.log_to_stdout = log_to_stdout
-        "Defines if all log messages shall also be send to stdout via print"
         if do_auto_reload:
             self._events = self.cache.get(LOG_EVENT_CACHE_NAME, default=[])
         self._invalid = False
@@ -352,11 +309,10 @@ class VisualLog:
             log=self,
             builder=None,
             log_formats=self.log_formats,
-            index_name=index_name,
+            index_name=self.options.output.index_name,
             target_dir=self.target_dir,
-            continuous_write=self.continuous_write,
-            log_to_stdout=self.log_to_stdout,
-            log_to_disk=log_to_disk,
+            log_to_stdout=self.options.output.log_to_stdout,
+            log_to_disk=self.options.output.log_to_disk,
         )
         """Defines the initial default target page in which the page data ia stored"""
         self.pages = [self.default_page]
@@ -380,7 +336,7 @@ class VisualLog:
                 v.title("Hello world') 
         """
         self._testing = False
-        """
+        """        
         Defines if the log is run in test mode and e.g. shall not spawn a
         real http server
         """
@@ -390,19 +346,23 @@ class VisualLog:
         "List of live urls at which the main page of this log can be accessed"
         self._builder_handler: BuilderTypes | None = None
         "The builder being used"
-        self._auto_clear: bool = False
-        "Defines if the log shall be cleared for continuous logs"
-        self._continuous_build: bool = False
-        "Defines if the log shall be rebuilt continuously"
         self._auto_reload = auto_reload
         "Defines if auto-reloading is active"
         # execute auto-reloader if provided
-        if not isinstance(auto_reload, bool) and auto_reload is not None:
+        if auto_reload is not None:
+            if isinstance(auto_reload, bool):
+                if not auto_reload:
+                    return
+                builder = self.default_builder
+            else:
+                builder = auto_reload
+            self.default_builder = builder
             self.run_server(
-                host_name="127.0.0.1",
-                builder=auto_reload,
+                host_name=self.options.server.host_name,
+                port=self.options.server.port,
+                builder=builder,
                 auto_reload=True,
-                auto_reload_stag_level=2,
+                _auto_reload_stag_level=2,
             )
 
     def terminate(self):
@@ -478,7 +438,7 @@ class VisualLog:
         return self
 
     def create_web_service(
-        self, support_flask: bool = False, url_prefix: str = ""
+            self, support_flask: bool = False, url_prefix: str = ""
     ) -> "WebStagService":
         """
         Creates a web service which provides (for example) a blueprint you
@@ -502,22 +462,13 @@ class VisualLog:
         return service
 
     def run_server(
-        self,
-        builder: BuilderTypes | None = None,
-        host_name: str = "127.0.0.1",
-        port: int | tuple[int, int] = 8010,
-        url_prefix: str = "",
-        public_ips: str | list[str] | None = None,
-        continuous: bool | None = None,
-        wait: bool = True,
-        auto_clear: bool | None = None,
-        mt: bool = True,
-        test: bool = False,
-        server_logs: bool = False,
-        show_urls: bool = True,
-        auto_reload=False,
-        auto_reload_stag_level: 1 = 1,
-        **kwargs,
+            self,
+            builder: BuilderTypes | None = None,
+            test: bool = False,
+            auto_reload=False,
+            params: PARAMETER_TYPES = None,
+            _auto_reload_stag_level: 1 = 1,
+            **kwargs,
     ):
         """
         Hosts the log as web service.
@@ -534,92 +485,42 @@ class VisualLog:
 
             Instead of passing a builder callback you can as well as also
             just fill the log with content before running :meth:`run_server`.
-        :param host_name: The IP(s) to listen at.
-
-            - 127.0.0.1 = Local access only (default) as
-              "there is no place like localhost".
-            - "0.0.0.0" = Listen at all local network adapters
-        :param port: The port ot listen at or a port range to select the
-            first port within. 8010 by default. 0 for a random port.
-        :param url_prefix: The url prefix at which the service shall be hosted.
-
-            "" = At https://server
-            "log/" = At https://server/log
-        :param public_ips: If you run the service on a virtual machine in
-            the cloud you can pass its public IPs to log the correct
-            connection URls to the console.
-
-            If you pass "auto" as ip the public IP will be auto-detected via
-            ipify.
-        :param continuous: Defines if the run_server shall run until
-            :meth:`terminate` was called to update the logs content
-            continuously.
-
-            False by default.
-        :param wait: Defines if also a non-continuous log shall wait till
-            the log has been terminated. (via :meth:`terminate`) or the
-            application was killed via Ctrl-C.
-
-            Has no effect if threaded is False (because the server will anyway
-            block the further execution then) or if continuous is set to True.
-
-            Basically it acts like the "continuous" mode just with the
-            difference that the builder function is just called once.
-        :param auto_clear: Defines if then log shall be cleared automatically
-            when being rebuild with `continuous=True`.
-        :param mt: If set to true the server will be started in a
-            background thread and the method will return asap.
-
-            You have to pass `mt=True` if this log shall be updated
-            `continuous`ly.
-
-            If the log is dynamic, but you do not want to be stuck in this
-            function you can - instead of passing a builder - (optionally) just
-            call :meth:`clear_logs` to clear the log and when you are done
-            updating the log :meth:`write_to_disk` or just :meth:`render`
-            the update the page provided by the server,
-
-            Example:
-
-            ..  code-block: python
-
-                vl = VisualLog()
-                while True:
-                    vl.clear_logs()
-                    vl.text(time.time())
-                    vl.write_to_disk()
-                    time.sleep(vl.refresh_time_s)
         :param test: Defines if the server shall be created in test mode
             (just "virtually")
-        :param server_logs: Defines if the Flask and/or FastAPI logs shall
-            be enabled.
-        :param show_urls: Defines if the URLs at which the server can be
-            reached shall be shown upon start
         :param auto_reload: If swt to True the module calling this function
             will automatically be reloaded on-the-fly when ever it is
             modified and saved and the log will be rebuilt from scratch.
-
-            Note that this will override many of the other objects specified
-            in the call of this function such as
-
-            - mt - As multithreading is required to use this feature
-            - continuous - which is not supported yet.
-            - ...
-        :param auto_reload_stag_level: Defines which module shall be observed
+        :param _auto_reload_stag_level: Defines which module shall be observed
             and reloaded upon modifications.
 
             By default it is the method of the calling module (1). If you need
             e.g. to track the caller's caller (2) increase this number
             accordingly.
+        :param params: Defines the parameters which shall be passed into the
+            builder when it's being created.
+
+            The data needs to be of the class dict, BaseModel (pydantic) or
+            a Python dataclass.
         :param kwargs: Additional parameters which shall be passed to the
-            WebStagServer upon creation.
+            builder upon creation.
         """
+        mt: bool = self.options.run.mt
+        "Use multi-threading"
+        continuous = self.options.run.continuous
+        "Rebuild continuously?"
+        auto_clear = self.options.run.auto_clear
+        "Clear the log on every rebuild turn?"
+        wait = self.options.run.wait
+        "Defines if the function shall run until explicitly terminated"
         test = self._testing or test
         self._testing = test
         if builder is not None:
-            builder = self.prepare_builder(builder, self.default_page)
-        self._auto_clear = auto_clear
-        self._continuous_build = continuous
+            builder = self.prepare_builder(
+                builder, self.default_page, params=params, kwargs=kwargs
+            )
+            self.default_builder = builder
+        else:
+            builder = self.default_builder
         self._builder_handler = builder
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
@@ -636,22 +537,21 @@ class VisualLog:
             self.handle_page_events()
             VisualLogAutoReloader.start(
                 log=self,
-                host_name=host_name,
-                port=port,
-                public_ips=public_ips,
-                url_prefix=url_prefix,
-                _stack_level=auto_reload_stag_level + 1,
+                server=True,
+                _stack_level=_auto_reload_stag_level + 1,
             )
             return
         from scistag.webstag.server import WebStagServer
 
-        service = self.create_web_service(support_flask=True, url_prefix=url_prefix)
+        service = self.create_web_service(
+            support_flask=True, url_prefix=self.options.server.url_prefix
+        )
         server = WebStagServer(
-            host_name=host_name,
-            port=port,
+            host_name=self.options.server.host_name,
+            port=self.options.server.port,
             services=[service],
-            silent=not server_logs,
-            **kwargs,
+            silent=not self.options.server.server_logs,
+            **self.options.server.arguments,
         )
         port = server.port
         self._server = server
@@ -666,10 +566,12 @@ class VisualLog:
                     raise ValueError(_CONTINUOUS_REQUIRED_BG_THREAD)
         else:
             continuous = False
+        public_ips = self.options.server.public_ips
         if public_ips is not None:  # clean public IPs
             if isinstance(public_ips, str):
                 public_ips = [public_ips]
         else:
+            host_name = self.options.server.host_name
             public_ips = [host_name]
             if host_name != "127.0.0.1" and host_name != "localhost":
                 public_ips.append("localhost")
@@ -683,12 +585,13 @@ class VisualLog:
         protocol = "http://"
         if "localhost" not in public_ips and "127.0.0.1" not in public_ips:
             public_ips.append("127.0.0.1")
+        url_prefix = self.options.server.url_prefix
         for cur_ip in public_ips:
             if cur_ip == "0.0.0.0":
                 continue
             self.urls.append(f"{protocol}{cur_ip}:{port}{url_prefix}")
             self.live_urls.append(f"{protocol}{cur_ip}:{port}{url_prefix}/live")
-        if show_urls:
+        if self.options.server.show_urls:
             print("\nVisualLog web service started\n")
             print("Connect at:")
             for cur_ip in public_ips:
@@ -718,8 +621,9 @@ class VisualLog:
         :param wait: Defines if the thread shall wait till the log is terminated
         :param test: Defines if the server runs in test mode
         """
-        if self._continuous_build:
-            auto_clear = self._auto_clear if self._auto_clear is not None else True
+        auto_clear = self.options.run.auto_clear
+        if self.options.run.continuous:
+            auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, self._builder_handler)
         elif mt:
             if self._builder_handler is not None:  # call once
@@ -730,13 +634,14 @@ class VisualLog:
                 self.sleep()
 
     def run(
-        self,
-        builder: BuilderTypes,
-        continuous: bool | None = None,
-        auto_clear: bool | None = None,
-        overwrite: bool | None = None,
-        auto_reload: bool = False,
-    ) -> bool:
+            self,
+            builder: BuilderTypes = None,
+            params: PARAMETER_TYPES = None,
+            continuous: bool | None = None,
+            auto_clear: bool | None = None,
+            auto_reload: bool = False,
+            **kwargs,
+    ) -> LogBuilder:
         """
         Helper function to update the log via a callback function.
 
@@ -756,6 +661,11 @@ class VisualLog:
             The function can be called once - if continuous=False was passed,
             continuously with a frequency of :attr:`refresh_time_s`
             (as passed to the constructor) if continuous=True was passed.
+        :param params: Defines the parameters which shall be passed into the
+            builder when it's being created.
+
+            The data needs to be of the class dict, BaseModel (pydantic) or
+            a Python dataclass.
         :param continuous: Defines if the run_server shall run until
             :meth:`terminate` was called to update the logs content
             continuously and write them to disk each turn.
@@ -763,12 +673,6 @@ class VisualLog:
             False by default.
         :param auto_clear: Defines if then log shall be cleared automatically
             when being rebuild with `continuous=True`.
-        :param overwrite: If set to False it will only call the `builder`
-            function if there is no recent version of the log stored on
-            disk.
-
-            If a valid log was found the `builder` method passed will never
-            be called.
         :param auto_reload: If swt to True the module calling this function
             will automatically be reloaded on-the-fly when ever it is
             modified and saved and the log will be rebuilt from scratch.
@@ -779,16 +683,21 @@ class VisualLog:
             - mt - As multithreading is required to use this feature
             - continous - which is is currently not supported yet.
             - ...
+        :param kwargs: The additional keyword arguments. Will automatically be passed
+            into the builder's initializer of a builder class was passed.
         :return: False if overwrite=False was passed and a log
             could successfully be loaded, so that no run was required.
         """
         if builder is not None:
-            builder = self.prepare_builder(builder, self.default_page)
-        self._auto_clear = auto_clear
-        self._continuous_build = continuous
+            builder = self.prepare_builder(
+                builder, self.default_page, params=params, kwargs=kwargs
+            )
+            self.default_builder = builder
+        if builder is None:
+            builder = self.default_builder
         self._builder_handler = builder
         self.start_time = time.time()
-        if self.log_to_disk and HTML in self.log_formats:
+        if self.options.output.log_to_disk and HTML in self.log_formats:
             self.urls.append(
                 "file://" + self.default_page.html_filename.replace("\\", "/")
             )
@@ -804,8 +713,8 @@ class VisualLog:
                 )
             self._run_builder(builder)
             self.handle_page_events()
-            VisualLogAutoReloader.start(log=self, host_name=None, _stack_level=2)
-            return True
+            VisualLogAutoReloader.start(log=self, server=False, _stack_level=2)
+            return self.default_builder
         if continuous is None:
             continuous = False
         if builder is None:
@@ -813,9 +722,6 @@ class VisualLog:
         if not continuous:
             if auto_clear is not None and auto_clear:
                 raise ValueError(_ONLY_AUTO_CLEAR_ON_CONTINUOUS)
-        else:
-            if overwrite is not None and not overwrite:
-                raise ValueError(_CONTINUOUS_REQUIRES_OVERWRITE)
         if not continuous:
             self._run_builder(builder)
             self.handle_page_events()
@@ -823,10 +729,10 @@ class VisualLog:
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
-        if self.log_to_disk and HTML in self.log_formats:
+        if self.options.output.log_to_disk and HTML in self.log_formats:
             if self._start_browser:
                 self._start_app_or_browser(self, url=self.default_page.html_filename)
-                return True
+        return self.default_builder
 
     def _run_builder(self, builder: BuilderTypes | None = None):
         """
@@ -836,12 +742,18 @@ class VisualLog:
         """
         if builder is not None:
             if getattr(builder, "build", None) is not None:
-                builder.build_page()
+                builder.build()
             else:
                 builder(self.default_builder)
         self.default_page.write_to_disk()
 
-    def prepare_builder(self, builder: BuilderTypes, page_session: PageSession):
+    def prepare_builder(
+            self,
+            builder: BuilderTypes,
+            page_session: PageSession,
+            params: PARAMETER_TYPES,
+            kwargs: dict,
+    ):
         """
         Prepapres the builder to be used for this log
 
@@ -849,13 +761,23 @@ class VisualLog:
             log or an ancestor of LogBuilder implementing at least the
             build_body method to do the same.
         :param page_session: Defines the target page to which the builder shall write
+        :param params: Defines the parameters which shall be passed into the
+            builder when it's being created.
+
+            The data needs to be of the class dict, BaseModel (pydantic) or
+            a Python dataclass.
+        :param kwargs: The additional keyword arguments. Will automatically be passed
+            into the builder's initializer of a builder class was passed.
         :return: The prepared build object
         """
         if isinstance(builder, type):
             from .visual_log_builder import LogBuilder
 
             builder: Type[LogBuilder] | LogBuilder
-            builder = builder(log=self, page_session=page_session)
+            builder = builder(
+                log=self, page_session=page_session, params=params, **kwargs
+            )
+            self.default_builder = builder
             if not isinstance(builder, LogBuilder):
                 raise TypeError("No valid LogBuilder base class provided")
         return builder
@@ -935,8 +857,9 @@ class VisualLog:
             next_event = self.handle_page_events()
             max_sleep_time = self.refresh_time_s
             if next_event is not None:
-                max_sleep_time = max(min(max_sleep_time, next_event - time.time()), 0)
-            time.sleep(max_sleep_time)
+                max_sleep_time = max(min(max_sleep_time, next_event - time.time()),
+                                     1.0 / 120)
+            sleep_min(max_sleep_time)
             if self._testing:
                 break
 
@@ -1039,11 +962,11 @@ class VisualLog:
             self._update_counter = 0
 
     def _setup_cache(
-        self,
-        auto_reload: bool,
-        cache_version: str | int,
-        cache_dir: str,
-        cache_name: str,
+            self,
+            auto_reload: bool,
+            cache_version: str | int,
+            cache_dir: str,
+            cache_name: str,
     ):
         """
         Configures the data cache
@@ -1072,8 +995,8 @@ class VisualLog:
 
             auto_reload_cache = VisualLogAutoReloader.get_cache_backup()
             if (
-                auto_reload_cache is not None
-                and auto_reload_cache.version != cache_version
+                    auto_reload_cache is not None
+                    and auto_reload_cache.version != cache_version
             ):
                 auto_reload_cache = None
         self._cache = (
@@ -1140,6 +1063,17 @@ class VisualLog:
         )
 
         return VisualLogAutoReloader.is_main(2)
+
+    @staticmethod
+    def get_default_options() -> "LogOptions":
+        """
+        Returns the default log options
+
+        :return: The default configuration which can be modified and then passed into
+        the constructor of the log.
+        """
+        from scistag.vislog.options import LogOptions
+        return LogOptions()
 
     @staticmethod
     def setup_micro_log(target_dir: str = "./"):

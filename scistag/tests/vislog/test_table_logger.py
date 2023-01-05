@@ -7,7 +7,7 @@ import pytest
 
 from . import vl
 from ...vislog import MDCode, VisualLog
-from ...vislog.options import LTableOptions
+from ...vislog.options import LogTableOptions
 
 
 def test_basics_logging_methods():
@@ -108,7 +108,7 @@ def test_custom_class():
 
     :return:
     """
-    options = LTableOptions()
+    options = LogTableOptions()
 
     temp_log = VisualLog()
     temp_log.default_builder.test.checkpoint("custom_css_table")

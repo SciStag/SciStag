@@ -26,26 +26,31 @@ from scistag.vislog.options import LogOptions
 
 from scistag.vislog.visual_log import VisualLog, HTML, MD
 from scistag.plotstag import Figure, Plot, MPHelper
-
-MIMETYPE_MARKDOWN = "text/markdown"
-
-MIMETYPE_HTML = "text/html"
+from .log_builder_registry import LogBuilderRegistry
+from ..webstag.mime_types import MIMETYPE_MARKDOWN, MIMETYPE_HTML
 
 if TYPE_CHECKING:
     import pandas as pd
     from matplotlib import pyplot as plt
     from scistag.vislog.sessions.page_session import PageSession
     from scistag.vislog.common.page_update_context import PageUpdateContext
-    from scistag.vislog.extensions.pyplot_log_context import PyPlotLogContext
-    from scistag.vislog.extensions.markdown_logger import MarkdownLogger
-    from scistag.vislog.extensions.pandas_logger import PandasLogger
-    from scistag.vislog.extensions.numpy_logger import NumpyLogger
-    from scistag.vislog.extensions.cell_logger import CellLogger
-    from scistag.vislog.extensions.collection_logger import CollectionLogger
-    from scistag.vislog.extensions.widget_logger import WidgetLogger
-    from scistag.vislog.extensions.alignment_logger import AlignmentLogger
-    from scistag.vislog.extensions.style_context import StyleContext
-    from scistag.vislog.extensions.service_extension import (
+    from .extensions.test_helper import TestHelper
+    from .extensions.pyplot_log_context import PyPlotLogContext
+    from .extensions.markdown_logger import MarkdownLogger
+    from .extensions.table_logger import TableLogger
+    from .extensions.pandas_logger import PandasLogger
+    from .extensions.numpy_logger import NumpyLogger
+    from .extensions.cell_logger import CellLogger
+    from .extensions.collection_logger import CollectionLogger
+    from .extensions.widget_logger import WidgetLogger
+    from .extensions.alignment_logger import AlignmentLogger
+    from .extensions.style_context import StyleContext
+    from .extensions.image_logger import ImageLogger
+    from .extensions.table_logger import TableLogger
+    from .extensions.time_logger import TimeLogger
+    from .extensions.basic_logger import BasicLogger
+    from .extensions.build_logger import BuildLogger
+    from .extensions.service_extension import (
         LogServiceExtension,
         PublishingInfo,
     )
@@ -89,10 +94,20 @@ class LogBuilder:
     """
 
     def __init__(
-        self, log: "VisualLog", page_session: Union["PageSession", None] = None
+        self,
+        log: "VisualLog",
+        page_session: Union["PageSession", None] = None,
+        nested: bool = False,
+        params: dict | BaseModel | Any | None = None,
+        **kwargs,
     ):
         """
         :param log: The log to which the content shall be added.
+        :param page_session: The page session (contains the logged outputs)
+        :param nested: Defines if the LogBuilder is nested within another LogBuilder's
+            result and shall thus not return the header and footer.
+        :param params: Additional parameters
+        :param kwargs: Additional keyword arguments
         """
         self.target_log: "VisualLog" = log
         self.page_session = page_session
@@ -107,37 +122,35 @@ class LogBuilder:
         any of these files changes the log should be rebuild.
         """
         "The main logging target"
-        from .extensions.test_helper import TestHelper
 
-        self.test = TestHelper(self)
+        self._test: Union["TestHelper", None] = None
         """
         Helper class for adding regression tests to the log.
         """
-        from .extensions.image_logger import ImageLogger
-
-        self.image = ImageLogger(self)
+        self._image: Union["ImageLogger", None] = None
         """
         Helper object for adding images to the log
         
         Can also be called directly to add a simple image to the log.
         """
-        from .extensions.table_logger import TableLogger
 
-        self.table = TableLogger(self)
+        self._table: Union["TableLogger", None] = None
         """
         Helper class for adding tables to the log.
         
         Can also be called directly to add a simple table to the log.
         """
-        from .extensions.time_logger import TimeLogger
 
-        self.time = TimeLogger(self)
+        self._time: Union["TimeLogger", None] = None
         """
         Helper class for time measuring and logging times to the log
         """
-        from .extensions.basic_logger import BasicLogger
-
-        self.log = BasicLogger(self)
+        self._log: Union["BasicLogger", None] = None
+        """
+        Provides methods for classical logging where you can flag each entry with
+        an individual priority to highlight important and or filter unimportant
+        entries. 
+        """
         self._md: Union["MarkdownLogger", None] = None
         """
         Markdown extension
@@ -171,6 +184,12 @@ class LogBuilder:
         Extension to temporarily modify the style of the current log region or cell
         and to insert custom CSS code into the document.
         """
+        self._build: Union["BuildLogger", None] = None
+        """
+        Extension for embedding other logs (such as LogBuilders) into the main log
+        to be able to build more complex, cleanly separated solutions and to enhance the
+        performance by parallelling their execution.
+"""
         from scistag.vislog.extensions.service_extension import LogServiceExtension
 
         self._service: LogServiceExtension = LogServiceExtension(builder=self)
@@ -186,6 +205,10 @@ class LogBuilder:
         # add upload widget extension
         path = FilePath.dirname(__file__)
         self.publish(
+            "visual_log.css",
+            path + "/css/visual_log.css",
+        )
+        self.publish(
             "vl_file_upload.css",
             path + "/templates/extensions/upload/vl_file_upload.css",
         )
@@ -193,11 +216,19 @@ class LogBuilder:
             "vl_file_upload.js",
             path + "/templates/extensions/upload/vl_file_upload.js",
         )
+        self.service.register_css("VlBaseCss", "visual_log.css")
         self.service.register_css("VlUploadWidget", "vl_file_upload.css")
         self.service.register_js("VlUploadWidget", "vl_file_upload.js")
 
         """The website's title"""
         self._provide_live_view()
+        self.params = params if params is not None else {}
+        """Defines the current set of parameters"""
+        self.nested = nested
+        """
+        Defines if this builder object is nested within another log and shall not
+        return header and footer in it's get_result() method.
+        """
 
     def build(self):
         """
@@ -206,37 +237,31 @@ class LogBuilder:
         This is usually the function you want to override to implement your
         own page builder.
         """
+        LogBuilderRegistry.register_builder(self)
+        from scistag.vislog.extensions.cell_sugar import LOG_CELL_METHOD_FLAG
+
+        init_module = self.target_log.initial_module
+
+        cell_methods = []
+
+        if init_module is not None:
+            for key, attr in self.target_log.initial_module.__dict__.items():
+                if isinstance(attr, types.FunctionType):
+                    if LOG_CELL_METHOD_FLAG in attr.__dict__:
+                        cell_methods.append(attr)
+
         for key, value in self.__class__.__dict__.items():
             attr = getattr(self, key)
             if isinstance(attr, types.MethodType):
-                if "__log_cell" in attr.__dict__:
-                    cell_config = attr.__dict__["__log_cell"]
-                    new_cell = self.cell.add(
-                        on_build=attr, **cell_config, _builder_method=attr
-                    )
+                if LOG_CELL_METHOD_FLAG in attr.__dict__:
+                    cell_methods.append(attr)
 
-    def build_page(self):
-        """
-        Builds the whole page including header, footers and other sugar.
-
-        Only overwrite this if you really want to do a more complex
-        customization.
-        """
-        self.build_header()
-        self.build()
-        self.build_footer()
-
-    def build_header(self):
-        """
-        Called to build the page's header and before the body
-        """
-        pass
-
-    def build_footer(self):
-        """
-        Called to build the page's footer and after the body
-        """
-        pass
+        for cur_method in cell_methods:
+            cell_config = cur_method.__dict__["__log_cell"]
+            _ = self.cell.add(
+                on_build=cur_method, **cell_config, _builder_method=cur_method
+            )
+        LogBuilderRegistry.remove_builder(self)
 
     @property
     def max_fig_size(self) -> Size2D:
@@ -528,6 +553,63 @@ class LogBuilder:
         return self._md
 
     @property
+    def test(self) -> "TestHelper":
+        """
+        Provides methods to build regression tests
+        """
+        from .extensions.test_helper import TestHelper
+
+        if self._test is None:
+            self._test = TestHelper(self)
+        return self._test
+
+    @property
+    def image(self) -> "ImageLogger":
+        """
+        Extension for adding images in various ways to the log
+        """
+        from .extensions.image_logger import ImageLogger
+
+        if self._image is None:
+            self._image = ImageLogger(self)
+        return self._image
+
+    @property
+    def table(self) -> "TableLogger":
+        """
+        Extensions for adding tables to the log.
+        """
+        from .extensions.table_logger import TableLogger
+
+        if self._table is None:
+            self._table = TableLogger(self)
+        return self._table
+
+    @property
+    def time(self) -> "TimeLogger":
+        """
+        Helper class for time measuring and logging times to the log
+        """
+        from .extensions.time_logger import TimeLogger
+
+        if self._time is None:
+            self._time = TimeLogger(self)
+        return self._time
+
+    @property
+    def log(self) -> "BasicLogger":
+        """
+        Provides methods for classical logging where you can flag each entry with
+        an individual priority to highlight important and or filter unimportant
+        entries.
+        """
+        from .extensions.basic_logger import BasicLogger
+
+        if self._log is None:
+            self._log = BasicLogger(self)
+        return self._log
+
+    @property
     def pd(self) -> "PandasLogger":
         """
         Methods to add Pandas content such as DataFrames and DataSeries
@@ -606,11 +688,32 @@ class LogBuilder:
         return self._style
 
     @property
+    def builder(self) -> "BuildLogger":
+        """
+        Extension for embedding other logs (such as LogBuilders) into the main log
+        to be able to build more complex, cleanly separated solutions and to enhance the
+        performance by parallelling their execution.
+        """
+        from .extensions.build_logger import BuildLogger
+
+        if self._build is None:
+            self._build = BuildLogger(self)
+        return self._build
+
+    @property
     def service(self) -> "LogServiceExtension":
         """
         Extension which allows the publishing of files and individual web services
         """
         return self._service
+
+    @classmethod
+    def current(cls) -> Union["LogBuilder", None]:
+        """
+        Returns the currently active log builder which is either handling an event
+        or rebuilding the log.
+        """
+        return LogBuilderRegistry.current_builder()
 
     def code(self, code: str) -> LogBuilder:
         """
@@ -892,21 +995,11 @@ class LogBuilder:
         on disk.
         """
         base_path = os.path.dirname(__file__)
-        css = FileStag.load(base_path + "/css/visual_log.css")
-        if self.page_session.log_to_disk:
-            FileStag.save(
-                f"{self.page_session.target_dir}/css/visual_log.css",
-                css,
-                create_dir=True,
-            )
-        self.service.publish("css/visual_log.css", css)
         import jinja2
 
         environment = jinja2.Environment()
-        css = FileStag.load_text(FilePath.absolute_comb("css/visual_log.css"))
         custom_code = self.service.get_embedding_code()
         properties = {
-            "css": css,
             "VL_CUSTOM_CODE": custom_code,
             "title": self._title,
             "reload_timeout": 2000,
@@ -967,3 +1060,33 @@ class LogBuilder:
         tasks shall be cancelled.
         """
         return self.target_log.terminated
+
+    def get_result(self) -> Any:
+        """
+        Returns the builder's results. That is usually the whole page, but in case
+        of usage as singleton and/or web service may also return other kinds of
+        data.
+
+        :return: The result data
+        """
+        result_data = {}
+        if self.nested:
+            for cur_format in self.options.output.formats_out:
+                index_name = self.page_session.get_index_name(cur_format)
+                if index_name is None:
+                    continue
+                result_data = {index_name: self.page_session.get_body(cur_format)}
+        else:
+            for cur_format in self.options.output.formats_out:
+                index_name = self.page_session.get_index_name(cur_format)
+                if index_name is None:
+                    continue
+                result_data = {index_name: self.page_session.get_page(cur_format)}
+        return result_data
+
+    def __enter__(self):
+        LogBuilderRegistry.register_builder(self)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        LogBuilderRegistry.remove_builder(self)

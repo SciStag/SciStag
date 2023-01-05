@@ -8,10 +8,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Union, Callable
 
 from scistag.vislog import BuilderExtension, LogBuilder
-from scistag.vislog.widgets.cell import Cell
+from scistag.vislog.widgets.cells import Cell
 
 if TYPE_CHECKING:
-    from scistag.vislog.widgets.cell import CellOnBuildCallback
+    from scistag.vislog.widgets.cells import CellOnBuildCallback
 
 
 class CellLogger(BuilderExtension):
@@ -39,6 +39,7 @@ class CellLogger(BuilderExtension):
         progressive: bool = False,
         interval_s: float | None = None,
         continuous: bool = False,
+        static: bool = False,
     ) -> Cell:
         """
         Begins a new content cell to which you can add content with any logging
@@ -55,6 +56,8 @@ class CellLogger(BuilderExtension):
             continuous.
         :param continuous: Defines if the cell shall updated automatically with the
             interval defined.
+        :param static: Defines if the cell is static and does not need any container
+            when being stored in the html file.
         :return: The content cell reference
         """
         cell = Cell(
@@ -62,6 +65,7 @@ class CellLogger(BuilderExtension):
             progressive=progressive,
             interval_s=interval_s,
             continuous=continuous,
+            static=static,
         )
         return cell
 
@@ -70,6 +74,7 @@ class CellLogger(BuilderExtension):
         progressive: bool = False,
         interval_s: float | None = None,
         continuous: bool = False,
+        static: bool = False,
         on_build: Union["CellOnBuildCallback", None] = None,
         _builder_method: Union[Callable, None] = None,
     ) -> Cell:
@@ -87,6 +92,8 @@ class CellLogger(BuilderExtension):
             continuous.
         :param continuous: Defines if the cell shall updated automatically with the
             interval defined.
+        :param static: Defines if the cell is static and does not need any container
+            when being stored in the html file.
         :param on_build: The method to be called when ever the cell was invalidated
             or if the update mode is set to continuous.
         :param _builder_method: The object method to which this cell is attached
@@ -97,6 +104,7 @@ class CellLogger(BuilderExtension):
             progressive=progressive,
             interval_s=interval_s,
             continuous=continuous,
+            static=static,
             on_build=on_build,
             _builder_method=_builder_method,
         )

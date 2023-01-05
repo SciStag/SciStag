@@ -20,7 +20,6 @@ class HtmlLogRenderer(LogRenderer):
         """
         super().__init__()
         self.title = title
-        self.css = FileStag.load_text(FilePath.absolute_comb("../css/visual_log.css"))
 
         new_body_template = FileStag.load_text(
             FilePath.absolute_comb("../templates/staticLog/default_log.html")
@@ -36,4 +35,4 @@ class HtmlLogRenderer(LogRenderer):
         self.set_footer_template(new_footer_template)
 
     def set_header_template(self, template: str, **params):
-        super().set_header_template(template, css=self.css, **params)
+        super().set_header_template(template, **params)

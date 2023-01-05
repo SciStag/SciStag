@@ -49,6 +49,24 @@ table.vl_log_table td, table.vl_log_table th {
     border: 1px solid black;
 }
 
+table.vl_data_table {
+    border-collapse: collapse;
+    background-color: white;
+    text-align: left;
+    font-family: Century Gothic, sans-serif;font-size: medium;
+}
+
+table.vl_data_table th { color: #305496; }
+
+table.vl_data_table td, table.vl_data_table th {
+    border: 1px solid black;
+    padding: 2px 20px 2px 4px;
+}
+
+table.vl_data_table tr:nth-child(odd) {background: #D9E1F2;}
+
+
+
 table.vl_log_table_seamless {
     border-collapse: collapse;
     padding: 0;

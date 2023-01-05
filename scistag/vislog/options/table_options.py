@@ -14,7 +14,7 @@ _TABLE_CLASS_SEAMLESS = "vl_log_table_seamless"
 "CSS style for a basic table without visible lines and padding"
 
 
-class LTableOptions(BaseModel):
+class LogTableOptions(BaseModel):
     """Defines the tables visual appearance"""
 
     seamless: bool = False
@@ -35,7 +35,7 @@ class LTableOptions(BaseModel):
             return self.html_class
         return _TABLE_CLASS_SEAMLESS if self.seamless else _TABLE_CLASS_DEFAULT
 
-    def clone(self) -> LTableOptions:
+    def clone(self) -> LogTableOptions:
         """
         Returns a copy of this option set
         """

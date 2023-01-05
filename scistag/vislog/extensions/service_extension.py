@@ -76,13 +76,15 @@ class LogServiceExtension(BuilderExtension):
                 raise FileNotFoundError(f"Published file {content} not found")
         if store is None and self.page_session.log_to_disk:
             store = True
-        if store:
+        if store and isinstance(content, (bytes, str)):
+            if isinstance(content, str):
+                content = FileStag.load(content)
             # store the file also on disk if the log is stored to disk
             FilePath.make_dirs(
                 FilePath.dirname(self.page_session.target_dir + "/" + path),
                 exist_ok=True,
             )
-            FileStag.save(self.page_session.target_dir + "/" + path)
+            FileStag.save(self.page_session.target_dir + "/" + path, content)
         info = PublishingInfo(relative_url=path)
         return info
 
@@ -164,20 +166,29 @@ class LogServiceExtension(BuilderExtension):
         """
         self.css_sources[name] = path
 
-    def get_embedding_code(self) -> str:
+    def get_embedding_code(self, static: bool = False) -> str:
         """
         Returns the embedded code which needs to be stored at the beginning of a new
         html file to load all Cascading Style Sheets and JavaScripts registered
         in this service.
 
+        :param static: Defines if all elements shall be embedded into the output file
         :return: The HTML code
         """
         css = ""
         js = ""
-        for key, path in self.css_sources.items():
-            css += f'<link rel="stylesheet" type="text/css" href="{path}" />\n'
-        for key, path in self.js_sources.items():
-            js += f'<script src="{path}"></script>\n'
+        if static:
+            for key, path in self.css_sources.items():
+                content = self.get_file(path).body.decode("utf-8")
+                css += f'<style>{content}</style>'
+            for key, path in self.js_sources.items():
+                content = self.get_file(path).body.decode("utf-8")
+                js += f'<script>{content}</script>\n'
+        else:
+            for key, path in self.css_sources.items():
+                css += f'<link rel="stylesheet" type="text/css" href="{path}"/>\n'
+            for key, path in self.js_sources.items():
+                js += f'<script src="{path}"></script>\n'
         return css + js
 
     def handle_file_upload(self, request: WebRequest):

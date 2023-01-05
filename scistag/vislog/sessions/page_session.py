@@ -4,6 +4,8 @@ and provides methods to modify and extend this content.
 """
 from __future__ import annotations
 
+import os
+import random
 import time
 from typing import Union, TYPE_CHECKING, Callable
 from collections import Counter
@@ -35,6 +37,36 @@ if TYPE_CHECKING:
     from scistag.vislog.common.page_update_context import PageUpdateContext
     from scistag.vislog import LogBuilder
 
+session_id_counter_set = set()
+"""Set storing the already used session IDs"""
+session_id_lock = StagLock()
+"""Lock for mt secure access to the sessions"""
+
+
+def create_unique_session_id():
+    """
+    Returns a (process) unique session id
+
+    :return: The session id
+    """
+    with session_id_lock:
+        max_int = 255
+        max_digits = 2
+        turns = 0
+        while True:
+            pid = os.getpid()
+            sid = f"{pid:04X}" + f"{random.randint(0, max_int):0{max_digits}X}"
+            turns += 1
+            if sid not in session_id_counter_set:
+                break
+            if turns >= 10:
+                # for the case someone really recreated the page very often and we
+                # need long IDs
+                max_int *= 2
+                turns = 0
+        session_id_counter_set.add(sid)
+        return sid
+
 
 class PageSession:
     """
@@ -43,15 +75,14 @@ class PageSession:
     """
 
     def __init__(
-        self,
-        log: "VisualLog",
-        builder: Union["LogBuilder", None],
-        log_formats: set[str] | None = None,
-        index_name: str = "",
-        target_dir: str = "",
-        continuous_write: bool = False,
-        log_to_stdout: bool = False,
-        log_to_disk: bool = False,
+            self,
+            log: "VisualLog",
+            builder: Union["LogBuilder", None],
+            log_formats: set[str] | None = None,
+            index_name: str = "",
+            target_dir: str = "",
+            log_to_stdout: bool = False,
+            log_to_disk: bool = False,
     ):
         """
         :param log: The target log instance
@@ -59,8 +90,6 @@ class PageSession:
         :param log_formats: The supported logging formats as string set
         :param index_name: The name of the index file
         :param target_dir: The target directory
-        :param continuous_write: Defines if modifications shall directly be written
-            to disk so no data is lost if e.g. the application or script crashes
         :param log_to_stdout: Defines if logging shall be forwarded to the stdout
             console
         :param log_to_disk: Defines if the content shall be written to disk
@@ -107,7 +136,6 @@ class PageSession:
         "The name of the html file to which we shall save"
         self._md_filename = self.target_dir + f"/{self.index_name}.md"
         "The name of the markdown file to which we shall save"
-        self.continuous_write = continuous_write
         self.log_to_stdout = log_to_stdout
         "Defines if basic log entries shall also be logged to stdout"
         self.log_to_disk = log_to_disk
@@ -154,6 +182,9 @@ class PageSession:
             builder.options if builder is not None else None
         )
         """Defines the log's options"""
+        self.session_id = create_unique_session_id()
+        """Unique session id to prevent name collision when parallelize log 
+        building"""
 
     def set_builder(self, builder: LogBuilder):
         """
@@ -186,8 +217,6 @@ class PageSession:
         if not isinstance(html_code, bytes):
             html_code = html_code.encode("utf-8")
         self.cur_element.add_data(HTML, html_code)
-        if self.continuous_write:
-            self.write_to_disk(formats={HTML})
         return True
 
     def write_md(self, md_code: str, no_break: bool = False):
@@ -202,8 +231,6 @@ class PageSession:
             return
         new_text = md_code + ("" if no_break else "\n")
         self.cur_element.add_data(MD, new_text.encode("utf-8"))
-        if self.continuous_write:
-            self.write_to_disk(formats={MD})
         return True
 
     def write_txt(self, txt_code: str, console: bool = True, md: bool = False):
@@ -225,8 +252,6 @@ class PageSession:
         if TXT not in self.log_formats:
             return
         self.cur_element.add_data(TXT, (txt_code + "\n").encode("utf-8"))
-        if self.continuous_write:
-            self.write_to_disk(formats={TXT})
         return True
 
     def _add_to_console(self, txt_code: str):
@@ -284,8 +309,7 @@ class PageSession:
         This method is multi-threading secure.
 
         Assumes that render() or write_to_disk() or render was called before
-        since the last change. This is not necessary if continuous_write is
-        enabled.
+        since the last change."
 
         :param format_type: The type of the page you want to receive
         :return: The page's content.
@@ -313,10 +337,10 @@ class PageSession:
             return self._page_lock, self._logs
 
     def render_element(
-        self,
-        name: str | None = None,
-        output_format: str = HTML,
-        backup: bool | None = None,
+            self,
+            name: str | None = None,
+            output_format: str = HTML,
+            backup: bool | None = None,
     ) -> (float, bytes):
         """
         Returns the element at given node, starting with the root element
@@ -389,7 +413,8 @@ class PageSession:
         with self._page_lock:
             self._body_backups = bodies
         # store html
-        custom_code = self.builder.service.get_embedding_code().encode("utf-8")
+        custom_code = self.builder.service.get_embedding_code(static=True).encode(
+            "utf-8")
         if HTML in formats:
             self.set_latest_page(
                 HTML,
@@ -413,7 +438,7 @@ class PageSession:
         return self
 
     def write_to_disk(
-        self, formats: set[str] | None = None, render=True
+            self, formats: set[str] | None = None, render=True
     ) -> PageSession:
         """
         Writes the rendered pages from all (or all specified) formats to
@@ -434,26 +459,26 @@ class PageSession:
         if self.log_to_disk:
             # store html
             if (
-                self._html_export
-                and self.html_filename is not None
-                and len(self.html_filename) > 0
-                and HTML in formats
+                    self._html_export
+                    and self.html_filename is not None
+                    and len(self.html_filename) > 0
+                    and HTML in formats
             ):
                 FileStag.save(self.html_filename, self.get_page(HTML))
                 # store markdown
             if (
-                self.md_export
-                and self._md_filename is not None
-                and len(self._md_filename) > 0
-                and MD in formats
+                    self.md_export
+                    and self._md_filename is not None
+                    and len(self._md_filename) > 0
+                    and MD in formats
             ):
                 FileStag.save(self._md_filename, self.get_page(MD))
             # store txt
             if (
-                self.txt_export
-                and self._txt_filename is not None
-                and len(self._txt_filename) > 0
-                and TXT in formats
+                    self.txt_export
+                    and self._txt_filename is not None
+                    and len(self._txt_filename) > 0
+                    and TXT in formats
             ):
                 FileStag.save(self._txt_filename, self.get_page(TXT))
         return self
@@ -497,6 +522,7 @@ class PageSession:
         result = name
         if self.name_counter[name] > 1 or digits > 0:
             result += f"_{self.name_counter[name]:0{digits}d}"
+        result += f"_{self.session_id}"
         return result
 
     def begin_update(self) -> "PageUpdateContext":
@@ -542,7 +568,7 @@ class PageSession:
         with self._page_lock:
             if self._event_target_page is not None:
                 return self._event_target_page.update_values_js(client_id, values)
-        with self._page_lock:
+        with (self._page_lock, self.builder):
             if self.last_client_id != client_id:  # page reloaded
                 return False
             self.builder.widget.sync_values(values)
@@ -556,27 +582,28 @@ class PageSession:
         :param client_id: The client's unique ID
         :return: Header data, Content data
         """
-        with self._page_lock:
+        with (self._page_lock, self.builder):
             if self._event_target_page is not None:
                 return self._event_target_page.get_events_js(client_id)
-        cur_time = time.time()
-        refresh_time = self.log.refresh_time_s
-        if (
-            cur_time - self.last_user_interaction
-            < self.user_interaction_performance_duration_s
-        ):
-            refresh_time = min(self.user_interaction_refresh_time, refresh_time)
-        if (
-            self.next_event_time is not None
-            and self.next_event_time - cur_time < refresh_time
-        ):
-            refresh_time = self.next_event_time - cur_time
-            if refresh_time < self.minimum_refresh_time:
-                refresh_time = self.minimum_refresh_time
+            cur_time = time.time()
+            refresh_time = self.log.refresh_time_s
+            if (
+                    cur_time - self.last_user_interaction
+                    < self.user_interaction_performance_duration_s
+            ):
+                refresh_time = min(self.user_interaction_refresh_time, refresh_time)
+            if (
+                    self.next_event_time is not None
+                    and self.next_event_time - cur_time < refresh_time
+            ):
+                refresh_time = self.next_event_time - cur_time
+                if refresh_time < self.minimum_refresh_time:
+                    refresh_time = self.minimum_refresh_time
 
-        refresh_time_ms = int(round(refresh_time * 1000))  # convert refresh time to ms
+            refresh_time_ms = int(
+                round(refresh_time * 1000)
+            )  # convert refresh time to ms
 
-        with self._page_lock:
             if self.last_client_id != client_id:  # page reloaded
                 if client_id in self.old_client_ids:
                     return (
@@ -604,8 +631,8 @@ class PageSession:
                 change_time = 0.0
                 for cur_element_ref in element_list:
                     if (
-                        self.element_update_times[cur_element_ref.path]
-                        < cur_element_ref.element.last_direct_change_time
+                            self.element_update_times[cur_element_ref.path]
+                            < cur_element_ref.element.last_direct_change_time
                     ):
                         modified_element_ref = cur_element_ref
                         change_time = cur_element_ref.element.last_direct_change_time
@@ -615,16 +642,16 @@ class PageSession:
                 path_start = modified_element_ref.path + "."
                 for element_name in self.element_update_times.keys():
                     if (
-                        element_name == modified_element_ref.path
-                        or element_name.startswith(path_start)
+                            element_name == modified_element_ref.path
+                            or element_name.startswith(path_start)
                     ):
                         self.element_update_times[element_name] = change_time
                 data = modified_element_ref.element.build(HTML)
                 return {
-                    "action": "setContent",
-                    "targetElement": modified_element_ref.name,
-                    "vlRefreshTime": refresh_time_ms,
-                }, data
+                           "action": "setContent",
+                           "targetElement": modified_element_ref.name,
+                           "vlRefreshTime": refresh_time_ms,
+                       }, data
 
     def begin_sub_element(self, name: str) -> LogElement:
         """
@@ -666,19 +693,26 @@ class PageSession:
 
     def handle_events(self) -> float | None:
         """
-        Handles the events
+        Runs the general event loop
 
         :return: The timestamp at which we assume the next event to occur
         """
-        with self._page_lock:
+        with (self._page_lock, self.builder):
+            embedded_event_time = None
             if self._event_target_page is not None:
-                self._event_target_page.handle_events()
-        next_event: float | None = None
-        next_event_time = self.builder.widget.handle_event_list()
-        if next_event_time is not None:
-            if next_event is None or next_event_time < next_event:
-                next_event = next_event_time
-        self.next_event_time = next_event_time
+                embedded_event_time = self._event_target_page.handle_events()
+            next_event: float | None = None
+            next_event_time = self.builder.widget.handle_event_list()
+            if embedded_event_time is not None:
+                if next_event_time is None:
+                    next_event_time = embedded_event_time
+                else:
+                    if embedded_event_time < next_event_time:
+                        next_event_time = embedded_event_time
+            if next_event_time is not None:
+                if next_event is None or next_event_time < next_event:
+                    next_event = next_event_time
+            self.next_event_time = next_event_time
         return next_event
 
     def handle_client_event(self, **params):
@@ -687,17 +721,14 @@ class PageSession:
 
         :param params: The event parameters
         """
-        with self._page_lock:
+        with (self._page_lock, self.builder):
             if self._event_target_page is not None:
                 self._event_target_page.handle_client_event(**params)
                 return
-        event_type = params.get("type", "")
-        if event_type.startswith("widget_"):
-            with self._page_lock:
-                self.builder.widget.handle_client_event(**params)
+            self.builder.widget.handle_client_event(**params)
 
     def _set_redirect_event_receiver(self, target_page: PageSession):
-        with self._page_lock:
+        with (self._page_lock, self.builder):
             self._event_target_page = target_page
 
     def update_last_user_interaction(self):
@@ -714,5 +745,20 @@ class PageSession:
         :param request: The web request
         :return: The response
         """
-        with self._page_lock:
+        with (self._page_lock, self.builder):
             return self.builder.service.handle_web_request(request)
+
+    def get_index_name(self, output_format: str) -> str | None:
+        """
+        Returns the name of the index file for given format
+
+        :param output_format: The output format of which the name shall be received
+        :return: The relative filename, e.g. "index.html"
+        """
+        if output_format == HTML:
+            return self.index_name + ".html"
+        if output_format == TXT:
+            return self.index_name + ".txt"
+        if output_format == MD:
+            return self.index_name + ".md"
+        return None

@@ -9,11 +9,10 @@ rebuilt in a given time interval or progressively extended.
 from __future__ import annotations
 
 import time
+from inspect import signature
 from typing import Union, Callable
 
 from scistag.vislog import LogBuilder
-from scistag.vislog.common.log_element import LogElement
-from scistag.vislog.sessions.page_session import PageSession
 from scistag.vislog.widgets import LWidget, LEvent
 
 _LEVENT_TYPE_CELL_BUILD = "LEVENT_CELL_BUILD"
@@ -36,7 +35,7 @@ class LCellBuildEvent(LEvent):
         super().__init__(event_type=_LEVENT_TYPE_CELL_BUILD, *args, **kwargs)
 
 
-CellOnBuildCallback = Union[Callable[[], None], None]
+CellOnBuildCallback = Union[Callable[[], None], Callable[[LogBuilder], None], None]
 "Callback function to be called when the cell shall be rebuild"
 
 
@@ -50,13 +49,14 @@ class Cell(LWidget):
     """
 
     def __init__(
-        self,
-        builder: LogBuilder,
-        interval_s: float | None = None,
-        continuous: bool = False,
-        progressive: bool = False,
-        on_build: CellOnBuildCallback = None,
-        _builder_method: Union[Callable, None] = None,
+            self,
+            builder: LogBuilder,
+            interval_s: float | None = None,
+            continuous: bool = False,
+            progressive: bool = False,
+            static: bool = False,
+            on_build: CellOnBuildCallback = None,
+            _builder_method: Union[Callable, None] = None,
     ):
         """
         :param builder: The builder object we are attached to
@@ -66,6 +66,8 @@ class Cell(LWidget):
             This is good if you do not clear the cell and add logging data continuously
             to the log. If progressive is set to true the cell will not be cleared upon
             a build call.
+        :param static: Defines if the cell is static and does not need any container
+            when being stored in the html file.
         :param on_build: The callback to be called when the cell shall be build
         :param _builder_method: The object method to which this cell is attached
         """
@@ -75,7 +77,8 @@ class Cell(LWidget):
             builder.cell[_builder_method.__name__] = self
         builder.begin_update()
         name = builder.page_session.reserve_unique_name("cell", digits=4)
-        builder.page_session.write_html(f'<div id="{name}" class="vl_log_cell">\n')
+        if not static:
+            builder.page_session.write_html(f'<div id="{name}" class="vl_log_cell">\n')
         super().__init__(builder=builder, name="cell", explicit_name=name)
         self.cell_name = name
         self.page_session.enter_element(self.sub_element)
@@ -85,6 +88,8 @@ class Cell(LWidget):
         div region to the html output)"""
         self._closed = False
         """Defines if the element was closed (left) already after it was entered"""
+        self._static = static
+        """Defines if the cell is static and can not be individually modified"""
         self.on_build: CellOnBuildCallback = on_build
         """Function to be called when the cell shall be (re-)built"""
         self.progressive: bool = progressive
@@ -109,6 +114,8 @@ class Cell(LWidget):
         if self.interval_s is not None and self.continuous:
             self._next_tick = time.time() + self.interval_s
         self.build()
+        if not static:
+            self.page_session.write_html(f"</div><!-- {self.cell_name} -->\n")
 
     def enter(self) -> Cell:
         """
@@ -134,7 +141,6 @@ class Cell(LWidget):
         if self._initial:
             self._initial = False
             self.page_session.end_sub_element()
-            self.page_session.write_html(f"</div><!-- {self.cell_name} -->\n")
         else:
             self.page_session.end_sub_element()
         self.builder.end_update()
@@ -173,7 +179,11 @@ class Cell(LWidget):
         Is called when ever the cell shall be (re)build.
         """
         if self.on_build is not None:
-            self.on_build()
+            sig = signature(self.on_build)
+            if len(sig.parameters):
+                self.on_build(self.builder)
+            else:
+                self.on_build()
 
     def invalidate(self):
         """
