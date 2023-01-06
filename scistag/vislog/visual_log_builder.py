@@ -96,12 +96,12 @@ class LogBuilder:
     """
 
     def __init__(
-            self,
-            log: "VisualLog",
-            page_session: Union["PageSession", None] = None,
-            nested: bool = False,
-            params: dict | BaseModel | Any | None = None,
-            **kwargs,
+        self,
+        log: "VisualLog",
+        page_session: Union["PageSession", None] = None,
+        nested: bool = False,
+        params: dict | BaseModel | Any | None = None,
+        **kwargs,
     ):
         """
         :param log: The log to which the content shall be added.
@@ -198,13 +198,13 @@ class LogBuilder:
 """
         from scistag.vislog.extensions.service_extension import LogServiceExtension
 
-        self._service: LogServiceExtension = LogServiceExtension(builder=self)
-        """
-        The service extension for hosting static files and services
-        """
         self.options: LogOptions = log.options.copy(deep=True)
         """
         Defines the builder's options
+        """
+        self._service: LogServiceExtension = LogServiceExtension(builder=self)
+        """
+        The service extension for hosting static files and services
         """
         self._title = self.target_log._title
 
@@ -236,6 +236,13 @@ class LogBuilder:
         return header and footer in it's get_result() method.
         """
 
+        self._cur_alignment_block = "left"
+        """The current div alignment"""
+        self._cur_alignment = "left"
+        """The current text alignment"""
+        self._console_size = (120, 25)
+        """The console width"""
+
     def build(self):
         """
         Is called when the body of the log shall be build or rebuild.
@@ -244,6 +251,8 @@ class LogBuilder:
         own page builder.
         """
         LogBuilderRegistry.register_builder(self)
+        if self.options.output.log_to_stdout:
+            self.add_txt("")
         from scistag.vislog.extensions.cell_sugar import LOG_CELL_METHOD_FLAG
 
         init_module = self.target_log.initial_module
@@ -253,7 +262,15 @@ class LogBuilder:
         if init_module is not None:
             for key, attr in self.target_log.initial_module.__dict__.items():
                 if isinstance(attr, types.FunctionType):
-                    if LOG_CELL_METHOD_FLAG in attr.__dict__:
+                    is_main = False
+                    if key == "vl_main":
+                        from inspect import signature
+
+                        sig = signature(attr)
+                        if "vl" in sig.parameters and len(sig.parameters) == 1:
+                            is_main = True
+
+                    if LOG_CELL_METHOD_FLAG in attr.__dict__ or is_main:
                         cell_methods.append(attr)
 
         for key, value in self.__class__.__dict__.items():
@@ -263,7 +280,7 @@ class LogBuilder:
                     cell_methods.append(attr)
 
         for cur_method in cell_methods:
-            cell_config = cur_method.__dict__["__log_cell"]
+            cell_config = cur_method.__dict__.get("__log_cell", {})
             _ = self.cell.add(
                 on_build=cur_method, **cell_config, _builder_method=cur_method
             )
@@ -310,7 +327,7 @@ class LogBuilder:
         return result
 
     def add(
-            self, content: LogableContent, br: bool = False, mimetype: str | None = None
+        self, content: LogableContent, br: bool = False, mimetype: str | None = None
     ) -> LogBuilder:
         """
         Adds the provided content to the log.
@@ -343,7 +360,7 @@ class LogBuilder:
         import pandas as pd
 
         if hasattr(content, "to_html") and not isinstance(
-                content, (pd.DataFrame, pd.Series)
+            content, (pd.DataFrame, pd.Series)
         ):
             self.html(content.to_html())
             return self
@@ -412,9 +429,13 @@ class LogBuilder:
         """
         if text == "":
             from .common.element_context import ElementContext
-            return ElementContext(self, closing_code=f"</h{level}>",
-                                  opening_code=f"<h{level}>",
-                                  html_only=True)
+
+            return ElementContext(
+                self,
+                closing_code=f"</h{level}>",
+                opening_code=f"<h{level}>",
+                html_only=True,
+            )
 
         assert 0 <= level <= 5
         md_level = "#" * level
@@ -486,7 +507,7 @@ class LogBuilder:
         :return: The builder
         """
         self.add_html("<br>" * repetition)
-        self.add_txt(" ", md=True)
+        self.add_txt(" ", targets="*")
         return self
 
     def page_break(self) -> LogBuilder:
@@ -496,7 +517,7 @@ class LogBuilder:
         :return: The builder
         """
         self.add_html('<div style="break-after:page"></div>')
-        self.add_txt(f"\n{'_' * 40}\n", md=True)
+        self.add_txt(f"\n{'_' * 40}\n", targets="*")
         return self
 
     def sub_test(self, text: str) -> LogBuilder:
@@ -516,7 +537,7 @@ class LogBuilder:
         :return: The builder
         """
         self.add_html("<hr>")
-        self.add_txt("---", md=True)
+        self.add_txt("---", targets="*")
         return self
 
     def html(self, code: str | HTMLCode, linebreak: bool = True) -> LogBuilder:
@@ -764,12 +785,12 @@ class LogBuilder:
         )
 
     def figure(
-            self,
-            figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
-            name: str | None = None,
-            alt_text: str | None = None,
-            _out_image_data: io.IOBase | None = None,
-            br: bool = False,
+        self,
+        figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
+        name: str | None = None,
+        alt_text: str | None = None,
+        _out_image_data: io.IOBase | None = None,
+        br: bool = False,
     ):
         """
         Adds a figure to the log
@@ -807,10 +828,10 @@ class LogBuilder:
         self.image(image_data, name, alt_text=alt_text, br=br)
 
     def pyplot(
-            self,
-            assertion_name: str | None = None,
-            assertion_hash: str | None = None,
-            br: bool = False,
+        self,
+        assertion_name: str | None = None,
+        assertion_hash: str | None = None,
+        br: bool = False,
     ) -> "PyPlotLogContext":
         """
         Opens a matplotlib context to add a figure directly to the plot.
@@ -933,7 +954,9 @@ class LogBuilder:
             return
         self.page_session.write_md(md_code, no_break=no_break)
 
-    def add_txt(self, txt_code: str, console: bool = True, md: bool = False):
+    def add_txt(
+        self, txt_code: str, targets: str | set[str] | None = None, align: bool = True
+    ):
         """
         Adds html code directly of the text and console section of this log.
 
@@ -941,12 +964,34 @@ class LogBuilder:
         case use :meth:`txt`.
 
         :param txt_code: The text to add
-        :param console: Defines if the text shall also be added ot the
-            console's log (as it's mostly identical). True by default.
-        :param md: Defines if the text shall be added to markdown as well
+        :param targets: Defines the output targets. Either "*" for all text-like
+            targets or a set containing any of the targets "txt", "md" or "console".
+
+            Pass -md to just avoid Markdown output.
+
+            By default txt and consoles.
+        :param align: Defines if alignments shall be applied to the text
         :return: True if txt logging is enabled
         """
-        return self.page_session.write_txt(txt_code, console, md)
+        from scistag.vislog import TXT, CONSOLE
+
+        if align and (
+            self._cur_alignment != "left" or self._cur_alignment_block != "left"
+        ):
+            lines = txt_code.split("\n")
+            alignment, cw = self.get_ascii_alignment()
+            for index, cur_line in enumerate(lines):
+                if len(cur_line) < cw:
+                    missing = cw - len(cur_line)
+                    if alignment == "center":
+                        missing //= 2
+                    lines[index] = " " * missing + cur_line
+            txt_code = "\n".join(lines)
+            # if len(txt_code)<cw:
+
+        if targets is None:
+            targets = {TXT, CONSOLE}
+        return self.page_session.write_txt(txt_code, targets=targets)
 
     def handle_modified(self):
         """
@@ -1097,3 +1142,18 @@ class LogBuilder:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         LogBuilderRegistry.remove_builder(self)
+
+    def get_ascii_alignment(self) -> (str, int | None):
+        """
+        Returns the desired, horizontal alignment for ascii text
+
+        :return: The alignment, either "left", "center" or "right", the minimum width,
+            if the alignment is not "left", otherwise None
+        """
+        align = self._cur_alignment
+        if self._cur_alignment_block != "left":
+            align = self._cur_alignment_block
+        if align != "left":
+            return align, self._console_size[0]
+        else:
+            return "left", None

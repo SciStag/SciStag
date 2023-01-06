@@ -101,6 +101,11 @@ created an instance.
 PARAMETER_TYPES = Union[dict, BaseModel, Any, None]
 "Set of parameter types which can be passed as params into a LogBuilder"
 
+LOG_DEFAULT_OPTION_LITERALS = Literal[
+    "server", "local", "disk", "console", "disk&console"
+]
+"""Enumeration of default option set string identifiers"""
+
 
 class VisualLog:
     """
@@ -133,7 +138,7 @@ class VisualLog:
             cache_name: str = "",
             auto_reload: bool | BuilderTypes = False,
             debug: bool = False,
-            options: "LogOptions" | None = None,
+            options: "LogOptions" | LOG_DEFAULT_OPTION_LITERALS | None = None,
     ):
         """
         :param title: The log's name
@@ -165,17 +170,27 @@ class VisualLog:
         :param debug: If set to true additional debug logging will be enabled
         :param options: Defines the full set of options.
 
+            Alternatively you can pass either "local", "server", "disk", "console" or
+            "disk&console" to create a standard option set, see :meth:`setup_options`.
+
             Explicitly via parameter passed values will override the corresponding
             values in the options set.
+
+            See :meth:`setup_options` to receive a standard option set you can
+            customize.
         """
-        from scistag.vislog.options import LogOptions
         import inspect
 
         frm = inspect.stack()[1]
         self.initial_module = inspect.getmodule(frm[0])
         "Handle of the module from which this VisualLog instance was initialized"
 
-        self.options = LogOptions() if options is None else options.copy(deep=True)
+        if options is not None and isinstance(options, str):
+            options = self.setup_options(options)
+        self.options = (
+            self.setup_options("local") if options is None else options.copy(deep=True)
+        )
+        self.options.validate_options()
         """
         Defines the log's configuration
         """
@@ -187,11 +202,18 @@ class VisualLog:
         """
         self.start_time = time.time()
         "The time stamp of when the log was creation"
+        self.target_dir = os.path.abspath(self.options.output.target_dir)
         try:
-            if self.options.output.clear_target_dir and self.options.output.log_to_disk:
+            if (
+                    self.options.output.clear_target_dir
+                    and self.options.output.log_to_disk is not None
+                    and self.options.output.log_to_disk
+            ):
                 shutil.rmtree(self.options.output.target_dir)
         except FileNotFoundError:
             pass
+        if self.options.output.log_to_disk:
+            os.makedirs(self.target_dir, exist_ok=True)
 
         formats_out = self.options.output.formats_out
         self._app = app
@@ -211,7 +233,6 @@ class VisualLog:
         """
         self._title = title
         "The log's title"
-        self.target_dir = os.path.abspath(self.options.output.target_dir)
         "The directory in which the logs shall be stored"
         # setup the cache
         do_auto_reload = (
@@ -228,8 +249,6 @@ class VisualLog:
             self.target_dir + "/temp" if tmp_dir is None else tmp_dir
         )
         "Output directory for temporary files"
-        if self.options.output.log_to_disk:
-            os.makedirs(self.target_dir, exist_ok=True)
         self.log_images = True
         "Defines if images shall be logged to disk"
         self.refresh_time_s = refresh_time_s
@@ -259,8 +278,6 @@ class VisualLog:
         """
         self.markdown_html = True
         "Defines if markdown shall support html embedding"
-        self.log_txt_images = True
-        "Defines if images shall also be logged to text files as ASCII"
         self.embed_images = (
             embed_images if embed_images is not None else MD not in formats_out
         )
@@ -311,8 +328,6 @@ class VisualLog:
             log_formats=self.log_formats,
             index_name=self.options.output.index_name,
             target_dir=self.target_dir,
-            log_to_stdout=self.options.output.log_to_stdout,
-            log_to_disk=self.options.output.log_to_disk,
         )
         """Defines the initial default target page in which the page data ia stored"""
         self.pages = [self.default_page]
@@ -346,6 +361,10 @@ class VisualLog:
         "List of live urls at which the main page of this log can be accessed"
         self._builder_handler: BuilderTypes | None = None
         "The builder being used"
+        self.root_log = VisualLog.is_main(2)
+        """
+        Defines if this log is the main entry point (and e.g. not an embedded log)
+        """
         self._auto_reload = auto_reload
         "Defines if auto-reloading is active"
         # execute auto-reloader if provided
@@ -504,6 +523,7 @@ class VisualLog:
         :param kwargs: Additional parameters which shall be passed to the
             builder upon creation.
         """
+        self.options.validate_options()
         mt: bool = self.options.run.mt
         "Use multi-threading"
         continuous = self.options.run.continuous
@@ -688,6 +708,13 @@ class VisualLog:
         :return: False if overwrite=False was passed and a log
             could successfully be loaded, so that no run was required.
         """
+        if (
+                not self.options.output.log_to_disk
+                and not self.options.output.log_to_stdout
+        ):
+            self.options.output.log_to_stdout = True
+            self.default_builder.options = self.options
+            self.default_page.options = self.options
         if builder is not None:
             builder = self.prepare_builder(
                 builder, self.default_page, params=params, kwargs=kwargs
@@ -857,8 +884,9 @@ class VisualLog:
             next_event = self.handle_page_events()
             max_sleep_time = self.refresh_time_s
             if next_event is not None:
-                max_sleep_time = max(min(max_sleep_time, next_event - time.time()),
-                                     1.0 / 120)
+                max_sleep_time = max(
+                    min(max_sleep_time, next_event - time.time()), 1.0 / 120
+                )
             sleep_min(max_sleep_time)
             if self._testing:
                 break
@@ -1047,13 +1075,14 @@ class VisualLog:
         self.default_page.clear()
 
     @classmethod
-    def is_main(cls) -> bool:
+    def is_main(cls, call_level=1) -> bool:
         """
         Returns if the file calling this method was the main entry point
         before the module got reloaded.
 
         Only available if auto-reloading is being used.
 
+        :param call_level: The relative call level, 1 = the calling function
         :return: True if the calling method is in the main module.
         """
         if StagApp.is_main(2):
@@ -1062,30 +1091,31 @@ class VisualLog:
             VisualLogAutoReloader,
         )
 
-        return VisualLogAutoReloader.is_main(2)
+        return VisualLogAutoReloader.is_main(call_level+1)
 
     @staticmethod
-    def get_default_options(log_to_disk: bool | None = None,
-                            formats: set[str] = None,
-                            single_file: bool | None = None) -> "LogOptions":
+    def setup_options(
+            defaults: LOG_DEFAULT_OPTION_LITERALS | None = None,
+    ) -> "LogOptions":
         """
-        Returns the default log options
+        Returns the standard option set
 
-        :param log_to_disk: Defines if the results shall be logged to disk
-        :param single_file: Defines if the output (of each output type) shall be
-            stored in a single file.
-        :param formats: Defines the output formats such as "html", "md" and "txt"
-        :return: The default configuration which can be modified and then passed into
-        the constructor of the log.
+        :param defaults: Defines the default configuration which shall be applied to
+            the option set. One of:
+
+            - "local" for hosting a local server at 127.0.0.1 and without creating
+                any files on the disk (except explicitly defined cache outputs).
+            - "server" for setting up a standard server config and with automatically
+                detecting the server's IP.
+            - "disk" for writing the outputs to disk like in a classic old-school
+                logging.
+            - "console" for writing to the console only
+            - "disk&console" for writing to disk and console
         """
         from scistag.vislog.options import LogOptions
+
         options = LogOptions()
-        if formats is not None:
-            options.output.formats_out = formats
-        if log_to_disk is not None:
-            options.output.log_to_disk = log_to_disk
-        if single_file is not None:
-            options.output.single_file = single_file
+        options.setup_defaults(defaults)
         return options
 
     @staticmethod

@@ -39,8 +39,9 @@ class EmojiLogger(BuilderExtension):
         results = EmojiDb.find_emojis_by_name(search_mask)
         return results
 
-    def __call__(self, search_mask: str = "", size: int = None,
-                 return_image: bool = False) -> Union["LogBuilder", Image]:
+    def __call__(
+        self, search_mask: str = "", size: int = None, return_image: bool = False
+    ) -> Union["LogBuilder", Image]:
         """
         Logs an emoji to the log
 
@@ -59,6 +60,6 @@ class EmojiLogger(BuilderExtension):
             results = EmojiDb.find_emojis_by_name("sad*")
         image = EmojiRenderer.render_emoji(results[0].name, size=size)
         if not return_image:
-            self.builder.image.show(image, br=False)
+            self.builder.image.show(image, br=False, name=results[0].name)
             return self.builder
         return image

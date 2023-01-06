@@ -9,8 +9,12 @@ import base64
 from typing import Optional, TYPE_CHECKING
 import numpy as np
 from filetype import filetype
+
+from scistag.common import SystemInfo
 from scistag.filestag import FilePath, FileStag
 from scistag.imagestag import Image, Canvas
+from scistag.imagestag.ascii_image import AsciiImageMethod
+from scistag.vislog import TXT, CONSOLE
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
@@ -161,13 +165,36 @@ class ImageLogger(BuilderExtension):
             self.builder.add_html(
                 f'<img src="{file_location}" {size_definition}>{html_lb}\n'
             )
-        if self.log.log_txt_images and self.page_session.txt_export:
+        if (
+            self.page_session.txt_export
+            or self.page_session.options.output.log_to_stdout
+        ):
             if not isinstance(source, Image):
                 source = Image(source)
-            max_width = min(max(source.width / 1024 * 80, 1), 80)
-            self.builder.add_txt(source.to_ascii(max_width=max_width))
+            max_width = min(max(source.width / 800 * 80, 1), 120)
+            align, cw = self.builder.get_ascii_alignment()
+            if CONSOLE in self.builder.options.output.formats_out:
+                method = AsciiImageMethod.GRAY_LEVELS_69
+                if not SystemInfo.os_type.is_windows:
+                    method = AsciiImageMethod.COLOR_ASCII
+                ascii_code = source.to_ascii(
+                    max_width=max_width,
+                    min_width=cw,
+                    align=align,
+                    method=method
+                )
+                self.builder.add_txt(ascii_code, align=False, targets={"console"})
+            if TXT in self.builder.options.output.formats_out:
+                ascii_code = source.to_ascii(
+                    max_width=max_width,
+                    min_width=cw,
+                    method=AsciiImageMethod.GRAY_LEVELS_69,
+                    align=align,
+
+                )
+                self.builder.add_txt(ascii_code, align=False, targets={"txt"})
         else:
-            self.builder.add_txt(f"\n[IMAGE][{alt_text}]\n")
+            self.builder.add_txt(f"\n[{alt_text}]")
 
     def _insert_image_reference(
         self,
@@ -213,7 +240,7 @@ class ImageLogger(BuilderExtension):
         else:
             self.builder.add_html(f'<img src="{source}">{html_lb}')
         self.builder.add_md(f"![{name}]({source})\n")
-        self.builder.add_txt(f"\n[IMAGE][{alt_text}]\n")
+        self.builder.add_txt(f"\n[{alt_text}]\n")
 
     def _log_image_to_disk(
         self, filename: str, name: str, source: bytes | Image, encoded_image
@@ -247,9 +274,7 @@ class ImageLogger(BuilderExtension):
         if not self.log.embed_images:
             file_location = FilePath.basename(target_filename)
         if self.page_session.md_export:
-            self.builder.add_md(
-                f"![{name}]({FilePath.basename(target_filename)})\n"
-            )
+            self.builder.add_md(f"![{name}]({FilePath.basename(target_filename)})\n")
         return file_location
 
     @staticmethod

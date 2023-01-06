@@ -9,6 +9,7 @@ import os
 from typing import Union, TYPE_CHECKING, Any, Literal
 
 import PIL.Image
+import filetype
 import numpy as np
 
 from .color import Color, Colors
@@ -57,13 +58,13 @@ class Image(ImageBase):
     """
 
     def __init__(
-            self,
-            source: ImageSourceTypes | None = None,
-            framework: ImsFramework | Literal["PIL", "RAW", "CV"] = None,
-            pixel_format: PixelFormatTypes | None = None,
-            size: Size2DTypes | None = None,
-            bg_color: Color | None = None,
-            **params,
+        self,
+        source: ImageSourceTypes | None = None,
+        framework: ImsFramework | Literal["PIL", "RAW", "CV"] = None,
+        pixel_format: PixelFormatTypes | None = None,
+        size: Size2DTypes | None = None,
+        bg_color: Color | None = None,
+        **params,
     ):
         """
         :param source: The image source. Either a file name, a http URL,
@@ -88,6 +89,7 @@ class Image(ImageBase):
             pixel_format = PixelFormat(pixel_format)
         if size is not None:
             size = Size2D(size) if not isinstance(size, Size2D) else size
+        if source is None and size is not None:
             if bg_color is None:
                 bg_color = Colors.BLACK
             if source is not None:
@@ -126,7 +128,7 @@ class Image(ImageBase):
         if self.framework is None:
             self.framework = ImsFramework.PIL
         if self.framework == ImsFramework.PIL:
-            self._init_as_pil(source)
+            self._init_as_pil(source, target_size=size)
         elif self.framework == ImsFramework.RAW:
             self._pixel_data = self._pixel_data_from_source(source)
             self.height, self.width = self._pixel_data.shape[0:2]
@@ -154,11 +156,11 @@ class Image(ImageBase):
 
     @classmethod
     def _prepare_data_source(
-            cls,
-            framework: ImsFramework,
-            source: ImageSourceTypes,
-            pixel_format: PixelFormat,
-            **params,
+        cls,
+        framework: ImsFramework,
+        source: ImageSourceTypes,
+        pixel_format: PixelFormat,
+        **params,
     ):
         """
         Prepares and if necessary converts the data source to a supported format
@@ -171,9 +173,9 @@ class Image(ImageBase):
         if isinstance(source, cls):
             source = source.to_pil()
         if (
-                isinstance(source, np.ndarray)
-                and pixel_format == PixelFormat.BGR
-                and framework != ImsFramework.CV
+            isinstance(source, np.ndarray)
+            and pixel_format == PixelFormat.BGR
+            and framework != ImsFramework.CV
         ):
             source = cls.normalize_to_rgb(
                 source, keep_gray=True, input_format=pixel_format
@@ -182,7 +184,7 @@ class Image(ImageBase):
         # fetch from web if desired
         if isinstance(source, str):
             if source.startswith(HTTP_PROTOCOL_URL_HEADER) or source.startswith(
-                    HTTPS_PROTOCOL_URL_HEADER
+                HTTPS_PROTOCOL_URL_HEADER
             ):
                 params["cache"] = params.get("cache", True)
             source = FileStag.load(source, **params)
@@ -207,7 +209,11 @@ class Image(ImageBase):
             self.pixel_format = self.detect_format(self._pixel_data, is_cv2=True)
         self.height, self.width = self._pixel_data.shape[0:2]
 
-    def _init_as_pil(self, source: bytes | np.ndarray | PIL.Image.Image):
+    def _init_as_pil(
+        self,
+        source: bytes | np.ndarray | PIL.Image.Image,
+        target_size: Size2DTypes | None = None,
+    ):
         """
         Initializes the image as PIL image
 
@@ -216,7 +222,15 @@ class Image(ImageBase):
         try:
             if isinstance(source, bytes):
                 data = io.BytesIO(source)
-                self._pil_handle = PIL.Image.open(data)
+                value = data.getvalue()
+                if value.startswith(b"<svg"):
+                    from scistag.imagestag.svg import SvgRenderer
+
+                    max_width = 1280 if target_size is None else target_size.width
+                    rendered_image = SvgRenderer.render(value, output_width=max_width)
+                    self._pil_handle = rendered_image._pil_handle
+                else:
+                    self._pil_handle = PIL.Image.open(data)
             elif isinstance(source, np.ndarray):
                 self._pil_handle = PIL.Image.fromarray(source)
             elif isinstance(source, PIL.Image.Image):
@@ -242,8 +256,8 @@ class Image(ImageBase):
         :return: True if the image currently in bgr or bgra format
         """
         return (
-                self.pixel_format == PixelFormat.BGR
-                or self.pixel_format == PixelFormat.BGRA
+            self.pixel_format == PixelFormat.BGR
+            or self.pixel_format == PixelFormat.BGRA
         )
 
     @property
@@ -288,18 +302,18 @@ class Image(ImageBase):
             return Image(self._pil_handle.crop(box=box))
         else:
             cropped = (
-                self._pixel_data[box[1]: box[3], box[0]: box[2], :]
+                self._pixel_data[box[1] : box[3], box[0] : box[2], :]
                 if len(self._pixel_data.shape) == 3
-                else self._pixel_data[box[1]: box[3] + 1, box[0]: box[2] + 1]
+                else self._pixel_data[box[1] : box[3] + 1, box[0] : box[2] + 1]
             )
             return Image(
                 cropped, framework=self.framework, pixel_format=self.pixel_format
             )
 
     def resize(
-            self,
-            size: Size2DTypes,
-            interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
+        self,
+        size: Size2DTypes,
+        interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
     ):
         """
         Resizes the image to given resolution (modifying this image directly)
@@ -335,9 +349,9 @@ class Image(ImageBase):
         self.__dict__["width"], self.__dict__["height"] = size
 
     def resized(
-            self,
-            size: Size2DTypes,
-            interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
+        self,
+        size: Size2DTypes,
+        interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
     ) -> Image:
         """
         Returns an image resized to given resolution
@@ -358,19 +372,19 @@ class Image(ImageBase):
             return Image(self.to_pil().resize(size, resample=resample_method))
 
     def resized_ext(
-            self,
-            size: Size2DTypes | None = None,
-            max_size: Size2DTypes
-                      | int
-                      | float
-                      | tuple[int | None, int | None]
-                      | None = None,
-            keep_aspect: bool = False,
-            target_aspect: float | None = None,
-            fill_area: bool = False,
-            factor: float | tuple[float, float] | None = None,
-            interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
-            background_color=Color(0.0, 0.0, 0.0, 1.0),
+        self,
+        size: Size2DTypes | None = None,
+        max_size: Size2DTypes
+        | int
+        | float
+        | tuple[int | None, int | None]
+        | None = None,
+        keep_aspect: bool = False,
+        target_aspect: float | None = None,
+        fill_area: bool = False,
+        factor: float | tuple[float, float] | None = None,
+        interpolation: InterpolationMethod = InterpolationMethod.LANCZOS,
+        background_color=Color(0.0, 0.0, 0.0, 1.0),
     ) -> Image:
         """
         Returns a resized variant of the image with many configuration
@@ -459,7 +473,7 @@ class Image(ImageBase):
                 "fill_area==True without keep_aspect==True has no effect. "
                 "If you anyway just want to "
                 + 'fill the whole area with the image just provide "size" and '
-                  'set "fill_area" to False'
+                'set "fill_area" to False'
             )
         if target_aspect is not None:
             factor = (1.0, 1.0) if factor is None else factor
@@ -470,7 +484,7 @@ class Image(ImageBase):
                     '"target_aspect" can not be combined with "size" but just '
                     "with factor. "
                     + 'Use "size" + "keep_aspect" instead if you know the desired '
-                      "target size already."
+                    "target size already."
                 )
             # if the image shall also be resized
             size = int(round(self.width * factor[0])), int(
@@ -519,7 +533,7 @@ class Image(ImageBase):
         return Image(handle)
 
     def compute_rescaled_size_from_max_size(
-            self, max_size, org_size: Size2D
+        self, max_size, org_size: Size2D
     ) -> tuple[int, int]:
         """
         Computes the new size of an image after rescaling with a given
@@ -553,7 +567,7 @@ class Image(ImageBase):
         )
 
     def convert(
-            self, pixel_format: PixelFormat | str, bg_fill: Union["Color", None] = None
+        self, pixel_format: PixelFormat | str, bg_fill: Union["Color", None] = None
     ) -> Image:
         """
         Converts the image's pixel format to another one for example from
@@ -653,6 +667,13 @@ class Image(ImageBase):
             self._pil_handle if self.framework == ImsFramework.PIL else self._pixel_data
         )
 
+    @property
+    def pixels(self) -> np.ndarray:
+        """
+        Returns the image's pixel data
+        """
+        return self.get_pixels()
+
     def get_pixels(self, desired_format: PixelFormat | None = None) -> np.ndarray:
         """
         Returns the image's pixel data as :class:`np.ndarray`.
@@ -708,13 +729,14 @@ class Image(ImageBase):
             result = [element.reshape((self.height, self.width)) for element in result]
             return result
 
-    def get_band_names(self) -> list[str]:
+    @property
+    def band_names(self) -> list[str]:
         """
         Returns the names of the single color bands
 
         :return: The name of the bands
         """
-        return self.pixel_format.get_band_names()
+        return self.pixel_format.band_names
 
     def get_pixels_rgb(self) -> np.ndarray:
         """
@@ -803,10 +825,10 @@ class Image(ImageBase):
         return Canvas(target_image=self)
 
     def save(
-            self,
-            target: str,
-            quality: int = 90,
-            **params,
+        self,
+        target: str,
+        quality: int = 90,
+        **params,
     ):
         """
         Saves the image to disk
@@ -829,10 +851,10 @@ class Image(ImageBase):
             return data is not None
 
     def encode(
-            self,
-            filetype: str | tuple[str, int] = "png",
-            quality: int = 90,
-            background_color: Color | None = None,
+        self,
+        filetype: str | tuple[str, int] = "png",
+        quality: int = 90,
+        background_color: Color | None = None,
     ) -> bytes | None:
         """
         Compresses the image and returns the compressed file's data as bytes
@@ -852,16 +874,16 @@ class Image(ImageBase):
         image = self
         if isinstance(filetype, tuple):
             assert (
-                    len(filetype) == 2
-                    and isinstance(filetype[0], str)
-                    and isinstance(filetype[1], int)
+                len(filetype) == 2
+                and isinstance(filetype[0], str)
+                and isinstance(filetype[1], int)
             )
             filetype, quality = filetype
         filetype = filetype.lstrip(".").lower()
         if filetype == "jpg":
             filetype = "jpeg"
         if self.is_transparent() and (
-                filetype != "png" or background_color is not None
+            filetype != "png" or background_color is not None
         ):
             from scistag.imagestag import Canvas
 
@@ -902,9 +924,10 @@ class Image(ImageBase):
     def to_ascii(self, max_width=80, **params) -> str:
         """
         Converts the image to ASCII, e.g. to add a coarse preview to
-        a log file... or just 4 fun ;-).
+        a log file... or just 4 fun ;-)..
 
         :param max_width: The maximum count of characters per row
+        :param params: See :class:`AsciiImage` for further details.
         :return: The ASCII image as string
         """
         from .ascii_image import AsciiImage
@@ -940,8 +963,8 @@ class Image(ImageBase):
         :return: True if the image is transparent
         """
         return (
-                self.pixel_format == PixelFormat.BGRA
-                or self.pixel_format == PixelFormat.RGBA
+            self.pixel_format == PixelFormat.BGRA
+            or self.pixel_format == PixelFormat.RGBA
         )
 
     def get_raw_data(self) -> bytes:

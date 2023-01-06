@@ -16,6 +16,9 @@ from scistag.vislog.common.log_element import LogElement, LogElementReference
 from scistag.vislog.options import LogOptions
 from scistag.webstag.server import WebRequest
 
+MAIN_SESSION_ID_NAME = "main"
+"Defines the name of the main session"
+
 ROOT_DOM_ELEMENT = "vlbody"
 "Defines the root element in the HTML page containing the main site's data"
 
@@ -81,8 +84,6 @@ class PageSession:
             log_formats: set[str] | None = None,
             index_name: str = "",
             target_dir: str = "",
-            log_to_stdout: bool = False,
-            log_to_disk: bool = False,
     ):
         """
         :param log: The target log instance
@@ -90,9 +91,6 @@ class PageSession:
         :param log_formats: The supported logging formats as string set
         :param index_name: The name of the index file
         :param target_dir: The target directory
-        :param log_to_stdout: Defines if logging shall be forwarded to the stdout
-            console
-        :param log_to_disk: Defines if the content shall be written to disk
         """
         self.log_formats: set[str] = log_formats if log_formats is not None else {HTML}
         """Defines the list of supported formats"""
@@ -136,10 +134,6 @@ class PageSession:
         "The name of the html file to which we shall save"
         self._md_filename = self.target_dir + f"/{self.index_name}.md"
         "The name of the markdown file to which we shall save"
-        self.log_to_stdout = log_to_stdout
-        "Defines if basic log entries shall also be logged to stdout"
-        self.log_to_disk = log_to_disk
-        "Define if the result shall be logged to disk"
         self._page_backups: dict[str, bytes] = {}
         """
         A backup of the latest rendered page of each dynamic data type
@@ -185,6 +179,9 @@ class PageSession:
         self.session_id = create_unique_session_id()
         """Unique session id to prevent name collision when parallelize log 
         building"""
+        with session_id_lock:
+            if len(session_id_counter_set) == 1:
+                self.session_id = MAIN_SESSION_ID_NAME
 
     def set_builder(self, builder: LogBuilder):
         """
@@ -236,24 +233,33 @@ class PageSession:
             self.cur_element.add_data(MD, new_text.encode("utf-8"))
         return True
 
-    def write_txt(self, txt_code: str, console: bool = True, md: bool = False):
+    def write_txt(self, txt_code: str, targets: str | set[str] = "*"):
         """
         Adds text code to the txt / console log
 
         :param txt_code: The text to add
-        :param console: Defines if the text shall also be added ot the
-            console's log (as it's mostly identical). True by default.
-        :param md: Defines if the text shall be added to markdown as well
+        :param targets: Defines the output targets. Either "*" for all text-like
+            targets or a set containing any of the targets "txt", "md" or "console".
+
+            Pass -md to just avoid Markdown output.
         :return: True if txt logging is enabled
         """
-        if self.log_to_stdout:
+        if targets == "-md":
+            targets = {TXT, CONSOLE}
+        any_output = False
+        console = "*" in targets or CONSOLE in targets
+        if console and self.options.output.log_to_stdout:
             print(txt_code)
-        if console and len(self.log._consoles):
+            any_output = True
+        md = "*" in targets or MD in targets
+        txt = "*" in targets or TXT in targets
+        if console and len(self.log._consoles) > 0:
             self._add_to_console(txt_code)
+            any_output = True
         if md and MD in self.log_formats:
             self.write_md(txt_code)
-        if TXT not in self.log_formats:
-            return
+        if not txt or TXT not in self.log_formats:
+            return any_output
         self.cur_element.add_data(TXT, (txt_code + "\n").encode("utf-8"))
         return True
 
@@ -417,7 +423,8 @@ class PageSession:
             self._body_backups = bodies
         # store html
         custom_code = self.builder.service.get_embedding_code(static=True).encode(
-            "utf-8")
+            "utf-8"
+        )
         if HTML in formats:
             self.set_latest_page(
                 HTML,
@@ -459,7 +466,7 @@ class PageSession:
         if render:
             self.render(formats=formats)
 
-        if self.log_to_disk:
+        if self.log.options.output.log_to_disk:
             # store html
             if (
                     self._html_export
@@ -525,7 +532,8 @@ class PageSession:
         result = name
         if self.name_counter[name] > 1 or digits > 0:
             result += f"_{self.name_counter[name]:0{digits}d}"
-        result += f"_{self.session_id}"
+        if self.session_id != MAIN_SESSION_ID_NAME:
+            result += f"_{self.session_id}"
         return result
 
     def begin_update(self) -> "PageUpdateContext":

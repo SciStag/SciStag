@@ -38,3 +38,23 @@ class ServerOptions(BaseModel):
     arguments: dict = Field(default_factory=dict)
     """Additional, API specific (Flask or FastAPI) server argument options which shall
      be passed into the initializer"""
+
+    def validate_options(self):
+        """
+        Validates the options and checks assumed fields are configured correctly
+        """
+
+    def setup_server_defaults(
+        self, port: int | tuple[int | int] | None = None, detect_public_ip=True
+    ):
+        """
+        Setups this system as server using host 0.0.0.0 and a public IP
+        :param port: The server's port or port range
+        :param detect_public_ip: Defines if the server's public ip shall be detected
+        :return: Self
+        """
+        if port is not None:
+            self.port = port
+        if detect_public_ip:
+            self.public_ips.append("auto")
+        return self

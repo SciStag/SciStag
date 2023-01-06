@@ -5,6 +5,7 @@ different methods
 from __future__ import annotations
 
 import os.path
+import time
 from enum import IntEnum
 
 import numpy as np
@@ -19,12 +20,14 @@ CHARACTERS_GRAY_LEVELS_10 = "@%#*+=-:. "[::-1]
 CHARACTERS_GRAY_LEVELS_13 = "BS#&@$%*!:. "[::-1]
 "Alternate ASCII representation with 10 nuances"
 
-CHARACTERS_GRAY_LEVELS_69 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft" \
-                            "/|()1{}[]?-_+~<>i!lI;:,\"^`'. "[::-1]
+CHARACTERS_GRAY_LEVELS_69 = (
+    "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft" "/|()1{}[]?-_+~<>i!lI;:,\"^`'. "[::-1]
+)
 "Alternate ASCII representation with 69 nuances"
 
 TERMINAL_COLORS = FileStag.load_json(
-    os.path.dirname(__file__) + "./terminal_colors.json")
+    os.path.dirname(__file__) + "./terminal_colors.json"
+)
 """Definition of the Xterm terminal colors"""
 
 
@@ -59,11 +62,13 @@ class AsciiImage:
     """
 
     def __init__(
-            self,
-            image: Image,
-            method: AsciiImageMethod = AsciiImageMethod.COLOR_ASCII,
-            max_width=80,
-            **params,
+        self,
+        image: Image,
+        method: AsciiImageMethod = AsciiImageMethod.GRAY_LEVELS_69,
+        max_width=80,
+        min_width=None,
+        align: str = "left",
+        **params,
     ):
         """
         :param image: The input image
@@ -72,7 +77,7 @@ class AsciiImage:
         """
         self.image = image
         "The image to be converted"
-        self.max_width = max_width
+        self.max_width = int(max_width)
         "The maximum character count per row"
         self.ascii_image: str = ""
         "The ASCII representation of the image after it's conversion"
@@ -83,13 +88,18 @@ class AsciiImage:
         self.method = method
         """The conversion method to use"""
         # self.dictionary = GRAY_LEVELS_10_2
-        dict_conv = {AsciiImageMethod.GRAY_LEVELS_10: CHARACTERS_GRAY_LEVELS_10,
-                     AsciiImageMethod.GRAY_LEVELS_13: CHARACTERS_GRAY_LEVELS_13,
-                     AsciiImageMethod.GRAY_LEVELS_69: CHARACTERS_GRAY_LEVELS_69,
-                     AsciiImageMethod.COLOR_ASCII: None
-                     }
+        dict_conv = {
+            AsciiImageMethod.GRAY_LEVELS_10: CHARACTERS_GRAY_LEVELS_10,
+            AsciiImageMethod.GRAY_LEVELS_13: CHARACTERS_GRAY_LEVELS_13,
+            AsciiImageMethod.GRAY_LEVELS_69: CHARACTERS_GRAY_LEVELS_69,
+            AsciiImageMethod.COLOR_ASCII: None,
+        }
         self.dictionary = dict_conv[method]
         "The conversion dictionary to use"
+        self.min_width = min_width
+        "The minimum width of the output image, e.g. to center or right align it"
+        self.alignment = align
+        'The text alignment, either "left", "center" or "right"'
 
     def convert(self) -> AsciiImage:
         """
@@ -102,33 +112,56 @@ class AsciiImage:
         self.scaled_image = self.image.resized_ext(
             factor=(width_scaling, height_scaling)
         )
-        self.scaled_image.convert("rgb", bg_fill=Colors.BLACK)
 
         if self.method == AsciiImageMethod.COLOR_ASCII:
-            self.create_color_ascii()
-            return self
-        pixels = self.scaled_image.get_pixels_gray()
-        self.ascii_image = "\n".join([self.convert_row(row) for row in pixels])
+            if self.scaled_image.pixel_format.band_count < 3:
+                self.scaled_image.convert("rgb")
+            rows = self.create_color_ascii()
+        else:
+            self.scaled_image.convert("rgb", bg_fill=Colors.BLACK)
+            pixels = self.scaled_image.get_pixels_gray()
+            rows = [self.convert_row(row) for row in pixels]
         self.is_converted = True
+        if self.min_width is not None and self.alignment != "left":
+            missing = self.min_width - self.max_width
+            if self.alignment == "center":
+                missing = missing // 2
+            missing = " " * missing
+            rows = [missing + row for row in rows]
+        self.ascii_image = "\n".join(rows)
+
         return self
 
     def create_color_ascii(self):
         """
         Creates a color ASCII representation
         """
-        pixels = self.scaled_image.get_pixels_rgb()
-        out_rows = []
-        for row in pixels:
-            cur_row = ""
-            for col in row:
-                r, g, b = tuple(col)
-                if int(r) + g + b <= 5:
-                    cur_row += " "
-                    continue
-                cur_row += f"\N{ESC}[38;2;{r};{g};{b}m@"
-            out_rows.append(cur_row)
-        self.ascii_image = "\n".join(out_rows) + f"\N{ESC}[0m"
-        self.is_converted = True
+        pixels = self.scaled_image.pixels
+        if pixels.shape[2] == 4:
+            self.scaled_image.convert("rgb", bg_fill=Colors.BLACK)
+        rgb_pixels = self.scaled_image.pixels
+        if pixels.shape[2] == 4:
+            out_rows = []
+            for row, a_row in zip(rgb_pixels, pixels):
+                elements = [
+                    f"\N{ESC}[38;2;{col[0]};{col[1]};{col[2]}m█" if acol[3] > 5 else " "
+                    for col, acol in zip(row, a_row)
+                ]
+                cur_row = "".join(elements)
+                out_rows.append(cur_row)
+        else:
+            out_rows = []
+            for row in rgb_pixels:
+                elements = [
+                    f"\N{ESC}[38;2;{col[0]};{col[1]};{col[2]}m█"
+                    if sum(col) >= 10
+                    else " "
+                    for col in row
+                ]
+                cur_row = "".join(elements)
+                out_rows.append(cur_row)
+        out_rows[-1] += f"\N{ESC}[0m"
+        return out_rows
 
     def convert_row(self, pixels: np.ndarray) -> str:
         """

@@ -7,10 +7,12 @@ log.
 from __future__ import annotations
 from typing import TYPE_CHECKING, Union, Callable, Any, Literal
 
+from scistag.vislog import TXT
 from scistag.vislog.common.element_context import ElementContext
 
 from scistag.vislog.extensions import BuilderExtension
 from scistag.vislog.options import LogTableOptions
+from scistag.vislog.sessions.page_session import CONSOLE
 
 if TYPE_CHECKING:
     import numpy as np
@@ -94,7 +96,7 @@ class TableContext(ElementContext):
         html_style = self.options.html_style
         html_style = f' style="{html_style}"' if len(html_style) > 0 else ""
         self.page.write_html(f"<table class={table_class}{html_style}>")
-        self.page.write_txt("\n", md=False)
+        self.page.write_txt("\n", targets="-md")
         self.page.write_md(f'<table class="{table_class}"{html_style}>')
         self._entered: bool = False
         "Defines if the table was entered already"
@@ -275,7 +277,7 @@ class TableRowContext(ElementContext):
         self.table: TableContext = table
         """The table we are building"""
         self.page.write_html(f"<tr>")
-        self.page.write_txt("| ", md=False)
+        self.page.write_txt("| ", targets="-md")
         self.page.write_md("<tr>", no_break=True)
         self.row_index: int = row_index
         """The row's index"""
@@ -371,7 +373,7 @@ class TableColumnContext(ElementContext):
         }
         super().__init__(builder, closing_code)
         self.page.write_html(f"<{cell_type}>")
-        self.page.write_txt("| ", md=False)
+        self.page.write_txt("| ", targets="-md")
         self.page.write_md(f"<{cell_type}>", no_break=True)
 
     def __enter__(self) -> TableColumnContext:
@@ -573,7 +575,7 @@ class TableLogger(BuilderExtension):
             for index, col in enumerate(row):
                 col = str(col)
                 row_text += col + " | "
-            self.page_session.write_txt(row_text, md=False)
+            self.page_session.write_txt(row_text, targets="-md")
         # markdown
         for row_index, row in enumerate(data):
             row_text = "| "

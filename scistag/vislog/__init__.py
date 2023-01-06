@@ -1,7 +1,7 @@
 """
 Integrates VisualLog and VisualTestLog
 """
-from .sessions.page_session import MD, HTML, TXT
+from .sessions.page_session import MD, HTML, TXT, CONSOLE
 from .visual_log import VisualLog
 
 from .visual_test_log import VisualTestLog
@@ -26,4 +26,5 @@ __all__ = [
     "MD",
     "HTML",
     "TXT",
+    "CONSOLE",
 ]

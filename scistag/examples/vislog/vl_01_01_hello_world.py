@@ -1,15 +1,9 @@
-from scistag.vislog import VisualLog, cell, LogBuilder
+from scistag.vislog import VisualLog
 
 
-@cell
-def say_hello(vl: LogBuilder):
-    vl.md.html_only = True
-    with vl.align.text_center:
-        vl.title("Hello world!")
-        vl.emoji("*globe*", size=800).br()
+def vl_main(vl):
+    vl.sub("Hello world!")
 
 
-if VisualLog.is_main():
-    options = VisualLog.get_default_options(log_to_disk=True, formats={"html", "md", "txt"})
-    options.output.log_to_stdout = True
-    VisualLog(title="My first log", options=options).run()
+if __name__ == "__main__":
+    VisualLog().run()

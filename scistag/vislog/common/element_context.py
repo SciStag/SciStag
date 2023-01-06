@@ -20,9 +20,13 @@ class ElementContext:
     context is left or the :meth:`close` method is called explicitly.
     """
 
-    def __init__(self, builder: "LogBuilder", closing_code: str | dict,
-                 opening_code: str | dict | None = None,
-                 html_only: bool = False):
+    def __init__(
+        self,
+        builder: "LogBuilder",
+        closing_code: str | dict,
+        opening_code: str | dict | None = None,
+        html_only: bool = False,
+    ):
         """
         :param builder: The builder object with which we write to the log
         :param closing_code: The code to be inserted into the different output formats
@@ -43,7 +47,7 @@ class ElementContext:
             if html_only:
                 opening_code["md"] = opening_code["html"]
 
-        self.builder = builder
+        self.builder: LogBuilder = builder
         """The build element which executes the page rendering"""
         self.page = builder.page_session
         """The target page in which the data is stored"""

@@ -1,7 +1,8 @@
 """
 Defines the configuration options for VisualLog and associated classes
 """
-from typing import Union
+from __future__ import annotations
+from typing import Union, Literal
 
 from pydantic import BaseModel, Field
 
@@ -32,6 +33,11 @@ class LogDebugOptions(BaseModel):
         Enabled a standard debugging options set
         """
         self.html_client.log_updates = True
+
+    def validate_options(self):
+        """
+        Validates the options and checks assumed fields are configured correctly
+        """
 
 
 class LogImageOptions(BaseModel):
@@ -73,6 +79,11 @@ class LogStyleOptions(BaseModel):
     """Default options for a table"""
     image: LogImageOptions = Field(default_factory=LogImageOptions)
 
+    def validate_options(self):
+        """
+        Validates the options and checks assumed fields are configured correctly
+        """
+
 
 class LogRunOptions(BaseModel):
     """
@@ -103,11 +114,22 @@ class LogRunOptions(BaseModel):
     """Defines if then log shall be cleared automatically
     when being rebuild with `continuous=True`."""
 
+    def validate_options(self):
+        """
+        Validates the options and checks assumed fields are configured correctly
+        """
+
 
 class LogServerOptions(ServerOptions):
     show_urls: bool = True
     """Defines if the URLs at which the server can be reached shall be shown upon 
     start"""
+
+    def validate_options(self):
+        """
+        Validates the options and checks assumed fields are configured correctly
+        """
+        super().validate_options()
 
 
 class LogOutputOptions(BaseModel):
@@ -133,7 +155,7 @@ class LogOutputOptions(BaseModel):
     tmp_dir: Union[str, None] = None
     """A directory in which temporary files can be stored. Will be deleted upon 
     finalization."""
-    clear_target_dir: bool = True
+    clear_target_dir: bool = False
     """Defines if the target dir shall be deleted before starting (take care!)"""
     formats_out: Union[set[str], None] = Field(default_factory=lambda: {"html"})
     """A set of the formats to export.
@@ -144,6 +166,43 @@ class LogOutputOptions(BaseModel):
     single_file: bool = True
     """Defines if all content of the (non-live) output file shall be stored in a
     single file"""
+
+    def setup(
+        self,
+        disk: bool | None = None,
+        console: bool | None = None,
+        formats: set[str] = None,
+        single_file: bool | None = None,
+        index_name: str | None = None,
+    ):
+        """
+        Returns the default output options
+
+        :param disk: Defines if the results shall be logged to disk
+        :param console: Defines if the log shall write to the console
+        :param single_file: Defines if the output (of each output type) shall be
+            stored in a single file.
+        :param formats: Defines the output formats such as "html", "md" and "txt"
+        :param index_name: The index's name
+        :return: self
+        """
+        if formats is not None:
+            self.formats_out = formats
+        if disk is not None:
+            self.log_to_disk = disk
+        if single_file is not None:
+            self.single_file = single_file
+        if console is not None:
+            self.log_to_stdout = console
+        if index_name is not None:
+            self.index_name = index_name
+
+        return self
+
+    def validate_options(self):
+        """
+        Validates the options and checks assumed fields are configured correctly
+        """
 
 
 class LogOptions(BaseModel):
@@ -161,3 +220,44 @@ class LogOptions(BaseModel):
     """Advanced style configuration"""
     debug: LogDebugOptions = Field(default_factory=LogDebugOptions)
     """Debug options"""
+
+    def validate_options(self):
+        """
+        Validates the options and checks assumed fields are configured correctly
+        """
+        self.output.validate_options()
+        self.run.validate_options()
+        self.server.validate_options()
+        self.style.validate_options()
+        self.debug.validate_options()
+
+    def setup_defaults(
+        self,
+        defaults: Literal["local", "server", "disk", "console", "disk&console"]
+        | None = None,
+    ) -> LogOptions:
+        """
+        Applies one of the standard configurations to the option sets depending on
+        your main use case.
+
+        :param defaults: Defines the default configuration which shall be applied to
+            the option set. See :meth:`VisualLog.setup_options` for further details.
+        """
+        if defaults == "local":
+            pass
+        elif defaults == "disk":
+            self.output.setup(disk=True, console=False)
+        elif defaults == "console":
+            self.output.setup(disk=False, console=True)
+        elif defaults == "disk&console":
+            self.output.setup(disk=True, console=True)
+        elif defaults == "server":
+            self.output.setup(disk=False, console=False)
+            self.server.setup_server_defaults()
+        else:
+            raise ValueError(
+                'Missing default options parameter. Define one of "local", "server", '
+                '"console", "disk" or "disk&console" to select the standard '
+                "configuration."
+            )
+        return self

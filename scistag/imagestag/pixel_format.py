@@ -97,7 +97,8 @@ class PixelFormat(IntEnum):
 
         return Definitions.to_pil_color_format_mapping.get(self, None)
 
-    def get_band_names(self):
+    @property
+    def band_names(self):
         """
         Returns the names of the single bands
 
@@ -121,7 +122,8 @@ class PixelFormat(IntEnum):
         band = Definitions.band_names[self]
         return [*band]
 
-    def get_full_band_names(self):
+    @property
+    def full_band_names(self):
         """
         Returns the (fulL) names of the single bands
 
@@ -145,7 +147,7 @@ class PixelFormat(IntEnum):
         return Definitions.band_names[self]
 
     @property
-    def bands(self) -> int:
+    def band_count(self) -> int:
         """
         Returns the count of bands this pixel type uses
 
