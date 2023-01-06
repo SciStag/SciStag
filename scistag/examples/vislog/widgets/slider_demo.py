@@ -35,6 +35,9 @@ class SliderDemo(LogBuilder):
             value_bold=True,
         )
         self.hr()
+
+    @cell()
+    def follow_up_cell(self):
         with self.align.left:
             self.text("Just a test")
 

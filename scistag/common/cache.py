@@ -260,9 +260,9 @@ class Cache:
             )
             assert len(key) > 0
             if (
-                not key[0].isalpha()
-                and not key.startswith("./")
-                and not key.startswith("_")
+                    not key[0].isalpha()
+                    and not key.startswith("./")
+                    and not key.startswith("_")
             ):
                 raise ValueError("Keys has to start with a character")
             if "/" in key:
@@ -435,12 +435,50 @@ class Cache:
         with self._access_lock:
             result = self.get(key)
             if (
-                result is None
-                and key not in self._mem_cache
-                and key not in self._disk_cache
+                    result is None
+                    and key not in self._mem_cache
+                    and key not in self._disk_cache
             ):
                 raise KeyError(f"Key {key} not found")
             return result
+
+    def inc(self, key, value: float | int = 1):
+        """
+        Increases given cache value.
+
+        If the value does not exist yet, it will be created
+
+        :param key: The key to increase
+        :param value: The value by which the value shall be increased
+        :return: The new value
+        """
+        with self._access_lock:
+            if key in self:
+                new_value = self[key] + value
+                self[key] = new_value
+                return new_value
+            else:
+                self[key] = value
+                return value
+
+    def dec(self, key, value: float | int):
+        """
+        Decreases given cache value.
+
+        If the value does not exist yet, it will be created
+
+        :param key: The key to increase
+        :param value: The value by which the value shall be decreased
+        :return: The new value
+        """
+        with self._access_lock:
+            if key in self:
+                new_value = self[key] - value
+                self[key] = new_value
+                return new_value
+            else:
+                self[key] = -value
+                return value
 
     def __delitem__(self, key):
         """
@@ -472,7 +510,8 @@ class Cache:
             if "/" in key:
                 return key in self._disk_cache
             return (
-                key in self._mem_cache and self._mem_cache_versions[key] == eff_version
+                    key in self._mem_cache and self._mem_cache_versions[
+                key] == eff_version
             )
 
 

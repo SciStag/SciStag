@@ -18,7 +18,7 @@ from scistag.vislog.widgets import LWidget, LEvent
 _LEVENT_TYPE_CELL_BUILD = "LEVENT_CELL_BUILD"
 "Identifier for a cell rebuilt event"
 
-DEFAULT_CELL_UPDATE_INTERVAL = 0.25
+DEFAULT_CELL_UPDATE_INTERVAL = 0.1
 "The default update interval for cells if no other value is passed"
 
 
@@ -114,6 +114,7 @@ class Cell(LWidget):
         if self.interval_s is not None and self.continuous:
             self._next_tick = time.time() + self.interval_s
         self.build()
+        self.leave()
         if not static:
             self.page_session.write_html(f"</div><!-- {self.cell_name} -->\n")
 

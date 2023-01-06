@@ -647,7 +647,6 @@ class PageSession:
                     ):
                         modified_element_ref = cur_element_ref
                         change_time = cur_element_ref.element.last_direct_change_time
-                        break
                 if modified_element_ref is None:
                     return {}, None
                 path_start = modified_element_ref.path + "."

@@ -767,12 +767,13 @@ class VisualLog:
 
         :param builder: The builder to be called from rebuild the log
         """
-        if builder is not None:
-            if getattr(builder, "build", None) is not None:
-                builder.build()
-            else:
-                builder(self.default_builder)
-        self.default_page.write_to_disk()
+        with self.default_page._page_lock:
+            if builder is not None:
+                if getattr(builder, "build", None) is not None:
+                    builder.build()
+                else:
+                    builder(self.default_builder)
+            self.default_page.write_to_disk()
 
     def prepare_builder(
             self,
@@ -1091,7 +1092,7 @@ class VisualLog:
             VisualLogAutoReloader,
         )
 
-        return VisualLogAutoReloader.is_main(call_level+1)
+        return VisualLogAutoReloader.is_main(call_level + 1)
 
     @staticmethod
     def setup_options(

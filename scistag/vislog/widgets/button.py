@@ -37,9 +37,9 @@ class LButton(LWidget):
     def __init__(
         self,
         builder: "LogBuilder",
-        name: str = "button",
         caption: str = "",
         on_click: Union[Callable, None] = None,
+        name: str = "button",
         insert: bool = True,
     ):
         """

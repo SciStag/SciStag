@@ -27,6 +27,7 @@ from scistag.vislog.options import LogOptions
 from scistag.vislog.visual_log import VisualLog, HTML, MD
 from scistag.plotstag import Figure, Plot, MPHelper
 from .log_builder_registry import LogBuilderRegistry
+from ..common import Cache
 from ..webstag.mime_types import MIMETYPE_MARKDOWN, MIMETYPE_HTML
 
 if TYPE_CHECKING:
@@ -242,6 +243,10 @@ class LogBuilder:
         """The current text alignment"""
         self._console_size = (120, 25)
         """The console width"""
+        self.cache = Cache()
+        """The local data cache"""
+        self.global_cache = self.target_log.cache
+        """The global data cache"""
 
     def build(self):
         """
@@ -284,6 +289,7 @@ class LogBuilder:
             _ = self.cell.add(
                 on_build=cur_method, **cell_config, _builder_method=cur_method
             )
+        self.page_session.render()
         LogBuilderRegistry.remove_builder(self)
 
     @property
