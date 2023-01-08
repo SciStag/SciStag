@@ -6,7 +6,8 @@ from scistag.vislog.widgets import LFileUpload, LFileUploadEvent
 class ImageUploadDemo(LogBuilder):
     @cell
     def upload_view(self):
-        self.md("""
+        self.md(
+            """
         # Simple Image Upload
         
         This demo shows how to use the **FileUpload** widget to receive and process
@@ -31,10 +32,18 @@ class ImageUploadDemo(LogBuilder):
           images
         * In case of an error, e.g. a non-image file uploaded also the cell
         **error_view** will be displayed, showing the **"errors""**' occurred.           
-        """)
+        """
+        )
         self.hr()
         with self.align.left:
-            self.widget.file_upload(on_upload=self.process_image_files)
+            LFileUpload(
+                self,
+                on_upload=self.process_image_files,
+                max_file_count=20,
+                gallery_items=9,
+                max_upload_size=50 * 1024 * 1024,
+                types="image/*",
+            )
 
     def process_image_files(self, event: LFileUploadEvent):
         # create and clear "images" list
@@ -51,7 +60,7 @@ class ImageUploadDemo(LogBuilder):
 
     @section("Processed images", requires="images>0")
     def image_view(self):
-        with self.table.begin(header=True) as table: # table with header
+        with self.table.begin(header=True) as table:  # table with header
             # define header row
             table.add_row(["Filename", "Image", "Dimensions"], mimetype="md")
             # add content row

@@ -13,7 +13,7 @@ def say_hello():
     vl.log(f"{time.time()}")
     url = "https://raw.githubusercontent.com/selva86/datasets/master/BostonHousing.csv"
     df = pd.read_csv(FileStag.load(url, as_stream=True))
-    df = df.drop(columns=['crim', 'zn'])
+    df = df.drop(columns=["crim", "zn"])
 
     with vl.time.measure(prefix="Execution time: "):
         vl.pd.show(df)

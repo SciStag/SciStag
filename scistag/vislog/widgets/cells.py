@@ -64,6 +64,7 @@ class CellStats(BaseModel):
     """
     Contains statistics about the cell
     """
+
     builds: int = 0
     """The total build count"""
     bps: float = 0.0
@@ -86,23 +87,23 @@ class Cell(LWidget):
     """
 
     def __init__(
-            self,
-            builder: LogBuilder,
-            name: str | None = None,
-            section: str | None = None,
-            interval_s: float | None = None,
-            continuous: bool = False,
-            progressive: bool = False,
-            static: bool = False,
-            groups: str | list[str] = None,
-            uses: str | list[str] = None,
-            output: str | list[str] = None,
-            requires: str | list[str] = None,
-            tab: str | None = None,
-            page: int | None = None,
-            ctype: str | None = None,
-            on_build: CellOnBuildCallback = None,
-            _builder_method: Union[Callable, None] = None,
+        self,
+        builder: LogBuilder,
+        name: str | None = None,
+        section: str | None = None,
+        interval_s: float | None = None,
+        continuous: bool = False,
+        progressive: bool = False,
+        static: bool = False,
+        groups: str | list[str] = None,
+        uses: str | list[str] = None,
+        output: str | list[str] = None,
+        requires: str | list[str] = None,
+        tab: str | None = None,
+        page: int | None = None,
+        ctype: str | None = None,
+        on_build: CellOnBuildCallback = None,
+        _builder_method: Union[Callable, None] = None,
     ):
         """
         :param builder: The builder object we are attached to
@@ -238,7 +239,7 @@ class Cell(LWidget):
             self._next_tick = time.time() + self.interval_s
         self.hashes = {}
         """Stores the hash values for all observed elements"""
-        self.stats = CellStats()
+        self.statistics = CellStats()
         """
         Cell specific stats like updates, updates per second etc.
         """
@@ -321,9 +322,9 @@ class Cell(LWidget):
                 self.clear()
                 self.sub_element.last_direct_change_time = old_mod
             time_required = time.time() - start_time
-            self.stats.build_time_s = time_required
+            self.statistics.build_time_s = time_required
             self._build_time_acc += time_required
-            self.stats.builds += 1
+            self.statistics.builds += 1
         if opened:
             self.leave()
         self.update_hashes()
@@ -348,13 +349,13 @@ class Cell(LWidget):
         for key in self.requires:
             real_key = key
             if real_key.endswith(ZERO_SIZE_CHECK_POSTFIX):
-                real_key = real_key[0: -len(ZERO_SIZE_CHECK_POSTFIX)]
+                real_key = real_key[0 : -len(ZERO_SIZE_CHECK_POSTFIX)]
                 if not self.builder.cache.non_zero(real_key):
                     return False
             else:
                 if key not in self.builder.cache:
                     return False
-        if self.ctype == CELL_TYPE_ONCE and self.stats.builds > 0:
+        if self.ctype == CELL_TYPE_ONCE and self.statistics.builds > 0:
             return False
         return True
 
@@ -365,7 +366,7 @@ class Cell(LWidget):
         element_set = self.uses.union(self.requires)
         for key in element_set:
             if key.endswith(ZERO_SIZE_CHECK_POSTFIX):
-                key = key[0: -len(ZERO_SIZE_CHECK_POSTFIX)]
+                key = key[0 : -len(ZERO_SIZE_CHECK_POSTFIX)]
             self.hashes[key] = self.builder.cache.get_revision(key)
 
     def handle_build(self):
@@ -405,19 +406,20 @@ class Cell(LWidget):
         cur_time = time.time()
         if cur_time - self._last_stats_update > 2.0:
             time_diff = cur_time - self._last_stats_update
-            count_diff = self.stats.builds - self._last_stats_counter
-            self.stats.bps = count_diff / time_diff
-            self._last_stats_counter = self.stats.builds
+            count_diff = self.statistics.builds - self._last_stats_counter
+            self.statistics.bps = count_diff / time_diff
+            self._last_stats_counter = self.statistics.builds
             self._last_stats_update = cur_time
-            self.stats.total_build_time_s += self._build_time_acc
-            self.stats.avg_build_time_s = (
-                self._build_time_acc / count_diff if count_diff > 0 else 0.0)
+            self.statistics.total_build_time_s += self._build_time_acc
+            self.statistics.avg_build_time_s = (
+                self._build_time_acc / count_diff if count_diff > 0 else 0.0
+            )
             self._build_time_acc = 0.0
 
         element_set = self.uses.union(self.requires)
         for key in element_set:
             if key.endswith(ZERO_SIZE_CHECK_POSTFIX):
-                key = key[0: -len(ZERO_SIZE_CHECK_POSTFIX)]
+                key = key[0 : -len(ZERO_SIZE_CHECK_POSTFIX)]
             hash_val = self.builder.cache.get_revision(key)
             if hash_val != self.hashes.get(key, 0):
                 self._next_tick = cur_time
@@ -440,3 +442,19 @@ class Cell(LWidget):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.leave()
+
+    def log_statistics(self):
+        """
+        Adds statistics about the VisualLog as table to the log
+        """
+        statistics = self.statistics
+        uptime = time.time() - self.builder.target_log.start_time
+        self.builder.table(
+            [
+                ["Updates", f"{statistics.builds} " f"total updates"],
+                ["Effective fps", f"{statistics.bps:0.2f} updates per second"],
+                ["Build time", f"{statistics.build_time_s:0.2f} s"],
+                ["Uptime", f"{uptime:0.2f} seconds"],
+            ],
+            index=True,
+        )

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Callable, Union, Type, Literal, Any
 from pydantic import BaseModel
 
 import scistag
-from scistag.common import StagLock, Cache, StagApp
+from scistag.common import StagLock, Cache, StagApp, SystemInfo
 from scistag.common.time import sleep_min
 from scistag.filestag import FileStag, FilePath
 from scistag.imagestag import Size2D, Size2DTypes
@@ -127,18 +127,18 @@ class VisualLog:
     """
 
     def __init__(
-            self,
-            title: str = "SciStag - VisualLog",
-            app: Literal["cute"] | None = None,
-            start_browser: bool = False,
-            resolution: Size2D | None = None,
-            refresh_time_s=0.25,
-            cache_dir: str | None = None,
-            cache_version: int = 1,
-            cache_name: str = "",
-            auto_reload: bool | BuilderTypes = False,
-            debug: bool = False,
-            options: "LogOptions" | LOG_DEFAULT_OPTION_LITERALS | None = None,
+        self,
+        title: str = "SciStag - VisualLog",
+        app: Literal["cute"] | None = None,
+        start_browser: bool = False,
+        resolution: Size2D | None = None,
+        refresh_time_s=0.25,
+        cache_dir: str | None = None,
+        cache_version: int = 1,
+        cache_name: str = "",
+        auto_reload: bool | BuilderTypes = False,
+        debug: bool = False,
+        options: "LogOptions" | LOG_DEFAULT_OPTION_LITERALS | None = None,
     ):
         """
         :param title: The log's name
@@ -205,9 +205,9 @@ class VisualLog:
         self.target_dir = os.path.abspath(self.options.output.target_dir)
         try:
             if (
-                    self.options.output.clear_target_dir
-                    and self.options.output.log_to_disk is not None
-                    and self.options.output.log_to_disk
+                self.options.output.clear_target_dir
+                and self.options.output.log_to_disk is not None
+                and self.options.output.log_to_disk
             ):
                 shutil.rmtree(self.options.output.target_dir)
         except FileNotFoundError:
@@ -236,8 +236,8 @@ class VisualLog:
         "The directory in which the logs shall be stored"
         # setup the cache
         do_auto_reload = (
-                                 isinstance(auto_reload, bool) and auto_reload
-                         ) or auto_reload is not None
+            isinstance(auto_reload, bool) and auto_reload
+        ) or auto_reload is not None
         self._setup_cache(do_auto_reload, cache_version, cache_dir, cache_name)
         ref_dir = self.options.output.ref_dir
         tmp_dir = self.options.output.tmp_dir
@@ -457,7 +457,7 @@ class VisualLog:
         return self
 
     def create_web_service(
-            self, support_flask: bool = False, url_prefix: str = ""
+        self, support_flask: bool = False, url_prefix: str = ""
     ) -> "WebStagService":
         """
         Creates a web service which provides (for example) a blueprint you
@@ -481,13 +481,13 @@ class VisualLog:
         return service
 
     def run_server(
-            self,
-            builder: BuilderTypes | None = None,
-            test: bool = False,
-            auto_reload=False,
-            params: PARAMETER_TYPES = None,
-            _auto_reload_stag_level: 1 = 1,
-            **kwargs,
+        self,
+        builder: BuilderTypes | None = None,
+        test: bool = False,
+        auto_reload=False,
+        params: PARAMETER_TYPES = None,
+        _auto_reload_stag_level: 1 = 1,
+        **kwargs,
     ):
         """
         Hosts the log as web service.
@@ -654,13 +654,13 @@ class VisualLog:
                 self.sleep()
 
     def run(
-            self,
-            builder: BuilderTypes = None,
-            params: PARAMETER_TYPES = None,
-            continuous: bool | None = None,
-            auto_clear: bool | None = None,
-            auto_reload: bool = False,
-            **kwargs,
+        self,
+        builder: BuilderTypes = None,
+        params: PARAMETER_TYPES = None,
+        continuous: bool | None = None,
+        auto_clear: bool | None = None,
+        auto_reload: bool = False,
+        **kwargs,
     ) -> LogBuilder:
         """
         Helper function to update the log via a callback function.
@@ -709,8 +709,8 @@ class VisualLog:
             could successfully be loaded, so that no run was required.
         """
         if (
-                not self.options.output.log_to_disk
-                and not self.options.output.log_to_stdout
+            not self.options.output.log_to_disk
+            and not self.options.output.log_to_stdout
         ):
             self.options.output.log_to_stdout = True
             self.default_builder.options = self.options
@@ -776,11 +776,11 @@ class VisualLog:
             self.default_page.write_to_disk()
 
     def prepare_builder(
-            self,
-            builder: BuilderTypes,
-            page_session: PageSession,
-            params: PARAMETER_TYPES,
-            kwargs: dict,
+        self,
+        builder: BuilderTypes,
+        page_session: PageSession,
+        params: PARAMETER_TYPES,
+        kwargs: dict,
     ):
         """
         Prepapres the builder to be used for this log
@@ -991,11 +991,11 @@ class VisualLog:
             self._update_counter = 0
 
     def _setup_cache(
-            self,
-            auto_reload: bool,
-            cache_version: str | int,
-            cache_dir: str,
-            cache_name: str,
+        self,
+        auto_reload: bool,
+        cache_version: str | int,
+        cache_dir: str,
+        cache_name: str,
     ):
         """
         Configures the data cache
@@ -1024,8 +1024,8 @@ class VisualLog:
 
             auto_reload_cache = VisualLogAutoReloader.get_cache_backup()
             if (
-                    auto_reload_cache is not None
-                    and auto_reload_cache.version != cache_version
+                auto_reload_cache is not None
+                and auto_reload_cache.version != cache_version
             ):
                 auto_reload_cache = None
         self._cache = (
@@ -1096,7 +1096,7 @@ class VisualLog:
 
     @staticmethod
     def setup_options(
-            defaults: LOG_DEFAULT_OPTION_LITERALS | None = None,
+        defaults: LOG_DEFAULT_OPTION_LITERALS | None = None,
     ) -> "LogOptions":
         """
         Returns the standard option set

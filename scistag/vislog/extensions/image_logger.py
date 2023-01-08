@@ -178,10 +178,7 @@ class ImageLogger(BuilderExtension):
                 if not SystemInfo.os_type.is_windows:
                     method = AsciiImageMethod.COLOR_ASCII
                 ascii_code = source.to_ascii(
-                    max_width=max_width,
-                    min_width=cw,
-                    align=align,
-                    method=method
+                    max_width=max_width, min_width=cw, align=align, method=method
                 )
                 self.builder.add_txt(ascii_code, align=False, targets={"console"})
             if TXT in self.builder.options.output.formats_out:
@@ -190,7 +187,6 @@ class ImageLogger(BuilderExtension):
                     min_width=cw,
                     method=AsciiImageMethod.GRAY_LEVELS_69,
                     align=align,
-
                 )
                 self.builder.add_txt(ascii_code, align=False, targets={"txt"})
         else:

@@ -16,20 +16,20 @@ LOG_CELL_METHOD_FLAG = "__log_cell"
 
 
 def cell(
-        func: MethodType | FunctionType | None = None,
-        name: str | None = None,
-        section_name: str | None = None,
-        interval_s: float | None = None,
-        continuous: bool = False,
-        progressive: bool = False,
-        static: bool = False,
-        groups: str | list[str] = None,
-        uses: str | list[str] = None,
-        output: str | list[str] = None,
-        requires: str | list[str] = None,
-        tab: str | None = None,
-        page: int | None = None,
-        ctype: str | None = None,
+    func: MethodType | FunctionType | None = None,
+    name: str | None = None,
+    section_name: str | None = None,
+    interval_s: float | None = None,
+    continuous: bool = False,
+    progressive: bool = False,
+    static: bool = False,
+    groups: str | list[str] = None,
+    uses: str | list[str] = None,
+    output: str | list[str] = None,
+    requires: str | list[str] = None,
+    tab: str | None = None,
+    page: int | None = None,
+    ctype: str | None = None,
 ):
     """
     Decorates a method or function within the current LogBuilder subclass or
@@ -115,14 +115,14 @@ def cell(
 
 
 def data(
-        *args,
-        name: str | None = None,
-        interval_s: float | None = None,
-        continuous: bool = False,
-        uses: str | list[str] = None,
-        output: str | list[str] = None,
-        requires: str | list[str] = None,
-        **kwargs,
+    *args,
+    name: str | None = None,
+    interval_s: float | None = None,
+    continuous: bool = False,
+    uses: str | list[str] = None,
+    output: str | list[str] = None,
+    requires: str | list[str] = None,
+    **kwargs,
 ):
     """
     Defines a data cell which can be used to load or produce initial data.
@@ -159,14 +159,14 @@ def data(
 
 
 def processing(
-        *args,
-        name: str | None = None,
-        interval_s: float | None = None,
-        continuous: bool = False,
-        uses: str | list[str] = None,
-        output: str | list[str] = None,
-        requires: str | list[str] = None,
-        **kwargs,
+    *args,
+    name: str | None = None,
+    interval_s: float | None = None,
+    continuous: bool = False,
+    uses: str | list[str] = None,
+    output: str | list[str] = None,
+    requires: str | list[str] = None,
+    **kwargs,
 ):
     """
     Defines a data cell which is ment for processing data, e.g. provided through an
@@ -204,15 +204,15 @@ def processing(
 
 
 def section(
-        *args,
-        title: str | None = None,
-        name: str | None = None,
-        interval_s: float | None = None,
-        continuous: bool = False,
-        uses: str | list[str] = None,
-        output: str | list[str] = None,
-        requires: str | list[str] = None,
-        **kwargs,
+    *args,
+    title: str | None = None,
+    name: str | None = None,
+    interval_s: float | None = None,
+    continuous: bool = False,
+    uses: str | list[str] = None,
+    output: str | list[str] = None,
+    requires: str | list[str] = None,
+    **kwargs,
 ):
     """
     Defines a data cell which can be used to load or produce initial data.
@@ -254,12 +254,12 @@ def section(
 
 
 def once(
-        *args,
-        name: str | None = None,
-        uses: str | list[str] = None,
-        requires: str | list[str] = None,
-        output: str | list[str] = None,
-        **kwargs,
+    *args,
+    name: str | None = None,
+    uses: str | list[str] = None,
+    requires: str | list[str] = None,
+    output: str | list[str] = None,
+    **kwargs,
 ):
     """
     Defines a data cell which can be used to load or produce initial data.
@@ -280,11 +280,15 @@ def once(
     :return: The wrapped method
     """
     if kwargs.get("continuous", None) is not None:
-        raise ValueError("A cell flagged as once will only get executed once. "
-                         "continuous does not make sense and is forbidden.")
+        raise ValueError(
+            "A cell flagged as once will only get executed once. "
+            "continuous does not make sense and is forbidden."
+        )
     if kwargs.get("interval_s", None) is not None:
-        raise ValueError("A cell flagged as once will only get executed once. "
-                         "interval_s does not make sense and is forbidden.")
+        raise ValueError(
+            "A cell flagged as once will only get executed once. "
+            "interval_s does not make sense and is forbidden."
+        )
     return cell(
         *args,
         ctype="once",

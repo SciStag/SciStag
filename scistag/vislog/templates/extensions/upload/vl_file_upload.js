@@ -38,19 +38,56 @@ function vlFileDropAreaUpdateProgress(widget, fileNumber, percent) {
 }
 
 function vlFileDropAreaHandleFilesForUpload(widget, files) {
+    files = [...files]
+
     let widget_gallery_name = widget.id + "_GALLERY"
     document.getElementById(widget_gallery_name).innerHTML = ""
-    files = [...files]
+
+    let total_size = 0
+    files.forEach(function (item, index) {
+        total_size += item.size
+    })
+    let max_upload_size = parseInt(widget.dataset.max_upload_size)
+    let max_file_count = parseInt(widget.dataset.max_file_count)
+    if(files.length>max_file_count)
+    {
+        document.getElementById(widget_gallery_name).innerHTML = "Too many files selected - please select a maximum of "+max_file_count+" files"
+        return
+    }
+    if(total_size>=max_upload_size)
+    {
+        document.getElementById(widget_gallery_name).innerHTML = "Total file size of "+(max_upload_size/(1024*1024)).toFixed(1)+" MB exceeded."
+        return
+    }
+
     vlFileDropAreaInitializeProgress(widget, files.length)
     files.forEach(function (item, index) {
         vlDropAreaUploadFile(widget, item, index)
     })
+
+    let element_count = vlUploadUpdateProgress[widget.id].length
+    let max_upload_times = parseInt(widget.dataset.max_gallery_items)
+    if(element_count>max_upload_times && widget.dataset.show_gallery === "1")
+    {
+        let new_div = document.createElement("div")
+        new_div.textContent = "Too many files - Preview disabled"
+        document.getElementById(widget_gallery_name).appendChild(new_div)
+    }
+
     files.forEach(function (item, index) {
         vlDropAreaPreview(widget, item, index)
     })
 }
 
 function vlDropAreaPreview(widget, file) {
+    let element_count = vlUploadUpdateProgress[widget.id].length
+    let max_upload_times = parseInt(widget.dataset.max_gallery_items)
+    let max_preview_size = parseInt(widget.dataset.max_preview_size)
+
+    if (widget.dataset.show_gallery === "0" || element_count > max_upload_times) {
+        return
+    }
+
     let widget_gallery_name = widget.id + "_GALLERY";
     let file_extension = file.name.split(".").pop().toLowerCase();
     let image_extensions = ["bmp", "jpg", "jpeg", "gif", "png"];
@@ -60,6 +97,13 @@ function vlDropAreaPreview(widget, file) {
     let reader = new FileReader();
     reader.readAsDataURL(file)
     reader.onloadend = function () {
+        if(reader.result.length>max_preview_size)
+        {
+            let new_div = document.createElement("div")
+            new_div.innerHTML = "<br>Image too large<br>"
+            document.getElementById(widget_gallery_name).appendChild(new_div)
+            return
+        }
         let img = document.createElement('img')
         img.src = reader.result
         document.getElementById(widget_gallery_name).appendChild(img)

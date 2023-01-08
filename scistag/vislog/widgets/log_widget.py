@@ -181,7 +181,7 @@ class LWidget:
         code = FileStag.load_text(source)
         code = code.replace("VL_WIDGET_NAME", self.identifier)
         if replacements is not None:
-            for key, value in replacements:
+            for key, value in replacements.items():
                 code = code.replace(key, value)
         template = environment.from_string(code)
         config_variables = {"DEMO_MODE": False}

@@ -27,7 +27,7 @@ class MarkdownLogger(BuilderExtension):
         will be used instead"""
 
     def __call__(
-            self, text: str, exclude_targets: set[str] | None = None
+        self, text: str, exclude_targets: set[str] | None = None
     ) -> LogBuilder:
         """
         Adds a markdown section.
@@ -80,17 +80,17 @@ class MarkdownLogger(BuilderExtension):
             if spaceless.isalnum():  # just text
                 parsed = text
             elif (  # bold
-                    len(text)
-                    and text.startswith("**")
-                    and text.endswith("**")
-                    and text[2:-2].strip(" ").isalnum()
+                len(text)
+                and text.startswith("**")
+                and text.endswith("**")
+                and text[2:-2].strip(" ").isalnum()
             ):
                 parsed = f"<strong>{text[2:-2]}</strong>"
         elif (  # italic
-                len(text)
-                and text.startswith("*")
-                and text.endswith("*")
-                and text[1:-1].strip(" ").isalnum()
+            len(text)
+            and text.startswith("*")
+            and text.endswith("*")
+            and text[1:-1].strip(" ").isalnum()
         ):
             parsed = f"<strong>{text[2:-2]}</strong>"
         return parsed

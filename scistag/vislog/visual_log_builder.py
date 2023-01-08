@@ -97,12 +97,12 @@ class LogBuilder:
     """
 
     def __init__(
-            self,
-            log: "VisualLog",
-            page_session: Union["PageSession", None] = None,
-            nested: bool = False,
-            params: dict | BaseModel | Any | None = None,
-            **kwargs,
+        self,
+        log: "VisualLog",
+        page_session: Union["PageSession", None] = None,
+        nested: bool = False,
+        params: dict | BaseModel | Any | None = None,
+        **kwargs,
     ):
         """
         :param log: The log to which the content shall be added.
@@ -333,7 +333,7 @@ class LogBuilder:
         return result
 
     def add(
-            self, content: LogableContent, br: bool = False, mimetype: str | None = None
+        self, content: LogableContent, br: bool = False, mimetype: str | None = None
     ) -> LogBuilder:
         """
         Adds the provided content to the log.
@@ -366,7 +366,7 @@ class LogBuilder:
         import pandas as pd
 
         if hasattr(content, "to_html") and not isinstance(
-                content, (pd.DataFrame, pd.Series)
+            content, (pd.DataFrame, pd.Series)
         ):
             self.html(content.to_html())
             return self
@@ -780,27 +780,13 @@ class LogBuilder:
         res = escaped.encode("ascii", "xmlcharrefreplace")
         return res.decode("utf-8")
 
-    def log_statistics(self):
-        """
-        Adds statistics about the VisualLog as table to the log
-        """
-        statistics = self.target_log.get_statistics()
-        self.table(
-            [
-                ["Updates", f"{statistics.update_counter} " f"total updates"],
-                ["Effective lps", f"{statistics.update_rate:0.2f} updates per second"],
-                ["Uptime", f"{statistics.uptime:0.2f} seconds"],
-            ],
-            index=True,
-        )
-
     def figure(
-            self,
-            figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
-            name: str | None = None,
-            alt_text: str | None = None,
-            _out_image_data: io.IOBase | None = None,
-            br: bool = False,
+        self,
+        figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
+        name: str | None = None,
+        alt_text: str | None = None,
+        _out_image_data: io.IOBase | None = None,
+        br: bool = False,
     ):
         """
         Adds a figure to the log
@@ -838,10 +824,10 @@ class LogBuilder:
         self.image(image_data, name, alt_text=alt_text, br=br)
 
     def pyplot(
-            self,
-            assertion_name: str | None = None,
-            assertion_hash: str | None = None,
-            br: bool = False,
+        self,
+        assertion_name: str | None = None,
+        assertion_hash: str | None = None,
+        br: bool = False,
     ) -> "PyPlotLogContext":
         """
         Opens a matplotlib context to add a figure directly to the plot.
@@ -965,8 +951,7 @@ class LogBuilder:
         self.page_session.write_md(md_code, no_break=no_break)
 
     def add_txt(
-            self, txt_code: str, targets: str | set[str] | None = None,
-            align: bool = True
+        self, txt_code: str, targets: str | set[str] | None = None, align: bool = True
     ):
         """
         Adds html code directly of the text and console section of this log.
@@ -987,7 +972,7 @@ class LogBuilder:
         from scistag.vislog import TXT, CONSOLE
 
         if align and (
-                self._cur_alignment != "left" or self._cur_alignment_block != "left"
+            self._cur_alignment != "left" or self._cur_alignment_block != "left"
         ):
             lines = txt_code.split("\n")
             alignment, cw = self.get_ascii_alignment()

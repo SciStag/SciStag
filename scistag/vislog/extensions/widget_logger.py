@@ -112,9 +112,9 @@ class WidgetLogger(BuilderExtension):
         return new_button
 
     def slider(
-            self,
-            *args,
-            **kwargs,
+        self,
+        *args,
+        **kwargs,
     ) -> "LSlider":
         """
         Adds a value slider to the log.
@@ -127,9 +127,9 @@ class WidgetLogger(BuilderExtension):
         return new_slider
 
     def timer(
-            self,
-            *args,
-            **kwargs,
+        self,
+        *args,
+        **kwargs,
     ) -> "LTimer":
         """
         Adds a timer to the log which is triggered in a defined interval
@@ -142,9 +142,9 @@ class WidgetLogger(BuilderExtension):
         return new_timer
 
     def file_upload(
-            self,
-            *args,
-            **kwargs,
+        self,
+        *args,
+        **kwargs,
     ) -> "LFileUpload":
         """
         Adds a file upload widget to the log

@@ -145,7 +145,7 @@ class VisualLogAutoReloader:
     def start(
         cls,
         log: VisualLog,
-        server:bool=False,
+        server: bool = False,
         check_time_s: float | None = None,
         _stack_level=1,
     ):
