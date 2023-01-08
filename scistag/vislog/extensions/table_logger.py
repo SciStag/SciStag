@@ -147,7 +147,7 @@ class TableContext(ElementContext):
         ..  code-block:python
 
             with table.add_row() as row:
-                with row.add_col():
+                with row.add():
                     vl.image(...)
 
             table.add_row([1, 2, 3])
@@ -163,7 +163,7 @@ class TableContext(ElementContext):
                 content = [content]
             with self.add_row() as row:
                 for element in content:
-                    with row.add_col():
+                    with row.add():
                         self.builder.add(element, mimetype=mimetype)
                 return None
         self.cur_row += 1
@@ -301,7 +301,7 @@ class TableRowContext(ElementContext):
             )
         return self.iter_cols(self.table.size[0])
 
-    def add_col(
+    def add(
         self,
         content: ColumnContent | None = None,
         mimetype: str | None = None,
@@ -314,10 +314,10 @@ class TableRowContext(ElementContext):
             will be created.
         :param mimetype: Defines the explicit mime type and applies it
             were possible such as parsing text provided as text/markdown or text/html.
-        :return: The column context to be entered via `with row.add_col():...`
+        :return: The column context to be entered via `with row.add():...`
         """
         if content is not None:
-            with self.add_col():
+            with self.add():
                 if isinstance(content, Callable):
                     content()
                 else:
@@ -411,7 +411,7 @@ class TableLogger(BuilderExtension):
                 for row_index in range(4):
                     with table.add_row() as row:
                         for col_index in range(4):
-                            with row.add_col():
+                            with row.add():
                                 vl.log(col_index)
 
             alternatively:

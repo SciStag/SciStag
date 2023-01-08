@@ -53,18 +53,22 @@ table.vl_data_table {
     border-collapse: collapse;
     background-color: white;
     text-align: left;
-    font-family: Century Gothic, sans-serif;font-size: medium;
+    font-family: Century Gothic, sans-serif;
+    font-size: medium;
 }
 
-table.vl_data_table th { color: #305496; }
+table.vl_data_table th {
+    color: #305496;
+}
 
 table.vl_data_table td, table.vl_data_table th {
     border: 1px solid black;
     padding: 2px 20px 2px 4px;
 }
 
-table.vl_data_table tr:nth-child(odd) {background: #D9E1F2;}
-
+table.vl_data_table tr:nth-child(odd) {
+    background: #D9E1F2;
+}
 
 
 table.vl_log_table_seamless {
@@ -147,4 +151,35 @@ a:active {
     text-decoration: underline;
 }
 
+h1
+{
+    color: steelblue;
+}
 
+
+h2
+{
+    color: steelblue;
+}
+
+h3.vl_section_header {
+    display: flex;
+    flex-direction: row;
+    font-weight: bolder;
+    color: steelblue;
+}
+
+h3.vl_section_header:before, h3.vl_section_header:after {
+    content: "";
+    flex: 1 1;
+    border-bottom: 1px solid;
+    margin: auto;
+}
+
+h3.vl_section_header:before {
+    margin-right: 10px
+}
+
+h3.vl_section_header:after {
+    margin-left: 10px
+}

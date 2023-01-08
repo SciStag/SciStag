@@ -19,7 +19,7 @@ def test_basics_logging_methods():
     with vl.table.begin() as table:
         with table.add_row() as row:
             for index in range(3):
-                with row.add_col():
+                with row.add():
                     vl.add("Test")
     vl.test.assert_cp_diff(hash_val="a43a100d2f5d7e2dc4ecbf083f52ee29")
     vl.br()
@@ -77,10 +77,10 @@ def test_table_creation():
 
     vl.test.checkpoint("log.table.add_col")
     for row_index, row in enumerate(vl.table.begin().iter_rows(3)):
-        row.add_col("123")
-        row.add_col("456")
-        row.add_col(lambda: vl.log.info("789"))
-        row.add_col(MDCode("**Markdown**"))
+        row.add("123")
+        row.add("456")
+        row.add(lambda: vl.log.info("789"))
+        row.add(MDCode("**Markdown**"))
     vl.test.assert_cp_diff(hash_val="c96f6f53cdd5c2a69180d641ad2c4766")
 
 

@@ -146,3 +146,13 @@ class CellLogger(BuilderExtension):
         Returns if a cell with given name does exist
         """
         return item in self.cells
+
+    def invalidate(self, name: str):
+        """
+        Invalidates the cell with given name
+
+        :param name: The cell's name
+        """
+        if name not in self.cells:
+            raise KeyError(f"Unknown cell {name}")
+        self.cells[name].invalidate()

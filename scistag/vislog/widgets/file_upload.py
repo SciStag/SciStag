@@ -49,12 +49,14 @@ class LFileUpload(LWidget):
         name: str = "fileUpload",
         insert: bool = True,
         on_upload: OnFileUploadCallback | None = None,
+        target: str | None = None,
     ):
         """
         :param builder: The log builder to which the button shall be added
+        :param on_upload: Defines the function to be called when filed were uploaded
         :param name: The uploader's name
         :param insert: Defines if the element shall be inserted into the log
-
+        :param target: Defines the cache entry in which new files shall be stored
         """
         super().__init__(name=name, builder=builder)
         if insert:
@@ -67,6 +69,8 @@ class LFileUpload(LWidget):
         """The current list of files uploaded so far"""
         self.on_upload: OnFileUploadCallback | None = on_upload
         """Defines the function to be called when a file was uploaded"""
+        self.target = target
+        """Cache entry in which the file data shall be stored"""
 
     def write(self):
         html = self.render("{{TEMPLATES}}/extensions/upload/vl_file_upload.html")
@@ -108,6 +112,8 @@ class LFileUpload(LWidget):
                 files=values,
                 upload_session_id=self._current_upload_session,
             )
+            if self.target is not None:
+                self.builder.cache.append(self.target, values, unpackap=True)
             self._current_upload_session = None
             self._current_files = {}
             self.raise_event(event_data)

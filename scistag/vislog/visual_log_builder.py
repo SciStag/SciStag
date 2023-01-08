@@ -97,12 +97,12 @@ class LogBuilder:
     """
 
     def __init__(
-        self,
-        log: "VisualLog",
-        page_session: Union["PageSession", None] = None,
-        nested: bool = False,
-        params: dict | BaseModel | Any | None = None,
-        **kwargs,
+            self,
+            log: "VisualLog",
+            page_session: Union["PageSession", None] = None,
+            nested: bool = False,
+            params: dict | BaseModel | Any | None = None,
+            **kwargs,
     ):
         """
         :param log: The log to which the content shall be added.
@@ -333,7 +333,7 @@ class LogBuilder:
         return result
 
     def add(
-        self, content: LogableContent, br: bool = False, mimetype: str | None = None
+            self, content: LogableContent, br: bool = False, mimetype: str | None = None
     ) -> LogBuilder:
         """
         Adds the provided content to the log.
@@ -366,7 +366,7 @@ class LogBuilder:
         import pandas as pd
 
         if hasattr(content, "to_html") and not isinstance(
-            content, (pd.DataFrame, pd.Series)
+                content, (pd.DataFrame, pd.Series)
         ):
             self.html(content.to_html())
             return self
@@ -536,13 +536,17 @@ class LogBuilder:
         self.sub(text, level=4)
         return self
 
-    def hr(self) -> LogBuilder:
+    def hr(self, title: str = None) -> LogBuilder:
         """
         Adds a horizontal rule to the document
 
         :return: The builder
         """
-        self.add_html("<hr>")
+        if title is not None:
+            self.add_html(f"<h3 class='vl_section_header'>{title}</h3>")
+            self.add_md(f"---\n### {title}\n\n")
+        else:
+            self.add_html("<hr>")
         self.add_txt("---", targets="*")
         return self
 
@@ -791,12 +795,12 @@ class LogBuilder:
         )
 
     def figure(
-        self,
-        figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
-        name: str | None = None,
-        alt_text: str | None = None,
-        _out_image_data: io.IOBase | None = None,
-        br: bool = False,
+            self,
+            figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
+            name: str | None = None,
+            alt_text: str | None = None,
+            _out_image_data: io.IOBase | None = None,
+            br: bool = False,
     ):
         """
         Adds a figure to the log
@@ -834,10 +838,10 @@ class LogBuilder:
         self.image(image_data, name, alt_text=alt_text, br=br)
 
     def pyplot(
-        self,
-        assertion_name: str | None = None,
-        assertion_hash: str | None = None,
-        br: bool = False,
+            self,
+            assertion_name: str | None = None,
+            assertion_hash: str | None = None,
+            br: bool = False,
     ) -> "PyPlotLogContext":
         """
         Opens a matplotlib context to add a figure directly to the plot.
@@ -961,7 +965,8 @@ class LogBuilder:
         self.page_session.write_md(md_code, no_break=no_break)
 
     def add_txt(
-        self, txt_code: str, targets: str | set[str] | None = None, align: bool = True
+            self, txt_code: str, targets: str | set[str] | None = None,
+            align: bool = True
     ):
         """
         Adds html code directly of the text and console section of this log.
@@ -982,7 +987,7 @@ class LogBuilder:
         from scistag.vislog import TXT, CONSOLE
 
         if align and (
-            self._cur_alignment != "left" or self._cur_alignment_block != "left"
+                self._cur_alignment != "left" or self._cur_alignment_block != "left"
         ):
             lines = txt_code.split("\n")
             alignment, cw = self.get_ascii_alignment()
@@ -1148,6 +1153,18 @@ class LogBuilder:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         LogBuilderRegistry.remove_builder(self)
+
+    def __contains__(self, item):
+        return self.cache.__contains__(item)
+
+    def __setitem__(self, key, value):
+        return self.cache.__setitem__(key, value)
+
+    def __getitem__(self, item):
+        return self.cache.__getitem__(item)
+
+    def __delitem__(self, key):
+        return self.cache.__delitem__(key)
 
     def get_ascii_alignment(self) -> (str, int | None):
         """

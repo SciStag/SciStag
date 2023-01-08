@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import time
+from fnmatch import fnmatch
 
 from typing import Any, Callable
 
@@ -129,7 +130,7 @@ class Cache:
         :meth:`add_volatile_member` which do not get removed but automatically 
         cleared upon execution of unload. 
         """
-        self._key_versions = {}
+        self._key_revisions = {}
         """
         Version counter for each key
         """
@@ -243,7 +244,7 @@ class Cache:
             self.set(key, new_data, version=version)
             return new_data
 
-    def set(self, key: str, value, version=None):
+    def set(self, key: str, value, version=None) -> Any:
         """
         Adds an item to the cache or updates it.
 
@@ -256,6 +257,8 @@ class Cache:
         :param value: The value to assign
         :param version: The version of the cache element. By default 0 for
             memory cache elements and 1 for disk cache elements.
+        :return: The assigned value
+
         """
         with self._access_lock:
             org_key = key
@@ -269,18 +272,19 @@ class Cache:
                 and not key.startswith("_")
             ):
                 raise ValueError("Keys has to start with a character")
-            if key in self._key_versions:
-                self._key_versions[key] += 1
+            if key in self._key_revisions:
+                self._key_revisions[key] += 1
             else:
-                self._key_versions[key] = 1
+                self._key_revisions[key] = 1
             if "/" in key:
                 self._disk_cache.set(org_key, value, version=version)
-                return
+                return value
             # flag of volatile if added during loading process
             if key not in self._mem_cache and self._is_loading:
                 self._volatile_cache_entries.add(key)
             self._mem_cache[key] = value
             self._mem_cache_versions[key] = eff_version
+            return value
 
     def get(self, key: str, default=None, version=None):
         """
@@ -314,17 +318,17 @@ class Cache:
             else:
                 return default
 
-    def get_version(self, key) -> int:
+    def get_revision(self, key) -> int:
         """
-        Returns the version of given cache entry.
+        Returns the revision of given cache entry.
 
-        If the value does not exist yet it has a version of 0 by default.
+        If the value does not exist yet it has a revision of 0 by default.
 
         :param key: The key of the version to return
-        :return: The version. 0 if the key does not exist.
+        :return: The revision. 0 if the key does not exist.
         """
         with self._access_lock:
-            return self._key_versions.get(key, 0)
+            return self._key_revisions.get(key, 0)
 
     def clear(self):
         """
@@ -380,7 +384,7 @@ class Cache:
                 elif element in self._mem_cache:
                     del self._mem_cache[element]
                     del self._mem_cache_versions[element]
-                    self._key_versions[element] += 1
+                    self._key_revisions[element] += 1
 
     def get_is_loading(self) -> bool:
         """
@@ -452,6 +456,7 @@ class Cache:
 
     def __setitem__(self, key: str, value):
         self.set(key, value)
+        return value
 
     def __getitem__(self, key) -> Any:
         with self._access_lock:
@@ -502,11 +507,161 @@ class Cache:
                 self[key] = -value
                 return value
 
+    def lappend(self, key: str, value: Any, unpack: bool = False):
+        """
+        Appends the value provided to the list named key.
+
+        If the list does not exist yet it will be created
+
+        :param key: The key of the list
+        :param value: The value to be added
+        :param unpack: Defines if value is a list and all of its elements shall be
+            added to the target list
+        """
+        with self._access_lock:
+            if key not in self:
+                tar_list = self[key]
+                self.increase_revision(key, True)
+            else:
+                tar_list = []
+                self[key] = tar_list
+            if not isinstance(tar_list, list):
+                raise ValueError(
+                    f"Tried to append new values to non-list " f"element {key}"
+                )
+            if unpack:
+                if not isinstance(value, list):
+                    raise ValueError("Can only unpack lists")
+                tar_list.extend(value)
+            else:
+                tar_list.append(value)
+
+    def lpop(self, key: str, count: int = 1, index: int = -1):
+        """
+        Pops one or multiple values from the list
+
+        :param key: The key of the list
+        :param count: The count of values to pop.
+
+            If a count of -1 is passed all values will be received.
+        :param index: The index from which the value shall be received.
+
+            At the moment only 0 (from list front) and -1 (from end) are supported.
+        :return: A list of all values received.
+
+            An empty list if the list does not exist
+        """
+        with self._access_lock:
+            if key not in self:
+                return []
+            src_list = self[key]
+            if not isinstance(src_list, list):
+                raise ValueError(f"Tried to pop values from non-list element {key}")
+            if count >= len(src_list) or count == -1:
+                results = src_list
+                self.increase_revision(key)
+            else:
+                if index != 0 and index != -1:
+                    raise ValueError(
+                        "At the moment only values of 0 and -1 are"
+                        "supported as source index"
+                    )
+                if index == -1:
+                    results = src_list[-count:]
+                    end = len(src_list) - count
+                    self[key] = src_list[0:end]
+                else:
+                    results = src_list[0:count]
+                    self[key] = src_list[count:]
+            return results
+
+    def llen(self, key: str) -> int:
+        """
+        Receives the length of the list with given name
+
+        :param key: The list's name in the cache
+        :return: The list's length if the list is known, 0 otherwise.
+        """
+        with self._access_lock:
+            if key not in self:
+                return 0
+            src_list = self[key]
+            if not isinstance(src_list, list):
+                raise ValueError(f"Tried to receive length of non-list element {key}")
+            return len(src_list)
+
+    def increase_revision(self, key, locked=False):
+        """
+        Increases the version of given key
+
+        :param key: The key to modify
+        :param locked: Defines if we are already locked
+        :return: The new version
+        """
+        if locked:
+            self._mem_cache_versions[key] += 1
+            return self._mem_cache_versions[key]
+        else:
+            with self._access_lock:
+                self._mem_cache_versions[key] += 1
+                return self._mem_cache_versions[key]
+
+    def remove(self, keys: str | list[str]) -> int:
+        """
+        Removes the key or keys matching the name or the name mask provided.
+
+        You can use * and ? to remove a set of cache entries in one go.
+
+        In difference to a del cache["keyName"] the remove method fails silently
+        and though can be used pretty well to do a "cleanup" w/o additional check
+        for existence.
+
+        :param keys: A single name or a list of names of keys to remove.
+
+            Can contain placeholders such as * and ?
+        :return: The number of elements deleted
+        """
+        with self._access_lock:
+            if isinstance(keys, str):
+                keys = [keys]
+            remove_set = set()
+            for element in keys:
+                if "?" in element or "*" in element:
+                    for cur_key in self._key_revisions.keys():
+                        if fnmatch(cur_key, element):
+                            remove_set.add(element)
+                else:
+                    if element in self._key_revisions:
+                        remove_set.add(element)
+            for element in remove_set:
+                del self[element]
+
+            return len(remove_set)
+
+    def non_zero(self, key: str) -> bool:
+        """
+        Returns if the element has a non-zero size
+
+        :param key: The key of the element to check
+        :return True: If the element does exist and has a size or length > 0
+        """
+        with self._access_lock:
+            if key not in self:
+                return False
+            element = self[key]
+            if isinstance(element, (float, bool, int)):
+                return element != 0
+            if isinstance(element, (str, dict, list, bytes)):
+                return len(element) > 0
+            if hasattr(element, "shape"):  # np.ndarray and DataFrame
+                return element.shape[0] > 0
+            return False
+
     def __delitem__(self, key):
         """
         Deletes an element from the cache.
 
-        If the element does not exist a ValueError exception will be raised.
+        Does raise a value error if the key does not exist yet.
 
         :param key: The element's name
         """
@@ -516,9 +671,9 @@ class Cache:
                 self._disk_cache.delete(key)
                 return
             if key not in self._mem_cache:
-                raise KeyError(f"The value {key} is not defined in the cache")
+                return
             del self._mem_cache[key]
-            self._mem_cache_versions[key] += 1
+            self._key_revisions[key] += 1
 
     def __contains__(self, key) -> bool:
         """
