@@ -55,6 +55,7 @@ def test_repo_validity():
         "*/data/scistag_vector_emojis_0_0_2.zip",
         "*/file_source.py",
         "*/visual_log.py",
+        "*/page_session.py",
         "*/visual_log_builder.py",
     ]
 
