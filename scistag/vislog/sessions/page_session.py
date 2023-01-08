@@ -78,12 +78,12 @@ class PageSession:
     """
 
     def __init__(
-            self,
-            log: "VisualLog",
-            builder: Union["LogBuilder", None],
-            log_formats: set[str] | None = None,
-            index_name: str = "",
-            target_dir: str = "",
+        self,
+        log: "VisualLog",
+        builder: Union["LogBuilder", None],
+        log_formats: set[str] | None = None,
+        index_name: str = "",
+        target_dir: str = "",
     ):
         """
         :param log: The target log instance
@@ -346,10 +346,10 @@ class PageSession:
             return self._page_lock, self._logs
 
     def render_element(
-            self,
-            name: str | None = None,
-            output_format: str = HTML,
-            backup: bool | None = None,
+        self,
+        name: str | None = None,
+        output_format: str = HTML,
+        backup: bool | None = None,
     ) -> (float, bytes):
         """
         Returns the element at given node, starting with the root element
@@ -448,7 +448,7 @@ class PageSession:
         return self
 
     def write_to_disk(
-            self, formats: set[str] | None = None, render=True
+        self, formats: set[str] | None = None, render=True
     ) -> PageSession:
         """
         Writes the rendered pages from all (or all specified) formats to
@@ -469,26 +469,26 @@ class PageSession:
         if self.log.options.output.log_to_disk:
             # store html
             if (
-                    self._html_export
-                    and self.html_filename is not None
-                    and len(self.html_filename) > 0
-                    and HTML in formats
+                self._html_export
+                and self.html_filename is not None
+                and len(self.html_filename) > 0
+                and HTML in formats
             ):
                 FileStag.save(self.html_filename, self.get_page(HTML))
                 # store markdown
             if (
-                    self.md_export
-                    and self._md_filename is not None
-                    and len(self._md_filename) > 0
-                    and MD in formats
+                self.md_export
+                and self._md_filename is not None
+                and len(self._md_filename) > 0
+                and MD in formats
             ):
                 FileStag.save(self._md_filename, self.get_page(MD))
             # store txt
             if (
-                    self.txt_export
-                    and self._txt_filename is not None
-                    and len(self._txt_filename) > 0
-                    and TXT in formats
+                self.txt_export
+                and self._txt_filename is not None
+                and len(self._txt_filename) > 0
+                and TXT in formats
             ):
                 FileStag.save(self._txt_filename, self.get_page(TXT))
         return self
@@ -599,13 +599,13 @@ class PageSession:
             cur_time = time.time()
             refresh_time = self.log.refresh_time_s
             if (
-                    cur_time - self.last_user_interaction
-                    < self.user_interaction_performance_duration_s
+                cur_time - self.last_user_interaction
+                < self.user_interaction_performance_duration_s
             ):
                 refresh_time = min(self.user_interaction_refresh_time, refresh_time)
             if (
-                    self.next_event_time is not None
-                    and self.next_event_time - cur_time < refresh_time
+                self.next_event_time is not None
+                and self.next_event_time - cur_time < refresh_time
             ):
                 refresh_time = self.next_event_time - cur_time
                 if refresh_time < self.minimum_refresh_time:
@@ -642,9 +642,15 @@ class PageSession:
                 change_time = 0.0
                 for cur_element_ref in element_list:
                     if (
-                            self.element_update_times[cur_element_ref.path]
-                            < cur_element_ref.element.last_direct_change_time
+                        self.element_update_times[cur_element_ref.path]
+                        < cur_element_ref.element.last_direct_change_time
                     ):
+                        if modified_element_ref is not None:
+                            if modified_element_ref.path + "." in cur_element_ref.path:
+                                # check if the (potentially) newer element would
+                                # anyway be embedded inside the already selected element
+                                # if so, skip it, as it were anyway embedded
+                                continue
                         modified_element_ref = cur_element_ref
                         change_time = cur_element_ref.element.last_direct_change_time
                 if modified_element_ref is None:
@@ -652,16 +658,16 @@ class PageSession:
                 path_start = modified_element_ref.path + "."
                 for element_name in self.element_update_times.keys():
                     if (
-                            element_name == modified_element_ref.path
-                            or element_name.startswith(path_start)
+                        element_name == modified_element_ref.path
+                        or element_name.startswith(path_start)
                     ):
                         self.element_update_times[element_name] = change_time
                 data = modified_element_ref.element.build(HTML)
                 return {
-                           "action": "setContent",
-                           "targetElement": modified_element_ref.name,
-                           "vlRefreshTime": refresh_time_ms,
-                       }, data
+                    "action": "setContent",
+                    "targetElement": modified_element_ref.name,
+                    "vlRefreshTime": refresh_time_ms,
+                }, data
 
     def begin_sub_element(self, name: str) -> LogElement:
         """

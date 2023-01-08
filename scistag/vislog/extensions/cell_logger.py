@@ -40,6 +40,7 @@ class CellLogger(BuilderExtension):
         interval_s: float | None = None,
         continuous: bool = False,
         static: bool = False,
+        **kwargs,
     ) -> Cell:
         """
         Begins a new content cell to which you can add content with any logging
@@ -58,6 +59,7 @@ class CellLogger(BuilderExtension):
             interval defined.
         :param static: Defines if the cell is static and does not need any container
             when being stored in the html file.
+        :param kwargs: For additional parameters see :class:`Cell`
         :return: The content cell reference
         """
         cell = Cell(
@@ -66,6 +68,7 @@ class CellLogger(BuilderExtension):
             interval_s=interval_s,
             continuous=continuous,
             static=static,
+            **kwargs,
         )
         return cell
 
@@ -77,6 +80,7 @@ class CellLogger(BuilderExtension):
         static: bool = False,
         on_build: Union["CellOnBuildCallback", None] = None,
         _builder_method: Union[Callable, None] = None,
+        **kwargs,
     ) -> Cell:
         """
         Adds an empty content cell without filling it with content and returns it.
@@ -97,6 +101,7 @@ class CellLogger(BuilderExtension):
         :param on_build: The method to be called when ever the cell was invalidated
             or if the update mode is set to continuous.
         :param _builder_method: The object method to which this cell is attached
+        :param kwargs: For additional parameters see :class:`Cell`
         :return: The content cell reference.
         """
         cell = Cell(
@@ -107,6 +112,7 @@ class CellLogger(BuilderExtension):
             static=static,
             on_build=on_build,
             _builder_method=_builder_method,
+            **kwargs,
         )
         cell.leave()
         return cell

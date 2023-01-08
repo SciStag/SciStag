@@ -129,6 +129,10 @@ class Cache:
         :meth:`add_volatile_member` which do not get removed but automatically 
         cleared upon execution of unload. 
         """
+        self._key_versions = {}
+        """
+        Version counter for each key
+        """
 
     @property
     def version(self) -> str:
@@ -260,11 +264,15 @@ class Cache:
             )
             assert len(key) > 0
             if (
-                    not key[0].isalpha()
-                    and not key.startswith("./")
-                    and not key.startswith("_")
+                not key[0].isalpha()
+                and not key.startswith("./")
+                and not key.startswith("_")
             ):
                 raise ValueError("Keys has to start with a character")
+            if key in self._key_versions:
+                self._key_versions[key] += 1
+            else:
+                self._key_versions[key] = 1
             if "/" in key:
                 self._disk_cache.set(org_key, value, version=version)
                 return
@@ -305,6 +313,18 @@ class Cache:
                 return self._mem_cache[key]
             else:
                 return default
+
+    def get_version(self, key) -> int:
+        """
+        Returns the version of given cache entry.
+
+        If the value does not exist yet it has a version of 0 by default.
+
+        :param key: The key of the version to return
+        :return: The version. 0 if the key does not exist.
+        """
+        with self._access_lock:
+            return self._key_versions.get(key, 0)
 
     def clear(self):
         """
@@ -359,6 +379,8 @@ class Cache:
                 # delete volatile cache entries
                 elif element in self._mem_cache:
                     del self._mem_cache[element]
+                    del self._mem_cache_versions[element]
+                    self._key_versions[element] += 1
 
     def get_is_loading(self) -> bool:
         """
@@ -435,9 +457,9 @@ class Cache:
         with self._access_lock:
             result = self.get(key)
             if (
-                    result is None
-                    and key not in self._mem_cache
-                    and key not in self._disk_cache
+                result is None
+                and key not in self._mem_cache
+                and key not in self._disk_cache
             ):
                 raise KeyError(f"Key {key} not found")
             return result
@@ -496,7 +518,7 @@ class Cache:
             if key not in self._mem_cache:
                 raise KeyError(f"The value {key} is not defined in the cache")
             del self._mem_cache[key]
-            del self._mem_cache_versions[key]
+            self._mem_cache_versions[key] += 1
 
     def __contains__(self, key) -> bool:
         """
@@ -510,8 +532,7 @@ class Cache:
             if "/" in key:
                 return key in self._disk_cache
             return (
-                    key in self._mem_cache and self._mem_cache_versions[
-                key] == eff_version
+                key in self._mem_cache and self._mem_cache_versions[key] == eff_version
             )
 
 

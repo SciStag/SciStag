@@ -12,18 +12,13 @@ class LiveLog(LogBuilder):
     @cell
     def widget_cell(self):
         self.br(2)
-
-        def clicked():
-            with self.event_log.cell:
-                self.log("Button clicked")
-
-        self.widget.button("Click me", clicked)
+        self.widget.button("Click me", target="clicks")
         self.widget.button("Clear", lambda: self.event_log.cell.clear())
         self.br(2)
 
-    @cell(progressive=True, interval_s=0.1)
+    @cell(progressive=True, interval_s=0.1, requires="clicks")
     def event_log(self):
-        pass
+        self.text(self.cache.get("clicks", 0))
 
 
 if VisualLog.is_main():

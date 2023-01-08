@@ -49,14 +49,20 @@ class Cell(LWidget):
     """
 
     def __init__(
-            self,
-            builder: LogBuilder,
-            interval_s: float | None = None,
-            continuous: bool = False,
-            progressive: bool = False,
-            static: bool = False,
-            on_build: CellOnBuildCallback = None,
-            _builder_method: Union[Callable, None] = None,
+        self,
+        builder: LogBuilder,
+        interval_s: float | None = None,
+        continuous: bool = False,
+        progressive: bool = False,
+        static: bool = False,
+        groups: str | list[str] = None,
+        uses: str | list[str] = None,
+        requires: str | list[str] = None,
+        tab: str | None = None,
+        page: int | None = None,
+        data_cell: bool = False,
+        on_build: CellOnBuildCallback = None,
+        _builder_method: Union[Callable, None] = None,
     ):
         """
         :param builder: The builder object we are attached to
@@ -68,6 +74,22 @@ class Cell(LWidget):
             a build call.
         :param static: Defines if the cell is static and does not need any container
             when being stored in the html file.
+        :param uses: A list of cache and file names which shall be observed. If any of
+            the elements does change the cell will be invalidated.
+        :param requires: A list of cache and file names which are required. Like uses
+            the cell will be refreshed if the value changes but in addition the cell
+            also won't be build at all before the value or file is present.
+        :param groups: A list of visibility groups the page is attached to.
+        :param tab: The tab in which the cell shall be displayed. If a tabe is defined
+            in the LogBuilder (by default it is not) only cells with the associated tab
+            or None  will be displayed. IF tab and page are defined the hierarchy is
+            tab>page.
+        :param data_cell: If set the cell wi
+        :param page: The cell's page index. If a page is defined in the LogBuilder
+            (by default it is not) only cells with the associated page or None will be
+            displayed.
+        :param data_cell: If set the cell will be flagged as pure data cell w/o visual
+            content and thus no required updates after a rebuild.
         :param on_build: The callback to be called when the cell shall be build
         :param _builder_method: The object method to which this cell is attached
         """
@@ -81,6 +103,41 @@ class Cell(LWidget):
             builder.page_session.write_html(f'<div id="{name}" class="vl_log_cell">\n')
         super().__init__(builder=builder, name="cell", explicit_name=name)
         self.cell_name = name
+        self.groups = {"default"}
+        if groups is not None:
+            if isinstance(groups, str):
+                self.groups.add(groups)
+            else:
+                self.groups = self.groups.union(set(groups))
+        self.uses = set()
+        if uses is not None:
+            if isinstance(uses, str):
+                self.uses.add(uses)
+            else:
+                self.uses = self.uses.union(set(uses))
+        self.requires = set()
+        if requires is not None:
+            if isinstance(requires, str):
+                self.requires.add(requires)
+            else:
+                self.requires = self.requires.union(set(requires))
+        self.tab = tab
+        """
+        Define on which tab the cell shall be visible. Will automatically add the
+        cell to a group named t{tab} if just the tab is specified or t{tab}.page{} if
+        tab and page are defined"""
+        self.page = page
+        """
+        Define on which page the cell shall be visible. Will automatically add the
+        cell to a group named p{page} if just the tab is specified or t{tab}.page{} if
+        tab and page are defined"""
+        if self.tab:
+            self.groups.add(f"tab_{tab}")
+        if self.page:
+            self.groups.add(f"page_{page}")
+        self.data_cell = data_cell
+        """Defines if this is a data cell which causes no direct visual modifications
+        and thus does not need to trigger a client site view refresh"""
         self.page_session.enter_element(self.sub_element)
         """The cell's unique name"""
         self._initial = True
@@ -88,7 +145,7 @@ class Cell(LWidget):
         div region to the html output)"""
         self._closed = False
         """Defines if the element was closed (left) already after it was entered"""
-        self._static = static
+        self.static = static
         """Defines if the cell is static and can not be individually modified"""
         self.on_build: CellOnBuildCallback = on_build
         """Function to be called when the cell shall be (re-)built"""
@@ -113,6 +170,8 @@ class Cell(LWidget):
         """The time when the cell was invalidated the last time"""
         if self.interval_s is not None and self.continuous:
             self._next_tick = time.time() + self.interval_s
+        self.hashes = {}
+        """Stores the hash values for all observed elements"""
         self.build()
         self.leave()
         if not static:
@@ -166,14 +225,36 @@ class Cell(LWidget):
             self.enter()
         if not self.progressive:
             self.clear()
-        if not self.progressive:
-            self.sub_element.add_data("html", b"<div>")
-        event = LCellBuildEvent(name=self.identifier, widget=self, builder=self.builder)
-        self.raise_event(event)
-        if not self.progressive:
-            self.sub_element.add_data("html", b"</div>")
+        if self.can_build:
+            if not self.progressive:
+                self.sub_element.add_data("html", b"<div>")
+            event = LCellBuildEvent(
+                name=self.identifier, widget=self, builder=self.builder
+            )
+            self.raise_event(event)
+            if not self.progressive:
+                self.sub_element.add_data("html", b"</div>")
         if opened:
             self.leave()
+        self.update_hashes()
+
+    @property
+    def can_build(self):
+        """
+        Returns if all of the cell's requirements are fulfilled and it can be build
+        """
+        for key in self.requires:
+            if key not in self.builder.cache:
+                return False
+        return True
+
+    def update_hashes(self):
+        """
+        Updates the hashes of the last modification
+        """
+        element_set = self.uses.union(self.requires)
+        for key in element_set:
+            self.hashes[key] = self.builder.cache.get_version(key)
 
     def handle_build(self):
         """
@@ -209,12 +290,16 @@ class Cell(LWidget):
             self.handle_build()
 
     def handle_loop(self) -> float | None:
+        cur_time = time.time()
+        element_set = self.uses.union(self.requires)
+        for key in element_set:
+            hash_val = self.builder.cache.get_version(key)
+            if hash_val != self.hashes.get(key, 0):
+                self._next_tick = cur_time
         if self._next_tick is None:
             return None
-        cur_time = time.time()
         if cur_time >= self._next_tick:
-            if not self.progressive:
-                self.build()
+            self.build()
         else:
             return self._next_tick
         if self.continuous:
