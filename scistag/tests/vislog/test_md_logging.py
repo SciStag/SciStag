@@ -22,12 +22,14 @@ def test_markdown():
     * multi-line markdown? 
     """
     )
-    vl.test.assert_cp_diff("cab9b56dc7c3b2c50d88dfc754decb4d")
+    vl.test.assert_cp_diff("092eabdd11788403cf5f29ec004f0f7a")
 
-    log = VisualLog(continuous_write=True)
+    log = VisualLog()
     log.default_builder.md.embed(b"EmbeddedData")
+    log.default_builder.flush()
     assert b"EmbeddedData" in log.default_page.get_body()
     log.default_builder.md.embed(FilePath.absolute_comb("embedded.md"))
+    log.default_builder.flush()
     assert b"This markdown file will be embedded." in log.default_page.get_body()
     with pytest.raises(ValueError):
         log.default_builder.md.embed(FilePath.absolute_comb("Not existing file"))

@@ -20,7 +20,7 @@ class DataFrameLogBuilder(LogBuilder):
         super().__init__(**kwargs)
         self.data_frame: pd.DataFrame = kwargs.pop("df")
 
-    @cell(static=False)
+    @cell(static=True)
     def build_table(self):
         """
         Renders the dataframe as a HTML table

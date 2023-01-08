@@ -139,6 +139,7 @@ class VisualLog:
         auto_reload: bool | BuilderTypes = False,
         debug: bool = False,
         options: "LogOptions" | LOG_DEFAULT_OPTION_LITERALS | None = None,
+        fixed_session_id: str | None = None,
     ):
         """
         :param title: The log's name
@@ -178,6 +179,9 @@ class VisualLog:
 
             See :meth:`setup_options` to receive a standard option set you can
             customize.
+        :param fixed_session_id: If provided a fix page session ID will be used,
+            e.g. required for regression and consistency tests where names are not
+            allowed to change.
         """
         import inspect
 
@@ -328,6 +332,7 @@ class VisualLog:
             log_formats=self.log_formats,
             index_name=self.options.output.index_name,
             target_dir=self.target_dir,
+            fixed_session_id=fixed_session_id,
         )
         """Defines the initial default target page in which the page data ia stored"""
         self.pages = [self.default_page]
@@ -375,7 +380,8 @@ class VisualLog:
                 builder = self.default_builder
             else:
                 builder = auto_reload
-            self.default_builder = builder
+            if isinstance(builder, LogBuilder):
+                self.default_builder: LogBuilder = builder
             self.run_server(
                 host_name=self.options.server.host_name,
                 port=self.options.server.port,
@@ -485,6 +491,7 @@ class VisualLog:
         builder: BuilderTypes | None = None,
         test: bool = False,
         auto_reload=False,
+        show_urls: bool | None = None,
         params: PARAMETER_TYPES = None,
         _auto_reload_stag_level: 1 = 1,
         **kwargs,
@@ -509,6 +516,7 @@ class VisualLog:
         :param auto_reload: If swt to True the module calling this function
             will automatically be reloaded on-the-fly when ever it is
             modified and saved and the log will be rebuilt from scratch.
+        :param show_urls: Defines if the server URLs shall be shown on start-up
         :param _auto_reload_stag_level: Defines which module shall be observed
             and reloaded upon modifications.
 
@@ -538,7 +546,10 @@ class VisualLog:
             builder = self.prepare_builder(
                 builder, self.default_page, params=params, kwargs=kwargs
             )
-            self.default_builder = builder
+            from scistag.vislog import LogBuilder
+
+            if isinstance(builder, LogBuilder):
+                self.default_builder = builder
         else:
             builder = self.default_builder
         self._builder_handler = builder
@@ -611,6 +622,8 @@ class VisualLog:
                 continue
             self.urls.append(f"{protocol}{cur_ip}:{port}{url_prefix}")
             self.live_urls.append(f"{protocol}{cur_ip}:{port}{url_prefix}/live")
+        if show_urls is not None:
+            self.options.server.show_urls = show_urls
         if self.options.server.show_urls:
             print("\nVisualLog web service started\n")
             print("Connect at:")
@@ -644,7 +657,8 @@ class VisualLog:
         auto_clear = self.options.run.auto_clear
         if self.options.run.continuous:
             auto_clear = auto_clear if auto_clear is not None else True
-            self._run_continuous(auto_clear, self._builder_handler)
+            if not test:
+                self._run_continuous(auto_clear, self._builder_handler)
         elif mt:
             if self._builder_handler is not None:  # call once
                 self._run_builder(self._builder_handler)
@@ -657,8 +671,6 @@ class VisualLog:
         self,
         builder: BuilderTypes = None,
         params: PARAMETER_TYPES = None,
-        continuous: bool | None = None,
-        auto_clear: bool | None = None,
         auto_reload: bool = False,
         **kwargs,
     ) -> LogBuilder:
@@ -691,39 +703,30 @@ class VisualLog:
             continuously and write them to disk each turn.
 
             False by default.
-        :param auto_clear: Defines if then log shall be cleared automatically
-            when being rebuild with `continuous=True`.
         :param auto_reload: If swt to True the module calling this function
             will automatically be reloaded on-the-fly when ever it is
             modified and saved and the log will be rebuilt from scratch.
-
-            Note that this will override many of the other objects specified
-            in the call of this function such as
-
-            - mt - As multithreading is required to use this feature
-            - continous - which is is currently not supported yet.
-            - ...
         :param kwargs: The additional keyword arguments. Will automatically be passed
             into the builder's initializer of a builder class was passed.
         :return: False if overwrite=False was passed and a log
             could successfully be loaded, so that no run was required.
         """
-        if (
-            not self.options.output.log_to_disk
-            and not self.options.output.log_to_stdout
-        ):
-            self.options.output.log_to_stdout = True
-            self.default_builder.options = self.options
-            self.default_page.options = self.options
         if builder is not None:
             builder = self.prepare_builder(
                 builder, self.default_page, params=params, kwargs=kwargs
             )
-            self.default_builder = builder
+            from scistag.vislog import LogBuilder
+
+            if isinstance(builder, LogBuilder):
+                self.default_builder = builder
         if builder is None:
             builder = self.default_builder
         self._builder_handler = builder
         self.start_time = time.time()
+        continuous = self.options.run.continuous
+        "Rebuild continuously?"
+        auto_clear = self.options.run.auto_clear
+        "Clear the log on every rebuild turn?"
         if self.options.output.log_to_disk and HTML in self.log_formats:
             self.urls.append(
                 "file://" + self.default_page.html_filename.replace("\\", "/")
@@ -805,7 +808,10 @@ class VisualLog:
             builder = builder(
                 log=self, page_session=page_session, params=params, **kwargs
             )
-            self.default_builder = builder
+            from scistag.vislog import LogBuilder
+
+            if isinstance(builder, LogBuilder):
+                self.default_builder = builder
             if not isinstance(builder, LogBuilder):
                 raise TypeError("No valid LogBuilder base class provided")
         return builder
@@ -880,7 +886,8 @@ class VisualLog:
         terminated by Ctrl-L or by an exit button added to the log or a quit
         call triggered.
         """
-        print(SLEEPING_TEXT_MESSAGE)
+        if not self._testing:
+            print(SLEEPING_TEXT_MESSAGE)
         while not self._terminated:
             next_event = self.handle_page_events()
             max_sleep_time = self.refresh_time_s

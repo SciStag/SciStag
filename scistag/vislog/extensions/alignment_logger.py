@@ -82,14 +82,15 @@ class AlignmentLogger(BuilderExtension):
         :param hor_align: The horizontal alignment
         :return: The alignment context
         """
+        if hor_align is None:
+            hor_align = "left"
+
         block = (
             len(hor_align) == 2
             and hor_align.endswith("b")
             or hor_align.endswith("_block")
         )
 
-        if hor_align is None:
-            hor_align = "left"
         if hor_align.startswith("l"):
             hor_align = "left"
         elif hor_align.startswith("c"):
@@ -184,7 +185,7 @@ class AlignmentLogger(BuilderExtension):
 
         :return: The context
         """
-        return self("center_block")
+        return self("center_left")
 
     @property
     def block_right(self) -> ElementContext:

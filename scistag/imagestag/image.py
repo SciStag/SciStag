@@ -12,7 +12,7 @@ import PIL.Image
 import filetype
 import numpy as np
 
-from .color import Color, Colors
+from .color import Color, Colors, ColorTypes
 from .bounding import Bounding2DTypes, Bounding2D
 from .interpolation import InterpolationMethod
 from .pixel_format import PixelFormat, PixelFormatTypes
@@ -63,7 +63,7 @@ class Image(ImageBase):
         framework: ImsFramework | Literal["PIL", "RAW", "CV"] = None,
         pixel_format: PixelFormatTypes | None = None,
         size: Size2DTypes | None = None,
-        bg_color: Color | None = None,
+        bg_color: ColorTypes | None = None,
         **params,
     ):
         """
@@ -79,16 +79,30 @@ class Image(ImageBase):
             disk
         :param pixel_format: The pixel format - if the data was passed
             as np.array. RGB by default.
-        :param size: The size of the new image (if no source ia passed)
+        :param size: The size of the new image - if no source ia passed or if the
+            source is an SVG image to be rendered. (requires CairoSVG)
         :param bg_color: The background color of the new image
         :param params: Source protocol dependent, additional loading parameters
 
         Raises a ValueError if the image could not be loaded
         """
+        self.framework = (
+            ImsFramework(framework) if framework is not None else ImsFramework.PIL
+        )
+        "The framework being used. ImsFramework.PIL by default."
         if pixel_format is not None and isinstance(pixel_format, str):
             pixel_format = PixelFormat(pixel_format)
         if size is not None:
             size = Size2D(size) if not isinstance(size, Size2D) else size
+        bg_color = Color(bg_color).to_int_rgb_auto() if bg_color is not None else None
+
+        if framework != PIL:
+            if source is not None and size is not None:
+                raise ValueError(
+                    "Source and size may only be specified at the same time for SVG "
+                    "images initialized with PIL"
+                )
+
         if source is None and size is not None:
             if bg_color is None:
                 bg_color = Colors.BLACK
@@ -110,10 +124,6 @@ class Image(ImageBase):
         "The image's width in pixels"
         self.height = 1
         "The image's height in pixels"
-        self.framework = (
-            ImsFramework(framework) if framework is not None else ImsFramework.PIL
-        )
-        "The framework being used. ImsFramework.PIL by default."
         self._pil_handle: PIL.Image.Image | None = None
         "The PILLOW handle (if available)"
         self._pixel_data: np.ndarray | None = None
@@ -213,6 +223,7 @@ class Image(ImageBase):
         self,
         source: bytes | np.ndarray | PIL.Image.Image,
         target_size: Size2DTypes | None = None,
+        bg_color: tuple | None = None,
     ):
         """
         Initializes the image as PIL image
@@ -227,9 +238,16 @@ class Image(ImageBase):
                     from scistag.imagestag.svg import SvgRenderer
 
                     max_width = 1280 if target_size is None else target_size.width
-                    rendered_image = SvgRenderer.render(value, output_width=max_width)
+                    rendered_image = SvgRenderer.render(
+                        value, output_width=max_width, bg_color=bg_color
+                    )
                     self._pil_handle = rendered_image._pil_handle
                 else:
+                    if target_size is not None:
+                        raise ValueError(
+                            "Source and size may only be specified at the same time "
+                            "for SVG images initialized with PIL"
+                        )
                     self._pil_handle = PIL.Image.open(data)
             elif isinstance(source, np.ndarray):
                 self._pil_handle = PIL.Image.fromarray(source)
@@ -759,7 +777,7 @@ class Image(ImageBase):
             into a numpy array
         """
         data = {}
-        bands = self.pixel_format.bands
+        bands = self.pixel_format.band_count
         data_type = self.pixel_format.data_type
         shape = (
             (self.height, self.width)

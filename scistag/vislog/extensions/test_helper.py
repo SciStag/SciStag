@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import itertools
 
 import numpy as np
 import pandas as pd
@@ -307,7 +308,15 @@ class TestHelper(BuilderExtension):
         :param value: The hash value
         :param assumed: The assumed value
         """
+        replaced = None
         if value != assumed:
+            replaced = self.replace_place_holder(new_hash=value, stack_level=3)
+            if replaced is not None:
+                self.builder.log(
+                    f"Hash mismatched ({value} != {assumed} but could "
+                    f"be updated: \n{replaced} ✔"
+                )
+        if value != assumed and replaced is None:
             self.builder.log(
                 f"⚠️Hash validation failed!\nValue: " f"{value}\nAssumed: {assumed}",
                 level="error",
@@ -317,7 +326,44 @@ class TestHelper(BuilderExtension):
                 "Hash mismatch - " f"Found: {value}\n" f"Assumed: {assumed}"
             )
         else:
-            self.builder.log(f"{assumed} ✔")
+            self.builder.log(f"{value} ✔")
+
+    @staticmethod
+    def replace_place_holder(new_hash: str, stack_level=2) -> str | None:
+        """
+        Searches for a placeholder like "???" or "123" in a failed assertion line in
+        the source code and replaces it with the correct hash.
+
+        :param new_hash: The new, correct hash value
+        :param stack_level: The stack depth of the calling method
+        :return: True if an occurrence was found
+        """
+        import inspect
+
+        filename = inspect.stack()[stack_level].filename
+        line = inspect.stack()[stack_level].lineno - 1
+        windows_linebreak = "\r\n"
+        source_code = FileStag.load_text(filename)
+        lb = windows_linebreak if windows_linebreak in source_code else "\n"
+        source_code = source_code.split(lb)
+        place_holders = ['"123"', '"???"', "'123'", "'???'"]
+        code_change = None
+        if len(source_code) >= line:
+            source_line = source_code[line]
+            for cur_ph in place_holders:
+                if cur_ph in source_line:
+                    new_code = source_line.replace(cur_ph, f'"{new_hash}"')
+                    code_change = (
+                        source_code[line].lstrip(" \t")
+                        + " => "
+                        + new_code.lstrip(" \t")
+                    )
+                    source_code[line] = new_code
+                    break
+        if code_change is not None:
+            source_code = lb.join(source_code)
+            FileStag.save_text(filename, source_code)
+        return code_change
 
     def checkpoint(self, checkpoint_name: str):
         """

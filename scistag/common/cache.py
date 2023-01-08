@@ -671,7 +671,7 @@ class Cache:
                 self._disk_cache.delete(key)
                 return
             if key not in self._mem_cache:
-                return
+                raise KeyError("Key not found")
             del self._mem_cache[key]
             self._key_revisions[key] += 1
 

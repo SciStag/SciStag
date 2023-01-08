@@ -84,6 +84,7 @@ class PageSession:
         log_formats: set[str] | None = None,
         index_name: str = "",
         target_dir: str = "",
+        fixed_session_id: str | None = None,
     ):
         """
         :param log: The target log instance
@@ -91,6 +92,9 @@ class PageSession:
         :param log_formats: The supported logging formats as string set
         :param index_name: The name of the index file
         :param target_dir: The target directory
+        :param fixed_session_id: If provided a fix session ID will be used,
+            e.g. required for regression and consistency tests where names are not
+            allowed to change.
         """
         self.log_formats: set[str] = log_formats if log_formats is not None else {HTML}
         """Defines the list of supported formats"""
@@ -182,6 +186,8 @@ class PageSession:
         with session_id_lock:
             if len(session_id_counter_set) == 1:
                 self.session_id = MAIN_SESSION_ID_NAME
+        if fixed_session_id is not None:
+            self.session_id = fixed_session_id
 
     def set_builder(self, builder: LogBuilder):
         """

@@ -174,6 +174,8 @@ class LogOutputOptions(BaseModel):
         formats: set[str] = None,
         single_file: bool | None = None,
         index_name: str | None = None,
+        target_dir: str | None = None,
+        clear_target_dir: bool | None = None,
     ):
         """
         Returns the default output options
@@ -184,6 +186,10 @@ class LogOutputOptions(BaseModel):
             stored in a single file.
         :param formats: Defines the output formats such as "html", "md" and "txt"
         :param index_name: The index's name
+        :param target_dir: Defines the directory in which the output logs shall be
+            stored.
+        :param clear_target_dir: Defines if the output directory shall be cleared,
+            target care there are no important files in the target directory defined.
         :return: self
         """
         if formats is not None:
@@ -196,6 +202,10 @@ class LogOutputOptions(BaseModel):
             self.log_to_stdout = console
         if index_name is not None:
             self.index_name = index_name
+        if target_dir is not None:
+            self.target_dir = target_dir
+        if clear_target_dir is not None:
+            self.clear_target_dir = clear_target_dir
 
         return self
 
@@ -243,7 +253,7 @@ class LogOptions(BaseModel):
         :param defaults: Defines the default configuration which shall be applied to
             the option set. See :meth:`VisualLog.setup_options` for further details.
         """
-        if defaults == "local":
+        if defaults is None or defaults == "local":
             pass
         elif defaults == "disk":
             self.output.setup(disk=True, console=False)

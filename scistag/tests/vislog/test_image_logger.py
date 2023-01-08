@@ -9,6 +9,7 @@ from ...emojistag import render_emoji
 from ...imagestag import Colors
 from ...vislog import VisualLog
 from . import vl
+from ...vislog.options import LogOptions
 
 
 def test_image():
@@ -63,7 +64,7 @@ def test_image():
     vl.log_txt_images = False
     vl.sub_test("An image from the web scaled to 50%")
     vl.image(TestConstants.STAG_URL, "anotherStag_1", scaling=0.5, download=False)
-    vl.test.assert_cp_diff(hash_val="c9aa5a4232351b81ec4b8607126c0dd0")
+    vl.test.assert_cp_diff(hash_val="a82ab0d0255ae51a1b96e534f9ca2c99")
     vl.test.checkpoint("image.log.scaled.downloaded")
     vl.sub_test("An image from the web scaled to 50% w/ downloading")
     vl.image(TestConstants.STAG_URL, "anotherStag_2", scaling=0.5, download=True)
@@ -71,7 +72,7 @@ def test_image():
     vl.sub_test("An image from the web scaled to 100%")
     vl.image(TestConstants.STAG_URL, "anotherStag_3", scaling=1.0)
     vl.log_txt_images = True
-    vl.test.assert_cp_diff(hash_val="a37201edd6c4c71f056f0a559ad6824b")
+    vl.test.assert_cp_diff(hash_val="e98fdaa36d924bdfd63044d2d5214350")
     # add image from bytes stream
     vl.sub_test("Logging an image provided as byte stream")
     vl.test.checkpoint("image.log.bytestream")
@@ -105,6 +106,7 @@ def test_image():
         # testing scaled image reference
         vl.image(TestConstants.STAG_URL, "anotherStag_1", max_width=100.0)
 
-    out_log = VisualLog(embed_images=False).default_builder
+    out_log = VisualLog().default_builder
+    out_log.options.style.image.embed_images = False
     out_log.image(source=image_data, filetype="jpg")
     # testing file type

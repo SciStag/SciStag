@@ -26,7 +26,9 @@ def test_backup():
     log_b = VisualLog()
     log_b.default_builder.insert_backup(log_a.default_builder.create_backup())
     assert b"Test" in log_b.default_builder.create_backup().data
-    log_c = VisualLog(formats_out={"txt"})
+    options = VisualLog.setup_options()
+    options.output.formats_out = {"txt"}
+    log_c = VisualLog(options=options)
     with pytest.raises(ValueError):
         log_c.default_builder.create_backup()
 

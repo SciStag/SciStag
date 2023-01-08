@@ -107,15 +107,12 @@ def test_builder_calls():
         with pytest.raises(AssertionError):
             log.kill_server()
     with pytest.raises(ValueError):
-        log = VisualLog()
-        log.run(builder=None)
-    with pytest.raises(ValueError):
-        log = VisualLog()
-        log.run(builder=DummyBuilder, continuous=False, auto_clear=True)
-    with pytest.raises(ValueError):
-        log = VisualLog()
-        log.run(builder=DummyBuilder, continuous=True, overwrite=False)
-    log = VisualLog(start_browser=True, log_to_disk=True)
+        options = VisualLog.setup_options()
+        options.run.auto_clear = True
+        options.run.continuous = False
+        log = VisualLog(options=options)
+        log.run(builder=DummyBuilder)
+    log = VisualLog(start_browser=True)
     with mock.patch.object(log, "_start_app_or_browser", lambda self, url: None):
         log.run(builder=DummyBuilder)
 
@@ -134,15 +131,11 @@ def test_run_server(pbi):
         test=True,
     )
     with pytest.raises(ValueError):
-        log = VisualLog()
-        log.run_server(
-            builder=None,
-            mt=True,
-            test=True,
-            continuous=True,
-        )
-    with pytest.raises(ValueError):
-        log = VisualLog()
+        options = VisualLog.setup_options("local")
+        options.run.mt = True
+        options.run.continuous = False
+        options.run.auto_clear = True
+        log = VisualLog(options=options)
         log.run_server(
             builder=DummyBuilder,
             mt=True,
@@ -151,7 +144,10 @@ def test_run_server(pbi):
             continuous=False,
         )
     with pytest.raises(ValueError):
-        log = VisualLog()
+        options = VisualLog.setup_options("local")
+        options.run.mt = False
+        options.run.continuous = True
+        log = VisualLog(options=options)
         log.run_server(builder=DummyBuilder, mt=False, test=True, continuous=True)
 
     log = VisualLog()
