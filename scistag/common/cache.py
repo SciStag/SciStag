@@ -12,6 +12,8 @@ from typing import Any, Callable
 
 from scistag.common.mt.stag_lock import StagLock
 
+DISK_CACHE_HEADER = "$"
+
 
 class Cache:
     """
@@ -51,7 +53,7 @@ class Cache:
         # caching on disk between execution runs
         # if you run the cache "manually" you have to set a version number to
         # cache data between multiple execution sessions on disk.
-        my_data = my_cache.cache("./data@5", complex_computation)
+        my_data = my_cache.cache("$data@5", complex_computation)
 
     If you pass a version of 0 the :meth:`get_app_session_id` will
     be used instead which will usually change on every restart except
@@ -190,7 +192,7 @@ class Cache:
                 for live-editing).
         """
         if minor is None:
-            minor = 1 if "/" in key else 0
+            minor = 1 if DISK_CACHE_HEADER in key else 0
         if "@" in key:
             split_val = key.split("@")
             assert len(split_val) == 2
@@ -268,7 +270,7 @@ class Cache:
             assert len(key) > 0
             if (
                 not key[0].isalpha()
-                and not key.startswith("./")
+                and not key.startswith(DISK_CACHE_HEADER)
                 and not key.startswith("_")
             ):
                 raise ValueError("Keys has to start with a character")
@@ -276,7 +278,7 @@ class Cache:
                 self._key_revisions[key] += 1
             else:
                 self._key_revisions[key] = 1
-            if "/" in key:
+            if key.startswith(DISK_CACHE_HEADER):
                 self._disk_cache.set(org_key, value, version=version)
                 return value
             # flag of volatile if added during loading process
@@ -308,7 +310,7 @@ class Cache:
             key, eff_version = self.get_key_and_version(
                 key, self._version, minor=version
             )
-            if "/" in key:
+            if key.startswith(DISK_CACHE_HEADER):
                 data = self._disk_cache.get(org_key, version=version)
                 if data is None:
                     return default
@@ -338,8 +340,7 @@ class Cache:
         with self._access_lock:
             self._mem_cache = {}
             self._mem_cache_versions = {}
-        if self._disk_cache is not None:
-            self._disk_cache.clear()
+        self._disk_cache.clear()
 
     def load(self):
         """
@@ -361,7 +362,7 @@ class Cache:
     def unload(self):
         """
         Call this to unload all data from your component which was created
-        during the handle_load execution and not flagged via a slash ("/")
+        during the handle_load execution and not flagged via a $
         in its name as element to cache on disk.
         """
         with self._access_lock:
@@ -378,8 +379,7 @@ class Cache:
             for element in self._volatile_cache_entries:
                 if element.startswith("."):  # clear volatile members
                     member_name = element[1:]
-                    if member_name in self.__dict__:
-                        self.__dict__[member_name] = None
+                    self.__dict__[member_name] = None
                 # delete volatile cache entries
                 elif element in self._mem_cache:
                     del self._mem_cache[element]
@@ -469,7 +469,7 @@ class Cache:
                 raise KeyError(f"Key {key} not found")
             return result
 
-    def inc(self, key, value: float | int = 1):
+    def inc(self, key, value: float | int = 1) -> float | int:
         """
         Increases given cache value.
 
@@ -488,7 +488,7 @@ class Cache:
                 self[key] = value
                 return value
 
-    def dec(self, key, value: float | int):
+    def dec(self, key, value: float | int) -> float | int:
         """
         Decreases given cache value.
 
@@ -505,21 +505,26 @@ class Cache:
                 return new_value
             else:
                 self[key] = -value
-                return value
+                return -value
 
-    def lappend(self, key: str, value: Any, unpack: bool = False):
+    def lpush(self, key: str, *args, unpack: bool = False):
         """
         Appends the value provided to the list named key.
 
         If the list does not exist yet it will be created
 
         :param key: The key of the list
-        :param value: The value to be added
+        :param args: The value or values to be added
         :param unpack: Defines if value is a list and all of its elements shall be
             added to the target list
         """
+        if len(args) == 1:
+            value = args[0]
+        else:
+            value = list(args)
+            unpack = True
         with self._access_lock:
-            if key not in self:
+            if key in self:
                 tar_list = self[key]
                 self.increase_revision(key, True)
             else:
@@ -536,21 +541,25 @@ class Cache:
             else:
                 tar_list.append(value)
 
-    def lpop(self, key: str, count: int = 1, index: int = -1):
+    def lpop(self, key: str, index: int = 0, count: int = 1):
         """
         Pops one or multiple values from the list
 
         :param key: The key of the list
-        :param count: The count of values to pop.
-
-            If a count of -1 is passed all values will be received.
         :param index: The index from which the value shall be received.
 
             At the moment only 0 (from list front) and -1 (from end) are supported.
+        :param count: The count of values to pop.
+
+            If a count of -1 is passed all values will be received.
         :return: A list of all values received.
 
             An empty list if the list does not exist
         """
+        if count == 0:
+            return []
+        if count < 0:
+            raise ValueError("Passed negative count argument")
         with self._access_lock:
             if key not in self:
                 return []
@@ -559,20 +568,19 @@ class Cache:
                 raise ValueError(f"Tried to pop values from non-list element {key}")
             if count >= len(src_list) or count == -1:
                 results = src_list
-                self.increase_revision(key)
+                self[key] = []
             else:
-                if index != 0 and index != -1:
-                    raise ValueError(
-                        "At the moment only values of 0 and -1 are"
-                        "supported as source index"
-                    )
-                if index == -1:
+                if index == -count:
                     results = src_list[-count:]
                     end = len(src_list) - count
                     self[key] = src_list[0:end]
-                else:
+                elif index == 0:
                     results = src_list[0:count]
                     self[key] = src_list[count:]
+                else:
+                    raise ValueError(
+                        f"Indices other than 0 and -count currently not supported"
+                    )
             return results
 
     def llen(self, key: str) -> int:
@@ -590,21 +598,21 @@ class Cache:
                 raise ValueError(f"Tried to receive length of non-list element {key}")
             return len(src_list)
 
-    def increase_revision(self, key, locked=False):
+    def increase_revision(self, key, _already_locked=False):
         """
         Increases the version of given key
 
         :param key: The key to modify
-        :param locked: Defines if we are already locked
+        :param _already_locked: Defines if we are already locked
         :return: The new version
         """
-        if locked:
-            self._mem_cache_versions[key] += 1
-            return self._mem_cache_versions[key]
+        if _already_locked:
+            self._key_revisions[key] += 1
+            return self._key_revisions[key]
         else:
             with self._access_lock:
-                self._mem_cache_versions[key] += 1
-                return self._mem_cache_versions[key]
+                self._key_revisions[key] += 1
+                return self._key_revisions[key]
 
     def remove(self, keys: str | list[str]) -> int:
         """
@@ -629,12 +637,13 @@ class Cache:
                 if "?" in element or "*" in element:
                     for cur_key in self._key_revisions.keys():
                         if fnmatch(cur_key, element):
-                            remove_set.add(element)
+                            remove_set.add(cur_key)
                 else:
                     if element in self._key_revisions:
                         remove_set.add(element)
             for element in remove_set:
-                del self[element]
+                if element in self:
+                    del self[element]
 
             return len(remove_set)
 
@@ -651,7 +660,7 @@ class Cache:
             element = self[key]
             if isinstance(element, (float, bool, int)):
                 return element != 0
-            if isinstance(element, (str, dict, list, bytes)):
+            if isinstance(element, (str, dict, list, bytes, tuple)):
                 return len(element) > 0
             if hasattr(element, "shape"):  # np.ndarray and DataFrame
                 return element.shape[0] > 0
@@ -667,7 +676,7 @@ class Cache:
         """
         with self._access_lock:
             key, eff_version = self.get_key_and_version(key, self._version)
-            if "/" in key:
+            if key.startswith(DISK_CACHE_HEADER):
                 self._disk_cache.delete(key)
                 return
             if key not in self._mem_cache:
@@ -684,7 +693,7 @@ class Cache:
         """
         with self._access_lock:
             key, eff_version = self.get_key_and_version(key, self._version)
-            if "/" in key:
+            if key.startswith(DISK_CACHE_HEADER):
                 return key in self._disk_cache
             return (
                 key in self._mem_cache and self._mem_cache_versions[key] == eff_version
