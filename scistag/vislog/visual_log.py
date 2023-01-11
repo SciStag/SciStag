@@ -18,6 +18,7 @@ from scistag.imagestag import Size2D, Size2DTypes
 from scistag.webstag.web_helper import WebHelper
 from scistag.logstag.console_stag import Console
 from scistag.vislog.sessions.page_session import PageSession, HTML, MD, TXT, CONSOLE
+from scistag.vislog.options.log_options import LOG_DEFAULT_OPTION_LITERALS
 
 if TYPE_CHECKING:
     from scistag.webstag.server import WebStagServer
@@ -100,11 +101,6 @@ created an instance.
 
 PARAMETER_TYPES = Union[dict, BaseModel, Any, None]
 "Set of parameter types which can be passed as params into a LogBuilder"
-
-LOG_DEFAULT_OPTION_LITERALS = Literal[
-    "server", "local", "disk", "console", "disk&console"
-]
-"""Enumeration of default option set string identifiers"""
 
 
 class VisualLog:
@@ -252,6 +248,8 @@ class VisualLog:
         self.tmp_path = FilePath.norm_path(
             self.target_dir + "/temp" if tmp_dir is None else tmp_dir
         )
+        self.options.output.ref_dir = self.ref_dir
+        self.options.output.tmp_dir = self.tmp_path
         "Output directory for temporary files"
         self.log_images = True
         "Defines if images shall be logged to disk"
@@ -300,7 +298,7 @@ class VisualLog:
         from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
 
         self._renderers: dict[str, "LogRenderer"] = {
-            HTML: HtmlLogRenderer(title=self._title)
+            HTML: HtmlLogRenderer(title=self._title, options=self.options)
         }
 
         "The renderers for the single supported formats"

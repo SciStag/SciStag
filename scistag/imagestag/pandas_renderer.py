@@ -16,7 +16,6 @@ class PandasRenderer:
     def __init__(
         self,
         df: "pd.DataFrame",
-        framework=ImsFramework.PIL,
         show_index: bool = False,
         width: str | None = None,
         style="blue_light",
@@ -27,7 +26,6 @@ class PandasRenderer:
         """
         Initializer
         :param df: The dataframe
-        :param framework: The rendering framework. PIL by default.
         :param show_index: Shall the index be shown?
         :param width: The base width. Automatic width by default
         :param style: The display style. See https://github.com/sbi-rviot/ph_table
@@ -38,7 +36,7 @@ class PandasRenderer:
         self.df = df
         from .html_renderer import HtmlRenderer
 
-        self.html_renderer = HtmlRenderer(framework=framework)
+        self.html_renderer = HtmlRenderer()
         self.style = style
         self.show_index = show_index
         self.width = width if width is not None else "auto"
@@ -52,17 +50,19 @@ class PandasRenderer:
         :param html_options: The advanced options for a HTML renderer. See HtmlLogRenderer. Optional.
         :return: The image
         """
-        import pretty_html_table
-
-        html = pretty_html_table.build_table(
-            self.df,
-            self.style,
-            width=self.width,
-            index=self.show_index,
-            font_size=self.font_size,
-            font_family=self.font_family,
-            text_align=self.text_align,
+        from scistag.vislog import VisualLog
+        from scistag.vislog.builders.pandas_builder import (
+            PandasBuilder,
+            PandasBuilderParams,
         )
+
+        options = VisualLog.setup_options()
+        options.style.slim = True
+        params = PandasBuilderParams(start=0, end=99)
+        html = PandasBuilder.run(
+            options=options, df=self.df, params=params, filetype="html"
+        )
+
         options = html_options if html_options is not None else {}
         options["body"] = html
         if self.width != "auto" and "width" not in options:

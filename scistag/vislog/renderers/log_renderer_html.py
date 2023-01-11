@@ -5,6 +5,7 @@ renderer for HTML.
 from __future__ import annotations
 
 from scistag.filestag import FileStag, FilePath
+from scistag.vislog.options import LogOptions
 from scistag.vislog.visual_log import MAIN_LOG
 from scistag.vislog.renderers.log_renderer import LogRenderer
 
@@ -12,13 +13,16 @@ from scistag.vislog.renderers.log_renderer import LogRenderer
 class HtmlLogRenderer(LogRenderer):
     """
     VisualLog plugin for creating HTML files
+
+    HtmlLogRenderer and will be removed soon.
+    TODO: Remove me
     """
 
-    def __init__(self, title: str = "SciStag VisualLog"):
+    def __init__(self, title: str = "SciStag VisualLog", options: LogOptions = None):
         """
         :param title: The log's title
         """
-        super().__init__()
+        super().__init__(options)
         self.title = title
 
         new_body_template = FileStag.load_text(

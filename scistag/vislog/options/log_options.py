@@ -78,6 +78,9 @@ class LogStyleOptions(BaseModel):
     table: LogTableOptions = Field(default_factory=LogTableOptions)
     """Default options for a table"""
     image: LogImageOptions = Field(default_factory=LogImageOptions)
+    """Image options"""
+    slim: bool = False
+    """Defines if optional components such footers and footers shall be removed"""
 
     def validate_options(self):
         """
@@ -213,6 +216,12 @@ class LogOutputOptions(BaseModel):
         """
         Validates the options and checks assumed fields are configured correctly
         """
+
+
+LOG_DEFAULT_OPTION_LITERALS = Literal[
+    "server", "local", "disk", "console", "disk&console"
+]
+"""Enumeration of default option set string identifiers"""
 
 
 class LogOptions(BaseModel):

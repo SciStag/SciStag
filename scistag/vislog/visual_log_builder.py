@@ -14,7 +14,6 @@ import html
 
 import hashlib
 
-import filetype
 import numpy as np
 from pydantic import BaseModel
 
@@ -25,10 +24,12 @@ from scistag.vislog.log_elements import HTMLCode
 from scistag.vislog.options import LogOptions
 
 from scistag.vislog.visual_log import VisualLog, HTML, MD
+from scistag.vislog.options.log_options import LOG_DEFAULT_OPTION_LITERALS
 from scistag.plotstag import Figure, Plot, MPHelper
 from .log_builder_registry import LogBuilderRegistry
 from ..common import Cache
 from ..webstag.mime_types import MIMETYPE_MARKDOWN, MIMETYPE_HTML
+from ..webstag.server import WebResponse
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -94,6 +95,12 @@ class LogBuilder:
     It provides all basic log writing functions, embeds LogBuilderExtensions for
     advanced logging and styling such as .align, .table or .image and manages
     the whole event flow, from updating dynamic cells to reacting to user interactions.
+    """
+
+    param_class = None
+    """
+    If defined the "params" argument passed into __init__ and stored as :attr:`params`
+    will automatically be validated and converted by Pydantic.
     """
 
     def __init__(
@@ -231,6 +238,8 @@ class LogBuilder:
         self._provide_live_view()
         self.params = params if params is not None else {}
         """Defines the current set of parameters"""
+        if isinstance(self.params, dict) and self.param_class is not None:
+            self.params = self.param_class.parse_obj(self.params)
         self.nested = nested
         """
         Defines if this builder object is nested within another log and shall not
@@ -291,6 +300,42 @@ class LogBuilder:
             )
         self.page_session.render()
         LogBuilderRegistry.remove_builder(self)
+
+    @classmethod
+    def run(
+        cls,
+        options: LogOptions | LOG_DEFAULT_OPTION_LITERALS | None = None,
+        nested: bool = False,
+        filetype: str | None = None,
+        **kwargs,
+    ) -> dict | WebResponse:
+        """
+        Executes the builder and returns its response
+
+        :param options: The style and output options. By default only a HTML log
+            w/o any custom style will be generated.
+        :param nested: Defines if the log will be nested and just the HTML body shall
+            be returned.
+        :param filetype: If defined only the result of the defined format will be
+            returned as bytes string.
+        :param kwargs: Additional arguments. Will be passed into LogBuilder.__init__.
+        :return: A dictionary with the different response files or a WebResponse.
+            If no further parameters are specified a dictionary of files will be
+            returned, at least containing an index.html with the result.
+        """
+        if "params" in kwargs and isinstance(kwargs["params"], dict):
+            filetype = kwargs["params"].get("filetype", None)
+        if isinstance(options, str) or options is None:
+            options = VisualLog.setup_options(options)
+        vl = VisualLog(options=options).run(
+            builder=cls, options=options, nested=nested, **kwargs
+        )
+        result = vl.get_result()
+        if filetype is not None and isinstance(result, dict):
+            fn = "index." + filetype
+            if fn in result:
+                return result[fn]
+        return result
 
     @property
     def max_fig_size(self) -> Size2D:
@@ -374,6 +419,8 @@ class LogBuilder:
             self.md(content.to_md())
             return self
         if isinstance(content, bytes):
+            import filetype
+
             ft = filetype.guess(content)
             if ft is None:
                 raise ValueError(f"Data type could not be detected")
@@ -1054,6 +1101,7 @@ class LogBuilder:
             "retry_frequency": 100,
             "reload_frequency": 100,
             "reload_url": "events",
+            "vl_slim": self.options.style.slim,
             "vl_log_updates": self.options.debug.html_client.log_updates,
             "scistag_version": scistag.__version__,
         }

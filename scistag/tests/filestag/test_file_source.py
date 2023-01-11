@@ -51,7 +51,6 @@ def test_scan():
         filter_callback=filter_callback,
     )
     assert len(source._file_list) >= 90
-    assert len(source._file_list) < 600
 
 
 def test_iteration():

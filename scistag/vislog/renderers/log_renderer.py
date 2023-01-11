@@ -6,15 +6,18 @@ base interface for different logging output file types.
 from __future__ import annotations
 
 from scistag.optional.jinja_opt import jinja_available, jinja2
-from scistag.vislog.visual_log import MAIN_LOG
+from scistag.vislog.options import LogOptions
 
 
 class LogRenderer:
     """
     Defines an abstract interface for adding data to a log of any format
+
+    LogRenderer and will be removed soon.
+    TODO: Remove me
     """
 
-    def __init__(self):
+    def __init__(self, options: LogOptions):
         if not jinja_available():
             assert ModuleNotFoundError(
                 "VisualLog with needs the "
@@ -36,6 +39,8 @@ class LogRenderer:
         "The encoded and rendered header"
         self.footer_rendered: bytes = b""
         "The encoded and rendered footer"
+        self.options = options
+        "The logging options"
 
     def get_rendering_variables(self):
         """
@@ -47,6 +52,7 @@ class LogRenderer:
 
         return {
             "title": self.title,
+            "vl_slim": self.options.style.slim,
             "scistag_version": scistag.__version__,
         }
 

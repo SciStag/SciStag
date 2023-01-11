@@ -4,47 +4,13 @@ Pandas DataFrames, DataSeries and statistics about them to a log.
 """
 from __future__ import annotations
 
-import time
-from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from scistag.vislog import BuilderExtension, LogBuilder, HTML
-from scistag.vislog.extensions.cell_sugar import cell
+from scistag.vislog import BuilderExtension, LogBuilder
+from scistag.vislog.builders.pandas_builder import PandasBuilder, PandasBuilderParams
 
 if TYPE_CHECKING:
     import pandas as pd
-
-
-class DataFrameLogBuilder(LogBuilder):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.data_frame: pd.DataFrame = kwargs.pop("df")
-
-    @cell(static=True)
-    def build_table(self):
-        """
-        Renders the dataframe as a HTML table
-        """
-        df = self.data_frame
-        start = int(self.params.get("start", 0))
-        end = int(self.params.get("end", start + 99))
-        if end >= len(df.index):
-            end = len(df.index) - 1
-        if start < 0 or start >= len(df.index) or end < start:
-            df = None
-        if df is None:
-            return
-        df = df.iloc[start : end + 1]
-        with self.table.begin(
-            header=True, index=True, html_class="vl_data_table"
-        ) as table:
-            table.add_row([""] + df.keys().tolist())
-            for row_index, index in enumerate(df.index):
-                row_data = df.iloc[row_index]
-                index_name = df.index[row_index]
-                content: list = row_data.to_numpy().tolist()
-                content.insert(0, index_name)
-                table.add_row(content)
 
 
 class PandasLogger(BuilderExtension):
@@ -90,8 +56,9 @@ class PandasLogger(BuilderExtension):
         if name is None:
             name = "dataframe"
         if self.use_pretty_html_table:
+            params = PandasBuilderParams(start=0, end=99)
             html_code = self.builder.builder.run(
-                DataFrameLogBuilder, params={"start": 0, "end": 99}, df=df
+                PandasBuilder, params=params, df=df
             ).output["index.html"]
         else:
             html_code = df.to_html(index=index)

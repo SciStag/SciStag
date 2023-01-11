@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import io
 import itertools
+import os
 
 import numpy as np
 import pandas as pd
@@ -35,6 +36,10 @@ class TestHelper(BuilderExtension):
             the document
         """
         super().__init__(builder)
+        self.store_references: bool = True
+        """
+        Defines if references of the tested data shall be stored by default
+        """
         self.checkpoint_backups = []
         "Data from the last checkpoints"
 
@@ -379,7 +384,7 @@ class TestHelper(BuilderExtension):
             }
         )
 
-    def assert_cp_diff(self, hash_val: str):
+    def assert_cp_diff(self, hash_val: str, ref: bool | None = None):
         """
         Computes a hash value from the difference of the single output
         targets (html, md, txt) and the new state and compares it to a
@@ -388,15 +393,21 @@ class TestHelper(BuilderExtension):
         :param hash_val: The hash value to compare to. Upon failure verify
             the different manually and copy & paste the hash value once
             the result was verified.
+        :param ref: Defines if reference shall be stored. See :attr:store_references
+            for default.
         """
+        if ref is None:
+            ref = self.store_references
         last_checkpoint = self.checkpoint_backups.pop()
         lengths = last_checkpoint["lengths"]
         difference = b""
         index = 0
         keys = []
+        pages = {}
         for key in sorted(self.builder.target_log.log_formats):
             length = lengths[index]
             data = self.target_log.default_page._logs.build(key)
+            pages[key] = data
             index += 1
             if not isinstance(data, bytes):
                 continue
@@ -404,7 +415,24 @@ class TestHelper(BuilderExtension):
             keys.append(key)
         assert sorted(list(keys)) == sorted(list(self.builder.target_log.log_formats))
         result_hash_val = hashlib.md5(difference).hexdigest()
+        if ref and result_hash_val != hash_val:
+            # if an error occurred, show correct version
+            tar_dir = self.builder.options.output.ref_dir
+            self.builder.text("Previous variant:\n")
+            for key in sorted(self.builder.target_log.log_formats):
+                backup_fn = tar_dir + "/" + f"{hash_val}.{key}"
+                if os.path.exists(backup_fn):
+                    data = FileStag.load(backup_fn)
+                    self.page_session.cur_element.add_data(key, data)
         self.hash_check_log(result_hash_val, hash_val)
+        if ref:
+            # backup reference version
+            tar_dir = self.builder.options.output.ref_dir
+            os.makedirs(tar_dir, exist_ok=True)
+            for key in sorted(self.builder.target_log.log_formats):
+                output_fn = tar_dir + "/" + f"{result_hash_val}.{key}"
+                if not os.path.exists(output_fn):
+                    FileStag.save(output_fn, pages[key])
 
     def begin(self, text: str) -> "LogBuilder":
         """
