@@ -37,21 +37,21 @@ def test_basics_logging_methods():
     # test title
     vl.test.checkpoint("log.title")
     vl.title("Title")
-    vl.test.assert_cp_diff(hash_val="86f74d4efab7c70690f1e86e9efec8dc")
+    vl.test.assert_cp_diff(hash_val="3f1c9832d3132dddce5888a95139f8e4")
     # test sub titles
     vl.test.checkpoint("log.subtitle")
     vl.sub("A sub title")
     vl.sub("Sub sub title", level=3)
     vl.sub("Sub sub sub title", level=4)
-    vl.test.assert_cp_diff(hash_val="e69598020011731a12ae74e4d1a259e0")
+    vl.test.assert_cp_diff(hash_val="b6e2ae40d236dea8fec21f8e33710693")
     vl.sub_test("Text and code")
     vl.test.checkpoint("log.code")
     vl.test.begin("Just a piece of text")
     vl.code("How about a little bit of source code?")
     vl.hr()
     vl.page_break()
-    vl.test.assert_cp_diff(hash_val="deb09ddaa3e0f23720a6536af11da0c9")
-    assert not vl.target_log.is_micro
+    vl.test.assert_cp_diff(hash_val="53ddce1d1eb6f5d6f2b8d298b8af354b")
+    assert not vl.is_micro
 
 
 def test_add_and_links():
@@ -101,7 +101,8 @@ def test_errors():
     options = VisualLog.setup_options("disk")
     options.output.target_dir = "./logs/other"
     options.output.clear_target_dir = True
-    _ = VisualLog(title="Just a test", options=options)
+    options.page.title = "Just a test"
+    _ = VisualLog(options=options)
 
 
 def test_dict():
@@ -138,9 +139,9 @@ def test_figure():
         "test directly logging plot", plot, hash_val="b2927d2e8972b8a912e1155983f872be"
     )
 
-    vl.target_log.log_images = False
+    vl.target_log.options.style.image.log_images = False
     vl.figure(plot, "not_plotted_figure")
-    vl.target_log.log_images = True
+    vl.target_log.options.style.image.log_images = True
 
     vl.sub_test("Logging figures created with matplotlib using add_matplot")
     np.random.seed(42)
@@ -215,7 +216,7 @@ def test_text():
     vl.text("Two lines\noftext", br=True)
     vl.text("Follow up")
     vl.hr()
-    vl.test.assert_cp_diff("fc6af2a2db7a97ff982430ca891f4324")
+    vl.test.assert_cp_diff("efb416d1ffe8fed79168f5669848f043")
 
 
 @patch("builtins.print")
@@ -248,7 +249,7 @@ def test_different_setups(_):
     log.add_console(a_console)
     log.default_builder.log("Console text")
     log.default_page.write_to_disk()
-    log.flush()  # just another name for write_to_disk as of now
+    log.default_builder.flush()  # just another name for write_to_disk as of now
     assert log.default_page.get_page("wdwdd") == b""
     assert b"Console text" in log.default_page.get_body("html")
     assert log.default_page.get_body("wdwdd") == b""
@@ -387,7 +388,9 @@ def test_start_browser():
     Tests the browser startup
     """
     with mock.patch("webbrowser.open") as open_browser:
-        vis_log = VisualLog(start_browser=True, refresh_time_s=0.05)
+        options = VisualLog.setup_options()
+        options.run.setup(app_mode="browser", refresh_time_s=0.05)
+        vis_log = VisualLog(options=options)
         with mock.patch.object(
             vis_log.default_builder.widget,
             "handle_event_list",
@@ -397,7 +400,7 @@ def test_start_browser():
         vis_log._start_app_or_browser(real_log=vis_log, url=vis_log.local_live_url)
         assert open_browser.called
     with mock.patch("webbrowser.open") as open_browser:
-        vis_log = VisualLog(start_browser=True, refresh_time_s=0.05)
+        vis_log = VisualLog(options=options)
         vis_log.run_server(test=True, show_urls=False)
         vis_log._start_app_or_browser(real_log=vis_log, url=vis_log.local_live_url)
         assert open_browser.called
@@ -405,13 +408,16 @@ def test_start_browser():
         scistag.common.SystemInfo.os_type.is_windows
         or os.environ.get("QT_TESTS", "0") == "1"
     ):
+        options = VisualLog.setup_options()
+        options.run.setup(app_mode="cute", refresh_time_s=0.05)
         with mock.patch("webbrowser.open") as open_browser:
-            vis_log = VisualLog(app="cute", refresh_time_s=0.05)
+            vis_log = VisualLog(options=options)
             vis_log.run_server(test=True, show_urls=False)
             assert not open_browser.called
+        options.run.app_mode = "unknown"
         with mock.patch("webbrowser.open") as open_browser:
             with pytest.raises(ValueError):
-                vis_log = VisualLog(app="unknownapp", refresh_time_s=0.05)
+                vis_log = VisualLog(options=options)
                 vis_log.run_server(test=True, show_urls=False)
 
 

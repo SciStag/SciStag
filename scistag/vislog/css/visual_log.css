@@ -1,12 +1,15 @@
 body {
     font-size: 12pt;
     font-family: Tahoma, sans-serif;
+    padding-right: 30px;
+    padding-left: 30px;
 }
 
 .logtext {
     display: inline;
     font-family: courier, monospace;
     font-size: 12pt;
+    white-space: pre;
 }
 
 code {
@@ -85,10 +88,9 @@ table.vl_log_table_seamless td, table.vl_log_table_seamless th {
 
 
 div.vl_log_cell {
-    padding-right: 30px;
     horiz-align: center;
     border-collapse: collapse;
-    padding-left: 30px;
+    padding: 0px 0px 0x 0px;
     border: transparent;
     background-color: white;
     text-align: left;

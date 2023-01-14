@@ -289,8 +289,8 @@ class TestHelper(BuilderExtension):
         :param data: The data to store
         """
         hashed_name = self.builder.get_hashed_filename(name)
-        FilePath.make_dirs(self.builder.target_log.ref_dir, exist_ok=True)
-        hash_fn = self.builder.target_log.ref_dir + "/" + hashed_name + ".dmp"
+        FilePath.make_dirs(self.builder.options.output.ref_dir, exist_ok=True)
+        hash_fn = self.builder.options.output.ref_dir + "/" + hashed_name + ".dmp"
         FileStag.save(hash_fn, data)
 
     def load_ref(self, name: str) -> bytes | None:
@@ -301,17 +301,20 @@ class TestHelper(BuilderExtension):
         :return: The data. None if no reference could be found
         """
         hashed_name = self.builder.get_hashed_filename(name)
-        hash_fn = self.builder.target_log.ref_dir + "/" + hashed_name + ".dmp"
+        hash_fn = self.builder.options.output.ref_dir + "/" + hashed_name + ".dmp"
         if FileStag.exists(hash_fn):
             return FileStag.load(hash_fn)
         return None
 
-    def hash_check_log(self, value, assumed):
+    def hash_check_log(
+        self, value: str, assumed: str, target: LogBuilder | None = None
+    ):
         """
         Verifies a hash and adds the outcome of a hash check to the output
 
         :param value: The hash value
         :param assumed: The assumed value
+        :param target: Defines the LogBuilder into which the results shall be inserted
         """
         replaced = None
         if value != assumed:
@@ -327,10 +330,14 @@ class TestHelper(BuilderExtension):
                 level="error",
             )
             self.builder.target_log.default_page.write_to_disk()
+            if target is not None:
+                target.insert_backup(self.builder.create_backup())
             raise AssertionError(
                 "Hash mismatch - " f"Found: {value}\n" f"Assumed: {assumed}"
             )
         else:
+            if target is not None:
+                target.insert_backup(self.builder.create_backup())
             self.builder.log(f"{value} ✔")
 
     @staticmethod
@@ -379,12 +386,14 @@ class TestHelper(BuilderExtension):
                 "name": checkpoint_name,
                 "lengths": [
                     len(self.target_log.default_page._logs.build(key))
-                    for key in sorted(self.builder.target_log.log_formats)
+                    for key in sorted(self.builder.options.output.formats_out)
                 ],
             }
         )
 
-    def assert_cp_diff(self, hash_val: str, ref: bool | None = None):
+    def assert_cp_diff(
+        self, hash_val: str, ref: bool | None = None, target: LogBuilder | None = None
+    ):
         """
         Computes a hash value from the difference of the single output
         targets (html, md, txt) and the new state and compares it to a
@@ -395,6 +404,7 @@ class TestHelper(BuilderExtension):
             the result was verified.
         :param ref: Defines if reference shall be stored. See :attr:store_references
             for default.
+        :param target: Defines the LogBuilder into which the results shall be inserted
         """
         if ref is None:
             ref = self.store_references
@@ -404,32 +414,50 @@ class TestHelper(BuilderExtension):
         index = 0
         keys = []
         pages = {}
-        for key in sorted(self.builder.target_log.log_formats):
+        for key in sorted(self.builder.options.output.formats_out):
             length = lengths[index]
             data = self.target_log.default_page._logs.build(key)
-            pages[key] = data
             index += 1
             if not isinstance(data, bytes):
                 continue
             difference = difference + data[length:]
+            pages[key] = data[length:]
             keys.append(key)
-        assert sorted(list(keys)) == sorted(list(self.builder.target_log.log_formats))
+        sorted_keys = sorted(list(keys))
+        sorted_builder_keys = sorted(list(self.builder.options.output.formats_out))
+        if target is not None:
+            self.builder.options.output.ref_dir = target.options.output.ref_dir
+            if sorted_keys != sorted_builder_keys:
+                target.insert_backup(self.builder.create_backup())
+        assert sorted_keys == sorted_builder_keys
         result_hash_val = hashlib.md5(difference).hexdigest()
         if ref and result_hash_val != hash_val:
             # if an error occurred, show correct version
             tar_dir = self.builder.options.output.ref_dir
-            self.builder.text("Previous variant:\n")
-            for key in sorted(self.builder.target_log.log_formats):
-                backup_fn = tar_dir + "/" + f"{hash_val}.{key}"
-                if os.path.exists(backup_fn):
-                    data = FileStag.load(backup_fn)
-                    self.page_session.cur_element.add_data(key, data)
-        self.hash_check_log(result_hash_val, hash_val)
+            self.builder.br()
+
+            def show_previous():
+                any = False
+                for key in sorted(self.builder.options.output.formats_out):
+                    backup_fn = tar_dir + "/" + f"{hash_val}.{key}"
+                    if os.path.exists(backup_fn):
+                        any = True
+                        break
+                if any:
+                    self.builder.text("Previous variant\n")
+                for key in sorted(self.builder.options.output.formats_out):
+                    backup_fn = tar_dir + "/" + f"{hash_val}.{key}"
+                    if os.path.exists(backup_fn):
+                        data = FileStag.load(backup_fn)
+                        self.page_session.cur_element.add_data(key, data)
+
+            self.builder.table([[show_previous]])
+        self.hash_check_log(result_hash_val, hash_val, target=target)
         if ref:
             # backup reference version
             tar_dir = self.builder.options.output.ref_dir
             os.makedirs(tar_dir, exist_ok=True)
-            for key in sorted(self.builder.target_log.log_formats):
+            for key in sorted(self.builder.options.output.formats_out):
                 output_fn = tar_dir + "/" + f"{result_hash_val}.{key}"
                 if not os.path.exists(output_fn):
                     FileStag.save(output_fn, pages[key])

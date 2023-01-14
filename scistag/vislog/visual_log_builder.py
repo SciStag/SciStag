@@ -6,8 +6,9 @@ adding data in a VisualLog.
 from __future__ import annotations
 
 import os.path
+import time
 import types
-from typing import Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING, Union, Callable
 import io
 
 import html
@@ -86,6 +87,25 @@ class LogBackup(BaseModel):
 
     data: bytes
     "The logs html representation"
+
+
+class LogBuilderStatistics:
+    """
+    Contains statistics about the log
+    """
+
+    build_counter: int = 0
+    """
+    How often was the log build?
+    """
+    last_build_time_s: float = 0.0
+    """
+    The amount of time in seconds for the last build execution
+    """
+    total_build_time_s: float = 0.0
+    """
+    The total build time in seconds
+    """
 
 
 class LogBuilder:
@@ -214,7 +234,7 @@ class LogBuilder:
         """
         The service extension for hosting static files and services
         """
-        self._title = self.target_log._title
+        self._title = self.options.page.title
 
         # add upload widget extension
         path = FilePath.dirname(__file__)
@@ -256,6 +276,8 @@ class LogBuilder:
         """The local data cache"""
         self.global_cache = self.target_log.cache
         """The global data cache"""
+        self.stats = LogBuilderStatistics()
+        """The builder's statistic's"""
 
     def build(self):
         """
@@ -265,9 +287,12 @@ class LogBuilder:
         own page builder.
         """
         LogBuilderRegistry.register_builder(self)
+        start_time = time.time()
         if self.options.output.log_to_stdout:
             self.add_txt("")
         from scistag.vislog.extensions.cell_sugar import LOG_CELL_METHOD_FLAG
+
+        self.stats.build_counter += 1
 
         init_module = self.target_log.initial_module
 
@@ -299,6 +324,8 @@ class LogBuilder:
                 on_build=cur_method, **cell_config, _builder_method=cur_method
             )
         self.page_session.render()
+        self.stats.last_build_time_s = time.time() - start_time
+        self.stats.total_build_time_s += self.stats.last_build_time_s
         LogBuilderRegistry.remove_builder(self)
 
     @classmethod
@@ -410,6 +437,9 @@ class LogBuilder:
         # pandas content frame
         import pandas as pd
 
+        if isinstance(content, Callable):
+            content()
+            return self
         if hasattr(content, "to_html") and not isinstance(
             content, (pd.DataFrame, pd.Series)
         ):
@@ -495,7 +525,7 @@ class LogBuilder:
         escaped_lines = html.escape(text)
         for cur_row in escaped_lines.split("\n"):
             self.add_html(f"<h{level}>{cur_row}</h{level}>\n")
-        self.add_md(f"{md_level} {text}")
+        self.add_md(f"{md_level} {text}\n")
         if self.add_txt(text) and level <= 4:
             character = "=" if level < 2 else "-"
             self.add_txt(character * len(text))
@@ -848,16 +878,17 @@ class LogBuilder:
         """
         if name is None:
             name = "figure"
-        if not self.target_log.log_images and _out_image_data is None:
+        if not self.options.style.image.log_images and _out_image_data is None:
             return
         if isinstance(figure, (Figure, Plot)):
             image = figure.render()
             self.image(image, name, alt_text=alt_text, br=br)
             if _out_image_data is not None:
+                filetype, quality = self.options.style.image.default_filetype
                 _out_image_data.write(
                     image.encode(
-                        filetype=self.target_log.image_format,
-                        quality=self.target_log.image_quality,
+                        filetype=filetype,
+                        quality=quality,
                     )
                 )
             return
@@ -1051,7 +1082,10 @@ class LogBuilder:
             gets concatenated.
         :return: The path or combined path
         """
-        return self.target_log.get_temp_path(relative)
+        os.makedirs(self.options.output.tmp_dir, exist_ok=True)
+        if relative is not None:
+            return FilePath.absolute(self.options.output.tmp_dir + "/" + relative)
+        return self.options.output.tmp_dir
 
     def reserve_unique_name(self, name: str) -> str:
         """
@@ -1069,7 +1103,7 @@ class LogBuilder:
 
         :return: The builder
         """
-        self.target_log.flush()
+        self.page_session.write_to_disk()
         return self
 
     def add_file_dependency(self, filename: str):
@@ -1213,3 +1247,15 @@ class LogBuilder:
             return align, self._console_size[0]
         else:
             return "left", None
+
+    @property
+    def is_micro(self) -> bool:
+        """
+        Returns if this builder is a minimalistic logger with limited
+        functionality.
+
+        See :meth:`setup_mocks`
+
+        :return: True if it is a mock
+        """
+        return False

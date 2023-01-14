@@ -81,21 +81,18 @@ class PageSession:
         self,
         log: "VisualLog",
         builder: Union["LogBuilder", None],
-        log_formats: set[str] | None = None,
-        index_name: str = "",
-        target_dir: str = "",
+        options: LogOptions,
         fixed_session_id: str | None = None,
     ):
         """
         :param log: The target log instance
         :param builder: The log builder instance
-        :param log_formats: The supported logging formats as string set
-        :param index_name: The name of the index file
-        :param target_dir: The target directory
+        :param options: The options for this log
         :param fixed_session_id: If provided a fix session ID will be used,
             e.g. required for regression and consistency tests where names are not
             allowed to change.
         """
+        log_formats = options.output.formats_out
         self.log_formats: set[str] = log_formats if log_formats is not None else {HTML}
         """Defines the list of supported formats"""
         self.log: "VisualLog" = log
@@ -112,7 +109,7 @@ class PageSession:
         """
         Defines a copy of the current data
         """
-        self.target_dir = target_dir
+        self.target_dir = options.output.target_dir
         """
         The target output directory
         """
@@ -130,7 +127,7 @@ class PageSession:
         "Defines if markdown gets exported"
         self.txt_export = TXT in self.log_formats
         "Defines if txt gets exported"
-        self.index_name = index_name
+        self.index_name = options.output.index_name
         "Defines the log's index file name"
         self._txt_filename = self.target_dir + f"/{self.index_name}.txt"
         "The name of the txt file to which we shall save"
@@ -279,7 +276,8 @@ class PageSession:
         for console in self.log._consoles:
             if console.progressive:
                 console.print(txt_code)
-        self.cur_element.add_data(CONSOLE, (txt_code + "\n").encode("ascii"))
+        if CONSOLE in self.log_formats:
+            self.cur_element.add_data(CONSOLE, (txt_code + "\n").encode("ascii"))
         return True
 
     def _build_body(self):
@@ -330,7 +328,7 @@ class PageSession:
         :return: The page's content.
         """
         with self._page_lock:
-            self.last_page_request = time.time()
+            self.log.last_page_request = time.time()
             if format_type in self._page_backups:
                 return self._page_backups[format_type]
             return b""
@@ -472,7 +470,7 @@ class PageSession:
         if render:
             self.render(formats=formats)
 
-        if self.log.options.output.log_to_disk:
+        if self.options.output.log_to_disk:
             # store html
             if (
                 self._html_export
@@ -603,7 +601,7 @@ class PageSession:
             if self._event_target_page is not None:
                 return self._event_target_page.get_events_js(client_id)
             cur_time = time.time()
-            refresh_time = self.log.refresh_time_s
+            refresh_time = self.options.run.refresh_time_s
             if (
                 cur_time - self.last_user_interaction
                 < self.user_interaction_performance_duration_s

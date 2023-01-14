@@ -4,6 +4,8 @@ Defines the configuration options for VisualLog and associated classes
 from __future__ import annotations
 from typing import Union, Literal
 
+APP_MODES = Literal["browser", "cute"]
+
 from pydantic import BaseModel, Field
 
 from scistag.imagestag import Size2DTypes
@@ -19,6 +21,29 @@ class HtmlClientDebugOptions(BaseModel):
 
     log_updates: bool = False
     """Defines if modifications to the dom structure shall be logged"""
+
+
+class LogPageOptions(BaseModel):
+    """
+    Option set for general page properties
+    """
+
+    title: str = "SciStag - VisualLog"
+    """The page's initial title"""
+
+    def setup(self, title: str | None = None):
+        """
+        Setups the page options
+
+        :param title: The page's title
+        """
+        if title is not None:
+            self.title = title
+
+    def validate_options(self):
+        """
+        Validates the options and checks assumed fields are configured correctly
+        """
 
 
 class LogDebugOptions(BaseModel):
@@ -54,18 +79,16 @@ class LogImageOptions(BaseModel):
 
         By default True if Markdown is not set as one of the "formats_out",
         otherwise False by default as Markdown will need the files on disk."""
-    default_filetype: Union[str, tuple[str, int]] = "png"
-    """The default output image format to store images
-        and figures with. "png" by default.
-
-        You can also pass the image format and image quality in a tuple
-        such as ("jpg", 60).
+    default_filetype: Union[tuple[str, int]] = ("png", 90)
+    """The default output image and figures format qnd quality.
 
         Alternatively "jpg" or "bmp" can be used (to minimize the bandwidth
         or in the later case if you are the intranet w/ unlimited bandwidth
         and want to host it live at maximum performance)."""
     max_fig_size: Union[Size2DTypes, None] = None
     """The optimum, maximum width and height for embedded figures and images"""
+    log_images: bool = True
+    """Defines if images shall be logged"""
 
 
 class LogStyleOptions(BaseModel):
@@ -116,6 +139,36 @@ class LogRunOptions(BaseModel):
     auto_clear: Union[bool, None] = None
     """Defines if then log shall be cleared automatically
     when being rebuild with `continuous=True`."""
+
+    refresh_time_s: float = 0.25
+    """
+    The time interval with which the log shall be refreshed when using
+    the liveViewer (see Live_view)
+    """
+
+    app_mode: APP_MODES = ""
+    """
+    Defines if the log shall behave like an application.
+
+    In the future you will be able to set here an application class
+    or instance. At the moment you can pass "cute" to open the app
+    in a webkit built-in browser (requires the extra "cutestag") or
+    an explicit installation of pyside6 (or above)."""
+
+    def setup(
+        self, app_mode: APP_MODES | None = None, refresh_time_s: float | None = None
+    ):
+        """
+        Setups the startup behavior
+
+        :param app_mode: If defined the sever will also automatically start either
+            the default browser or the log in Qt's internal browser
+        :param refresh_time_s: Defines the idle refresh time, so the time gap between
+            how often a remote client at least asks for updates.
+        """
+        self.app_mode = app_mode if app_mode is not None else ""
+        if refresh_time_s is not None:
+            self.refresh_time_s = refresh_time_s
 
     def validate_options(self):
         """
@@ -229,6 +282,8 @@ class LogOptions(BaseModel):
     Defines the configuration of a VisualLog
     """
 
+    page: LogPageOptions = Field(default_factory=LogPageOptions)
+    """Defines the initial page setup"""
     output: LogOutputOptions = Field(default_factory=LogOutputOptions)
     """Output specific options such as where to store the log and in which formats"""
     run: LogRunOptions = Field(default_factory=LogRunOptions)
@@ -249,11 +304,14 @@ class LogOptions(BaseModel):
         self.server.validate_options()
         self.style.validate_options()
         self.debug.validate_options()
+        self.page.validate_options()
 
     def setup_defaults(
         self,
         defaults: Literal["local", "server", "disk", "console", "disk&console"]
         | None = None,
+        title: str | None = None,
+        index_name: str | None = None,
     ) -> LogOptions:
         """
         Applies one of the standard configurations to the option sets depending on
@@ -261,6 +319,8 @@ class LogOptions(BaseModel):
 
         :param defaults: Defines the default configuration which shall be applied to
             the option set. See :meth:`VisualLog.setup_options` for further details.
+        :param title: The log's initial title
+        :param index_name: The name of the index file (without extension)
         """
         if defaults is None or defaults == "local":
             pass
@@ -279,4 +339,8 @@ class LogOptions(BaseModel):
                 '"console", "disk" or "disk&console" to select the standard '
                 "configuration."
             )
+        if title is not None:
+            self.page.title = title
+        if index_name is not None:
+            self.output.index_name = index_name
         return self

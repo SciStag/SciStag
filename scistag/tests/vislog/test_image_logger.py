@@ -27,9 +27,9 @@ def test_image():
         scaling=0.5,
     )
     vl.test.checkpoint("image.log.disabled")
-    vl.target_log.log_images = False
+    vl.options.style.image.log_images = False
     vl.image(image_data, alt_text="an image which shouldn't get logged")
-    vl.target_log.log_images = True
+    vl.options.style.image.log_images = True
     vl.test.assert_cp_diff("d41d8cd98f00b204e9800998ecf8427e")
     # insert image via canvas
     vl.image(source=image_data.to_canvas(), name="stag_canvas")
@@ -57,14 +57,12 @@ def test_image():
         "assert_stag", image_data, hash_val="4e5e428357fcf315f25b148747d633db"
     )
     with pytest.raises(AssertionError):
-        vl.test.assert_val(
-            "assert_stag", image_data, hash_val="4e5e428357fcf315f25b148747d633da"
-        )
+        vl.test.assert_val("assert_stag", image_data, hash_val="???")
     vl.test.checkpoint("image.log.scaled.nodownload")
     vl.log_txt_images = False
     vl.sub_test("An image from the web scaled to 50%")
     vl.image(TestConstants.STAG_URL, "anotherStag_1", scaling=0.5, download=False)
-    vl.test.assert_cp_diff(hash_val="a82ab0d0255ae51a1b96e534f9ca2c99")
+    vl.test.assert_cp_diff(hash_val="11692dce63501b2b470ebeef9a812381")
     vl.test.checkpoint("image.log.scaled.downloaded")
     vl.sub_test("An image from the web scaled to 50% w/ downloading")
     vl.image(TestConstants.STAG_URL, "anotherStag_2", scaling=0.5, download=True)
@@ -72,7 +70,7 @@ def test_image():
     vl.sub_test("An image from the web scaled to 100%")
     vl.image(TestConstants.STAG_URL, "anotherStag_3", scaling=1.0)
     vl.log_txt_images = True
-    vl.test.assert_cp_diff(hash_val="e98fdaa36d924bdfd63044d2d5214350")
+    vl.test.assert_cp_diff(hash_val="494127bc1a62a60a1a6ccba56113a625")
     # add image from bytes stream
     vl.sub_test("Logging an image provided as byte stream")
     vl.test.checkpoint("image.log.bytestream")

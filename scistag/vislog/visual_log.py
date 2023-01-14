@@ -124,11 +124,6 @@ class VisualLog:
 
     def __init__(
         self,
-        title: str = "SciStag - VisualLog",
-        app: Literal["cute"] | None = None,
-        start_browser: bool = False,
-        resolution: Size2D | None = None,
-        refresh_time_s=0.25,
         cache_dir: str | None = None,
         cache_version: int = 1,
         cache_name: str = "",
@@ -138,18 +133,6 @@ class VisualLog:
         fixed_session_id: str | None = None,
     ):
         """
-        :param title: The log's name
-        :param app: Defines if the log shall behave like an application.
-
-            In the future you will be able to pass here a application class
-            or instance. At the moment you can pass "cute" to open the app
-            in a webkit built-in browser (requires the extra "cutestag") or
-            an explicit installation of pyside6 (or above).
-        :param start_browser: Defines if a browser shall be started when the
-            log winds up a web server.
-        :param refresh_time_s: The time interval in seconds in which the
-            auto-reloader html page (liveView.html) tries to refresh the page.
-            The lower the time the more often the page is refreshed (if required).
         :param cache_version: The cache version. 1 by default.
 
             When ever you change this version all old cache values will be
@@ -202,7 +185,8 @@ class VisualLog:
         """
         self.start_time = time.time()
         "The time stamp of when the log was creation"
-        self.target_dir = os.path.abspath(self.options.output.target_dir)
+        target_dir = os.path.abspath(self.options.output.target_dir)
+        self.options.output.target_dir = target_dir
         try:
             if (
                 self.options.output.clear_target_dir
@@ -213,15 +197,9 @@ class VisualLog:
         except FileNotFoundError:
             pass
         if self.options.output.log_to_disk:
-            os.makedirs(self.target_dir, exist_ok=True)
+            os.makedirs(target_dir, exist_ok=True)
 
         formats_out = self.options.output.formats_out
-        self._app = app
-        "Defines the initial application to wind up with this log"
-        self._resolution = resolution
-        "Defines the desired initial resolution"
-        self._start_browser = start_browser
-        "Defines if a browser shall be started once a local server is wind up"
         self._cache: Cache | None = None
         """
         The log's data cache to store computation results between execution
@@ -231,9 +209,6 @@ class VisualLog:
         """Defines the timestamp when the page was requested for the last time
         via http.
         """
-        self._title = title
-        "The log's title"
-        "The directory in which the logs shall be stored"
         # setup the cache
         do_auto_reload = (
             isinstance(auto_reload, bool) and auto_reload
@@ -241,23 +216,14 @@ class VisualLog:
         self._setup_cache(do_auto_reload, cache_version, cache_dir, cache_name)
         ref_dir = self.options.output.ref_dir
         tmp_dir = self.options.output.tmp_dir
-        self.ref_dir = FilePath.norm_path(
-            self.target_dir + "/ref" if ref_dir is None else ref_dir
+        ref_dir = FilePath.norm_path(
+            target_dir + "/ref" if ref_dir is None else ref_dir
         )
-        "The directory in which reference files for comparison shall be stored"
-        self.tmp_path = FilePath.norm_path(
-            self.target_dir + "/temp" if tmp_dir is None else tmp_dir
+        tmp_path = FilePath.norm_path(
+            target_dir + "/temp" if tmp_dir is None else tmp_dir
         )
-        self.options.output.ref_dir = self.ref_dir
-        self.options.output.tmp_dir = self.tmp_path
-        "Output directory for temporary files"
-        self.log_images = True
-        "Defines if images shall be logged to disk"
-        self.refresh_time_s = refresh_time_s
-        """
-        The time interval with which the log shall be refreshed when using
-        the liveViewer (see Live_view)
-        """
+        self.options.output.ref_dir = ref_dir
+        self.options.output.tmp_dir = tmp_path
         max_fig_size = self.options.style.image.max_fig_size
         embed_images = self.options.style.image.max_fig_size
         filetype = self.options.style.image.default_filetype
@@ -269,36 +235,18 @@ class VisualLog:
         """
         The maximum figure size
         """
-        "Defines the preview's width and height"
-        self.default_stat_update_frequency = 1.0
-        "The update frequency of the stats in seconds"
-        self.log_formats = formats_out
-        "Defines if text shall be logged"
-        self.log_formats.add(CONSOLE)
-        """
-        Contains the log data for each output type
-        """
         self.markdown_html = True
         "Defines if markdown shall support html embedding"
         self.embed_images = (
             embed_images if embed_images is not None else MD not in formats_out
         )
-        if isinstance(filetype, tuple):  # unpack tuple if required
-            filetype, image_quality = filetype
-        else:
-            image_quality = 90
-        "If defined images will be embedded directly into the HTML code"
-        self.image_format = filetype
-        "The default image type to use for storage"
-        self.image_quality = image_quality
-        "The image compression quality"
         self._consoles: list[Console] = []
         "Attached consoles to which the data shall be logged"
 
         from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
 
         self._renderers: dict[str, "LogRenderer"] = {
-            HTML: HtmlLogRenderer(title=self._title, options=self.options)
+            HTML: HtmlLogRenderer(title=self.options.page.title, options=self.options)
         }
 
         "The renderers for the single supported formats"
@@ -314,22 +262,12 @@ class VisualLog:
             self._events = self.cache.get(LOG_EVENT_CACHE_NAME, default=[])
         self._invalid = False
         "Defines if this log was invalidated via :meth:`invalidate`"
-        self._total_update_counter = 0
-        "The total number of updates to this log"
-        self._update_counter = 0
-        # The amount of updates since the last statistics update
-        self._last_statistic_update = time.time()
-        "THe last time the _update rate was computed as time stamp"
-        self._update_rate: float = 0
-        # The last computed updated rate in updates per second
         from .visual_log_builder import LogBuilder
 
         self.default_page = PageSession(
             log=self,
             builder=None,
-            log_formats=self.log_formats,
-            index_name=self.options.output.index_name,
-            target_dir=self.target_dir,
+            options=self.options,
             fixed_session_id=fixed_session_id,
         )
         """Defines the initial default target page in which the page data ia stored"""
@@ -428,37 +366,6 @@ class VisualLog:
         The maximum figure size in pixels
         """
         return Size2D(self._max_fig_size)
-
-    def get_temp_path(self, relative: str | None = None) -> str:
-        """
-        Returns the temporary file path. The data will be wiped upon the call
-        of finalize.
-
-        :param relative: A relative path which can be passed and automatically
-            gets concatenated.
-        :return: The path or combined path
-        """
-        os.makedirs(self.tmp_path, exist_ok=True)
-        if relative is not None:
-            return FilePath.norm_path(self.tmp_path + "/" + relative)
-        return self.tmp_path
-
-    def flush(self):
-        """
-        Writes the current state to disk
-        """
-        self.default_page.write_to_disk()
-
-    def finalize(self) -> VisualLog:
-        """
-        Finalizes the report and writes it to disk
-
-        :return: The VisualLog object
-        """
-        self.default_page.write_to_disk(render=True)
-        if FilePath.exists(self.tmp_path):
-            shutil.rmtree(self.tmp_path)
-        return self
 
     def create_web_service(
         self, support_flask: bool = False, url_prefix: str = ""
@@ -725,7 +632,7 @@ class VisualLog:
         "Rebuild continuously?"
         auto_clear = self.options.run.auto_clear
         "Clear the log on every rebuild turn?"
-        if self.options.output.log_to_disk and HTML in self.log_formats:
+        if self.options.output.log_to_disk and HTML in self.options.output.formats_out:
             self.urls.append(
                 "file://" + self.default_page.html_filename.replace("\\", "/")
             )
@@ -757,8 +664,8 @@ class VisualLog:
         if continuous:
             auto_clear = auto_clear if auto_clear is not None else True
             self._run_continuous(auto_clear, builder)
-        if self.options.output.log_to_disk and HTML in self.log_formats:
-            if self._start_browser:
+        if self.options.output.log_to_disk and HTML in self.options.output.formats_out:
+            if self.options.run.app_mode == "browser":
                 self._start_app_or_browser(self, url=self.default_page.html_filename)
         return self.default_builder
 
@@ -825,18 +732,18 @@ class VisualLog:
         :param url: Defines the URL which shall be opened
         """
 
-        if self._start_browser:
+        if self.options.run.app_mode == "browser":
             import webbrowser
 
             # check if an old browser is alive
-            wait_time = max([real_log.refresh_time_s, 0.5])
+            wait_time = max([real_log.options.run.refresh_time_s, 0.5])
             time.sleep(wait_time * 1.5)
             # if the page was loaded don't open another browser
             if time.time() - real_log.last_page_request > wait_time:
                 webbrowser.open(url)
                 return
-        if self._app is not None and len(self._app) != 0:
-            if self._app == CUTE_APP:
+        if len(self.options.run.app_mode) > 0:
+            if self.options.run.app_mode == "cute":
                 from scistag.cutestag import cute_available
 
                 if not cute_available():
@@ -860,7 +767,7 @@ class VisualLog:
                 # pragma: no-cover
                 if not self._testing:
                     exit(0)
-            raise ValueError(f"Unknown application type: {self._app}")
+            raise ValueError(f"Unknown application type: {self.options.run.app_mode}")
 
     def kill_server(self) -> bool:
         """
@@ -888,7 +795,7 @@ class VisualLog:
             print(SLEEPING_TEXT_MESSAGE)
         while not self._terminated:
             next_event = self.handle_page_events()
-            max_sleep_time = self.refresh_time_s
+            max_sleep_time = self.options.run.refresh_time_s
             if next_event is not None:
                 max_sleep_time = max(
                     min(max_sleep_time, next_event - time.time()), 1.0 / 120
@@ -922,8 +829,7 @@ class VisualLog:
                 time.sleep(next_update - cur_time)
                 cur_time = time.time()
             # try to keep the frequency but never build up debt:
-            next_update = max(next_update + self.refresh_time_s, cur_time)
-            self.update_statistics(cur_time)
+            next_update = max(next_update + self.options.run.refresh_time_s, cur_time)
 
     def handle_page_events(self) -> float | None:
         """
@@ -977,24 +883,6 @@ class VisualLog:
         """
         return self._cache
 
-    def update_statistics(self, cur_time: float):
-        """
-        Updates the statistics if necessary
-
-        :param cur_time: The current system time (in seconds)
-        """
-        # update once per second if fps is high, otherwise once all x seconds
-        update_frequency = (
-            self.default_stat_update_frequency
-            if (self._update_rate == 0.0 or self._update_rate > 20)
-            else 5.0
-        )
-        if cur_time - self._last_statistic_update > update_frequency:
-            time_diff = cur_time - self._last_statistic_update
-            self._update_rate = self._update_counter / time_diff
-            self._last_statistic_update = cur_time
-            self._update_counter = 0
-
     def _setup_cache(
         self,
         auto_reload: bool,
@@ -1017,7 +905,10 @@ class VisualLog:
         if len(cache_name) > 0:
             cache_name = f"{cache_name}/"
         if cache_dir is None:
-            cache_dir = f"{os.path.abspath(self.target_dir)}/.stscache/{cache_name}"
+            cache_dir = (
+                f"{os.path.abspath(self.options.output.target_dir)}"
+                f"/.stscache/{cache_name}"
+            )
         else:
             cache_dir = f"{cache_dir}/{cache_name}"
         auto_reload_cache = None
@@ -1056,23 +947,16 @@ class VisualLog:
         """
         return self._invalid
 
-    def get_statistics(self) -> "LogStatistics":
+    def finalize(self) -> VisualLog:
         """
-        Returns statistics about the log
+        Finalizes the report and writes it to disk
 
-        :return: A dictionary with statistics about the log such as
-            - totalUpdateCount - How often was the log updated?
-            - updatesPerSecond - How often was the log updated per second
-            - upTime - How long is the log being updated?
+        :return: The VisualLog object
         """
-
-        from scistag.vislog.common.log_statistics import LogStatistics
-
-        return LogStatistics(
-            update_counter=self._total_update_counter,
-            update_rate=self._update_rate,
-            uptime=time.time() - self.start_time,
-        )
+        self.default_page.write_to_disk(render=True)
+        if FilePath.exists(self.options.output.tmp_dir):
+            shutil.rmtree(self.options.output.tmp_dir)
+        return self
 
     def clear(self):
         """
@@ -1102,6 +986,8 @@ class VisualLog:
     @staticmethod
     def setup_options(
         defaults: LOG_DEFAULT_OPTION_LITERALS | None = None,
+        title: str | None = None,
+        index_name: str | None = None,
     ) -> "LogOptions":
         """
         Returns the standard option set
@@ -1117,11 +1003,13 @@ class VisualLog:
                 logging.
             - "console" for writing to the console only
             - "disk&console" for writing to disk and console
+        :param title: The log's initial title
+        :param index_name: The name of the index file (without extension)
         """
         from scistag.vislog.options import LogOptions
 
         options = LogOptions()
-        options.setup_defaults(defaults)
+        options.setup_defaults(defaults, title=title, index_name=index_name)
         return options
 
     @staticmethod
@@ -1144,18 +1032,6 @@ class VisualLog:
 
         VisualMicroLock.setup_micro_lock(target_dir)
 
-    @property
-    def is_micro(self) -> bool:
-        """
-        Returns if this builder is a minimalistic logger with limited
-        functionality.
-
-        See :meth:`setup_mocks`
-
-        :return: True if it is a mock
-        """
-        return False
-
     def __enter__(self) -> "LogBuilder":
         """
         Returns the default builder
@@ -1170,6 +1046,6 @@ class VisualLog:
         return self.default_builder
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.flush()
+        self.default_builder.flush()
 
     __all__ = ["VisualLog", "LogStatistics", "HTML", "MD", "TXT", "TABLE_PIPE"]

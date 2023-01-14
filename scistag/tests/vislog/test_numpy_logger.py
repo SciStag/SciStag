@@ -71,7 +71,7 @@ def test_np_logging():
     vl.test.begin("Numpy matrix")
     vl.np(np.identity(3), max_digits=4)
     vl.br()
-    vl.test.assert_cp_diff("627ccb359e513a8efe368ae1bbb4cbc2")
+    vl.test.assert_cp_diff("c5565b79e00378b734563655a39fa9a0")
     vl.test.checkpoint("numpy.add")
     vl.add(np.identity(3))
     vl.test.assert_cp_diff("e1cdf63c9f7d4d2f78630526bf24dd82")

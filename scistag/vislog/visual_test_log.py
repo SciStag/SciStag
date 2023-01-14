@@ -23,9 +23,9 @@ class VisualTestLog(VisualLog):
         rel_path = os.path.dirname(test_filename)[len(base_dir) + 1 :]
         target_dir = cur_dir + "/logs/"
         formats_out = params.pop("formats_out", {"html"})
-        options = self.setup_options("disk")
+        options = self.setup_options("disk", title=f"test {rel_path}")
         options.output.target_dir = target_dir
         options.output.formats_out = formats_out
         options.output.ref_dir = cur_dir + "/refdata"
-        super().__init__(title=f"test {rel_path}", options=options, **params)
-        self.log_images = log_images
+        options.style.image.log_images = log_images
+        super().__init__(options=options, **params)

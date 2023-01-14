@@ -17,12 +17,6 @@ def test_log_runner_basics():
     Tests the basic runner functionality
     """
     log = VisualLog()
-    log.default_stat_update_frequency = 0.2
-    log.update_statistics(time.time())
-    sleep_min(0.25)
-    log.update_statistics(time.time())
-    statistics = log.get_statistics()
-    assert statistics.update_rate >= 0
     assert not log.is_main()
     with mock.patch("scistag.common.stag_app.StagApp.is_main", lambda val: True):
         assert log.is_main()
@@ -31,7 +25,7 @@ def test_log_runner_basics():
 class DummyBuilder(LogBuilder):
     def build(self):
         self.add("Some content")
-        if self.target_log.get_statistics().update_counter == 2:
+        if self.stats.build_counter == 2:
             self.target_log.terminate()
 
 
@@ -39,7 +33,7 @@ def builder_callback(vl: LogBuilder):
     vl.clear()
     vl.log("Some function content")
     vl.log(vl.target_log.max_fig_size)
-    if vl.target_log.get_statistics().update_counter == 2:
+    if vl.stats.build_counter == 2:
         vl.target_log.terminate()
 
 
@@ -85,21 +79,23 @@ def test_builder_calls():
     log = VisualLog()
     log.run(builder=builder_callback, overwrite=False)
     assert b"Some function content" in log.default_page.get_page("html")
-    log = VisualLog(refresh_time_s=0.05)
+    options = VisualLog.setup_options()
+    options.run.refresh_time_s = 0.05
+    log = VisualLog(options=options)
     log.run(builder=DummyBuilder, continuous=True)
     assert b"Some content" in log.default_page.get_page("html")
-    log = VisualLog(refresh_time_s=0.05)
+    log = VisualLog(options=options)
     log.run(builder=builder_callback, continuous=True, auto_clear=True)
     assert b"Some function content" in log.default_page.get_page("html")
     VisualLogAutoReloader.testing = True
     with mock.patch("builtins.print"):
-        log = VisualLog(refresh_time_s=0.05)
+        log = VisualLog(options=options)
         kt = AutoreloadKillThread(log, duration=0.25)
         kt.start()
         # auto reload with class
         log.run(builder=DummyBuilder, auto_reload=True)
 
-        log = VisualLog(refresh_time_s=0.05)
+        log = VisualLog(options=options)
         kt = AutoreloadKillThread(log, duration=0.25)
         kt.start()
         # auto reload w/ method
@@ -112,7 +108,9 @@ def test_builder_calls():
         options.run.continuous = False
         log = VisualLog(options=options)
         log.run(builder=DummyBuilder)
-    log = VisualLog(start_browser=True)
+    options = VisualLog.setup_options()
+    options.run.setup(app_mode="browser")
+    log = VisualLog(options=options)
     with mock.patch.object(log, "_start_app_or_browser", lambda self, url: None):
         log.run(builder=DummyBuilder)
 

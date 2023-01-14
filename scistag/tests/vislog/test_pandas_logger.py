@@ -32,7 +32,7 @@ def test_dataframe():
     vl.pd.use_pretty_html_table = False
     vl.pd(df, "A simple dataframe w/o pretty html")
     vl.pd.use_pretty_html_table = True
-    vl.test.assert_cp_diff(hash_val="8db4e1efbbddd8c1d89da4c812eb95d9")
+    vl.test.assert_cp_diff(hash_val="f4676a7058153da91649f6105aa3e939")
 
     # testing data frame assertion
     with mock.patch("builtins.print"):
@@ -68,17 +68,17 @@ def test_dataframe():
     vl.pd(df, "DataFrame w/o html")
     vl.target_log.markdown_html = md_state
     vl.pd.use_tabulate = use_tab
-    vl.test.assert_cp_diff("52fe5ee2803d5489cad38b0608706138")
+    vl.test.assert_cp_diff("4f6a92128454d029cd8f7e9eef02bb56")
 
     vl.test.checkpoint("pd.df.nameless")
     vl.pd(df, name=None)
-    vl.test.assert_cp_diff("f3ac3961bb32d811bb2643de98912ca7")
+    vl.test.assert_cp_diff("c2687d5b8c1ac254e5eda94c98f1eb70")
 
     vl.test.checkpoint("pd.df.add")
     vl.add(df, br=True)
-    vl.test.assert_cp_diff("f3ac3961bb32d811bb2643de98912ca7")
+    vl.test.assert_cp_diff("c2687d5b8c1ac254e5eda94c98f1eb70")
 
     vl.test.checkpoint("pd.df.row_limit")
     # log with limited count of rows
     vl.pd(df, max_rows=2)
-    vl.test.assert_cp_diff("e72ee64c9d4fd03154f81350d517fd67")
+    vl.test.assert_cp_diff("afcac0a7619e9c57a4e2ecb282e4362e")

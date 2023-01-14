@@ -92,7 +92,6 @@ class VisualLogAutoReloader:
         """
         log_to_disk = params.pop("log_to_disk", False)
         cls.main_log = VisualLog(
-            title=cls._embedded_log._title,
             options=cls._embedded_log.options,
             auto_reload=False,
         )

@@ -18,7 +18,7 @@ class HtmlLogRenderer(LogRenderer):
     TODO: Remove me
     """
 
-    def __init__(self, title: str = "SciStag VisualLog", options: LogOptions = None):
+    def __init__(self, title: str, options: LogOptions = None):
         """
         :param title: The log's title
         """

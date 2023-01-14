@@ -92,7 +92,7 @@ class ImageLogger(BuilderExtension):
         :param br: Defines if a linebreak shall be inserted after
             the image.
         """
-        if not self.log.log_images:
+        if not self.builder.options.style.image.log_images:
             return
         if name is None:
             name = "image"
@@ -145,7 +145,7 @@ class ImageLogger(BuilderExtension):
         if isinstance(source, bytes):
             encoded_image = source
         else:
-            img_format, quality = self.log.image_format, self.log.image_quality
+            img_format, quality = self.log.options.style.image.default_filetype
             if filetype is not None:
                 if isinstance(filetype, tuple):
                     img_format, quality = filetype
@@ -255,16 +255,17 @@ class ImageLogger(BuilderExtension):
             import filetype
 
             file_type = filetype.guess(source)
-            target_filename = self.log.target_dir + f"/{filename}.{file_type.extension}"
+            target_filename = (
+                self.builder.options.output.target_dir
+                + f"/{filename}.{file_type.extension}"
+            )
             if self._need_to_store_images_on_disk():
                 FileStag.save(target_filename, source)
         else:
-            extension = (
-                self.log.image_format
-                if isinstance(self.log.image_format, str)
-                else self.log.image_format[0]
-            )
-            target_filename = self.log.target_dir + f"/{filename}.{extension}"
+            image_format, quality = self.builder.options.style.image.default_filetype
+            extension = self.builder.options.style.image.default_filetype[0]
+            target_dir = self.builder.options.output.target_dir
+            target_filename = target_dir + f"/{filename}.{extension}"
             if self._need_to_store_images_on_disk():
                 FileStag.save(target_filename, encoded_image)
         if not self.log.embed_images:

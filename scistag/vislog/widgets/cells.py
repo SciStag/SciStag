@@ -8,7 +8,9 @@ rebuilt in a given time interval or progressively extended.
 
 from __future__ import annotations
 
+import io
 import time
+from contextlib import redirect_stdout
 from inspect import signature
 from typing import Union, Callable
 
@@ -305,18 +307,21 @@ class Cell(LWidget):
         if self.can_build:
             start_time = time.time()
             old_mod = self.sub_element.last_direct_change_time
-            if not self.progressive:
+            if not self.progressive and not self.static:
                 self.sub_element.add_data("html", b"<div>")
             if not self.progressive:
                 self.render_header()
             event = LCellBuildEvent(
                 name=self.identifier, widget=self, builder=self.builder
             )
-            self.raise_event(event)
+            std_out = io.StringIO()
+            with redirect_stdout(std_out):
+                self.raise_event(event)
+            self.builder.log(std_out.getvalue())
             if not self.progressive:
                 self.render_footer()
-            if not self.progressive:
-                self.sub_element.add_data("html", b"</div>")
+            if not self.progressive and not self.static:
+                self.sub_element.add_data("html", b"</div>\n\n")
             if self.ctype in [CELL_TYPE_DATA, CELL_TYPE_ONCE, CELL_TYPE_PROCESSING]:
                 # prevent visual updates through a data cell
                 self.clear()

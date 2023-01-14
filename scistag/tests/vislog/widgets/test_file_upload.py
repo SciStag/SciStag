@@ -23,12 +23,7 @@ def test_basic_setup():
             upload_text="Drop videos here",
             button_text="Select videos",
         )
-    try:
-        ll.test.assert_cp_diff("657c209b758d65f8171e13ad61a15af2")
-    except AssertionError:
-        vl.insert_backup(ll.create_backup())
-        raise AssertionError
-    vl.insert_backup(ll.create_backup())
+    ll.test.assert_cp_diff("657c209b758d65f8171e13ad61a15af2", target=vl)
 
 
 def teardown_module(_):
