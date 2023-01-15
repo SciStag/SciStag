@@ -4,10 +4,8 @@ the server.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable, Union
-
-from pydantic import Field
 
 from scistag.vislog.widgets.log_widget import LWidget
 from scistag.vislog.widgets.event import LEvent
@@ -36,7 +34,7 @@ class LFileUploadEvent(LEvent):
     """
 
     event_type: str = FILE_UPLOAD_EVENT_TYPE
-    files: list[FileAttachment] = Field(default_factory=list)
+    files: list[FileAttachment] = field(default_factory=list)
     """The list of files which were uploaded"""
     upload_session_id: str = ""
     """Unique upload session ID"""
@@ -129,8 +127,6 @@ class LFileUpload(LWidget):
         if max_upload_size is None:
             max_upload_size = DEFAULT_MAX_UPLOAD_SIZE
         self.max_upload_size = max_upload_size
-        if max_file_count is None:
-            max_file_count = DEFAULT_MAX_FILE_COUNT
         self.max_file_count = max_file_count
 
         if insert:
@@ -194,7 +190,7 @@ class LFileUpload(LWidget):
                 upload_session_id=self._current_upload_session,
             )
             if self.target is not None:
-                self.builder.cache.append(self.target, values, unpackap=True)
+                self.builder.cache.lpush(self.target, values, unpack=True)
             self._current_upload_session = None
             self._current_files = {}
             self.raise_event(event_data)
