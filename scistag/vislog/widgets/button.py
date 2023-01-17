@@ -76,7 +76,8 @@ class LButton(LWidget):
             <input class="greenButton" type="button" value="{self.caption}" onclick="
             fetch('triggerEvent?name={self.identifier}&type={CLICK_EVENT_TYPE}')" />
             """
-        self.builder.html(html)
+        self.page_session.write_html(html)
+        self.builder.add_txt(f"<< {self.caption} >>", targets="*")
 
     def handle_event(self, event: "LEvent"):
         if event.event_type == CLICK_EVENT_TYPE:

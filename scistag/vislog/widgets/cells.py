@@ -308,7 +308,7 @@ class Cell(LWidget):
             start_time = time.time()
             old_mod = self.sub_element.last_direct_change_time
             if not self.progressive and not self.static:
-                self.sub_element.add_data("html", b"<div>")
+                self.sub_element.add_data("html", b"<div>\n")
             if not self.progressive:
                 self.render_header()
             event = LCellBuildEvent(
@@ -317,11 +317,13 @@ class Cell(LWidget):
             std_out = io.StringIO()
             with redirect_stdout(std_out):
                 self.raise_event(event)
-            self.builder.log(std_out.getvalue())
+            buffer = std_out.getvalue()
+            if len(buffer) > 0:
+                self.handle_stdout(buffer)
             if not self.progressive:
                 self.render_footer()
             if not self.progressive and not self.static:
-                self.sub_element.add_data("html", b"</div>\n\n")
+                self.sub_element.add_data("html", b"</div>\n")
             if self.ctype in [CELL_TYPE_DATA, CELL_TYPE_ONCE, CELL_TYPE_PROCESSING]:
                 # prevent visual updates through a data cell
                 self.clear()
@@ -441,6 +443,15 @@ class Cell(LWidget):
         else:
             self._next_tick = None
         return self._next_tick
+
+    def handle_stdout(self, buffer: str):
+        """
+        Is called when options.console.mode is set to "record" or "mirror" when
+        console output data was collected due to direct usage of the **print** method.
+
+        :param buffer: The data buffer
+        """
+        self.builder.log(buffer)
 
     def __enter__(self) -> Cell:
         return self.enter()

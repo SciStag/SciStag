@@ -2,6 +2,7 @@ import io
 import os.path
 import shutil
 import time
+from contextlib import redirect_stdout
 from logging import ERROR
 from sys import platform
 from unittest import mock
@@ -25,8 +26,15 @@ def test_basics_logging_methods():
     vl.test.begin("Basic logging methods")
     vl.sub_test("Bullets")
     # logging mark down
-    vl.md("* Just a list\n" "* of bullet\n" "* points")
+    vl.test.checkpoint("md.logging")
+    vl.md("* Just a list\n" "* of bullet\n" "* points").br(2)
+    vl.md("* Just a list\n" "* of bullet\n" "* points").br(2)
     vl.md("* Just a list\n" "* of bullet\n" "* points", exclude_targets={"html", "md"})
+    vl.md.log_html_only = True
+    vl.title("test")
+    vl.add_md("nothing_should_happen")
+    vl.md.log_html_only = False
+    vl.test.assert_cp_diff("327ae1d0827a8540b5f1a2d4158bd340")
     temp_path = vl.get_temp_path()
     assert len(temp_path)
     assert vl.get_temp_path("sub_path") == temp_path + "/sub_path"
@@ -43,14 +51,16 @@ def test_basics_logging_methods():
     vl.sub("A sub title")
     vl.sub("Sub sub title", level=3)
     vl.sub("Sub sub sub title", level=4)
-    vl.test.assert_cp_diff(hash_val="b6e2ae40d236dea8fec21f8e33710693")
+    with vl.sub():
+        vl.add("Subtitle")
+    vl.test.assert_cp_diff(hash_val="b16a08095ced23ca09a6af0a9a7f6576")
     vl.sub_test("Text and code")
     vl.test.checkpoint("log.code")
     vl.test.begin("Just a piece of text")
     vl.code("How about a little bit of source code?")
     vl.hr()
     vl.page_break()
-    vl.test.assert_cp_diff(hash_val="53ddce1d1eb6f5d6f2b8d298b8af354b")
+    vl.test.assert_cp_diff(hash_val="58f03be4021de8fd19f2a9f59a76ba8a")
     assert not vl.is_micro
 
 
@@ -73,11 +83,16 @@ def test_add_and_links():
         stream = io.BytesIO()
         test_image.to_pil().save(stream, "tiff")
         vl.add(stream.getvalue(), br=True)
-    vl.test.assert_cp_diff(hash_val="7644bf47d3de0619b735c9aba40e0e21")
+    vl.test.assert_cp_diff(hash_val="7fb750a4555ca2441b853795f71ade16")
     vl.test.checkpoint("log.link_adv")
     vl.link("Multiline\nLink", "https://github.com/scistag/scistag").br()
-    vl.test.assert_cp_diff(hash_val="45abc6872d2c85a9c245c7c11d18f0d5")
+    vl.test.assert_cp_diff(hash_val="749e0d5d5ee5556a37b038ea5d380c12")
+    vl.test.checkpoint("callback")
     assert vl.max_fig_size.width > 100
+    vl.add(lambda: vl.log("TestCall"))
+    vl.add("**Bold**", mimetype="md").br()
+    vl.add("<b>Bold</b>", mimetype="html").br()
+    vl.test.assert_cp_diff("87a010d9c35d461b0dd92fd373cee0c9")
 
 
 def test_html():
@@ -139,9 +154,9 @@ def test_figure():
         "test directly logging plot", plot, hash_val="b2927d2e8972b8a912e1155983f872be"
     )
 
-    vl.target_log.options.style.image.log_images = False
+    vl.options.style.image.log_images = False
     vl.figure(plot, "not_plotted_figure")
-    vl.target_log.options.style.image.log_images = True
+    vl.options.style.image.log_images = True
 
     vl.sub_test("Logging figures created with matplotlib using add_matplot")
     np.random.seed(42)
@@ -216,7 +231,9 @@ def test_text():
     vl.text("Two lines\noftext", br=True)
     vl.text("Follow up")
     vl.hr()
-    vl.test.assert_cp_diff("efb416d1ffe8fed79168f5669848f043")
+    vl.text(123)
+    vl.hr(title="This is a section")
+    vl.test.assert_cp_diff("806513cc8e03ccf9e06e957a247fdf5c")
 
 
 @patch("builtins.print")
@@ -357,17 +374,19 @@ def test_printing():
     options.output.formats_out = {"html", "md", "txt"}
     log = VisualLog(options=options)
     log.add_console(console)
-    with mock.patch("builtins.print") as printer:
-        log.default_page.write_html("<br>")
-        log.default_page.write_txt("txt")
-        log.default_page.write_md("md")
-        assert printer.called
-        log.default_page.render()
-        static_url = log.local_static_url
-        assert static_url is None
-        log.run(builder=lambda _: None)
-        static_url = log.local_static_url
-        assert static_url.startswith("file://")
+    std_out = io.StringIO()
+    with redirect_stdout(std_out):
+        with mock.patch("builtins.print") as printer:
+            log.default_page.write_html("<br>")
+            log.default_page.write_txt("txt")
+            log.default_page.write_md("md")
+            assert printer.called
+            log.default_page.render()
+            static_url = log.local_static_url
+            assert static_url is None
+            log.run(builder=lambda _: None)
+            static_url = log.local_static_url
+            assert static_url.startswith("file://")
 
 
 def test_backup():
@@ -380,7 +399,7 @@ def test_backup():
     vl.sub_test("inserting backups")
     vl.test.checkpoint("log.title")
     vl.insert_backup(backup)
-    vl.test.assert_cp_diff(hash_val="b4c6a2e280126abb4b4cd7361e2dd102")
+    vl.test.assert_cp_diff(hash_val="e089cbcb0789f120cb0c7dbbd4453f88")
 
 
 def test_start_browser():

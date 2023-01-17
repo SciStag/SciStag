@@ -86,6 +86,8 @@ class LogElement:
         self.last_direct_change_time = time.time()
         self.direct_modifications += 1
         self.total_modifications += 1
+        if output_format not in self.data:
+            return
         data_list = self.data[output_format]
         data_list[-1] += data
         if self.parent is not None:

@@ -131,6 +131,7 @@ class VisualLog:
         debug: bool = False,
         options: "LogOptions" | LOG_DEFAULT_OPTION_LITERALS | None = None,
         fixed_session_id: str | None = None,
+        stack_level: int = 1,
     ):
         """
         :param cache_version: The cache version. 1 by default.
@@ -161,10 +162,13 @@ class VisualLog:
         :param fixed_session_id: If provided a fix page session ID will be used,
             e.g. required for regression and consistency tests where names are not
             allowed to change.
+        :param stack_level: Defines the stack level of the function which really
+            requested the creation of the log. 1 = direct caller, 2 = creation via
+            another helper function etc. 1 by default.
         """
         import inspect
 
-        frm = inspect.stack()[1]
+        frm = inspect.stack()[stack_level]
         self.initial_module = inspect.getmodule(frm[0])
         "Handle of the module from which this VisualLog instance was initialized"
 
@@ -226,7 +230,6 @@ class VisualLog:
         self.options.output.tmp_dir = tmp_path
         max_fig_size = self.options.style.image.max_fig_size
         embed_images = self.options.style.image.max_fig_size
-        filetype = self.options.style.image.default_filetype
         if max_fig_size is not None and not isinstance(max_fig_size, Size2D):
             max_fig_size = Size2D(max_fig_size)
         else:
@@ -235,8 +238,6 @@ class VisualLog:
         """
         The maximum figure size
         """
-        self.markdown_html = True
-        "Defines if markdown shall support html embedding"
         self.embed_images = (
             embed_images if embed_images is not None else MD not in formats_out
         )
@@ -535,10 +536,12 @@ class VisualLog:
             for cur_ip in public_ips:
                 if cur_ip == "0.0.0.0":
                     continue
-                print(f"* {protocol}{cur_ip}:{port}{url_prefix} for the static log")
+                print(
+                    f"* {protocol}{cur_ip}:{port}{url_prefix} to view the static output"
+                )
                 print(
                     f"* {protocol}{cur_ip}:{port}{url_prefix}/live for "
-                    f"the auto-reloader"
+                    f"the interactive page"
                 )
                 print("\n")
         if not continuous and not mt:  # if the server will block execute
@@ -975,7 +978,7 @@ class VisualLog:
         :param call_level: The relative call level, 1 = the calling function
         :return: True if the calling method is in the main module.
         """
-        if StagApp.is_main(2):
+        if StagApp.is_main(call_level + 1):
             return True
         from scistag.vislog.auto_reloader.visual_log_auto_reloader import (
             VisualLogAutoReloader,
@@ -1043,9 +1046,11 @@ class VisualLog:
 
         :return: The builder object
         """
+        self.default_page.__enter__()
         return self.default_builder
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.default_builder.flush()
+        self.default_page.__exit__(exc_type, exc_val, exc_tb)
 
     __all__ = ["VisualLog", "LogStatistics", "HTML", "MD", "TXT", "TABLE_PIPE"]

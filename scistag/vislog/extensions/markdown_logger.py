@@ -22,12 +22,15 @@ class MarkdownLogger(BuilderExtension):
         """
         super().__init__(builder)
         self.add = self.__call__
-        self.html_only: bool = False
+        self.log_html_only: bool = False
         """If defined no markdown will be written temporarily but the HTML output
         will be used instead"""
 
     def __call__(
-        self, text: str, exclude_targets: set[str] | None = None
+        self,
+        text: str,
+        exclude_targets: set[str] | None = None,
+        br=True,
     ) -> LogBuilder:
         """
         Adds a markdown section.
@@ -36,6 +39,7 @@ class MarkdownLogger(BuilderExtension):
 
         :param text: The text to parse
         :param exclude_targets: Defines the target to exclude
+        :param br: Defines if a linebreak shall be inserted
         :return: The builder
         """
         lines = text.split("\n")
@@ -56,13 +60,13 @@ class MarkdownLogger(BuilderExtension):
         if parsed is None:
             parsed = markdown.markdown(text, extensions=["tables"])
         if MD not in exclude_targets:
-            self.builder.add_md(text + "\n")
+            self.builder.add_md(text, br=br)
         if HTML not in exclude_targets:
             if parsed.startswith("<p>") and parsed.endswith("</p>"):
                 parsed = parsed[3:-4]
             self.builder.add_html(parsed + "\n")
         if TXT not in exclude_targets:
-            self.builder.add_txt(text)
+            self.builder.add_txt(text, br=br)
         self.builder.handle_modified()
         return self.builder
 

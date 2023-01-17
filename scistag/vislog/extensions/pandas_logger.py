@@ -6,8 +6,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from scistag.vislog import BuilderExtension, LogBuilder
+from scistag.vislog import BuilderExtension, LogBuilder, HTML, MD, TXT, CONSOLE
 from scistag.vislog.builders.pandas_builder import PandasBuilder, PandasBuilderParams
+from scistag.vislog.options.table_options import (
+    TABULATE_ROUNDED_OUTLINE,
+    TABULATE_GITHUB,
+)
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -25,16 +29,6 @@ class PandasLogger(BuilderExtension):
         """
         super().__init__(builder)
         self.show = self.__call__
-        self.use_tabulate = True
-        "Defines if tabulate may be used"
-        self.use_pretty_html_table = True
-        "Defines if pretty html shall be used"
-        self.html_table_style = "blue_light"
-        "The pretty html style to be used"
-        self.txt_table_format = "rounded_outline"
-        "The text table format to use in tabulate"
-        self.md_table_format = "github"
-        "The markdown table format to use"
 
     def __call__(
         self,
@@ -55,25 +49,36 @@ class PandasLogger(BuilderExtension):
             df = df.head(max_rows)
         if name is None:
             name = "dataframe"
-        if self.use_pretty_html_table:
-            params = PandasBuilderParams(start=0, end=99)
-            html_code = self.builder.builder.run(
-                PandasBuilder, params=params, df=df
-            ).output["index.html"]
-        else:
-            html_code = df.to_html(index=index)
-        self.builder.add_html(html_code)
-        if self.use_tabulate:
-            md_table = df.to_markdown(index=index, tablefmt=self.md_table_format)
-            self.builder.add_md(md_table)
-            self.builder.add_txt(
-                df.to_markdown(index=index, tablefmt=self.txt_table_format) + "\n"
-            )
-        else:
-            string_table = df.to_string(index=index) + "\n"
-            if self.target_log.markdown_html:
-                self.builder.add_md(html_code)
+        to = self.builder.options.style.table
+        formats = self.builder.options.output.formats_out
+
+        def get_table_in_format(cur_format: str):
+            if cur_format.startswith("vl_"):
+                params = PandasBuilderParams(start=0, end=99)
+                html_code = self.builder.builder.run(
+                    PandasBuilder,
+                    params=params,
+                    df=df,
+                ).output["index.html"]
+                return html_code.decode("utf-8")
+            if cur_format == TABULATE_ROUNDED_OUTLINE or cur_format == TABULATE_GITHUB:
+                return df.to_markdown(index=index, tablefmt=cur_format)
+            return df.to_string(index=index)
+
+        if HTML in formats:
+            tf = to.data_table_format[HTML]
+            code = get_table_in_format(tf)
+            if not tf.startswith("vl_"):
+                code = "<pre class='logtext'>\n" + code + "\n</pre>\n"
+            self.builder.add_html(code)
+        if MD in formats:
+            tf = to.data_table_format[MD]
+            code = get_table_in_format(to.data_table_format[MD])
+            if tf != HTML and tf != TABULATE_GITHUB:
+                code = "```\n" + code + "\n```\n"
             else:
-                self.builder.add_md(string_table)
-            self.builder.add_txt(string_table)
+                code = code + "\n"
+            self.builder.add_md(code)
+        if TXT or CONSOLE in formats:
+            self.builder.add_txt(get_table_in_format(to.data_table_format[TXT]))
         self.page_session.handle_modified()

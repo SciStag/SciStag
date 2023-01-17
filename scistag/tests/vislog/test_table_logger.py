@@ -1,13 +1,15 @@
 """
 Tests the table logging helper class VisualTableLogger
 """
+import os
 import sys
 
 import pytest
 
 from . import vl
+from ...filestag import FileStag
 from ...vislog import MDCode, VisualLog
-from ...vislog.options import LogTableOptions
+from ...vislog.options import TableOptions
 
 
 def test_basics_logging_methods():
@@ -21,13 +23,13 @@ def test_basics_logging_methods():
             for index in range(3):
                 with row.add():
                     vl.add("Test")
-    vl.test.assert_cp_diff(hash_val="be9196e509966b47580c4bd9e227d564")
+    vl.test.assert_cp_diff(hash_val="a5e585f1b47a4f7879f4efa8bcb49df1")
     vl.br()
     vl.test.checkpoint("log.table.fullrow")
     table = vl.table.begin()
     table.add_row(["1", 2, 3.0])
     table.close()
-    vl.test.assert_cp_diff(hash_val="87a7f613e560d0516dca6e09609022c6")
+    vl.test.assert_cp_diff(hash_val="7d60def8b8e69e52e630d5ea77e44820")
 
 
 def test_table_enumeration():
@@ -41,12 +43,12 @@ def test_table_enumeration():
     for row_index, row in enumerate(vl.table.begin(size=(4, 3))):
         for col_index, col in enumerate(row):
             vl.log(f"{col_index}x{row_index}")
-    vl.test.assert_cp_diff(hash_val="3b3fa764760c91fec5f98f571a96d686")
+    vl.test.assert_cp_diff(hash_val="fd00b40d736e856eb1793793720b31cb")
     vl.test.checkpoint("log.table.iter_pass_size")
     for row_index, row in enumerate(vl.table.begin().iter_rows(3)):
         for col_index, col in enumerate(row.iter_cols(4)):
             vl.log(f"{col_index}x{row_index}")
-    vl.test.assert_cp_diff(hash_val="3b3fa764760c91fec5f98f571a96d686")
+    vl.test.assert_cp_diff(hash_val="fd00b40d736e856eb1793793720b31cb")
 
     with pytest.raises(ValueError):
         with vl.table.begin() as table:
@@ -73,15 +75,15 @@ def test_table_creation():
     vl.test.begin("Table logging direct")
     vl.test.checkpoint("log.table.direct")
     vl.table.show([[1, 2, 3], [4, 5, 6]], index=True)
-    vl.test.assert_cp_diff(hash_val="edcd6ae9f7a4ebb3cbb93bace909f89b")
+    vl.test.assert_cp_diff(hash_val="b8e9d904b7b934139c9b759772d5389a")
 
     vl.test.checkpoint("log.table.add_col")
     for row_index, row in enumerate(vl.table.begin().iter_rows(3)):
         row.add("123")
         row.add("456")
-        row.add(lambda: vl.log.info("789"))
+        row.add(lambda: vl.log.info("789", br=False))
         row.add(MDCode("**Markdown**"))
-    vl.test.assert_cp_diff(hash_val="df45cd803447d8f325532f293465310a")
+    vl.test.assert_cp_diff(hash_val="f51afd075de87c63270f43d6a7353893")
 
 
 def test_content_logging():
@@ -99,7 +101,7 @@ def test_content_logging():
     vl.table.simple_table([123, 456])  # single, horizontal
     vl.table.simple_table([456.78, 910], orientation="ver", br=False, index=True)
     # single, vertical
-    vl.test.assert_cp_diff("2017bb6d161a2a7569b30358e5e15c1e")
+    vl.test.assert_cp_diff("0b48c1969345c5e4c7cfcb186955e2b7")
 
 
 def test_custom_class():
@@ -108,7 +110,7 @@ def test_custom_class():
 
     :return:
     """
-    options = LogTableOptions()
+    options = TableOptions()
 
     temp_log = VisualLog(fixed_session_id="")
     temp_log.default_builder.test.checkpoint("custom_css_table")
@@ -120,7 +122,7 @@ def test_custom_class():
         table.add_row(["Test", "Test2"])
         table.add_row(["Test3", "Test4"])
 
-    temp_log.default_builder.test.assert_cp_diff("d4eaa5be8ee7cedd6996c624ff13f6aa")
+    temp_log.default_builder.test.assert_cp_diff("a630392f5b62923fd5862df410a548b8")
 
     backup = temp_log.default_builder.create_backup()
     vl.insert_backup(backup)

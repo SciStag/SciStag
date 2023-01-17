@@ -1,9 +1,8 @@
-from scistag.vislog import VisualLog
+from scistag.vislog import LogBuilder
 
 
-def vl_main(vl):
-    vl.sub("Hello world!")
+def main(vl: LogBuilder):
+    print(f"Hello world")
 
 
-if __name__ == "__main__":
-    VisualLog().run()
+LogBuilder.run(as_service=True)

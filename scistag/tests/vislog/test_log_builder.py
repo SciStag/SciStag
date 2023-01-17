@@ -1,9 +1,13 @@
 """
 Advance LogBuilder tests
 """
-import pytest
+import io
+from contextlib import redirect_stdout
 
-from scistag.vislog import VisualLog, LogBuilder
+import pytest
+from pydantic import BaseModel
+
+from scistag.vislog import VisualLog, LogBuilder, cell
 
 
 def test_creation():
@@ -25,16 +29,100 @@ def test_backup():
     log_a.default_builder.log("Test")
     log_b = VisualLog()
     log_b.default_builder.insert_backup(log_a.default_builder.create_backup())
-    assert b"Test" in log_b.default_builder.create_backup().data
-    options = VisualLog.setup_options()
-    options.output.formats_out = {"txt"}
-    log_c = VisualLog(options=options)
-    with pytest.raises(ValueError):
-        log_c.default_builder.create_backup()
+    assert b"Test" in log_b.default_builder.create_backup().data["html"]
 
 
 def test_static_file():
+    """
+    Tests adding static files
+    """
     log_a = VisualLog()
     builder = log_a.default_builder
     builder.service.publish("testFile.bin", b"Hello world")
     assert builder.service.get_file("testFile.bin").body == b"Hello world"
+
+
+global_called = False
+global_main_called = False
+
+
+@cell
+def global_cell(lb: LogBuilder):
+    global global_called
+    global_called = True
+
+
+def main(vl):
+    global global_main_called
+    global_main_called = True
+
+
+def test_basic_building():
+    """
+    Tests the basic usage of cells and running the build process
+    :return:
+    """
+    local_called = False
+
+    class MyParams(BaseModel):
+        some_value: int = 123
+
+    class LB(LogBuilder):
+        params_class = MyParams
+
+        @cell
+        def build_in(self):
+            nonlocal local_called
+            local_called = True
+
+    log = VisualLog()
+    log_a = log.run(LB, params={"some_value": 456})
+    assert isinstance(log_a.params, MyParams)
+    assert log_a.params.some_value == 456
+
+    options = VisualLog.setup_options()
+    result = LB.run(params={"some_value": 456})
+    assert isinstance(result, dict)
+    result = LB.run(params={"some_value": 456}, filetype="html", options=options)
+    assert isinstance(result, bytes)
+    assert global_called
+    assert global_main_called
+    assert local_called
+
+
+def test_std_out():
+    """
+    Tests if logging to stdout is caught working
+    :return:
+    """
+    std_out = io.StringIO()
+    with redirect_stdout(std_out):
+        options = VisualLog.setup_options("console")
+        log = VisualLog(options=options)
+        with log as lb:
+            lb.log("Hello world")
+        assert lb.get_result() == {}
+    with redirect_stdout(std_out):
+        options = VisualLog.setup_options("console")
+        log = VisualLog(options=options)
+        log.run(LogBuilder, nested=True)
+        with log as lb:
+            lb.log("Hello world")
+        assert lb.nested
+        assert lb.get_result() == {}
+    assert "Hello world" in std_out.getvalue()
+
+
+def test_current():
+    """
+    Tests the current method
+    """
+
+    class Builder(LogBuilder):
+        @cell
+        def content(self):
+            assert LogBuilder.current() == self
+            self.terminate()
+            assert self.terminated
+
+    Builder.run()

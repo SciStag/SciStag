@@ -2,6 +2,7 @@
 Tests the VisualMicroLog's function
 """
 import os
+from contextlib import redirect_stdout
 from unittest import mock
 
 import pytest
@@ -26,37 +27,38 @@ def test_micro_log(tmp_path):
 
     for turn_index in range(2):
         micro_lock = VisualMicroLock(log_to_std_out=turn_index == 0)
-        with mock.patch("builtins.print") as pmock:
-            micro_lock.log("Test")
-            assert pmock.called or (turn_index == 1 and not pmock.called)
+        with redirect_stdout(std_out):
+            with mock.patch("builtins.print") as pmock:
+                micro_lock.log("Test")
+                assert pmock.called or (turn_index == 1 and not pmock.called)
 
-        with mock.patch("builtins.print") as pmock:
-            micro_lock.log.info("Test")
-            assert pmock.called or (turn_index == 1 and not pmock.called)
+            with mock.patch("builtins.print") as pmock:
+                micro_lock.log.info("Test")
+                assert pmock.called or (turn_index == 1 and not pmock.called)
 
-        with mock.patch("builtins.print") as pmock:
-            micro_lock.log.error("Test")
-            assert pmock.called or (turn_index == 1 and not pmock.called)
+            with mock.patch("builtins.print") as pmock:
+                micro_lock.log.error("Test")
+                assert pmock.called or (turn_index == 1 and not pmock.called)
 
-        with mock.patch("builtins.print") as pmock:
-            micro_lock.log.warning("Test")
-            assert pmock.called or (turn_index == 1 and not pmock.called)
+            with mock.patch("builtins.print") as pmock:
+                micro_lock.log.warning("Test")
+                assert pmock.called or (turn_index == 1 and not pmock.called)
 
-        with mock.patch("builtins.print") as pmock:
-            micro_lock.log.debug("Test")
-            assert pmock.called or (turn_index == 1 and not pmock.called)
+            with mock.patch("builtins.print") as pmock:
+                micro_lock.log.debug("Test")
+                assert pmock.called or (turn_index == 1 and not pmock.called)
 
-        with mock.patch("builtins.print") as pmock:
-            micro_lock.log.critical("Test")
-            assert pmock.called or (turn_index == 1 and not pmock.called)
+            with mock.patch("builtins.print") as pmock:
+                micro_lock.log.critical("Test")
+                assert pmock.called or (turn_index == 1 and not pmock.called)
 
-        with mock.patch("builtins.print") as pmock:
-            micro_lock.table([[123, 456], [758, 910]])
-            with pytest.raises(NotImplementedError):
-                micro_lock.figure()
-            with pytest.raises(NotImplementedError):
-                micro_lock.image()
-            assert pmock.called
+            with mock.patch("builtins.print") as pmock:
+                micro_lock.table([[123, 456], [758, 910]])
+                with pytest.raises(NotImplementedError):
+                    micro_lock.figure()
+                with pytest.raises(NotImplementedError):
+                    micro_lock.image()
+                assert pmock.called
 
         text = ""
 

@@ -30,7 +30,7 @@ class PandasBuilder(LogBuilder):
     * end: The last row to show (inclusive). By default start+99
     """
 
-    param_class = PandasBuilderParams
+    params_class = PandasBuilderParams
 
     def __init__(
         self, df: pd.DataFrame, params: PandasBuilderParams | dict | None, **kwargs

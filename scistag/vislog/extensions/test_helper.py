@@ -154,6 +154,8 @@ class TestHelper(BuilderExtension):
             df.to_csv(output, lineterminator="\n")
             result_hash_val = hashlib.md5(output.getvalue()).hexdigest()
             if result_hash_val != hash_val:
+                if self.replace_place_holder(new_hash=result_hash_val, stack_level=2):
+                    return
                 self.page_session.write_to_disk()
                 raise AssertionError(
                     "Hash mismatch - "
@@ -319,14 +321,9 @@ class TestHelper(BuilderExtension):
         replaced = None
         if value != assumed:
             replaced = self.replace_place_holder(new_hash=value, stack_level=3)
-            if replaced is not None:
-                self.builder.log(
-                    f"Hash mismatched ({value} != {assumed} but could "
-                    f"be updated: \n{replaced} ✔"
-                )
         if value != assumed and replaced is None:
             self.builder.log(
-                f"⚠️Hash validation failed!\nValue: " f"{value}\nAssumed: {assumed}",
+                f"⚠ Hash validation failed!\nValue: " f"{value}\nAssumed: {assumed}",
                 level="error",
             )
             self.builder.target_log.default_page.write_to_disk()
@@ -336,9 +333,10 @@ class TestHelper(BuilderExtension):
                 "Hash mismatch - " f"Found: {value}\n" f"Assumed: {assumed}"
             )
         else:
+            self.builder.log(f"{value} ✔")
             if target is not None:
                 target.insert_backup(self.builder.create_backup())
-            self.builder.log(f"{value} ✔")
+        return True
 
     @staticmethod
     def replace_place_holder(new_hash: str, stack_level=2) -> str | None:
@@ -437,21 +435,19 @@ class TestHelper(BuilderExtension):
             self.builder.br()
 
             def show_previous():
-                any = False
                 for key in sorted(self.builder.options.output.formats_out):
                     backup_fn = tar_dir + "/" + f"{hash_val}.{key}"
                     if os.path.exists(backup_fn):
-                        any = True
                         break
-                if any:
-                    self.builder.text("Previous variant\n")
+                self.builder.text("Previous variant")
                 for key in sorted(self.builder.options.output.formats_out):
                     backup_fn = tar_dir + "/" + f"{hash_val}.{key}"
                     if os.path.exists(backup_fn):
                         data = FileStag.load(backup_fn)
                         self.page_session.cur_element.add_data(key, data)
 
-            self.builder.table([[show_previous]])
+            if hash_val not in ["123", "???"]:
+                self.builder.table([[show_previous]])
         self.hash_check_log(result_hash_val, hash_val, target=target)
         if ref:
             # backup reference version

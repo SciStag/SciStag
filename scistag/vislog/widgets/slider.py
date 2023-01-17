@@ -120,9 +120,13 @@ class LSlider(LWidget):
                     seamless=True,
                 )
             else:
-                self.builder.html(html)
+                self.page_session.write_html(html)
         else:
-            self.builder.html(html)
+            self.page_session.write_html(html)
+        self.builder.add_txt(
+            f"<<Slider: {self.min_value} .. {self.max_value}>>",
+            targets="*",
+        )
 
     def _setup_value_display(self, html, out_name):
         """

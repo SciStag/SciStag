@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from scistag.logstag import LogLevel
+from scistag.vislog import MD
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
@@ -33,9 +34,9 @@ class BasicLogger(BuilderExtension):
         }
         "Tags to be added in front of the single log levels"
         self.level_color = {
-            LogLevel.DEBUG: "blue",
+            LogLevel.DEBUG: "#3355FF",
             LogLevel.WARNING: "#999900",
-            LogLevel.ERROR: "red",
+            LogLevel.ERROR: "#EE1111",
             LogLevel.CRITICAL: "purple",
         }
         "Colors for the single log levels"
@@ -92,7 +93,7 @@ class BasicLogger(BuilderExtension):
         *args: Any,
         level: LogLevel | str | None = None,
         detect_objects: bool = False,
-        no_break: bool = False,
+        br: bool = True,
         space: str = " ",
     ) -> LogBuilder:
         """
@@ -103,7 +104,7 @@ class BasicLogger(BuilderExtension):
             provided the text will be added w/o modifications and tag.
         :param detect_objects: Defines if special objects such as tables shall
             be detected and printed beautiful
-        :param no_break: If set linebreaks will be avoided, e.g. a cell inside
+        :param br: Defines if a linebreak shall be added, e.g. a cell inside
             a table.
         :param space: The character or text to be used for spaces
         :return: The builder
@@ -122,41 +123,48 @@ class BasicLogger(BuilderExtension):
             return self.builder
         md_text = text
         if level is not None and level in self.level_tag:
-            md_text = f"<b>{self.level_tag[level]}</b>: {text}"
-            text = self.level_tag[level] + " " + text
+            split_t = text.split("\n")
+            md_text = "\n".join(
+                [f"<b>{self.level_tag[level]}</b>: {cur}" for cur in split_t]
+            )
+            text = "\n".join([f"{self.level_tag[level]}: {cur}" for cur in split_t])
         escaped_text = self.builder.encode_html(text)
+        br_code = "<br>" if br else ""
         if level in self.level_color:
             self.builder.add_html(
-                f'<p class="logtext" style="color:{self.level_color[level]}">'
-                f"{self.builder.html_linebreaks(escaped_text)}</p>"
-                f"<br>\n\n"
+                f'<span class="logtext" style="color:{self.level_color[level]}">'
+                f"{self.builder.html_linebreaks(escaped_text)}</span>"
+                f"{br_code}\n"
             )
         else:
             self.builder.add_html(
-                f'<p class="logtext">'
-                f"{self.builder.html_linebreaks(escaped_text)}</p>"
-                f"<br>\n\n"
+                f'<span class="logtext">'
+                f"{self.builder.html_linebreaks(escaped_text)}</span>"
+                f"{br_code}\n"
             )
 
         md_lines = md_text.split("\n")
-        if self.target_log.markdown_html and level is not None:
-            md_lines = "<br>".join(md_lines) + "<br>"
+        if self.options.formats.md.support_html and level is not None:
+            md_lines = "\n".join(md_lines)
             if level in self.level_color:
                 self.builder.add_md(
-                    f'<span style="color:{self.level_color[level]}">{md_lines}'
-                    f"</span>\n"
+                    f'<span style="white-space: pre-wrap;color:'
+                    f'{self.level_color[level]}">{md_lines}{br_code}'
+                    f"</span>\n",
+                    br=False,
                 )
             else:
-                self.builder.add_md(f"<span>" f"</span>")
+                self.builder.add_md(
+                    f"<span style='white-space: pre-wrap;'>{md_lines}{br_code}"
+                    f"</span>\n",
+                    br=False,
+                )
 
         else:
-            md_lines = "\n\n".join(md_lines)
-            if no_break:
-                self.builder.add_md(f"{md_lines}")
-            else:
-                self.builder.add_md(f"{md_lines}\n")
-        self.builder.add_txt(text)
-        self.builder.handle_modified()
+            lines = "\n".join(md_lines)
+            md_lines = f"<span style='white-space: pre-wrap;'>{lines}{br_code}</span>\n"
+            self.builder.add_md(f"{md_lines}", br=br)
+        self.builder.add_txt(text, br=br)
         return self.builder
 
     def info(self, *args, **kwargs) -> LogBuilder:

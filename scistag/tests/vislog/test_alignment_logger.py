@@ -29,4 +29,4 @@ def test_alignment():
         vl.table(["Table on the right", 123, 456])
     with vl.align.block_center:
         vl.table(["Table centered", 123, 456])
-    vl.test.assert_cp_diff("00fb510d77481fd6185bdbfdc5b0acd7")
+    vl.test.assert_cp_diff("f365fd8f91c56bb4029aca153cbf2e46")

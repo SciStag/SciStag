@@ -11,7 +11,7 @@ from scistag.vislog import TXT
 from scistag.vislog.common.element_context import ElementContext
 
 from scistag.vislog.extensions import BuilderExtension
-from scistag.vislog.options import LogTableOptions
+from scistag.vislog.options import TableOptions
 from scistag.vislog.sessions.page_session import CONSOLE
 
 if TYPE_CHECKING:
@@ -46,7 +46,7 @@ class TableContext(ElementContext):
         self,
         builder: "LogBuilder",
         size: tuple[int, int] | None = None,
-        options: LogTableOptions | None = None,
+        options: TableOptions | None = None,
         html_class: str | None = None,
         seamless: bool | None = None,
         header: bool = False,
@@ -70,13 +70,12 @@ class TableContext(ElementContext):
             and padding.
         :param index: Defines if the table has an index column
         :param header: Defines if the table has a header
-        :param br: Defines if the table shall be followed by a line break
         """
-        linebreak_code = "<br>" if br else ""
+        linebreak_code = ""
         closing_code = {
-            "html": f"</table>{linebreak_code}",
-            "md": f"</table>{linebreak_code}",
-            "txt": "\n" if br else "",
+            "html": f"</table>\n{linebreak_code}",
+            "md": f"</table>\n\n",
+            "txt": "",
         }
         super().__init__(builder, closing_code)
         self.size = size
@@ -96,7 +95,7 @@ class TableContext(ElementContext):
         html_style = self.options.html_style
         html_style = f' style="{html_style}"' if len(html_style) > 0 else ""
         self.page.write_html(f"<table class={table_class}{html_style}>")
-        self.page.write_txt("\n", targets="-md")
+        self.page.write_txt("", targets="-md")
         self.page.write_md(f'<table class="{table_class}"{html_style}>')
         self._entered: bool = False
         "Defines if the table was entered already"
@@ -277,7 +276,7 @@ class TableRowContext(ElementContext):
         self.table: TableContext = table
         """The table we are building"""
         self.page.write_html(f"<tr>")
-        self.page.write_txt("| ", targets="-md")
+        self.page.write_txt("|", targets="-md")
         self.page.write_md("<tr>", no_break=True)
         self.row_index: int = row_index
         """The row's index"""
@@ -369,11 +368,11 @@ class TableColumnContext(ElementContext):
         closing_code = {
             "html": f"</{cell_type}>",
             "md": f"</{cell_type}>",
-            "txt": " |\n",
+            "txt": " |",
         }
         super().__init__(builder, closing_code)
         self.page.write_html(f"<{cell_type}>")
-        self.page.write_txt("| ", targets="-md")
+        self.page.write_txt(" ", targets="-md")
         self.page.write_md(f"<{cell_type}>", no_break=True)
 
     def __enter__(self) -> TableColumnContext:
@@ -395,7 +394,7 @@ class TableLogger(BuilderExtension):
     def begin(
         self,
         size: tuple[int, int] | None = None,
-        options: LogTableOptions | None = None,
+        options: TableOptions | None = None,
         seamless: bool | None = None,
         html_class: str | None = None,
         header: bool = False,
@@ -453,7 +452,7 @@ class TableLogger(BuilderExtension):
         orientation: Literal["vert", "hor"] = "hor",
         index: bool = False,
         header: bool = False,
-        options: LogTableOptions | None = None,
+        options: TableOptions | None = None,
         html_class: str | None = None,
         seamless: bool | None = None,
         br: bool = True,
@@ -508,13 +507,14 @@ class TableLogger(BuilderExtension):
                         major_cell = (
                             row_index == 0 and header or col_index == 0 and index
                         )
-                        if major_cell:
+                        if major_cell and "<b>" not in code:
                             code += f"<b>{cur_data}</b>"
                         else:
                             code += f"{cur_data}"
                         if index and col_index == 0:
                             code += "</b>"
-                        self.builder.html(code)
+                        self.builder.html(code, br=False)
+                        self.builder.add_txt(str(cur_data), br=False)
                     else:
                         self.builder.add(cur_data)
                     tabs = tabs[0:-1]
@@ -567,7 +567,7 @@ class TableLogger(BuilderExtension):
             code += f"{tabs}</tr>\n"
         code += "</table>\n"
         if br:
-            code += "<br>"
+            code += "<br>\n"
         self.page_session.write_html(code)
         # txt
         for row in data:

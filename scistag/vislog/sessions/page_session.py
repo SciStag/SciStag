@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 import random
+import sys
 import time
 from typing import Union, TYPE_CHECKING, Callable
 from collections import Counter
@@ -15,6 +16,8 @@ from scistag.filestag import FileStag
 from scistag.vislog.common.log_element import LogElement, LogElementReference
 from scistag.vislog.options import LogOptions
 from scistag.webstag.server import WebRequest
+
+STDOUT_STREAM = "stdout"
 
 MAIN_SESSION_ID_NAME = "main"
 "Defines the name of the main session"
@@ -185,6 +188,7 @@ class PageSession:
                 self.session_id = MAIN_SESSION_ID_NAME
         if fixed_session_id is not None:
             self.session_id = fixed_session_id
+        self.initial_std_out = getattr(sys, STDOUT_STREAM)
 
     def set_builder(self, builder: LogBuilder):
         """
@@ -204,6 +208,19 @@ class PageSession:
             log_copy = self._logs.clone()
         with self._backup_lock:
             self._log_backup = log_copy
+
+    def write_data(self, out_format: str, data: bytes) -> bool:
+        """
+        Writes data of given format type into the associated data buffer
+
+        :param out_format: The output format, e.g. html, txt, md
+        :param data: The data as bytes string
+        :return: True if the format is supported
+        """
+        if out_format not in self.options.output.formats_out:
+            return False
+        self.cur_element.add_data(out_format, data)
+        return True
 
     def write_html(self, html_code: str | bytes):
         """
@@ -252,7 +269,14 @@ class PageSession:
         any_output = False
         console = "*" in targets or CONSOLE in targets
         if console and self.options.output.log_to_stdout:
-            print(txt_code)
+
+            cur_std_out = getattr(sys, STDOUT_STREAM)
+            if cur_std_out != self.initial_std_out:
+                setattr(sys, STDOUT_STREAM, self.initial_std_out)
+                print(txt_code)
+                setattr(sys, STDOUT_STREAM, cur_std_out)
+            else:
+                print(txt_code)
             any_output = True
         md = "*" in targets or MD in targets
         txt = "*" in targets or TXT in targets
@@ -263,7 +287,7 @@ class PageSession:
             self.write_md(txt_code)
         if not txt or TXT not in self.log_formats:
             return any_output
-        self.cur_element.add_data(TXT, (txt_code + "\n").encode("utf-8"))
+        self.cur_element.add_data(TXT, txt_code.encode("utf-8"))
         return True
 
     def _add_to_console(self, txt_code: str):
@@ -782,3 +806,9 @@ class PageSession:
         if output_format == MD:
             return self.index_name + ".md"
         return None
+
+    def __enter__(self):
+        self._page_lock.acquire()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._page_lock.release()

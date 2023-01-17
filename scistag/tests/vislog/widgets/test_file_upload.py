@@ -11,7 +11,9 @@ def test_basic_setup():
     """
     Basic setup and insertion ests
     """
-    ll = VisualLog(fixed_session_id="upload").default_builder
+    options = VisualLog.setup_options()
+    options.output.setup(formats={"html", "txt", "md"})
+    ll = VisualLog(options=options, fixed_session_id="upload").default_builder
     ll.test.checkpoint("upload")
     with ll.align.block_center:
         upload = LFileUpload(
@@ -23,7 +25,7 @@ def test_basic_setup():
             max_gallery_preview_size=500,
         )
     assert b"drop the videos" in ll.page_session.render_element()[1]
-    ll.test.assert_cp_diff("2d02bb7a711ba51f4c4f887e6002e13b", target=vl)
+    ll.test.assert_cp_diff("e2022a43ae4e08b979e92ffbc1bb9df8", target=vl)
     with ll.align.block_center:
         upload = LFileUpload(
             ll,

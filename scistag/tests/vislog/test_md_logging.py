@@ -22,7 +22,7 @@ def test_markdown():
     * multi-line markdown? 
     """
     )
-    vl.test.assert_cp_diff("092eabdd11788403cf5f29ec004f0f7a")
+    vl.test.assert_cp_diff("7ae07cb9c8519793df03104dc072d4da")
 
     log = VisualLog()
     log.default_builder.md.embed(b"EmbeddedData")

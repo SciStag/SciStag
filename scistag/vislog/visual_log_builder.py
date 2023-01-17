@@ -24,7 +24,7 @@ from scistag.imagestag import Image, Size2D
 from scistag.vislog.log_elements import HTMLCode
 from scistag.vislog.options import LogOptions
 
-from scistag.vislog.visual_log import VisualLog, HTML, MD
+from scistag.vislog.visual_log import VisualLog, HTML, MD, TXT
 from scistag.vislog.options.log_options import LOG_DEFAULT_OPTION_LITERALS
 from scistag.plotstag import Figure, Plot, MPHelper
 from .log_builder_registry import LogBuilderRegistry
@@ -85,8 +85,19 @@ class LogBackup(BaseModel):
     another log.
     """
 
-    data: bytes
-    "The logs html representation"
+    data: dict[str, bytes] = {}
+    "The logs representation of each format"
+
+    def save_to_disk(self, path: str, index_name: str = "index"):
+        """
+        Saves the backups content into given target directory
+
+        :param path: The target path
+        :param index_name: The name of the index file
+        """
+        os.makedirs(f"{path}", exist_ok=True)
+        for cur_format in self.data:
+            FileStag.save(f"{path}/{index_name}.{cur_format}", self.data[cur_format])
 
 
 class LogBuilderStatistics:
@@ -117,7 +128,7 @@ class LogBuilder:
     the whole event flow, from updating dynamic cells to reacting to user interactions.
     """
 
-    param_class = None
+    params_class = None
     """
     If defined the "params" argument passed into __init__ and stored as :attr:`params`
     will automatically be validated and converted by Pydantic.
@@ -250,16 +261,21 @@ class LogBuilder:
             "vl_file_upload.js",
             path + "/templates/extensions/upload/vl_file_upload.js",
         )
+        self.publish(
+            "vl_live_view.js",
+            path + "/templates/liveLog/vl_live_view.js",
+        )
         self.service.register_css("VlBaseCss", "visual_log.css")
         self.service.register_css("VlUploadWidget", "vl_file_upload.css")
+        self.service.register_js("VlLiveView", "vl_live_view.js")
         self.service.register_js("VlUploadWidget", "vl_file_upload.js")
 
         """The website's title"""
         self._provide_live_view()
         self.params = params if params is not None else {}
         """Defines the current set of parameters"""
-        if isinstance(self.params, dict) and self.param_class is not None:
-            self.params = self.param_class.parse_obj(self.params)
+        if isinstance(self.params, dict) and self.params_class is not None:
+            self.params = self.params_class.parse_obj(self.params)
         self.nested = nested
         """
         Defines if this builder object is nested within another log and shall not
@@ -302,7 +318,7 @@ class LogBuilder:
             for key, attr in self.target_log.initial_module.__dict__.items():
                 if isinstance(attr, types.FunctionType):
                     is_main = False
-                    if key == "vl_main":
+                    if key == "main":
                         from inspect import signature
 
                         sig = signature(attr)
@@ -334,6 +350,8 @@ class LogBuilder:
         options: LogOptions | LOG_DEFAULT_OPTION_LITERALS | None = None,
         nested: bool = False,
         filetype: str | None = None,
+        as_service: bool = False,
+        auto_reload: bool = False,
         **kwargs,
     ) -> dict | WebResponse:
         """
@@ -345,19 +363,45 @@ class LogBuilder:
             be returned.
         :param filetype: If defined only the result of the defined format will be
             returned as bytes string.
+        :param as_service: Defines if the Log shall be hosted via a server as a service.
+            Requires the calling file to be the main entry point. ("__main__")
+        :param auto_reload: Defines if the calling source file shall be tracked and
+            reloaded upon change
         :param kwargs: Additional arguments. Will be passed into LogBuilder.__init__.
         :return: A dictionary with the different response files or a WebResponse.
             If no further parameters are specified a dictionary of files will be
             returned, at least containing an index.html with the result.
         """
+        if as_service:
+            is_main = VisualLog.is_main(2)
+            if not is_main:
+                raise ValueError(
+                    "as_service is only valid if the calling file is "
+                    "the applications main entry point. For hosting a "
+                    "service from another file use VisualLog.run_server()"
+                )
+        else:
+            if auto_reload:
+                raise ValueError(
+                    "Autoreload can only be used in combination with " "as_service=True"
+                )
         if "params" in kwargs and isinstance(kwargs["params"], dict):
-            filetype = kwargs["params"].get("filetype", None)
+            filetype = kwargs["params"].get("filetype", filetype)
         if isinstance(options, str) or options is None:
             options = VisualLog.setup_options(options)
-        vl = VisualLog(options=options).run(
-            builder=cls, options=options, nested=nested, **kwargs
-        )
-        result = vl.get_result()
+        vl = VisualLog(options=options, stack_level=2)
+        if as_service:
+            vl.run_server(
+                builder=cls,
+                options=options,
+                nested=nested,
+                auto_reload=auto_reload,
+                _auto_reload_stag_level=2,
+                **kwargs,
+            )
+        else:
+            vl.run(builder=cls, options=options, nested=nested, **kwargs)
+        result = vl.default_builder.get_result()
         if filetype is not None and isinstance(result, dict):
             fn = "index." + filetype
             if fn in result:
@@ -443,10 +487,10 @@ class LogBuilder:
         if hasattr(content, "to_html") and not isinstance(
             content, (pd.DataFrame, pd.Series)
         ):
-            self.html(content.to_html())
+            self.html(content.to_html(), br=br)
             return self
         if hasattr(content, "to_md"):
-            self.md(content.to_md())
+            self.md(content.to_md(), br=br)
             return self
         if isinstance(content, bytes):
             import filetype
@@ -485,10 +529,10 @@ class LogBuilder:
             return self
         if mimetype is not None:
             if mimetype == MIMETYPE_HTML or mimetype == HTML:
-                self.html(str(content), linebreak=br)
+                self.html(str(content), br=br)
                 return self
             if mimetype == MIMETYPE_MARKDOWN or mimetype == MD:
-                self.md(str(content))
+                self.md(str(content), br=br)
                 return self
         self.text(str(content), br=br)
 
@@ -558,13 +602,11 @@ class LogBuilder:
             for index, text in enumerate(lines):
                 if index == len(lines) - 1:
                     self.add_html(f"{text}")
-                    self.add_md(f"{text}")
-                    self.add_md(f"{text}")
+                    self.add_md(f"{text}", br=False)
                 else:  # only break if there is really an explicit line break
                     self.add_html(f"{text}<br>\n")
-                    self.add_md(f"{text}\n")
                     self.add_md(f"{text}\\")
-                self.add_txt(text)
+                self.add_txt(text, br=False)
         self.handle_modified()
         return self
 
@@ -582,15 +624,29 @@ class LogBuilder:
         self.add_html("</a>")
         return self
 
-    def br(self, repetition=1) -> LogBuilder:
+    def br(self, repetition=1, exclude: set[str] | str | None = None) -> LogBuilder:
         """
         Inserts a simple line break
 
         :param repetition: The count of linebreaks
+        :param exclude: Set of formats to exclude e.g. because of different formatting
+            behavior.
         :return: The builder
         """
-        self.add_html("<br>" * repetition)
-        self.add_txt(" ", targets="*")
+        if exclude is None:
+            exclude = set()
+        else:
+            if isinstance(exclude, str):
+                exclude = {exclude}
+        if HTML not in exclude:
+            self.add_html("<br>\n" * repetition)
+        if MD not in exclude:
+            if repetition == 1:
+                self.add_txt("", targets="md")
+            else:
+                self.add_txt("<br>" * (repetition + 1), targets="md")
+        if TXT not in exclude:
+            self.add_txt("\n" * repetition, targets="-md", br=False)
         return self
 
     def page_break(self) -> LogBuilder:
@@ -627,17 +683,17 @@ class LogBuilder:
         self.add_txt("---", targets="*")
         return self
 
-    def html(self, code: str | HTMLCode, linebreak: bool = True) -> LogBuilder:
+    def html(self, code: str | HTMLCode, br: bool = True) -> LogBuilder:
         """
         Adds a html section. (only to targets supporting html)
 
         :param code: The html code to parse
-        :param linebreak: Defines if a line break shall be inserted after the code
+        :param br: Defines if a line break shall be inserted after the code
         """
         if isinstance(code, HTMLCode):
             code = code.to_html()
-        self.add_md(code, no_break=not linebreak)
-        self.add_html(code + ("\n" if linebreak else ""))
+        self.add_md(code, br=br)
+        self.add_html(code + ("\n" if br else ""))
         self.handle_modified()
         return self
 
@@ -971,9 +1027,10 @@ class LogBuilder:
         :return: The backup data
         """
         self.flush()
-        if HTML not in self.page_session.log_formats:
-            raise ValueError("At the moment only HTML backup is supported")
-        return LogBackup(data=self.page_session.get_body(HTML))
+        backup = LogBackup()
+        for cur_format in self.page_session.log_formats:
+            backup.data[cur_format] = self.page_session.get_body(cur_format)
+        return backup
 
     def insert_backup(self, backup: LogBackup):
         """
@@ -981,7 +1038,9 @@ class LogBuilder:
 
         :param backup: The backup data
         """
-        self.add_html(backup.data)
+        for key, value in backup.data.items():
+            if key in self.page_session.log_formats:
+                self.page_session.write_data(key, value)
 
     def publish(self, path: str, content: bytes | str, **kwargs) -> "PublishingInfo":
         """
@@ -1009,11 +1068,11 @@ class LogBuilder:
         :param html_code: The html code
         :return: True if txt logging is enabled
         """
-        if self.md.html_only:
+        if self.md.log_html_only:
             self.page_session.write_md(html_code, no_break=True)
         self.page_session.write_html(html_code)
 
-    def add_md(self, md_code: str, no_break: bool = False):
+    def add_md(self, md_code: str, br: bool = True):
         """
         Adds markdown code directly of the markdown section of this log.
 
@@ -1021,15 +1080,19 @@ class LogBuilder:
         case use :meth:`md`.
 
         :param md_code: The markdown code
-        :param no_break: If defined no line break will be added
+        :param br: If defined a linebreak will be inserted afterwards
         :return: True if txt logging is enabled
         """
-        if self.md.html_only:
+        if self.md.log_html_only:
             return
-        self.page_session.write_md(md_code, no_break=no_break)
+        self.page_session.write_md(md_code, no_break=not br)
 
     def add_txt(
-        self, txt_code: str, targets: str | set[str] | None = None, align: bool = True
+        self,
+        txt_code: str,
+        targets: str | set[str] | None = None,
+        align: bool = True,
+        br: bool = True,
     ):
         """
         Adds html code directly of the text and console section of this log.
@@ -1045,6 +1108,7 @@ class LogBuilder:
 
             By default txt and consoles.
         :param align: Defines if alignments shall be applied to the text
+        :param br: If defined a linebreak will be inserted afterwards
         :return: True if txt logging is enabled
         """
         from scistag.vislog import TXT, CONSOLE
@@ -1061,7 +1125,9 @@ class LogBuilder:
                         missing //= 2
                     lines[index] = " " * missing + cur_line
             txt_code = "\n".join(lines)
-            # if len(txt_code)<cw:
+
+        if br:
+            txt_code += "\n"
 
         if targets is None:
             targets = {TXT, CONSOLE}

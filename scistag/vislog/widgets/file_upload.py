@@ -151,7 +151,8 @@ class LFileUpload(LWidget):
             "{{TEMPLATES}}/extensions/upload/vl_file_upload.html",
             replacements=replacements,
         )
-        self.builder.html(html)
+        self.page_session.write_html(html)
+        self.builder.add_txt("<<FILE UPLOAD WIDGET>>", targets="*")
 
     def handle_event(self, event: "LEvent"):
         super().handle_event(event)
