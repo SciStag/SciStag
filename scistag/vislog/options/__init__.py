@@ -1,7 +1,9 @@
 """
 Defines the single style configuration elements
 """
-
+from .debug_options import LogDebugOptions
+from .md_options import MdOptions
+from .page_options import PageOptions
 from .widget_options import LWidgetOptions
 from .slider_options import LSliderOptions
 from .table_options import TableOptions
@@ -24,4 +26,8 @@ __all__ = [
     LogServerOptions,
     OutputOptions,
     ImageOptions,
+    LogStyleOptions,
+    PageOptions,
+    MdOptions,
+    LogDebugOptions,
 ]

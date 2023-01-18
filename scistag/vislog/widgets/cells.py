@@ -245,6 +245,8 @@ class Cell(LWidget):
         """
         Cell specific stats like updates, updates per second etc.
         """
+        self.statistics_update_interval_s = 2.0
+        """Defines how often the cell's statistics are updated"""
         self._last_stats_update = time.time()
         """Time of last stats update"""
         self._last_stats_counter = 0
@@ -411,7 +413,7 @@ class Cell(LWidget):
 
     def handle_loop(self) -> float | None:
         cur_time = time.time()
-        if cur_time - self._last_stats_update > 2.0:
+        if cur_time - self._last_stats_update > self.statistics_update_interval_s:
             time_diff = cur_time - self._last_stats_update
             count_diff = self.statistics.builds - self._last_stats_counter
             self.statistics.bps = count_diff / time_diff

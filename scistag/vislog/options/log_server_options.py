@@ -1,3 +1,8 @@
+"""
+Defines service specific options if the VisualLog is hosted as web service such as
+the IP(s) and port(s) the service is hosted at.
+"""
+
 from __future__ import annotations
 
 from scistag.webstag.server_options import ServerOptions

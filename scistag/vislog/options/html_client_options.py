@@ -1,3 +1,8 @@
+"""
+Defines options regarding the remote, thin client HTML counter piece which updates the
+site.
+"""
+
 from __future__ import annotations
 
 from pydantic import BaseModel

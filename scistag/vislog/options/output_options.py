@@ -1,3 +1,7 @@
+"""
+Defines the log's output options such as which different kinds of formats to log.
+"""
+
 from __future__ import annotations
 
 from typing import Union

@@ -53,14 +53,16 @@ class ImageLogger(BuilderExtension):
         self,
         source: Image | Canvas | str | bytes | np.ndarray,
         name: str | None = None,
-        alt_text: str | None = None,
+        alt: str | None = None,
+        title: str | None = None,
         pixel_format: Optional["PixelFormat"] | str | None = None,
-        download: bool = False,
+        download: bool | None = None,
         scaling: float = 1.0,
         max_width: int | float | None = None,
         filetype: str | tuple[str, int] | None = None,
         optical_scaling: float = 1.0,
         br=True,
+        text: str | None = None,
     ):
         """
         Adds an image to the log.
@@ -69,11 +71,15 @@ class ImageLogger(BuilderExtension):
             on disk (in case write_to_disk is enabled).
         :param source: The data object, e.g. an scitag.imagestag.Image, a
             numpy array, an URL or a FileStag compatible link.
-        :param alt_text: An alternative text if no image can be displayed
+        :param alt: An alternative text if no image can be displayed
+        :param title: The image's title (which will be displayed if the mouse hovers
+            above it)
         :param pixel_format: The pixel format (in case the image is passed
             as numpy array). By default gray will be used for single channel,
             RGB for triple band and RGBA for quad band sources.
-        :param download: Defines if an image shall be downloaded
+        :param download: Defines if an image shall be downloaded.
+            By default True if embed_images if set to True in the options,
+            false otherwise.
         :param scaling: The factor by which the image shall be scaled
         :param max_width: Defines if the image shall be scaled to a given size.
 
@@ -94,28 +100,32 @@ class ImageLogger(BuilderExtension):
         """
         if not self.builder.options.style.image.log_images:
             return
+        if download is None:
+            download = self.options.style.image.embed_images
         if name is None:
             name = "image"
-        if alt_text is None:
-            alt_text = name
+        postfix_html_code = ""  # Additional html code
+        if alt is None:
+            alt = name
+        if alt != "":
+            postfix_html_code += f' alt="{alt}"'
+        if title is not None and title != "":
+            postfix_html_code += f' title="{title}"'
         if isinstance(source, np.ndarray):
             source = Image(source, pixel_format=pixel_format)
         html_lb = "<br>" if br else ""
         if isinstance(source, str):
-            if (
-                not source.lower().startswith("http")
-                or download
-                or self.log.embed_images
-            ):
-                source = Image(source=source)
+            if not source.lower().startswith("http") or download:
+                source = FileStag.load(source)
             else:
                 self._insert_image_reference(
                     name,
                     source,
-                    alt_text,
+                    alt,
                     scaling=scaling,
                     max_width=max_width,
                     html_linebreak=br,
+                    postfix_html_code=postfix_html_code,
                 )
                 return
         filename = self.builder.reserve_unique_name(name)
@@ -163,7 +173,8 @@ class ImageLogger(BuilderExtension):
             file_location = embed_data
         if len(file_location):
             self.builder.add_html(
-                f'<img src="{file_location}" {size_definition}>{html_lb}\n'
+                f'<img src="{file_location}"{size_definition}{postfix_html_code}>'
+                f"{html_lb}\n"
             )
         if (
             self.page_session.txt_export
@@ -190,7 +201,7 @@ class ImageLogger(BuilderExtension):
                 )
                 self.builder.add_txt(ascii_code, align=False, targets={"txt"})
         else:
-            self.builder.add_txt(f"\n[{alt_text}]")
+            self.builder.add_txt(f"\n[{alt}]")
 
     def _insert_image_reference(
         self,
@@ -201,6 +212,7 @@ class ImageLogger(BuilderExtension):
         max_width: int | None = None,
         html_scaling: float = 1.0,
         html_linebreak: bool = True,
+        postfix_html_code: str = "",
     ):
         """
         Inserts a link to an image in the html logger without actually
@@ -216,6 +228,7 @@ class ImageLogger(BuilderExtension):
             itself and thus giving the possibility to zoom in the browser.
         :param html_linebreak: Defines if a linebreak shall be inserted
             after the image
+        :param postfix_html_code: Additional text to insert inside the HTML image tag
         """
         html_lb = "<br>" if html_linebreak else ""
         if scaling != 1.0 or html_scaling != 1.0 or max_width is not None:
@@ -231,10 +244,11 @@ class ImageLogger(BuilderExtension):
                 int(round(image.height * scaling * html_scaling)),
             )
             self.builder.add_html(
-                f'<img src="{source}" with={width} height={height}>{html_lb}'
+                f'<img src="{source}" width={width} '
+                f"height={height}{postfix_html_code}>{html_lb}"
             )
         else:
-            self.builder.add_html(f'<img src="{source}">{html_lb}')
+            self.builder.add_html(f'<img src="{source}"{postfix_html_code}>{html_lb}')
         self.builder.add_md(f"![{name}]({source})\n")
         self.builder.add_txt(f"\n[{alt_text}]\n")
 

@@ -27,6 +27,8 @@ from scistag.vislog.options import LogOptions
 from scistag.vislog.visual_log import VisualLog, HTML, MD, TXT
 from scistag.vislog.options.log_options import LOG_DEFAULT_OPTION_LITERALS
 from scistag.plotstag import Figure, Plot, MPHelper
+from scistag.vislog.common.log_backup import LogBackup
+from .common.log_builder_statistics import LogBuilderStatistics
 from .log_builder_registry import LogBuilderRegistry
 from ..common import Cache
 from ..webstag.mime_types import MIMETYPE_MARKDOWN, MIMETYPE_HTML
@@ -77,46 +79,6 @@ LogableContent = Union[
 Definition of all types which can be logged via `add` or provided as content
 for tables, lists and divs.
 """
-
-
-class LogBackup(BaseModel):
-    """
-    Contains the backup of a log and all necessary data to integrate it into
-    another log.
-    """
-
-    data: dict[str, bytes] = {}
-    "The logs representation of each format"
-
-    def save_to_disk(self, path: str, index_name: str = "index"):
-        """
-        Saves the backups content into given target directory
-
-        :param path: The target path
-        :param index_name: The name of the index file
-        """
-        os.makedirs(f"{path}", exist_ok=True)
-        for cur_format in self.data:
-            FileStag.save(f"{path}/{index_name}.{cur_format}", self.data[cur_format])
-
-
-class LogBuilderStatistics:
-    """
-    Contains statistics about the log
-    """
-
-    build_counter: int = 0
-    """
-    How often was the log build?
-    """
-    last_build_time_s: float = 0.0
-    """
-    The amount of time in seconds for the last build execution
-    """
-    total_build_time_s: float = 0.0
-    """
-    The total build time in seconds
-    """
 
 
 class LogBuilder:
@@ -352,6 +314,8 @@ class LogBuilder:
         filetype: str | None = None,
         as_service: bool = False,
         auto_reload: bool = False,
+        out_details: dict | None = None,
+        test: bool = False,
         **kwargs,
     ) -> dict | WebResponse:
         """
@@ -367,13 +331,19 @@ class LogBuilder:
             Requires the calling file to be the main entry point. ("__main__")
         :param auto_reload: Defines if the calling source file shall be tracked and
             reloaded upon change
+        :param out_details: If provided additional details will be stored in the
+            dictionary provided such as:
+            * builder: The LogBuilder instance which was used
+            * build_time_s: The time in seconds which was required to build the log
+            * log: The VisualLog instance which was used
+        :param test: Defines if the log is run in test mode
         :param kwargs: Additional arguments. Will be passed into LogBuilder.__init__.
         :return: A dictionary with the different response files or a WebResponse.
             If no further parameters are specified a dictionary of files will be
             returned, at least containing an index.html with the result.
         """
         if as_service:
-            is_main = VisualLog.is_main(2)
+            is_main = VisualLog.is_main(2) or test
             if not is_main:
                 raise ValueError(
                     "as_service is only valid if the calling file is "
@@ -390,6 +360,7 @@ class LogBuilder:
         if isinstance(options, str) or options is None:
             options = VisualLog.setup_options(options)
         vl = VisualLog(options=options, stack_level=2)
+        start_time = time.time()
         if as_service:
             vl.run_server(
                 builder=cls,
@@ -397,10 +368,16 @@ class LogBuilder:
                 nested=nested,
                 auto_reload=auto_reload,
                 _auto_reload_stag_level=2,
+                test=test,
                 **kwargs,
             )
         else:
-            vl.run(builder=cls, options=options, nested=nested, **kwargs)
+            vl.run(builder=cls, options=options, nested=nested, test=test, **kwargs)
+        if out_details is not None:
+            assert isinstance(out_details, dict)
+            out_details["builder"] = vl.default_builder
+            out_details["log"] = vl
+            out_details["build_time"] = time.time() - start_time
         result = vl.default_builder.get_result()
         if filetype is not None and isinstance(result, dict):
             fn = "index." + filetype
@@ -917,7 +894,7 @@ class LogBuilder:
         self,
         figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
         name: str | None = None,
-        alt_text: str | None = None,
+        alt: str | None = None,
         _out_image_data: io.IOBase | None = None,
         br: bool = False,
     ):
@@ -926,7 +903,7 @@ class LogBuilder:
 
         :param name: The figure's name
         :param figure: The figure to log
-        :param alt_text: An alternative text to display if the figure can
+        :param alt: An alternative text to display if the figure can
             not be displayed.
         :param _out_image_data: Receives the image data if provided (for
             debugging and assertion purposes)
@@ -938,7 +915,7 @@ class LogBuilder:
             return
         if isinstance(figure, (Figure, Plot)):
             image = figure.render()
-            self.image(image, name, alt_text=alt_text, br=br)
+            self.image(image, name, alt=alt, br=br)
             if _out_image_data is not None:
                 filetype, quality = self.options.style.image.default_filetype
                 _out_image_data.write(
@@ -955,7 +932,7 @@ class LogBuilder:
         image_data = MPHelper.figure_to_png(figure, transparent=False)
         if _out_image_data is not None:
             _out_image_data.write(image_data)
-        self.image(image_data, name, alt_text=alt_text, br=br)
+        self.image(image_data, name, alt=alt, br=br)
 
     def pyplot(
         self,

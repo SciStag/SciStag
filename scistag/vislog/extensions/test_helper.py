@@ -48,14 +48,14 @@ class TestHelper(BuilderExtension):
         name: str,
         figure: plt.Figure | plt.Axes | Figure | Plot,
         hash_val: str,
-        alt_text: str | None = None,
+        alt: str | None = None,
     ):
         """
         Adds a figure to the log and verifies its content to a checksum
 
         :param name: The figure's name
         :param figure: The figure to log
-        :param alt_text: An alternative text to display if the figure can
+        :param alt: An alternative text to display if the figure can
             not be displayed.
         :param hash_val: The hash value to compare to (a checksum of all
             pixels). The correct will be logged via an assertion upon failure
@@ -63,7 +63,7 @@ class TestHelper(BuilderExtension):
         """
         image_data = io.BytesIO()
         self.builder.figure(
-            figure=figure, name=name, alt_text=alt_text, _out_image_data=image_data
+            figure=figure, name=name, alt=alt, _out_image_data=image_data
         )
         assert len(image_data.getvalue()) > 0
         result_hash_val = hashlib.md5(image_data.getvalue()).hexdigest()
@@ -75,7 +75,7 @@ class TestHelper(BuilderExtension):
         source: Image | Canvas,
         hash_val: str,
         scaling: float = 1.0,
-        alt_text: str | None = None,
+        alt: str | None = None,
     ):
         """
         Assert an image object and verifies it's hash value matches the object's
@@ -87,11 +87,11 @@ class TestHelper(BuilderExtension):
             pixels). The correct will be logged via an assertion upon failure
             and can then be copies & pasted.
         :param scaling: The factor by which the image shall be scaled
-        :param alt_text: An alternative text to display if the image can
+        :param alt: An alternative text to display if the image can
             not be displayed.
         """
         result_hash_val = self.log_and_hash_image(
-            name=name, data=source, scaling=scaling, alt_text=alt_text
+            name=name, data=source, scaling=scaling, alt=alt
         )
         self.hash_check_log(result_hash_val, hash_val)
 
@@ -99,7 +99,7 @@ class TestHelper(BuilderExtension):
         self,
         name: str,
         data: Image | Canvas,
-        alt_text: str | None = None,
+        alt: str | None = None,
         scaling: float = 1.0,
     ) -> str:
         """
@@ -109,14 +109,14 @@ class TestHelper(BuilderExtension):
         :param name: The name of the test.
             Will result in a file named logs/TEST_DIR/test_name.png
         :param data: The image object
-        :param alt_text: An alternative text to display if the image can
+        :param alt: An alternative text to display if the image can
             not be displayed.
         :param scaling: The factor by which the image shall be scaled
         :return: The image's hash for consistency checks
         """
         if isinstance(data, Canvas):
             data = data.to_image()
-        self.builder.image(source=data, name=name, alt_text=alt_text, scaling=scaling)
+        self.builder.image(source=data, name=name, alt=alt, scaling=scaling)
         return data.get_hash()
 
     def assert_text(self, name: str, text: str, hash_val: str):

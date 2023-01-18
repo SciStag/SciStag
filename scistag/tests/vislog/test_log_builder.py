@@ -1,13 +1,15 @@
 """
 Advance LogBuilder tests
 """
+from . import vl
 import io
 from contextlib import redirect_stdout
 
 import pytest
 from pydantic import BaseModel
 
-from scistag.vislog import VisualLog, LogBuilder, cell
+from scistag.vislog import VisualLog, LogBuilder, cell, LogBackup
+from ...filestag import FileStag
 
 
 def test_creation():
@@ -25,11 +27,35 @@ def test_backup():
     """
     Tests creating and restoring a backup
     """
-    log_a = VisualLog()
+    options_a = VisualLog.setup_options()
+    options_a.output.setup(formats={"txt", "html"})
+    log_a = VisualLog(options=options_a)
     log_a.default_builder.log("Test")
     log_b = VisualLog()
     log_b.default_builder.insert_backup(log_a.default_builder.create_backup())
+    log_c = VisualLog(options=options_a)
+    log_c.default_builder.insert_backup(log_a.default_builder.create_backup())
     assert b"Test" in log_b.default_builder.create_backup().data["html"]
+
+
+def test_backup_adv(tmp_path):
+    """
+    Tests the log's backup functionality
+    """
+    details = {}
+
+    class MyBuilder(LogBuilder):
+        @cell
+        def hello(self):
+            self.text("hello")
+
+    MyBuilder.run(out_details=details)
+    builder: LogBuilder = details["builder"]
+    backup: LogBackup = builder.create_backup()
+    assert b"hello" in backup.data["html"]
+
+    backup.save_to_disk(str(tmp_path))
+    assert b"hello" in FileStag.load(str(tmp_path) + "/index.html")
 
 
 def test_static_file():
@@ -126,3 +152,73 @@ def test_current():
             assert self.terminated
 
     Builder.run()
+
+
+def test_advanced_br():
+    """
+    Tests the linebreak method
+    """
+    vl.test.checkpoint("lb.br")
+    vl.br(1)
+    vl.text("test")
+    vl.br(3)
+    vl.text("test after 3 line spacing")
+    vl.br(1, exclude="html")
+    vl.text("test after 1 line spacing, not in html")
+    vl.br(1, exclude={"txt"})
+    vl.text("test after 1 line spacing, not in txt")
+    vl.br(1, exclude="md")
+    vl.text("test after 1 line spacing, not in md")
+    vl.test.assert_cp_diff("5a5cea290c048376a9d14e176125b264")
+
+
+def test_cache():
+    """
+    Tests the LogBuilder's cache shortcuts
+    """
+    details = {}
+    log = LogBuilder.run(out_details=details)
+    builder = details["builder"]
+    assert "val" not in builder
+    builder["val"] = 123
+    assert "val" in builder
+    assert builder["val"] == 123
+    del builder["val"]
+    assert "val" not in builder
+
+
+def test_run():
+    """
+    Tests running the log builder directly
+    """
+
+    class MyBuilder(LogBuilder):
+        @cell
+        def hello(self):
+            self.text("hello")
+
+    with pytest.raises(ValueError):
+        MyBuilder.run(filetype="html", as_service=False, auto_reload=True)
+
+    with pytest.raises(ValueError):
+        MyBuilder.run(filetype="html", as_service=True)
+
+    details = {}
+    MyBuilder.run(filetype="html", as_service=True, test=True, out_details=details)
+    assert details["log"].server is not None
+
+
+def test_no_module():
+    details = {}
+
+    class MyBuilder(LogBuilder):
+        @cell
+        def hello(self):
+            self.text("hello")
+
+    MyBuilder.run(out_details=details)
+    builder: LogBuilder = details["builder"]
+
+    """Test if builder also works without known initial module"""
+    builder.target_log.initial_module = None
+    builder.build()

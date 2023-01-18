@@ -1,3 +1,7 @@
+"""
+Defines image specific logging options such as the (default) image format and quality
+"""
+
 from __future__ import annotations
 
 from typing import Union

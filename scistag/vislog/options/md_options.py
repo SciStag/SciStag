@@ -1,3 +1,7 @@
+"""
+Definition of Markdown (.md) specific logging options
+"""
+
 from __future__ import annotations
 
 from pydantic import BaseModel

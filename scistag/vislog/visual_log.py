@@ -606,11 +606,6 @@ class VisualLog:
 
             The data needs to be of the class dict, BaseModel (pydantic) or
             a Python dataclass.
-        :param continuous: Defines if the run_server shall run until
-            :meth:`terminate` was called to update the logs content
-            continuously and write them to disk each turn.
-
-            False by default.
         :param auto_reload: If swt to True the module calling this function
             will automatically be reloaded on-the-fly when ever it is
             modified and saved and the log will be rebuilt from scratch.

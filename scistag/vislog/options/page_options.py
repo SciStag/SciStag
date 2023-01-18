@@ -1,3 +1,7 @@
+"""
+Defines the page specific default options :class:`PageOptions`.
+"""
+
 from __future__ import annotations
 
 from pydantic import BaseModel
@@ -5,7 +9,10 @@ from pydantic import BaseModel
 
 class PageOptions(BaseModel):
     """
-    Option set for general page properties
+    Option set for general page (default) properties.
+
+    Note that in the future the page options will be (optionally) configurable on a
+    per-page basis.
     """
 
     title: str = "SciStag - VisualLog"

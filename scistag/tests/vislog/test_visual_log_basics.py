@@ -94,6 +94,10 @@ def test_add_and_links():
     vl.add("<b>Bold</b>", mimetype="html").br()
     vl.test.assert_cp_diff("87a010d9c35d461b0dd92fd373cee0c9")
 
+    vl.test.checkpoint("add.womime")
+    vl.add("A text", mimetype="notexisting")
+    vl.test.assert_cp_diff("0639df408bd1a2d6fa8b8f4c072b6540")
+
 
 def test_html():
     """
@@ -198,6 +202,8 @@ def test_eval():
     eval_data = vl.evaluate("4*5")
     assert eval_data == 20
     assert vl.evaluate("print('', end='')") is None
+    eval_data = vl.evaluate("4*4", log_code=False)
+    assert eval_data == 16
 
 
 def test_text():

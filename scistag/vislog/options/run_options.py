@@ -1,3 +1,7 @@
+"""
+Defines options for the VisualLog's run behavior
+"""
+
 from __future__ import annotations
 
 from typing import Union

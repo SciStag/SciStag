@@ -3,6 +3,7 @@ Tests the VisualMicroLog's function
 """
 import os
 from contextlib import redirect_stdout
+from io import StringIO
 from unittest import mock
 
 import pytest
@@ -27,6 +28,7 @@ def test_micro_log(tmp_path):
 
     for turn_index in range(2):
         micro_lock = VisualMicroLock(log_to_std_out=turn_index == 0)
+        std_out = StringIO()
         with redirect_stdout(std_out):
             with mock.patch("builtins.print") as pmock:
                 micro_lock.log("Test")

@@ -4,6 +4,7 @@ Tests the pandas specific logging functions
 
 import shutil
 from contextlib import redirect_stdout
+from io import StringIO
 from unittest import mock
 
 import pandas as pd
@@ -38,6 +39,7 @@ def test_dataframe():
     vl.test.assert_cp_diff(hash_val="a42a25e46a705429714ace6c2eb10367")
     vl.options.style.table.data_table_format["html"] = prev
 
+    std_out = StringIO()
     with redirect_stdout(std_out):
         # testing data frame assertion
         with mock.patch("builtins.print"):
