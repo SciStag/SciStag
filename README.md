@@ -151,3 +151,4 @@ The SciStag module on PyPi is bundled with the following data:
 SciStag is developed by Michael Ikemann / [@Alyxion](https://github.com/Alyxion)
 . - Feel free to reach out to me
 via [LinkedIn](https://www.linkedin.com/in/michael-ikemann/).
+
