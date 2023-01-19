@@ -12,7 +12,7 @@ from scistag.vislog.widgets.log_widget import LWidget
 from scistag.vislog.widgets.event import LEvent
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
 
 
 class LSlider(LWidget):

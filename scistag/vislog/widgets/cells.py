@@ -32,7 +32,7 @@ CELL_TYPE_DATA = "data"
 CELL_TYPE_ONCE = "once"
 "Defines a data cell whose build function is guaranteed to be called once"
 
-CELL_TYPE_PROCESSING = "processing"
+CELL_TYPE_STREAM = "stream"
 """Defines a data cell which processes stream data or data provided via cache 
 modifications"""
 
@@ -326,7 +326,7 @@ class Cell(LWidget):
                 self.render_footer()
             if not self.progressive and not self.static:
                 self.sub_element.add_data("html", b"</div>\n")
-            if self.ctype in [CELL_TYPE_DATA, CELL_TYPE_ONCE, CELL_TYPE_PROCESSING]:
+            if self.ctype in [CELL_TYPE_DATA, CELL_TYPE_ONCE, CELL_TYPE_STREAM]:
                 # prevent visual updates through a data cell
                 self.clear()
                 self.sub_element.last_direct_change_time = old_mod

@@ -21,7 +21,7 @@ DEFAULT_MAX_UPLOAD_SIZE = 10 * 1024 * 1024
 "The default maximum upload size (10 MB)"
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
 
 FILE_UPLOAD_EVENT_TYPE = "file_upload"
 "Defines an event which is risen by a file upload"

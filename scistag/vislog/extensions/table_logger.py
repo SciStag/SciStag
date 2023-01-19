@@ -16,7 +16,7 @@ from scistag.vislog.sessions.page_session import CONSOLE
 
 if TYPE_CHECKING:
     import numpy as np
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
     from pandas import DataFrame, Series
     from scistag.imagestag import Image
     from scistag.plotstag import Figure

@@ -11,7 +11,7 @@ from scistag.vislog.widgets.log_widget import LWidget
 from scistag.vislog.widgets.event import LEvent
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
 
 CLICK_EVENT_TYPE = "widget_click"
 "Defines an event which is risen by a button click"

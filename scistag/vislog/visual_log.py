@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from scistag.webstag.server import WebStagService
     from scistag.vislog.renderers.log_renderer import LogRenderer
     from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
     from scistag.vislog.common import LogStatistics
     from scistag.vislog.options import LogOptions
 
@@ -263,7 +263,7 @@ class VisualLog:
             self._events = self.cache.get(LOG_EVENT_CACHE_NAME, default=[])
         self._invalid = False
         "Defines if this log was invalidated via :meth:`invalidate`"
-        from .visual_log_builder import LogBuilder
+        from .log_builder import LogBuilder
 
         self.default_page = PageSession(
             log=self,
@@ -705,7 +705,7 @@ class VisualLog:
         :return: The prepared build object
         """
         if isinstance(builder, type):
-            from .visual_log_builder import LogBuilder
+            from .log_builder import LogBuilder
 
             builder: Type[LogBuilder] | LogBuilder
             builder = builder(

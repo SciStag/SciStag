@@ -25,7 +25,7 @@ HORIZONTAL_ALIGNMENTS = Literal[
 "Definition of different horizontal alignments"
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
 
 
 class AlignmentContext(ElementContext):

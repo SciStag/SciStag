@@ -5,13 +5,13 @@ from .sessions.page_session import MD, HTML, TXT, CONSOLE
 from .visual_log import VisualLog
 
 from .visual_test_log import VisualTestLog
-from .visual_log_builder import LogBuilder
+from .log_builder import LogBuilder
 from .common.log_backup import LogBackup
 from .extensions.builder_extension import BuilderExtension
 from .common.log_statistics import LogStatistics
-from .extensions.cell_sugar import cell, data, section, processing, once
 from .extensions.cell_logger import Cell
 from .log_elements import HTMLCode, MDCode
+from .cells import cell, section, data, stream, once
 
 __all__ = [
     "VisualLog",
@@ -19,11 +19,6 @@ __all__ = [
     "LogBuilder",
     "LogStatistics",
     "BuilderExtension",
-    "cell",
-    "data",
-    "processing",
-    "section",
-    "once",
     "Cell",
     "HTMLCode",
     "MDCode",
@@ -31,4 +26,9 @@ __all__ = [
     "HTML",
     "TXT",
     "CONSOLE",
+    "cell",
+    "section",
+    "data",
+    "stream",
+    "once",
 ]

@@ -8,7 +8,7 @@ from __future__ import annotations
 import os.path
 import time
 import types
-from typing import Any, TYPE_CHECKING, Union, Callable
+from typing import Any, TYPE_CHECKING, Union, Callable, Literal
 import io
 
 import html
@@ -268,7 +268,7 @@ class LogBuilder:
         start_time = time.time()
         if self.options.output.log_to_stdout:
             self.add_txt("")
-        from scistag.vislog.extensions.cell_sugar import LOG_CELL_METHOD_FLAG
+        from scistag.vislog.cells import LOG_CELL_METHOD_FLAG
 
         self.stats.build_counter += 1
 
@@ -316,6 +316,7 @@ class LogBuilder:
         auto_reload: bool = False,
         out_details: dict | None = None,
         test: bool = False,
+        fixed_session_id: str | None = None,
         **kwargs,
     ) -> dict | WebResponse:
         """
@@ -337,6 +338,7 @@ class LogBuilder:
             * build_time_s: The time in seconds which was required to build the log
             * log: The VisualLog instance which was used
         :param test: Defines if the log is run in test mode
+        :param fixed_session_id: A predefined session id, e.g. to share it with sub logs
         :param kwargs: Additional arguments. Will be passed into LogBuilder.__init__.
         :return: A dictionary with the different response files or a WebResponse.
             If no further parameters are specified a dictionary of files will be
@@ -359,7 +361,9 @@ class LogBuilder:
             filetype = kwargs["params"].get("filetype", filetype)
         if isinstance(options, str) or options is None:
             options = VisualLog.setup_options(options)
-        vl = VisualLog(options=options, stack_level=2)
+        vl = VisualLog(
+            options=options, stack_level=2, fixed_session_id=fixed_session_id
+        )
         start_time = time.time()
         if as_service:
             vl.run_server(
@@ -426,7 +430,12 @@ class LogBuilder:
         return result
 
     def add(
-        self, content: LogableContent, br: bool = False, mimetype: str | None = None
+        self,
+        content: LogableContent,
+        br: bool = False,
+        mimetype: str | None = None,
+        share: Literal["sessionId"] | None = None,
+        **kwargs,
     ) -> LogBuilder:
         """
         Adds the provided content to the log.
@@ -453,11 +462,33 @@ class LogBuilder:
             (if supported), false by default.
         :param mimetype: Defines the explicit mime type and applies it
             were possible such as parsing text provided as text/markdown or text/html.
+        :param share: Only applies if the content being passe is a LogBuilder class type.
+            Defines which elements shall be shared with the LogBuilder being embedded.
+
+            * "sessionId" = The session ID is being shared
+        :param kwargs: Additional keyword arguments, being forwarded to the content
+            type's specific function, e.g. run in case of a LogBuilder being passed.
         :return: The builder
         """
         # pandas content frame
         import pandas as pd
 
+        if isinstance(content, type):  # insert another log into this log
+            if LogBuilder in content.__bases__:
+                options = self.options.copy(deep=True)
+                options.configure_sub_log()
+                details = {}
+                share_session_id = share is not None and share == "sessionId"
+                fixed_session_id = (
+                    self.page_session.session_id if share_session_id else None
+                )
+                content.run(
+                    out_details=details,
+                    fixed_session_id=fixed_session_id,
+                    **kwargs,
+                )
+                self.insert_backup(details["builder"].create_backup())
+                return self
         if isinstance(content, Callable):
             content()
             return self

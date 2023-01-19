@@ -158,7 +158,7 @@ def data(
     )
 
 
-def processing(
+def stream(
     *args,
     name: str | None = None,
     interval_s: float | None = None,
@@ -192,7 +192,7 @@ def processing(
     """
     return cell(
         *args,
-        ctype="processing",
+        ctype="stream",
         name=name,
         interval_s=interval_s,
         continuous=continuous,
@@ -310,3 +310,13 @@ def get_current_builder() -> Union["LogBuilder", None]:
 
 
 cell.__dict__["vl"] = get_current_builder
+
+__all__ = [
+    "cell",
+    "section",
+    "data",
+    "once",
+    "stream",
+    "get_current_builder",
+    "LOG_CELL_METHOD_FLAG",
+]

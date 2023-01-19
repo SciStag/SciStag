@@ -11,7 +11,7 @@ from scistag.vislog import MD
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
 
 
 class BasicLogger(BuilderExtension):

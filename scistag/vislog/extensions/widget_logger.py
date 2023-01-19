@@ -13,7 +13,7 @@ from scistag.vislog.widgets.timer import LTimer
 from scistag.vislog.widgets.button import CLICK_EVENT_TYPE, LClickEvent
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
     from scistag.vislog.widgets import LButton
     from scistag.vislog.widgets import LSlider, LFileUpload
 

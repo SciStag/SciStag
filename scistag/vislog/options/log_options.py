@@ -8,9 +8,9 @@ from scistag.vislog.options.debug_options import LogDebugOptions
 from scistag.vislog.options.format_options import FormatOptions
 from scistag.vislog.options.page_options import PageOptions
 
-APP_MODES = Literal["browser", "cute"]
-
 from pydantic import BaseModel, Field
+
+APP_MODES = Literal["browser", "cute"]
 
 from scistag.vislog.options.style_options import LogStyleOptions
 from scistag.vislog.options.run_options import LogRunOptions
@@ -93,3 +93,15 @@ class LogOptions(BaseModel):
         if index_name is not None:
             self.output.index_name = index_name
         return self
+
+    def configure_sub_log(self):
+        """
+        Removes all writing actions from this options.
+
+        This is used to configure a log which is going to be embedded in another log
+        anyway and thus shall just share the format and styling options.
+        """
+        self.output.log_to_disk = False
+        self.output.log_to_stdout = False
+        self.server.host_name = ""
+        self.server.port = 0
