@@ -4,12 +4,18 @@ Defines statistics about a LogBuilder
 
 from __future__ import annotations
 
+import time
+
 
 class LogBuilderStatistics:
     """
     Contains statistics about the log
     """
 
+    start_time: float = time.time()
+    """
+    Defines the time when the builder was created
+    """
     build_counter: int = 0
     """
     How often was the log build?

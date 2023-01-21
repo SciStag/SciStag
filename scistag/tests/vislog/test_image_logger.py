@@ -59,7 +59,6 @@ def test_image():
     with pytest.raises(AssertionError):
         vl.test.assert_val("assert_stag", image_data, hash_val="???")
     vl.test.checkpoint("image.log.scaled.nodownload")
-    vl.log_txt_images = False
     vl.sub_test("An image from the web scaled to 50%")
     vl.image(TestConstants.STAG_URL, "anotherStag_1", scaling=0.5, download=False)
     vl.test.assert_cp_diff(hash_val="28b1f6534b36b20b083ece585b93ec1b")
@@ -69,8 +68,7 @@ def test_image():
     vl.test.checkpoint("image.log.originalSize")
     vl.sub_test("An image from the web scaled to 100%")
     vl.image(TestConstants.STAG_URL, "anotherStag_3", scaling=1.0)
-    vl.log_txt_images = True
-    vl.test.assert_cp_diff(hash_val="2c54bc40e52f6df373da1f4ffc47f850")
+    vl.test.assert_cp_diff(hash_val="1b4691fec0fcc6c6ff80a37bef189449")
     # add image from bytes stream
     vl.sub_test("Logging an image provided as byte stream")
     vl.test.checkpoint("image.log.bytestream")

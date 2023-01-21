@@ -45,8 +45,6 @@ class ImageLogger(BuilderExtension):
         :param builder: The log builder object we are logging with
         """
         super().__init__(builder)
-        self.log: "VisualLog" = builder.target_log
-        "The log we are logging to"
         self.show = self.__call__
 
     def __call__(
@@ -155,7 +153,7 @@ class ImageLogger(BuilderExtension):
         if isinstance(source, bytes):
             encoded_image = source
         else:
-            img_format, quality = self.log.options.style.image.default_filetype
+            img_format, quality = self.options.style.image.default_filetype
             if filetype is not None:
                 if isinstance(filetype, tuple):
                     img_format, quality = filetype
@@ -168,7 +166,7 @@ class ImageLogger(BuilderExtension):
                 filename, name, source, encoded_image
             )
         # embed if required
-        if self.log.embed_images:
+        if self.options.style.image.embed_images:
             embed_data = self._build_get_embedded_image(encoded_image)
             file_location = embed_data
         if len(file_location):
@@ -282,7 +280,7 @@ class ImageLogger(BuilderExtension):
             target_filename = target_dir + f"/{filename}.{extension}"
             if self._need_to_store_images_on_disk():
                 FileStag.save(target_filename, encoded_image)
-        if not self.log.embed_images:
+        if not self.options.style.image.embed_images:
             file_location = FilePath.basename(target_filename)
         if self.page_session.md_export:
             self.builder.add_md(f"![{name}]({FilePath.basename(target_filename)})\n")
@@ -307,4 +305,4 @@ class ImageLogger(BuilderExtension):
 
         :return: True if they do
         """
-        return self.page_session.md_export or not self.log.embed_images
+        return self.page_session.md_export or not self.options.style.image.embed_images

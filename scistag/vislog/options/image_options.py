@@ -35,3 +35,14 @@ class ImageOptions(BaseModel):
     """The optimum, maximum width and height for embedded figures and images"""
     log_images: bool = True
     """Defines if images shall be logged"""
+
+    def validate_options(self):
+        """
+        Validates the options and checks assumed fields are configured correctly
+        """
+        from scistag.imagestag import Size2D
+
+        if self.max_fig_size is not None and not isinstance(self.max_fig_size, Size2D):
+            self.max_fig_size = Size2D(self.max_fig_size)
+        else:
+            self.max_fig_size = Size2D(1024, 1024)

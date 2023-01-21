@@ -124,31 +124,12 @@ class VisualLog:
 
     def __init__(
         self,
-        cache_dir: str | None = None,
-        cache_version: int = 1,
-        cache_name: str = "",
-        auto_reload: bool | BuilderTypes = False,
+        options: Union["LogOptions", LOG_DEFAULT_OPTION_LITERALS, None] = None,
         debug: bool = False,
-        options: "LogOptions" | LOG_DEFAULT_OPTION_LITERALS | None = None,
         fixed_session_id: str | None = None,
         stack_level: int = 1,
     ):
         """
-        :param cache_version: The cache version. 1 by default.
-
-            When ever you change this version all old cache values will be
-            removed and/or ignored from the cache.
-        :param cache_dir: The directory in which data which shall be cached
-            between multiple execution sessions shall be dumped to disk.
-
-            By default "{target_dir}/.stscache".
-        :param cache_name: The cache's identifier. If multiple logs store data
-            into the same logging directory this can be used to ensure their
-            caching directories don't accidentally overlap w/o having to
-            provide the whole path via cache_dir.
-        :param auto_reload: Defines if this log will be executed in auto_reload
-            mode in its cache should be update and restored each turn.
-        :param debug: If set to true additional debug logging will be enabled
         :param options: Defines the full set of options.
 
             Alternatively you can pass either "local", "server", "disk", "console" or
@@ -159,6 +140,7 @@ class VisualLog:
 
             See :meth:`setup_options` to receive a standard option set you can
             customize.
+        :param debug: If set to true additional debug logging will be enabled
         :param fixed_session_id: If provided a fix page session ID will be used,
             e.g. required for regression and consistency tests where names are not
             allowed to change.
@@ -209,15 +191,10 @@ class VisualLog:
         The log's data cache to store computation results between execution
         sessions
         """
-        self.last_page_request = 0.0
-        """Defines the timestamp when the page was requested for the last time
-        via http.
-        """
+        self._auto_reload = False
+        "Defines if auto-reloading is active"
         # setup the cache
-        do_auto_reload = (
-            isinstance(auto_reload, bool) and auto_reload
-        ) or auto_reload is not None
-        self._setup_cache(do_auto_reload, cache_version, cache_dir, cache_name)
+        self._setup_cache()
         ref_dir = self.options.output.ref_dir
         tmp_dir = self.options.output.tmp_dir
         ref_dir = FilePath.norm_path(
@@ -228,29 +205,8 @@ class VisualLog:
         )
         self.options.output.ref_dir = ref_dir
         self.options.output.tmp_dir = tmp_path
-        max_fig_size = self.options.style.image.max_fig_size
-        embed_images = self.options.style.image.max_fig_size
-        if max_fig_size is not None and not isinstance(max_fig_size, Size2D):
-            max_fig_size = Size2D(max_fig_size)
-        else:
-            max_fig_size = Size2D(1024, 1024)
-        self._max_fig_size = max_fig_size
-        """
-        The maximum figure size
-        """
-        self.embed_images = (
-            embed_images if embed_images is not None else MD not in formats_out
-        )
-        self._consoles: list[Console] = []
         "Attached consoles to which the data shall be logged"
 
-        from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
-
-        self._renderers: dict[str, "LogRenderer"] = {
-            HTML: HtmlLogRenderer(title=self.options.page.title, options=self.options)
-        }
-
-        "The renderers for the single supported formats"
         self._terminated = False
         """
         Defines if the log service shall be terminated, e.g if it's running
@@ -259,14 +215,11 @@ class VisualLog:
         self._server: Union["WebStagServer", None] = None
         "The web server (if one was being started via :meth:`run_server`)"
         # Statistics
-        if do_auto_reload:
-            self._events = self.cache.get(LOG_EVENT_CACHE_NAME, default=[])
         self._invalid = False
         "Defines if this log was invalidated via :meth:`invalidate`"
         from .log_builder import LogBuilder
 
         self.default_page = PageSession(
-            log=self,
             builder=None,
             options=self.options,
             fixed_session_id=fixed_session_id,
@@ -307,25 +260,6 @@ class VisualLog:
         """
         Defines if this log is the main entry point (and e.g. not an embedded log)
         """
-        self._auto_reload = auto_reload
-        "Defines if auto-reloading is active"
-        # execute auto-reloader if provided
-        if auto_reload is not None:
-            if isinstance(auto_reload, bool):
-                if not auto_reload:
-                    return
-                builder = self.default_builder
-            else:
-                builder = auto_reload
-            if isinstance(builder, LogBuilder):
-                self.default_builder: LogBuilder = builder
-            self.run_server(
-                host_name=self.options.server.host_name,
-                port=self.options.server.port,
-                builder=builder,
-                auto_reload=True,
-                _auto_reload_stag_level=2,
-            )
 
     def terminate(self):
         """
@@ -342,31 +276,7 @@ class VisualLog:
         tasks shall be cancelled.
         """
         with self._general_lock:
-            return self._terminated
-
-    def add_console(self, console: Console):
-        """
-        Adds an advanced console as target to the log
-
-        :param console: The console to add
-        """
-        self._consoles.append(console)
-
-    @staticmethod
-    def _get_module_path() -> str:
-        """
-        Returns the path of the VisualStag module
-
-        :return: The path
-        """
-        return FilePath.dirname(__file__)
-
-    @property
-    def max_fig_size(self) -> Size2D:
-        """
-        The maximum figure size in pixels
-        """
-        return Size2D(self._max_fig_size)
+            return self._terminated or self.default_builder.terminated
 
     def create_web_service(
         self, support_flask: bool = False, url_prefix: str = ""
@@ -462,6 +372,7 @@ class VisualLog:
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
             self._auto_reload = True
+            self._setup_cache()
             from scistag.vislog.auto_reloader.visual_log_auto_reloader import (
                 VisualLogAutoReloader,
             )
@@ -565,8 +476,7 @@ class VisualLog:
         auto_clear = self.options.run.auto_clear
         if self.options.run.continuous:
             auto_clear = auto_clear if auto_clear is not None else True
-            if not test:
-                self._run_continuous(auto_clear, self._builder_handler)
+            self._run_continuous(auto_clear, self._builder_handler)
         elif mt:
             if self._builder_handler is not None:  # call once
                 self._run_builder(self._builder_handler)
@@ -737,7 +647,7 @@ class VisualLog:
             wait_time = max([real_log.options.run.refresh_time_s, 0.5])
             time.sleep(wait_time * 1.5)
             # if the page was loaded don't open another browser
-            if time.time() - real_log.last_page_request > wait_time:
+            if time.time() - real_log.default_page.last_page_request > wait_time:
                 webbrowser.open(url)
                 return
         if len(self.options.run.app_mode) > 0:
@@ -812,10 +722,8 @@ class VisualLog:
         self.start_time = time.time()
         next_update = time.time()
         while True:
-            self._update_counter += 1
-            self._total_update_counter += 1
             with self._general_lock:
-                if self._terminated:
+                if self.terminated:
                     break
             if auto_clear:
                 self.clear()
@@ -881,36 +789,22 @@ class VisualLog:
         """
         return self._cache
 
-    def _setup_cache(
-        self,
-        auto_reload: bool,
-        cache_version: str | int,
-        cache_dir: str,
-        cache_name: str,
-    ):
+    def _setup_cache(self):
         """
         Configures the data cache
-
-        :param auto_reload: Auto-reloading used?
-        :param cache_version: The cache version. 1 by default.
-
-            When ever you change this version all old cache values will be
-            removed and/or ignored from the cache.
-        :param cache_dir: The cache target directory on disk
-        :param cache_name: The unique name of the cache, e.g. for the case
-            multiple logs use the same logging directory
         """
-        if len(cache_name) > 0:
-            cache_name = f"{cache_name}/"
+        if len(self.options.cache.name) > 0:
+            cache_name = f"{self.options.cache.name}/"
+        cache_dir = self.options.cache.dir
         if cache_dir is None:
             cache_dir = (
                 f"{os.path.abspath(self.options.output.target_dir)}"
-                f"/.stscache/{cache_name}"
+                f"/.stscache/{self.options.cache.name}"
             )
         else:
-            cache_dir = f"{cache_dir}/{cache_name}"
+            cache_dir = f"{cache_dir}/{self.options.cache.name}"
         auto_reload_cache = None
-        if auto_reload:  # if auto-reloading is enabled try to restore cache
+        if self._auto_reload:  # if auto-reloading is enabled try to restore cache
             # check if there is a valid, prior cache available
             from scistag.vislog.auto_reloader.visual_log_auto_reloader import (
                 VisualLogAutoReloader,
@@ -919,13 +813,13 @@ class VisualLog:
             auto_reload_cache = VisualLogAutoReloader.get_cache_backup()
             if (
                 auto_reload_cache is not None
-                and auto_reload_cache.version != cache_version
+                and auto_reload_cache.version != self.options.cache.version
             ):
                 auto_reload_cache = None
         self._cache = (
             Cache(
                 cache_dir=cache_dir,
-                version=cache_version,
+                version=self.options.cache.version,
             )
             if auto_reload_cache is None
             else auto_reload_cache

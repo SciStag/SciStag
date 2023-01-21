@@ -326,7 +326,7 @@ class TestHelper(BuilderExtension):
                 f"⚠ Hash validation failed!\nValue: " f"{value}\nAssumed: {assumed}",
                 level="error",
             )
-            self.builder.target_log.default_page.write_to_disk()
+            self.page_session.write_to_disk()
             if target is not None:
                 target.insert_backup(self.builder.create_backup())
             raise AssertionError(
@@ -383,7 +383,7 @@ class TestHelper(BuilderExtension):
             {
                 "name": checkpoint_name,
                 "lengths": [
-                    len(self.target_log.default_page._logs.build(key))
+                    len(self.page_session._logs.build(key))
                     for key in sorted(self.builder.options.output.formats_out)
                 ],
             }
@@ -414,7 +414,7 @@ class TestHelper(BuilderExtension):
         pages = {}
         for key in sorted(self.builder.options.output.formats_out):
             length = lengths[index]
-            data = self.target_log.default_page._logs.build(key)
+            data = self.page_session._logs.build(key)
             index += 1
             if not isinstance(data, bytes):
                 continue

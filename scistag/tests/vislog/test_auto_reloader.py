@@ -58,7 +58,7 @@ from scistag.vislog import LogBuilder, VisualLog
 def builder(vl: LogBuilder):
     vl.log("Hello testlog")
 {add_content}    
-log = VisualLog(auto_reload=builder)
+log = VisualLog().run(builder, auto_reload=True)
         """
             )
 

@@ -472,7 +472,7 @@ class Cell(LWidget):
         Adds statistics about the VisualLog as table to the log
         """
         statistics = self.statistics
-        uptime = time.time() - self.builder.target_log.start_time
+        uptime = time.time() - self.builder.stats.start_time
         self.builder.table(
             [
                 ["Updates", f"{statistics.builds} " f"total updates"],

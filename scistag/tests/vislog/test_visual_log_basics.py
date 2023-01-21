@@ -18,7 +18,7 @@ from ...filestag import FilePath, FileStag
 from ...imagestag import Color, Image
 from ...logstag import LogLevel
 from ...logstag.console_stag import Console
-from ...vislog import VisualLog, HTMLCode
+from ...vislog import VisualLog, HTMLCode, LogBuilder, cell
 from ...plotstag import Figure, MPLock
 
 
@@ -269,7 +269,7 @@ def test_different_setups(_):
     options.style.image.default_filetype = ("jpg", 80)
     log: VisualLog = VisualLog(options=options)
     a_console = Console()
-    log.add_console(a_console)
+    log.default_page.add_console(a_console)
     log.default_builder.log("Console text")
     log.default_page.write_to_disk()
     log.default_builder.flush()  # just another name for write_to_disk as of now
@@ -379,7 +379,7 @@ def test_printing():
     options.output.target_dir = f"{bp}/dlogs"
     options.output.formats_out = {"html", "md", "txt"}
     log = VisualLog(options=options)
-    log.add_console(console)
+    log.default_page.add_console(console)
     std_out = io.StringIO()
     with redirect_stdout(std_out):
         with mock.patch("builtins.print") as printer:
@@ -451,3 +451,30 @@ def test_dependencies():
     Tests dependency handling
     """
     vl.add_file_dependency("test.md")  # not yet implemented
+
+
+def test_options():
+    """
+    Automatic option setup
+    """
+    tl = VisualLog(options="disk", debug=True)
+    assert tl.options.output.log_to_disk
+
+
+def test_continuous():
+    """
+    Tests continuous log
+    :return:
+    """
+    options = VisualLog.setup_options()
+    options.run.continuous = True
+
+    class MyLog(LogBuilder):
+        @cell
+        def head(self):
+            self.cache.inc("turns")
+            if self["turns"] == 2:
+                self.terminate()
+
+    tl = VisualLog(options=options)
+    tl.run(MyLog)

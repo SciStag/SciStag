@@ -52,3 +52,8 @@ class LSliderOptions(LWidgetOptions):
         :return: The style copy
         """
         return self.copy(deep=True)
+
+    def validate_options(self):
+        """
+        Validates the options and checks assumed fields are configured correctly
+        """

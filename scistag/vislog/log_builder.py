@@ -112,7 +112,8 @@ class LogBuilder:
         :param params: Additional parameters
         :param kwargs: Additional keyword arguments
         """
-        self.target_log: "VisualLog" = log
+        self.initial_module = log.initial_module
+        "Handle of the module from which this VisualLog instance was initialized"
         self.page_session = page_session
         """
         Defines the target page which will store this builder's data
@@ -252,10 +253,12 @@ class LogBuilder:
         """The console width"""
         self.cache = Cache()
         """The local data cache"""
-        self.global_cache = self.target_log.cache
+        self.global_cache = log.cache
         """The global data cache"""
         self.stats = LogBuilderStatistics()
         """The builder's statistic's"""
+        self._terminated = False
+        """Defines if the builder was terminated"""
 
     def build(self):
         """
@@ -272,12 +275,12 @@ class LogBuilder:
 
         self.stats.build_counter += 1
 
-        init_module = self.target_log.initial_module
+        init_module = self.initial_module
 
         cell_methods = []
 
         if init_module is not None:
-            for key, attr in self.target_log.initial_module.__dict__.items():
+            for key, attr in self.initial_module.__dict__.items():
                 if isinstance(attr, types.FunctionType):
                     is_main = False
                     if key == "main":
@@ -394,7 +397,7 @@ class LogBuilder:
         """
         The maximum figure size in pixels
         """
-        return self.target_log.max_fig_size
+        return self.options.style.image.max_fig_size
 
     def clear(self):
         """
@@ -1255,7 +1258,7 @@ class LogBuilder:
         Note that in order to terminate the whole application or server you need
         to call the log's termination function in case of multi-session applications.
         """
-        self.log.target_log.terminate()
+        self._terminated = True
 
     @property
     def terminated(self):
@@ -1263,7 +1266,7 @@ class LogBuilder:
         Defines if the current log session shall be terminated and all remaining
         tasks shall be cancelled.
         """
-        return self.target_log.terminated
+        return self._terminated
 
     def get_result(self) -> Any:
         """

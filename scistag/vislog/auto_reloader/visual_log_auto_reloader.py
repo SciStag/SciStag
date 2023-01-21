@@ -90,11 +90,7 @@ class VisualLogAutoReloader:
             low as the update script will detect there were no changes.
         :param params: Additional creation parameters. See :class:`VisualLog`.
         """
-        log_to_disk = params.pop("log_to_disk", False)
-        cls.main_log = VisualLog(
-            options=cls._embedded_log.options,
-            auto_reload=False,
-        )
+        cls.main_log = VisualLog(options=cls._embedded_log.options)
 
     @classmethod
     def set_log(cls, log):

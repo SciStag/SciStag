@@ -26,15 +26,15 @@ class DummyBuilder(LogBuilder):
     def build(self):
         self.add("Some content")
         if self.stats.build_counter == 2:
-            self.target_log.terminate()
+            self.terminate()
 
 
 def builder_callback(vl: LogBuilder):
     vl.clear()
     vl.log("Some function content")
-    vl.log(vl.target_log.max_fig_size)
+    vl.log(vl.max_fig_size)
     if vl.stats.build_counter == 2:
-        vl.target_log.terminate()
+        vl.terminate()
 
 
 class AutoreloadKillThread(Thread):

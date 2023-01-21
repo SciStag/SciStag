@@ -13,8 +13,10 @@ from collections import Counter
 
 from scistag.common import StagLock
 from scistag.filestag import FileStag
+from scistag.logstag.console_stag import Console
 from scistag.vislog.common.log_element import LogElement, LogElementReference
 from scistag.vislog.options import LogOptions
+from scistag.vislog.renderers.log_renderer import LogRenderer
 from scistag.webstag.server import WebRequest
 
 STDOUT_STREAM = "stdout"
@@ -82,7 +84,6 @@ class PageSession:
 
     def __init__(
         self,
-        log: "VisualLog",
         builder: Union["LogBuilder", None],
         options: LogOptions,
         fixed_session_id: str | None = None,
@@ -98,8 +99,6 @@ class PageSession:
         log_formats = options.output.formats_out
         self.log_formats: set[str] = log_formats if log_formats is not None else {HTML}
         """Defines the list of supported formats"""
-        self.log: "VisualLog" = log
-        """The target log instance"""
         self.builder: Union["LogBuilder", None] = builder
         """The builder which is used to create the page's content"""
         self._logs = LogElement(
@@ -189,6 +188,18 @@ class PageSession:
         if fixed_session_id is not None:
             self.session_id = fixed_session_id
         self.initial_std_out = getattr(sys, STDOUT_STREAM)
+        self._consoles = []
+        """
+        Additional consoles to which we shall log
+        """
+        self.last_page_request = 0.0
+        """Defines the timestamp when the page was requested for the last time
+        via http.
+        """
+
+        self._renderers: dict[str, "LogRenderer"] = {}
+
+        "The renderers for the single supported formats"
 
     def set_builder(self, builder: LogBuilder):
         """
@@ -199,6 +210,11 @@ class PageSession:
         self.options: LogOptions | None = (
             builder.options if builder is not None else None
         )
+        from scistag.vislog.renderers.log_renderer_html import HtmlLogRenderer
+
+        self._renderers = {
+            HTML: HtmlLogRenderer(title=self.options.page.title, options=self.options)
+        }
 
     def create_log_backup(self):
         """
@@ -280,7 +296,7 @@ class PageSession:
             any_output = True
         md = "*" in targets or MD in targets
         txt = "*" in targets or TXT in targets
-        if console and len(self.log._consoles) > 0:
+        if console and len(self._consoles) > 0:
             self._add_to_console(txt_code)
             any_output = True
         if md and MD in self.log_formats:
@@ -297,7 +313,7 @@ class PageSession:
         :param txt_code: The text to add
         :return: True if txt logging is enabled
         """
-        for console in self.log._consoles:
+        for console in self._consoles:
             if console.progressive:
                 console.print(txt_code)
         if CONSOLE in self.log_formats:
@@ -319,7 +335,7 @@ class PageSession:
             log_data = self._logs.build(cur_format)
 
             if cur_format == HTML:
-                body[cur_format] = self.log._renderers[HTML].build_body(log_data)
+                body[cur_format] = self._renderers[HTML].build_body(log_data)
             else:
                 body[cur_format] = log_data
         return body
@@ -352,7 +368,7 @@ class PageSession:
         :return: The page's content.
         """
         with self._page_lock:
-            self.log.last_page_request = time.time()
+            self.last_page_request = time.time()
             if format_type in self._page_backups:
                 return self._page_backups[format_type]
             return b""
@@ -456,9 +472,7 @@ class PageSession:
         if HTML in formats:
             self.set_latest_page(
                 HTML,
-                self.log._renderers[HTML].build_page(
-                    bodies[HTML], custom_code=custom_code
-                ),
+                self._renderers[HTML].build_page(bodies[HTML], custom_code=custom_code),
             )
         # store markdown
         if MD in formats:
@@ -467,7 +481,7 @@ class PageSession:
         if TXT in formats:
             self.set_latest_page(TXT, bodies[TXT])
         if CONSOLE in formats:
-            for console in self.log._consoles:
+            for console in self._consoles:
                 if console.progressive:
                     continue
                 console.clear()
@@ -529,6 +543,14 @@ class PageSession:
         self.title_counter = Counter()
         self._logs.clear()
         self.cur_element = self._logs
+
+    def add_console(self, console: Console):
+        """
+        Adds an additional console as target
+
+        :param console: The new console
+        """
+        self._consoles.append(console)
 
     def embed(self, log_data: PageSession):
         """
@@ -657,7 +679,7 @@ class PageSession:
                 self.reset_client()
                 self.old_client_ids.add(client_id)
             self.last_client_id = client_id
-            self.log.last_page_request = cur_time
+            self.last_page_request = cur_time
 
             access_lock, root_element = self.get_root_element()
             with access_lock:

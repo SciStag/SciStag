@@ -220,5 +220,5 @@ def test_no_module():
     builder: LogBuilder = details["builder"]
 
     """Test if builder also works without known initial module"""
-    builder.target_log.initial_module = None
+    builder.initial_module = None
     builder.build()

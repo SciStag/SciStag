@@ -29,3 +29,6 @@ class LogStyleOptions(BaseModel):
         """
         Validates the options and checks assumed fields are configured correctly
         """
+        self.image.validate_options()
+        self.table.validate_options()
+        self.slider.validate_options()

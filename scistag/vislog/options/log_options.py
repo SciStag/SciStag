@@ -4,6 +4,7 @@ Defines the configuration options for VisualLog and associated classes
 from __future__ import annotations
 from typing import Literal
 
+from scistag.vislog.options.cache_options import CacheOptions
 from scistag.vislog.options.debug_options import LogDebugOptions
 from scistag.vislog.options.format_options import FormatOptions
 from scistag.vislog.options.page_options import PageOptions
@@ -42,6 +43,8 @@ class LogOptions(BaseModel):
     """Debug options"""
     formats: FormatOptions = Field(default_factory=FormatOptions)
     """File format specific options"""
+    cache: CacheOptions = Field(default_factory=CacheOptions)
+    """The cache configuration"""
 
     def validate_options(self):
         """
@@ -54,6 +57,7 @@ class LogOptions(BaseModel):
         self.debug.validate_options()
         self.page.validate_options()
         self.formats.validate_options()
+        self.cache.validate_options()
 
     def setup_defaults(
         self,

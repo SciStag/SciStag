@@ -88,7 +88,7 @@ def test_events():
     vp.get_events_js("4567")
     assert last_time != vp.element_update_times["vlbody"]
 
-    dummy_page = PageSession(log=vp.log, builder=vp.builder, options=vl.options)
+    dummy_page = PageSession(builder=vp.builder, options=vl.options)
     vp._set_redirect_event_receiver(dummy_page)
     vp.handle_events()
     vp.get_events_js(vp.last_client_id)

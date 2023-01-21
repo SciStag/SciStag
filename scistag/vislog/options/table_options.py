@@ -7,7 +7,6 @@ from typing import Union, Literal
 
 from pydantic import BaseModel
 
-
 TABULATE_GITHUB = "github"
 "Tabulate class for github markdown"
 
@@ -64,3 +63,8 @@ class TableOptions(BaseModel):
         """
         copy = self.copy(deep=True)
         return copy
+
+    def validate_options(self):
+        """
+        Validates the options and checks assumed fields are configured correctly
+        """

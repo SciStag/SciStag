@@ -42,8 +42,6 @@ class LWidget:
         "The widget's name"
         self.builder = builder
         "The log builder"
-        self.log = self.builder.target_log
-        "The log to which this widget belongs"
         self.page_session = self.builder.page_session
         "The page to which we are logging"
         self.visible = True
