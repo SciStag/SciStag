@@ -311,7 +311,7 @@ class VisualLog:
         params: PARAMETER_TYPES = None,
         _auto_reload_stag_level: 1 = 1,
         **kwargs,
-    ):
+    ) -> VisualLog:
         """
         Hosts the log as web service.
 
@@ -358,6 +358,7 @@ class VisualLog:
         "Defines if the function shall run until explicitly terminated"
         test = self._testing or test
         self._testing = test
+        builder_was_none = False
         if builder is not None:
             builder = self.prepare_builder(
                 builder, self.default_page, params=params, kwargs=kwargs
@@ -368,6 +369,7 @@ class VisualLog:
                 self.default_builder = builder
         else:
             builder = self.default_builder
+            builder_was_none = True
         self._builder_handler = builder
         self.start_time = time.time()
         if not isinstance(auto_reload, bool) or auto_reload:
@@ -388,7 +390,7 @@ class VisualLog:
                 server=True,
                 _stack_level=_auto_reload_stag_level + 1,
             )
-            return
+            return self
         from scistag.webstag.server import WebStagServer
 
         service = self.create_web_service(
@@ -404,7 +406,7 @@ class VisualLog:
         port = server.port
         self._server = server
         if continuous is not None:
-            if builder is None:
+            if builder_was_none:
                 raise ValueError(_CONTINUOUS_NO_EFFECT_WITHOUT_BUILDER)
             if not continuous:
                 if auto_clear is not None and auto_clear:
@@ -457,10 +459,9 @@ class VisualLog:
                 print("\n")
         if not continuous and not mt:  # if the server will block execute
             # once here, otherwise after the server started
-            if builder is not None:  # call once
-                self._run_builder(builder)
-                self.handle_page_events()
-                self.default_page.write_to_disk()
+            self._run_builder(builder)
+            self.handle_page_events()
+            self.default_builder.flush()
         server.start(mt=mt and not test, test=test)
         self._start_app_or_browser(real_log=self, url=self.local_live_url)
         self._run_log_mt(mt, wait, test=test)
@@ -546,6 +547,7 @@ class VisualLog:
             )
         if not isinstance(auto_reload, bool) or auto_reload:
             self._auto_reload = True
+            self._setup_cache()
             from scistag.vislog.auto_reloader.visual_log_auto_reloader import (
                 VisualLogAutoReloader,
             )
@@ -560,8 +562,6 @@ class VisualLog:
             return self.default_builder
         if continuous is None:
             continuous = False
-        if builder is None:
-            raise ValueError("Passing a builder is required")
         if not continuous:
             if auto_clear is not None and auto_clear:
                 raise ValueError(_ONLY_AUTO_CLEAR_ON_CONTINUOUS)
@@ -618,15 +618,14 @@ class VisualLog:
             from .log_builder import LogBuilder
 
             builder: Type[LogBuilder] | LogBuilder
+            if builder is not LogBuilder and LogBuilder not in builder.__bases__:
+                raise TypeError("No valid LogBuilder base class provided")
             builder = builder(
                 log=self, page_session=page_session, params=params, **kwargs
             )
             from scistag.vislog import LogBuilder
 
-            if isinstance(builder, LogBuilder):
-                self.default_builder = builder
-            if not isinstance(builder, LogBuilder):
-                raise TypeError("No valid LogBuilder base class provided")
+            self.default_builder = builder
         return builder
 
     def _start_app_or_browser(self, real_log: VisualLog, url: str):

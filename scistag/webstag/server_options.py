@@ -55,6 +55,9 @@ class ServerOptions(BaseModel):
         """
         if port is not None:
             self.port = port
+        self.host_name = "0.0.0.0"
         if detect_public_ip:
+            if self.public_ips is None:
+                self.public_ips = []
             self.public_ips.append("auto")
         return self

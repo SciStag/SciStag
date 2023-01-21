@@ -113,6 +113,11 @@ def test_builder_calls():
     log = VisualLog(options=options)
     with mock.patch.object(log, "_start_app_or_browser", lambda self, url: None):
         log.run(builder=DummyBuilder)
+    options = VisualLog.setup_options("disk")
+    options.run.setup(app_mode="browser")
+    log = VisualLog(options=options)
+    with mock.patch.object(log, "_start_app_or_browser", lambda self, url: None):
+        log.run(builder=DummyBuilder)
 
 
 @mock.patch("builtins.print")
@@ -120,14 +125,31 @@ def test_run_server(pbi):
     """
     Tests running the log explicitly as server
     """
-    log = VisualLog()
-    log.run_server(
-        host_name="0.0.0.0",
-        builder=DummyBuilder,
-        public_ips=["auto", "0.0.0.0"],
-        mt=True,
-        test=True,
-    )
+    # 0.0.0.0 in public IPs
+    options = VisualLog.setup_options("server")
+    options.server.public_ips.append("0.0.0.0")
+    log = VisualLog(options=options)
+    log.run_server(builder=DummyBuilder, test=True)
+    # string public IP
+    options = VisualLog.setup_options("server")
+    options.server.public_ips = "auto"
+    log = VisualLog(options=options)
+    log.run_server(builder=DummyBuilder, test=True)
+    # none public IPs
+    options = VisualLog.setup_options("server")
+    options.server.public_ips = None
+    log = VisualLog(options=options)
+    log.run_server(builder=DummyBuilder, test=True)
+    # single run
+    options = VisualLog.setup_options("server")
+    options.run.mt = False
+    log = VisualLog(options=options)
+    log.run_server(builder=DummyBuilder, test=True)
+    with pytest.raises(ValueError):
+        options = VisualLog.setup_options("server")
+        options.run.continuous = True
+        log = VisualLog(options=options)
+        log.run_server(builder=None, test=True)
     with pytest.raises(ValueError):
         options = VisualLog.setup_options("local")
         options.run.mt = True

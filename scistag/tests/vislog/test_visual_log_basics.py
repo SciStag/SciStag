@@ -478,3 +478,34 @@ def test_continuous():
 
     tl = VisualLog(options=options)
     tl.run(MyLog)
+    tl = VisualLog(options=options)
+    tl.run_server(MyLog, test=True)
+
+
+def test_live_urls():
+    """
+    Tests the url provision
+    """
+    options = VisualLog.setup_options()
+    tl = VisualLog(options=options)
+    assert tl.local_live_url is None
+    options = VisualLog.setup_options("server")
+    tl = VisualLog(options=options)
+    std_out = io.StringIO()
+    with redirect_stdout(std_out):
+        tl.run_server(test=True)
+        assert tl.local_live_url is not None
+
+
+def test_prepare():
+    """
+    Tests prepare_builder explicitly
+    """
+    options = VisualLog.setup_options()
+    tl = VisualLog(options=options)
+    with pytest.raises(TypeError):
+        tl.prepare_builder(
+            builder=str, page_session=tl.default_page, params={}, kwargs={}
+        )
+    tl._run_builder(builder=None)
+    tl.run(builder=None)

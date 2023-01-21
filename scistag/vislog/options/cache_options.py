@@ -14,7 +14,7 @@ class CacheOptions(BaseModel):
     Defines the cache configuration
     """
 
-    version: int = 1
+    version: Union[int, str] = "1"
     """The cache version. 1 by default.
 
     When ever you change this version all old cache values will be
