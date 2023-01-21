@@ -65,19 +65,20 @@ class AsciiImage:
         self,
         image: Image,
         method: AsciiImageMethod = AsciiImageMethod.GRAY_LEVELS_69,
-        max_width=80,
-        min_width=None,
+        max_columns=80,
+        min_columns=None,
         align: str = "left",
         **params,
     ):
         """
         :param image: The input image
-        :param max_width: The maximum characters per row
+        :param min_columns: The minimum width in pixels
+        :param max_columns: The maximum characters per row
         :param params: Advanced parameters
         """
         self.image = image
         "The image to be converted"
-        self.max_width = int(max_width)
+        self.max_columns = int(max_columns)
         "The maximum character count per row"
         self.ascii_image: str = ""
         "The ASCII representation of the image after it's conversion"
@@ -96,7 +97,7 @@ class AsciiImage:
         }
         self.dictionary = dict_conv[method]
         "The conversion dictionary to use"
-        self.min_width = min_width
+        self.min_columns = min_columns
         "The minimum width of the output image, e.g. to center or right align it"
         self.alignment = align
         'The text alignment, either "left", "center" or "right"'
@@ -107,7 +108,7 @@ class AsciiImage:
 
         :return: Self
         """
-        width_scaling = self.max_width / self.image.width
+        width_scaling = self.max_columns / self.image.width
         height_scaling = width_scaling / 2
         self.scaled_image = self.image.resized_ext(
             factor=(width_scaling, height_scaling)
@@ -122,8 +123,8 @@ class AsciiImage:
             pixels = self.scaled_image.get_pixels_gray()
             rows = [self.convert_row(row) for row in pixels]
         self.is_converted = True
-        if self.min_width is not None and self.alignment != "left":
-            missing = self.min_width - self.max_width
+        if self.min_columns is not None and self.alignment != "left":
+            missing = self.min_columns - self.max_columns
             if self.alignment == "center":
                 missing = missing // 2
             missing = " " * missing

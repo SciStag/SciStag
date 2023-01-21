@@ -29,7 +29,7 @@ The absolute maximum width of an image
 
 MAX_SIZE_ERROR = (
     f"The maximum image width is {MAXIMUM_IMAGE_WIDTH} pixels. "
-    f"Note that a max_width passed as floating point is "
+    f"Note that a max_columns passed as floating point is "
     f"handled as scaling factor relative to the log's maximum"
     f"width."
 )

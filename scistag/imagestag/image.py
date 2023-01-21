@@ -950,7 +950,7 @@ class Image(ImageBase):
         """
         from .ascii_image import AsciiImage
 
-        return AsciiImage(self, max_width=max_width, **params).get_ascii()
+        return AsciiImage(self, max_columns=max_width, **params).get_ascii()
 
     def to_ipython(self, filetype="png", quality: int = 90, **params) -> Any:
         """
