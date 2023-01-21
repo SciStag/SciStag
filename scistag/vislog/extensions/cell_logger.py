@@ -78,6 +78,7 @@ class CellLogger(BuilderExtension):
         interval_s: float | None = None,
         continuous: bool = False,
         static: bool = False,
+        section: str | None = None,
         on_build: Union["CellOnBuildCallback", None] = None,
         _builder_method: Union[Callable, None] = None,
         **kwargs,
@@ -98,6 +99,7 @@ class CellLogger(BuilderExtension):
             interval defined.
         :param static: Defines if the cell is static and does not need any container
             when being stored in the html file.
+        :param section: The section's title
         :param on_build: The method to be called when ever the cell was invalidated
             or if the update mode is set to continuous.
         :param _builder_method: The object method to which this cell is attached
@@ -110,6 +112,7 @@ class CellLogger(BuilderExtension):
             interval_s=interval_s,
             continuous=continuous,
             static=static,
+            section=section,
             on_build=on_build,
             _builder_method=_builder_method,
             **kwargs,

@@ -28,7 +28,7 @@ def cell(
     output: str | list[str] = None,
     requires: str | list[str] = None,
     tab: str | None = None,
-    page: int | None = None,
+    page: int | str | None = None,
     ctype: str | None = None,
 ):
     """

@@ -102,7 +102,7 @@ class Cell(LWidget):
         output: str | list[str] = None,
         requires: str | list[str] = None,
         tab: str | None = None,
-        page: int | None = None,
+        page: int | str | None = None,
         ctype: str | None = None,
         on_build: CellOnBuildCallback = None,
         _builder_method: Union[Callable, None] = None,
@@ -151,6 +151,12 @@ class Cell(LWidget):
             builder.cell[_builder_method.__name__] = self
         builder.begin_update()
         gen_name = builder.page_session.reserve_unique_name("cell", digits=4)
+        if ctype is not None and ctype in [
+            CELL_TYPE_DATA,
+            CELL_TYPE_ONCE,
+            CELL_TYPE_STREAM,
+        ]:
+            static = True
         if not static:
             builder.page_session.write_html(
                 f'<div id="{gen_name}" class="vl_log_cell">\n'
@@ -264,10 +270,10 @@ class Cell(LWidget):
 
         :return: Self
         """
-        if not self._initial:
-            self.builder.begin_update()
-            self.page_session.enter_element(self.sub_element)
-            self._closed = False
+        assert not self._initial
+        self.builder.begin_update()
+        self.page_session.enter_element(self.sub_element)
+        self._closed = False
         return self
 
     def leave(self) -> Cell:
