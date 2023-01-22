@@ -61,6 +61,7 @@ def test_upload():
         file_uploaded = True
 
     ll = VisualLog(fixed_session_id="upload").default_builder
+    button = ll.widget.button()
     upload = LFileUpload(
         ll,
         types="file/*",
@@ -76,8 +77,37 @@ def test_upload():
     dummy_file = FileAttachment("testfile.bin", b"test123")
     web_request = WebRequest()
     web_request.files.append(dummy_file)
-    web_request.form = {"uploadId": "123", "fileIndex": 0, "fileCount": 2}
-    upload.handle_file_upload(web_request)
+    web_request.form = {
+        "uploadId": "123",
+        "fileIndex": 0,
+        "fileCount": 2,
+        "widget": upload.identifier,
+    }
+    ll.service.handle_file_upload(web_request)
+    web_request.form = {
+        "uploadId": "123",
+        "fileIndex": 0,
+        "fileCount": 2,
+        "widget": "unknown",
+    }
+    response = ll.service.handle_file_upload(web_request)
+    assert response.status == 400 and b"unknown target" in response.body
+    web_request.form = {
+        "uploadId": "123",
+        "fileIndex": 0,
+        "fileCount": 2,
+        "widget": button.identifier,
+    }
+    response = ll.service.handle_file_upload(web_request)
+    assert response.status == 400 and b"invalid widget" in response.body
+    web_request.form = {
+        "uploadId": "123",
+        "fileIndex": 0,
+        "fileCount": 2,
+        "widget": "",
+    }
+    response = ll.service.handle_file_upload(web_request)
+    assert response.status == 400 and b"no widget name" in response.body
     web_request.form = {"uploadId": "123", "fileIndex": 1, "fileCount": 2}
     upload.handle_file_upload(web_request)
     # test w/ empty session

@@ -51,6 +51,7 @@ class LogServiceExtension(BuilderExtension):
         path: str,
         content: bytes | str | Callable[[WebRequest], WebResponse],
         store: bool | None = None,
+        embeddable: bool = False,
     ) -> PublishingInfo:
         """
         Provides a data file relative to the current log / website location.
@@ -67,6 +68,7 @@ class LogServiceExtension(BuilderExtension):
             By default if the log is stored to disk and not dynamic, e.g. no callback
             function, custom service class etc. also all published files be stored to
             disk as well.
+        :param embeddable: Defines if this file can be embedded
         """
         if isinstance(content, Callable):
             self.services[path] = content
@@ -84,9 +86,8 @@ class LogServiceExtension(BuilderExtension):
                 FilePath.dirname(self.page_session.target_dir + "/" + path),
                 exist_ok=True,
             )
-            if (
-                self.builder.options.output.log_to_disk
-                and not self.builder.options.output.single_file
+            if self.builder.options.output.log_to_disk and (
+                not self.builder.options.output.single_file or not embeddable
             ):
                 FileStag.save(self.page_session.target_dir + "/" + path, content)
         info = PublishingInfo(relative_url=path)
@@ -204,7 +205,7 @@ class LogServiceExtension(BuilderExtension):
         """
         widget_name = request.form.get("widget", "")
         if widget_name == "":
-            return WebResponse(status=400, body=b"Error")
+            return WebResponse(status=400, body=b"Error - no widget name defined")
         widgets = self.builder.widget.find_all_widgets()
         if widget_name not in widgets:
             return WebResponse(status=400, body=b"Error - unknown target")

@@ -724,6 +724,9 @@ class Image(ImageBase):
             pixel_data = self.normalize_to_bgr(
                 pixel_data, input_format=self.pixel_format
             )
+            if pixel_data.shape[2] == 3 and desired_format == PixelFormat.BGRA:
+                alpha = (np.ones(pixel_data.shape[0:2]) * 255).astype(np.uint8)
+                pixel_data = np.dstack((pixel_data, alpha))
             return pixel_data
         raise NotImplementedError("The request conversion is not supported yet")
 
@@ -1007,6 +1010,12 @@ class Image(ImageBase):
         if self.pixel_format != other.pixel_format:
             return False
         return np.all(self.get_pixels() == other.get_pixels())
+
+    def __str__(self):
+        return (
+            f"Image ({self.framework.name} {self.width}x{self.height} "
+            f"{''.join(self.pixel_format.band_names)})"
+        )
 
 
 __all__ = ["Image", "ImageSourceTypes", "SUPPORTED_IMAGE_FILETYPES"]
