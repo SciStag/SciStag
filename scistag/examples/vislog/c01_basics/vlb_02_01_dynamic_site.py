@@ -12,14 +12,20 @@ class LiveLog(LogBuilder):
     @cell
     def widget_cell(self):
         self.br(2)
-        self.widget.button("Click me", target="clicks")
+
+        def clicked():
+            with self.event_log.cell:
+                self.log("Button clicked")
+
+        self.widget.button("Click me", clicked)
         self.widget.button("Clear", lambda: self.event_log.cell.clear())
         self.br(2)
 
-    @cell(progressive=True, interval_s=0.1, requires="clicks")
+    @cell(progressive=True, interval_s=0.1)
     def event_log(self):
-        self.text(self.cache.get("clicks", 0))
+        pass
 
 
 if VisualLog.is_main():
-    VisualLog(title="Dynamic VisualLog").run_server(LiveLog)
+    options = VisualLog.setup_options(title="Dynamic VisualLog")
+    VisualLog(options).run_server(LiveLog)

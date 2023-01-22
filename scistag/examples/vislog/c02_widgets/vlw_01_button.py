@@ -22,31 +22,31 @@ class ButtonLog(LogBuilder):
             # self.cell["content"].invalidate()  # were also fine
 
         self.title("A simple button click demo")
-        self.md(f"**You clicked the button {self.counter} times**")
+        self.md(f"**You clicked the button {self.counter} times**").br()
         # A button which increases the counter and rebuilds this cell
         self.widget.button(
-            "ClickButton", "Click me to increase the counter", on_click=inc_counter
+            "Click me to increase the counter", on_click=inc_counter,
+            name="inc_button"
         )
         self.br().br()
         # A button which triggers the progressive content cell to extend itself
         self.widget.button(
-            "AddProgressButton",
             "Click me to add an entry to the progress list",
             on_click=lambda: self.add_progressive_content(),
+            name="add_button"
         )
         self.br(2)
         # A button which clears the progress list
         self.widget.button(
-            "ClearButton",
             "Clear the progress list",
             on_click=lambda: self.progressive_content.cell.clear(),
+            name="clear_button"
         )
         self.br(2).hr().br()
 
     def add_progressive_content(self):
         with self.progressive_content.cell:
             self.log("A dynamically added value")
-            self.progressive_content.cell.invalidate()
 
     @cell(interval_s=0.1, progressive=True)
     def progressive_content(self):

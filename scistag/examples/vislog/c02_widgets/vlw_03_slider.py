@@ -36,11 +36,6 @@ class SliderDemo(LogBuilder):
         )
         self.hr()
 
-    @cell()
-    def follow_up_cell(self):
-        with self.align.left:
-            self.text("Just a test")
-
 
 if VisualLog.is_main():
     VisualLog().run_server(SliderDemo, auto_reload=True)

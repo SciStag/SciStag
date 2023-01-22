@@ -33,4 +33,5 @@ class LiveCameraDemo(LogBuilder):
 
 
 if VisualLog.is_main():
-    test_log = VisualLog("Webcam Demo").run_server(builder=LiveCameraDemo)
+    options = VisualLog.setup_options(title="Webcam Demo")
+    test_log = VisualLog(options).run_server(builder=LiveCameraDemo)

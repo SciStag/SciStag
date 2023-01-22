@@ -7,17 +7,17 @@ import pandas as pd
 
 
 @cell(interval_s=0.05, continuous=True)
-def say_hello():
+def show_():
     vl = LogBuilder.current()
-    vl.title(f"Hello world").sub("How are you doing? Isn't this awesome?")
-    vl.log(f"{time.time()}")
+    vl.cell["say_hello"].log_statistics()
+    vl.br()
     url = "https://raw.githubusercontent.com/selva86/datasets/master/BostonHousing.csv"
     df = pd.read_csv(FileStag.load(url, as_stream=True))
     df = df.drop(columns=["crim", "zn"])
 
-    with vl.time.measure(prefix="Execution time: "):
+    with vl.time.measure(prefix="\nExecution time: "):
         vl.pd.show(df)
 
 
 if VisualLog.is_main():
-    VisualLog(auto_reload=True)
+    VisualLog().run_server(auto_reload=True)

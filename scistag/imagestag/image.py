@@ -942,18 +942,18 @@ class Image(ImageBase):
         """
         return self.encode("jpg", quality, **params)
 
-    def to_ascii(self, max_width=80, **params) -> str:
+    def to_ascii(self, max_columns=80, **params) -> str:
         """
         Converts the image to ASCII, e.g. to add a coarse preview to
         a log file... or just 4 fun ;-)..
 
-        :param max_width: The maximum count of characters per row
+        :param max_columns: The maximum count of characters per row
         :param params: See :class:`AsciiImage` for further details.
         :return: The ASCII image as string
         """
         from .ascii_image import AsciiImage
 
-        return AsciiImage(self, max_columns=max_width, **params).get_ascii()
+        return AsciiImage(self, max_columns=max_columns, **params).get_ascii()
 
     def to_ipython(self, filetype="png", quality: int = 90, **params) -> Any:
         """

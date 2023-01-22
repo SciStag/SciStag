@@ -1136,6 +1136,7 @@ class LogBuilder:
                         missing //= 2
                     lines[index] = " " * missing + cur_line
             txt_code = "\n".join(lines)
+            txt_code = txt_code.rstrip(" ")
 
         if br:
             txt_code += "\n"

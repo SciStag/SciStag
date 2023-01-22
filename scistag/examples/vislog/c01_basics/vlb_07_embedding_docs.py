@@ -4,7 +4,7 @@ and automatically let the document being rebuilt when ever you can any of
 these files.
 """
 
-from scistag.vislog import VisualLog, LogBuilder
+from scistag.vislog import VisualLog, LogBuilder, cell
 
 
 class MyPage(LogBuilder):
@@ -12,15 +12,14 @@ class MyPage(LogBuilder):
     A basic landing page
     """
 
-    def build(self):
+    @cell
+    def markdown_demo(self):
         """
         Builds the page's content
         """
-        self.md.embed("./embed_doc.md")
-        self.md("# Test")
+        self.md.embed("./vlb_07_embedded_doc.md")
 
 
 if VisualLog.is_main():
     options = VisualLog.setup_options()
-    options.run.setup(app_mode="browser")
-    log = VisualLog(auto_reload=MyPage, options=options)
+    log = VisualLog(options=options).run_server(MyPage, auto_reload=True)
