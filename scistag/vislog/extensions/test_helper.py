@@ -335,6 +335,7 @@ class TestHelper(BuilderExtension):
         else:
             self.builder.log(f"{value} ✔")
             if target is not None:
+                target = target.__dict__.get("default_builder", target)
                 target.insert_backup(self.builder.create_backup())
         return True
 
@@ -358,18 +359,15 @@ class TestHelper(BuilderExtension):
         source_code = source_code.split(lb)
         place_holders = ['"123"', '"???"', "'123'", "'???'"]
         code_change = None
-        if len(source_code) >= line:
-            source_line = source_code[line]
-            for cur_ph in place_holders:
-                if cur_ph in source_line:
-                    new_code = source_line.replace(cur_ph, f'"{new_hash}"')
-                    code_change = (
-                        source_code[line].lstrip(" \t")
-                        + " => "
-                        + new_code.lstrip(" \t")
-                    )
-                    source_code[line] = new_code
-                    break
+        source_line = source_code[line]
+        for cur_ph in place_holders:
+            if cur_ph in source_line:
+                new_code = source_line.replace(cur_ph, f'"{new_hash}"')
+                code_change = (
+                    source_code[line].lstrip(" \t") + " => " + new_code.lstrip(" \t")
+                )
+                source_code[line] = new_code
+                break
         if code_change is not None:
             source_code = lb.join(source_code)
             FileStag.save_text(filename, source_code)
@@ -416,8 +414,6 @@ class TestHelper(BuilderExtension):
             length = lengths[index]
             data = self.page_session._logs.build(key)
             index += 1
-            if not isinstance(data, bytes):
-                continue
             difference = difference + data[length:]
             pages[key] = data[length:]
             keys.append(key)
@@ -425,8 +421,6 @@ class TestHelper(BuilderExtension):
         sorted_builder_keys = sorted(list(self.builder.options.output.formats_out))
         if target is not None:
             self.builder.options.output.ref_dir = target.options.output.ref_dir
-            if sorted_keys != sorted_builder_keys:
-                target.insert_backup(self.builder.create_backup())
         assert sorted_keys == sorted_builder_keys
         result_hash_val = hashlib.md5(difference).hexdigest()
         if ref and result_hash_val != hash_val:

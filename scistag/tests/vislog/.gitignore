@@ -1,6 +1,8 @@
 refdata
 generic_module.py
+/generic_module_server.py
+/generic_*
 visual_micro_log.py
 clogs
 dlogs
-/generic_module_server.py
+
