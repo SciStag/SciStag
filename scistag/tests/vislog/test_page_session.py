@@ -2,14 +2,18 @@
 Tests the PageSession class
 """
 import time
+from unittest import mock
 
 import pytest
+import random
 
 from scistag.common.time import sleep_min
+from scistag.logstag.console_stag import Console
 from scistag.vislog import VisualLog
 from scistag.vislog.common.log_element import LogElement
-from scistag.vislog.sessions.page_session import PageSession
+from scistag.vislog.sessions.page_session import PageSession, create_unique_session_id
 from scistag.vislog.widgets.button import CLICK_EVENT_TYPE
+from scistag.webstag.server import WebRequest
 
 
 def test_page_session_backup():
@@ -88,9 +92,28 @@ def test_events():
     vp.get_events_js("4567")
     assert last_time != vp.element_update_times["vlbody"]
 
-    dummy_page = PageSession(log=vp.log, builder=vp.builder)
+    dummy_page = PageSession(builder=vp.builder, options=vl.options)
     vp._set_redirect_event_receiver(dummy_page)
     vp.handle_events()
+
+    he_mock_result = 123.4
+    ne_mock_result = None
+
+    def he_mock():
+        return he_mock_result
+
+    def ne_mock():
+        return ne_mock_result
+
+    with (
+        mock.patch.object(dummy_page, "handle_events", he_mock),
+        mock.patch.object(vp.builder.widget, "handle_event_list", ne_mock),
+    ):
+        assert vp.handle_events() == 123.4
+        ne_mock_result = 100.0
+        assert vp.handle_events() == 100.0
+        ne_mock_result = 200.0
+        assert vp.handle_events() == 123.4
     vp.get_events_js(vp.last_client_id)
     vp.update_values_js(vp.last_client_id, {})
     vp.update_values_js(vp.last_client_id, {"notExiting": ""})
@@ -100,3 +123,87 @@ def test_events():
     vp.handle_client_event(type="widget_not_existing", name=test_button.identifier)
     vp.handle_client_event(type=CLICK_EVENT_TYPE, name="not_existing")
     vp.update_values_js("newClientId", {})
+
+
+def test_session_id():
+    """
+    Tests the creation of unique session ids
+    """
+
+    counter = 0
+
+    def rand_int_repl(start, end):
+        nonlocal counter
+        if end == 255:
+            return 0
+        counter += 1
+        return counter
+
+    session_list = set()
+    with mock.patch("random.randint", rand_int_repl) as pmock:
+        cur_id = create_unique_session_id()
+        assert cur_id not in session_list
+        cur_id = create_unique_session_id()
+        assert cur_id not in session_list
+        session_list.add(cur_id)
+
+
+def test_write_data():
+    """
+    Tests .write_data
+    """
+    log = VisualLog()
+    assert log.default_page.write_data("html", b"Hello")
+    assert not log.default_page.write_data("pdf", b"Hello")
+
+
+def test_writing_methods():
+    """
+    Tests  the different writing methods
+    """
+    options = VisualLog.setup_options()
+    options.output.setup(formats={"html", "md", "console"})
+    log = VisualLog(options=options)
+    page = log.default_page
+    page.write_md("**Hello**")
+    page.write_md(b"how are you")
+    content = page.render_element(output_format="md")[1]
+    assert b"Hello" in content and b"how are" in content
+    page._add_to_console("hello")
+    console = Console()
+    prog_console = Console()
+    prog_console.progressive = True
+    page.add_console(console)
+    page.add_console(prog_console)
+    content = page.render_element(output_format="console")[1]
+    assert b"hello" in content
+    assert page.render() is page
+    page.write_to_disk(formats={"html"})
+
+
+def test_web_request():
+    """
+    Tests if a web request can be handled
+    """
+    request = WebRequest()
+    request.path = "live"
+    options = VisualLog.setup_options()
+    log = VisualLog(options=options)
+    page = log.default_page
+    result = page.handle_web_request(request)
+    assert result is not None
+    assert result.status == 200
+
+
+def test_index_name():
+    """
+    Tests receiving the index names
+    """
+    options = VisualLog.setup_options()
+    options.output.setup(formats={"html", "md", "console"}, index_name="test")
+    log = VisualLog(options=options)
+    page = log.default_page
+    assert page.get_index_name("txt") == "test.txt"
+    assert page.get_index_name("md") == "test.md"
+    assert page.get_index_name("html") == "test.html"
+    assert page.get_index_name("console") is None

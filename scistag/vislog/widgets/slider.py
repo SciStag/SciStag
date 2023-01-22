@@ -12,7 +12,7 @@ from scistag.vislog.widgets.log_widget import LWidget
 from scistag.vislog.widgets.event import LEvent
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
 
 
 class LSlider(LWidget):
@@ -120,9 +120,13 @@ class LSlider(LWidget):
                     seamless=True,
                 )
             else:
-                self.builder.html(html)
+                self.page_session.write_html(html)
         else:
-            self.builder.html(html)
+            self.page_session.write_html(html)
+        self.builder.add_txt(
+            f"<<Slider: {self.min_value} .. {self.max_value}>>",
+            targets="*",
+        )
 
     def _setup_value_display(self, html, out_name):
         """

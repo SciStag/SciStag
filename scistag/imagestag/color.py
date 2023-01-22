@@ -222,6 +222,17 @@ class Color:
         """
         return self._int_rgba[0:3]
 
+    def to_int_rgb_auto(self) -> tuple[int, int, int] | tuple[int, int, int, int]:
+        """
+        Returns the color as rgb or rgba tuple, depending on if alpha is <1.0 or not.
+
+        :return: The RGB or RGBA value
+        """
+        if self._int_rgba[3] == 255:
+            return self._int_rgba[0:3]
+        else:
+            return self._int_rgba[0:4]
+
     def to_rgba(self) -> (float, float, float, float):
         """
         Returns the color as rgba tuple (values from 0.0 .. 1.0)

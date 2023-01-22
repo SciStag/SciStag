@@ -1,8 +1,23 @@
 -- TODO NOTES --
 
+- Accessing hosted files / directories
 - Add unit tests for yet completely missing areas and remove them from the omit list
 - PageSession or LogBuilder specific cache
 - Adding layouting possibilities to VisLog, e.g. centering, relative scaling etc.
+- Missing widgets:
+    - File upload
+    - Checkbox
+    - Interactive image, e.g. pixel tracking
+    - Progress bar
+    - Pure int and float edit fields
+    - ToggleButton
+    - Color selection
+    - Date picker
+    - Emoji Widgets
+    - MediaPlayer bar
+    - Tag input
+    - Defining ranges, range slider
+    - Text field
 - Move VisualLog options to separate class, further extract elements
 - Allow VisuaLog to exchange single parts of a page rather than the whole page
 - Switching to Black for code formatting

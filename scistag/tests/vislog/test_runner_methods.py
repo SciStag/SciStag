@@ -17,12 +17,6 @@ def test_log_runner_basics():
     Tests the basic runner functionality
     """
     log = VisualLog()
-    log.default_stat_update_frequency = 0.2
-    log.update_statistics(time.time())
-    sleep_min(0.25)
-    log.update_statistics(time.time())
-    statistics = log.get_statistics()
-    assert statistics.update_rate >= 0
     assert not log.is_main()
     with mock.patch("scistag.common.stag_app.StagApp.is_main", lambda val: True):
         assert log.is_main()
@@ -31,16 +25,16 @@ def test_log_runner_basics():
 class DummyBuilder(LogBuilder):
     def build(self):
         self.add("Some content")
-        if self.target_log.get_statistics().update_counter == 2:
-            self.target_log.terminate()
+        if self.stats.build_counter == 2:
+            self.terminate()
 
 
 def builder_callback(vl: LogBuilder):
     vl.clear()
     vl.log("Some function content")
-    vl.log(vl.target_log.max_fig_size)
-    if vl.target_log.get_statistics().update_counter == 2:
-        vl.target_log.terminate()
+    vl.log(vl.max_fig_size)
+    if vl.stats.build_counter == 2:
+        vl.terminate()
 
 
 class AutoreloadKillThread(Thread):
@@ -85,21 +79,23 @@ def test_builder_calls():
     log = VisualLog()
     log.run(builder=builder_callback, overwrite=False)
     assert b"Some function content" in log.default_page.get_page("html")
-    log = VisualLog(refresh_time_s=0.05)
+    options = VisualLog.setup_options()
+    options.run.refresh_time_s = 0.05
+    log = VisualLog(options=options)
     log.run(builder=DummyBuilder, continuous=True)
     assert b"Some content" in log.default_page.get_page("html")
-    log = VisualLog(refresh_time_s=0.05)
+    log = VisualLog(options=options)
     log.run(builder=builder_callback, continuous=True, auto_clear=True)
     assert b"Some function content" in log.default_page.get_page("html")
     VisualLogAutoReloader.testing = True
     with mock.patch("builtins.print"):
-        log = VisualLog(refresh_time_s=0.05)
+        log = VisualLog(options=options)
         kt = AutoreloadKillThread(log, duration=0.25)
         kt.start()
         # auto reload with class
         log.run(builder=DummyBuilder, auto_reload=True)
 
-        log = VisualLog(refresh_time_s=0.05)
+        log = VisualLog(options=options)
         kt = AutoreloadKillThread(log, duration=0.25)
         kt.start()
         # auto reload w/ method
@@ -107,15 +103,19 @@ def test_builder_calls():
         with pytest.raises(AssertionError):
             log.kill_server()
     with pytest.raises(ValueError):
-        log = VisualLog()
-        log.run(builder=None)
-    with pytest.raises(ValueError):
-        log = VisualLog()
-        log.run(builder=DummyBuilder, continuous=False, auto_clear=True)
-    with pytest.raises(ValueError):
-        log = VisualLog()
-        log.run(builder=DummyBuilder, continuous=True, overwrite=False)
-    log = VisualLog(start_browser=True, log_to_disk=True)
+        options = VisualLog.setup_options()
+        options.run.auto_clear = True
+        options.run.continuous = False
+        log = VisualLog(options=options)
+        log.run(builder=DummyBuilder)
+    options = VisualLog.setup_options()
+    options.run.setup(app_mode="browser")
+    log = VisualLog(options=options)
+    with mock.patch.object(log, "_start_app_or_browser", lambda self, url: None):
+        log.run(builder=DummyBuilder)
+    options = VisualLog.setup_options("disk")
+    options.run.setup(app_mode="browser")
+    log = VisualLog(options=options)
     with mock.patch.object(log, "_start_app_or_browser", lambda self, url: None):
         log.run(builder=DummyBuilder)
 
@@ -125,24 +125,37 @@ def test_run_server(pbi):
     """
     Tests running the log explicitly as server
     """
-    log = VisualLog()
-    log.run_server(
-        host_name="0.0.0.0",
-        builder=DummyBuilder,
-        public_ips=["auto", "0.0.0.0"],
-        mt=True,
-        test=True,
-    )
+    # 0.0.0.0 in public IPs
+    options = VisualLog.setup_options("server")
+    options.server.public_ips.append("0.0.0.0")
+    log = VisualLog(options=options)
+    log.run_server(builder=DummyBuilder, test=True)
+    # string public IP
+    options = VisualLog.setup_options("server")
+    options.server.public_ips = "auto"
+    log = VisualLog(options=options)
+    log.run_server(builder=DummyBuilder, test=True)
+    # none public IPs
+    options = VisualLog.setup_options("server")
+    options.server.public_ips = None
+    log = VisualLog(options=options)
+    log.run_server(builder=DummyBuilder, test=True)
+    # single run
+    options = VisualLog.setup_options("server")
+    options.run.mt = False
+    log = VisualLog(options=options)
+    log.run_server(builder=DummyBuilder, test=True)
     with pytest.raises(ValueError):
-        log = VisualLog()
-        log.run_server(
-            builder=None,
-            mt=True,
-            test=True,
-            continuous=True,
-        )
+        options = VisualLog.setup_options("server")
+        options.run.continuous = True
+        log = VisualLog(options=options)
+        log.run_server(builder=None, test=True)
     with pytest.raises(ValueError):
-        log = VisualLog()
+        options = VisualLog.setup_options("local")
+        options.run.mt = True
+        options.run.continuous = False
+        options.run.auto_clear = True
+        log = VisualLog(options=options)
         log.run_server(
             builder=DummyBuilder,
             mt=True,
@@ -151,7 +164,10 @@ def test_run_server(pbi):
             continuous=False,
         )
     with pytest.raises(ValueError):
-        log = VisualLog()
+        options = VisualLog.setup_options("local")
+        options.run.mt = False
+        options.run.continuous = True
+        log = VisualLog(options=options)
         log.run_server(builder=DummyBuilder, mt=False, test=True, continuous=True)
 
     log = VisualLog()

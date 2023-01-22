@@ -1,6 +1,7 @@
 # Byte-compiled / optimized / DLL files
 scistag/tests/logs/
 scistag/tests/logstag/refdata
+refdata/
 cert/
 logs/
 doc_out

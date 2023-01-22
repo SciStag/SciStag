@@ -14,7 +14,7 @@ def test_list():
         [1, 2, 3, "a", 123.4, ["A", "B", "C", {"adict": {"withADict": {"value": 123}}}]]
     )
     vl.add([4, 5, 6])
-    vl.test.assert_cp_diff("010a92ee2d44a5b896c10b88926d369b")
+    vl.test.assert_cp_diff("ae0d68b457b295677f5b0b26bae3d87c")
 
 
 def test_dict():
@@ -31,10 +31,10 @@ def test_dict():
         "orderIds": [1234, 5678],
     }
     vl.collection(new_dict)
-    vl.test.assert_cp_diff("b21dae6e811559fab642fae81f5dd299")
+    vl.test.assert_cp_diff("5369a2b30c1c166aa2202cdb4c5cecfa")
     vl.test.checkpoint("vislog.dict_add")
     vl.add(new_dict)
-    vl.test.assert_cp_diff("b21dae6e811559fab642fae81f5dd299")
+    vl.test.assert_cp_diff("5369a2b30c1c166aa2202cdb4c5cecfa")
 
 
 nested_dict = {
@@ -70,4 +70,4 @@ def test_complex_list():
     """
     vl.test.checkpoint("vislog.nested_dict")
     vl.collection(nested_dict)
-    vl.test.assert_cp_diff("c6028167a50731299783411d20465d8a")
+    vl.test.assert_cp_diff("bd4022ab1c483519fdb3a3b5a404e630")

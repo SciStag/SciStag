@@ -9,6 +9,7 @@ from ...emojistag import render_emoji
 from ...imagestag import Colors
 from ...vislog import VisualLog
 from . import vl
+from ...vislog.options import LogOptions
 
 
 def test_image():
@@ -21,14 +22,14 @@ def test_image():
     vl.test.assert_image(
         "stag",
         source=image_data,
-        alt_text="An image of a stag - just because we can",
+        alt="An image of a stag - just because we can",
         hash_val="4e5e428357fcf315f25b148747d633db",
         scaling=0.5,
     )
     vl.test.checkpoint("image.log.disabled")
-    vl.target_log.log_images = False
-    vl.image(image_data, alt_text="an image which shouldn't get logged")
-    vl.target_log.log_images = True
+    vl.options.style.image.log_images = False
+    vl.image(image_data, alt="an image which shouldn't get logged")
+    vl.options.style.image.log_images = True
     vl.test.assert_cp_diff("d41d8cd98f00b204e9800998ecf8427e")
     # insert image via canvas
     vl.image(source=image_data.to_canvas(), name="stag_canvas")
@@ -56,38 +57,34 @@ def test_image():
         "assert_stag", image_data, hash_val="4e5e428357fcf315f25b148747d633db"
     )
     with pytest.raises(AssertionError):
-        vl.test.assert_val(
-            "assert_stag", image_data, hash_val="4e5e428357fcf315f25b148747d633da"
-        )
+        vl.test.assert_val("assert_stag", image_data, hash_val="???")
     vl.test.checkpoint("image.log.scaled.nodownload")
-    vl.log_txt_images = False
     vl.sub_test("An image from the web scaled to 50%")
     vl.image(TestConstants.STAG_URL, "anotherStag_1", scaling=0.5, download=False)
-    vl.test.assert_cp_diff(hash_val="c9aa5a4232351b81ec4b8607126c0dd0")
+    vl.test.assert_cp_diff(hash_val="28b1f6534b36b20b083ece585b93ec1b")
     vl.test.checkpoint("image.log.scaled.downloaded")
     vl.sub_test("An image from the web scaled to 50% w/ downloading")
     vl.image(TestConstants.STAG_URL, "anotherStag_2", scaling=0.5, download=True)
     vl.test.checkpoint("image.log.originalSize")
     vl.sub_test("An image from the web scaled to 100%")
     vl.image(TestConstants.STAG_URL, "anotherStag_3", scaling=1.0)
-    vl.log_txt_images = True
-    vl.test.assert_cp_diff(hash_val="a37201edd6c4c71f056f0a559ad6824b")
+    vl.test.assert_cp_diff(hash_val="1b4691fec0fcc6c6ff80a37bef189449")
     # add image from bytes stream
     vl.sub_test("Logging an image provided as byte stream")
     vl.test.checkpoint("image.log.bytestream")
-    vl.image(image_data.encode(), alt_text="image from byte stream")
+    vl.image(image_data.encode(), alt="image from byte stream")
     vl.add(image_data.encode())
     # insert image from web (as url)
     vl.image(
         TestConstants.STAG_URL,
-        alt_text="Image link from URL",
+        alt="Image link from URL",
         download=False,
         scaling=0.5,
     )
     # insert image from web (inserted)
     vl.image(
         TestConstants.STAG_URL,
-        alt_text="Image download from URL",
+        alt="Image download from URL",
         download=True,
         scaling=0.5,
     )
@@ -105,6 +102,7 @@ def test_image():
         # testing scaled image reference
         vl.image(TestConstants.STAG_URL, "anotherStag_1", max_width=100.0)
 
-    out_log = VisualLog(embed_images=False).default_builder
+    out_log = VisualLog().default_builder
+    out_log.options.style.image.embed_images = False
     out_log.image(source=image_data, filetype="jpg")
     # testing file type

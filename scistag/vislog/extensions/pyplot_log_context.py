@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
 
 
 class PyPlotLogContext:
@@ -22,13 +22,13 @@ class PyPlotLogContext:
 
     def __init__(
         self,
-        target_log: "LogBuilder",
+        builder: "LogBuilder",
         assertion_name: str | None = None,
         assertion_hash: str | None = None,
         br: bool = False,
     ):
         """
-        :param target_log: Defines the target into which we shall log
+        :param builder: Defines the target into which we shall log
         :param assertion_name: If the figure shall be asserted, it's unique
             identifier.
         :param assertion_hash: If the figure shall be asserted via hash the
@@ -39,7 +39,7 @@ class PyPlotLogContext:
         """
         from scistag.plotstag import MPLock
 
-        self.target_log = target_log
+        self.builder = builder
         "The log into which we shall write when the figure is finished"
         self.mp_lock = MPLock()
         """
@@ -64,9 +64,9 @@ class PyPlotLogContext:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.assertion_name is None:  # basic logging?
-            self.target_log.figure(self.plt_handle.gcf(), br=self.br)
+            self.builder.figure(self.plt_handle.gcf(), br=self.br)
         else:  # logging with assert
-            self.target_log.test.assert_figure(
+            self.builder.test.assert_figure(
                 self.assertion_name, self.plt_handle.gcf(), hash_val=self.assertion_hash
             )
         self.mp_lock.__exit__(exc_type, exc_val, exc_tb)

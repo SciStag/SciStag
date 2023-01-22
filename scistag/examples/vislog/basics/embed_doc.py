@@ -21,4 +21,6 @@ class MyPage(LogBuilder):
 
 
 if VisualLog.is_main():
-    log = VisualLog(auto_reload=MyPage, start_browser=True)
+    options = VisualLog.setup_options()
+    options.run.setup(app_mode="browser")
+    log = VisualLog(auto_reload=MyPage, options=options)

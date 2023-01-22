@@ -4,12 +4,15 @@ and timestamp in a log.
 """
 
 from __future__ import annotations
+
+import time
 from typing import TYPE_CHECKING, Union, Callable
 
 from scistag.vislog.extensions.builder_extension import BuilderExtension
+from scistag.vislog.extensions.time_measuring_context import TimeMeasuringContext
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
 
 
 class TimeLogger(BuilderExtension):
@@ -43,3 +46,28 @@ class TimeLogger(BuilderExtension):
             elements.append(postfix)
         self.builder.log("".join(elements))
         return self.builder
+
+    def measure(
+        self,
+        silent: bool = False,
+        callback: Union[Callable, None] = None,
+        prefix: str = "",
+        postfix: str = "",
+        br: bool = True,
+    ) -> TimeMeasuringContext:
+        """
+        :param silent: Defines if nothing shall be logged but just the time measured
+        :param callback: The callback to call after the measurement
+        :param prefix: The prefix to be logged in front of the text
+        :param postfix: The postfix to be logged after the text
+        :param br: Defines if a linebreak shall be inserted after the logging
+        """
+        return TimeMeasuringContext(
+            self.builder,
+            start_time=time.time(),
+            silent=silent,
+            callback=callback,
+            prefix=prefix,
+            postfix=postfix,
+            br=br,
+        )

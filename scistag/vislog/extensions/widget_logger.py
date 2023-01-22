@@ -7,15 +7,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union, Callable
 
-from scistag.vislog.common.log_element import LogElementReference
+from scistag.vislog.widgets import LWidget, LEvent
 from scistag.vislog.extensions.builder_extension import BuilderExtension
-from scistag.vislog.widgets import LButton, LWidget, LEvent
 from scistag.vislog.widgets.timer import LTimer
-from scistag.vislog.widgets.slider import LSlider
 from scistag.vislog.widgets.button import CLICK_EVENT_TYPE, LClickEvent
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
+    from scistag.vislog.widgets import LButton
+    from scistag.vislog.widgets import LSlider, LFileUpload
 
 
 class WidgetLogger(BuilderExtension):
@@ -140,6 +140,21 @@ class WidgetLogger(BuilderExtension):
 
         new_timer = LTimer(self.builder, *args, **kwargs)
         return new_timer
+
+    def file_upload(
+        self,
+        *args,
+        **kwargs,
+    ) -> "LFileUpload":
+        """
+        Adds a file upload widget to the log
+
+        For further details see :class:`LFileUpload`
+        """
+        from scistag.vislog.widgets import LFileUpload
+
+        new_widget = LFileUpload(self.builder, *args, **kwargs)
+        return new_widget
 
     def handle_client_event(self, **params):
         """

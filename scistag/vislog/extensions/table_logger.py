@@ -7,22 +7,32 @@ log.
 from __future__ import annotations
 from typing import TYPE_CHECKING, Union, Callable, Any, Literal
 
-import numpy as np
-from pandas import DataFrame, Series
-from pydantic import BaseModel
-
+from scistag.vislog import TXT
 from scistag.vislog.common.element_context import ElementContext
 
-from scistag.imagestag import Image
-from scistag.plotstag import Figure
-from . import BuilderExtension
-from ..options import LTableOptions
+from scistag.vislog.extensions import BuilderExtension
+from scistag.vislog.options import TableOptions
+from scistag.vislog.sessions.page_session import CONSOLE
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    import numpy as np
+    from scistag.vislog.log_builder import LogBuilder
+    from pandas import DataFrame, Series
+    from scistag.imagestag import Image
+    from scistag.plotstag import Figure
 
 ColumnContent = Union[
-    str, int, float, Callable, Image, Figure, np.ndarray, DataFrame, Series, dict, list
+    str,
+    int,
+    float,
+    Callable,
+    "Image",
+    "Figure",
+    "np.ndarray",
+    "DataFrame",
+    "Series",
+    dict,
+    list,
 ]
 "Defines the types for potential content of a column"
 
@@ -36,9 +46,11 @@ class TableContext(ElementContext):
         self,
         builder: "LogBuilder",
         size: tuple[int, int] | None = None,
-        options: LTableOptions | None = None,
+        options: TableOptions | None = None,
         html_class: str | None = None,
         seamless: bool | None = None,
+        header: bool = False,
+        index: bool = False,
         br: bool = True,
     ):
         """
@@ -56,13 +68,14 @@ class TableContext(ElementContext):
             see :meth:`LogBuilder.style.css`.
         :param seamless: Defines if the table shall be seamless, without visible borders
             and padding.
-        :param br: Defines if the table shall be followed by a line break
+        :param index: Defines if the table has an index column
+        :param header: Defines if the table has a header
         """
-        linebreak_code = "<br>" if br else ""
+        linebreak_code = ""
         closing_code = {
-            "html": f"</table>{linebreak_code}",
-            "md": f"</table>{linebreak_code}",
-            "txt": "\n" if br else "",
+            "html": f"</table>\n{linebreak_code}",
+            "md": f"</table>\n\n",
+            "txt": "",
         }
         super().__init__(builder, closing_code)
         self.size = size
@@ -82,10 +95,16 @@ class TableContext(ElementContext):
         html_style = self.options.html_style
         html_style = f' style="{html_style}"' if len(html_style) > 0 else ""
         self.page.write_html(f"<table class={table_class}{html_style}>")
-        self.page.write_txt("\n", md=False)
+        self.page.write_txt("", targets="-md")
         self.page.write_md(f'<table class="{table_class}"{html_style}>')
         self._entered: bool = False
         "Defines if the table was entered already"
+        self.header: bool = header
+        """Defines if the table has a header"""
+        self.index: bool = index
+        """Defines if the table has an index column"""
+        self.cur_row: int = 0
+        """The row which is currently written"""
 
     def __iter__(self) -> "TableRowIterator":
         """
@@ -119,7 +138,7 @@ class TableContext(ElementContext):
         return iterator
 
     def add_row(
-        self, content: list[ColumnContent] | None = None
+        self, content: list[ColumnContent] | None = None, mimetype: str | None = None
     ) -> Union["TableRowContext", None]:
         """
         Adds a new row context to the table.
@@ -127,24 +146,27 @@ class TableContext(ElementContext):
         ..  code-block:python
 
             with table.add_row() as row:
-                with row.add_col():
+                with row.add():
                     vl.image(...)
 
             table.add_row([1, 2, 3])
 
+        :param content: The content to be logged, a list of elements compatible to
+            :meth:`LogBuilder.add`
+        :param mimetype: Defines the explicit mime type and applies it
+            were possible such as parsing text provided as text/markdown or text/html.
         :return: The row context object
         """
         if content is not None:
-            self.builder.html("<tr>")
             if not isinstance(content, list):
                 content = [content]
-            for element in content:
-                self.builder.html("<td>")
-                self.builder.add(element)
-                self.builder.html("</td>")
-            self.builder.html("</tr>")
-            return None
-        return TableRowContext(self)
+            with self.add_row() as row:
+                for element in content:
+                    with row.add():
+                        self.builder.add(element, mimetype=mimetype)
+                return None
+        self.cur_row += 1
+        return TableRowContext(self, row_index=self.cur_row - 1)
 
 
 class TableRowIterator:
@@ -232,8 +254,10 @@ class TableColumnIterator:
             self.previous_col.__exit__(*sys.exc_info())
         if self.index >= self.col_count:
             raise StopIteration
+        col = TableColumnContext(
+            self.row.builder, row=self.row, column_index=self.index
+        )
         self.index += 1
-        col = TableColumnContext(self.row.builder)
         self.previous_col = col
         return col.__enter__()
 
@@ -243,16 +267,21 @@ class TableRowContext(ElementContext):
     Automatically adds the beginning and ending of a row to the log
     """
 
-    def __init__(self, table: "TableContext"):
+    def __init__(self, table: "TableContext", row_index: int = 0):
         """
         :param table: The table context within which the row shall be added
         """
-        closing_code = {"html": "</tr>", "md": "</tr>", "txt": "\n"}
+        closing_code = {"html": "</tr>\n", "md": "</tr>\n", "txt": "\n"}
         super().__init__(table.builder, closing_code)
-        self.table = table
-        self.page.write_html(f"<tr>\n")
-        self.page.write_txt("| ", md=False)
-        self.page.write_md("<tr>\n", no_break=True)
+        self.table: TableContext = table
+        """The table we are building"""
+        self.page.write_html(f"<tr>")
+        self.page.write_txt("|", targets="-md")
+        self.page.write_md("<tr>", no_break=True)
+        self.row_index: int = row_index
+        """The row's index"""
+        self.cur_column: int = 0
+        """Defines the column which is currently written"""
 
     def __enter__(self) -> TableRowContext:
         return self
@@ -271,8 +300,10 @@ class TableRowContext(ElementContext):
             )
         return self.iter_cols(self.table.size[0])
 
-    def add_col(
-        self, content: ColumnContent | None = None
+    def add(
+        self,
+        content: ColumnContent | None = None,
+        mimetype: str | None = None,
     ) -> Union["TableColumnContext", None]:
         """
         Adds a new column to the row
@@ -280,18 +311,21 @@ class TableRowContext(ElementContext):
         :param content: The text to be logged or the function to be called
             inside the column's context. If data is provided no context
             will be created.
-        :return: The column context to be entered via `with row.add_col():...`
+        :param mimetype: Defines the explicit mime type and applies it
+            were possible such as parsing text provided as text/markdown or text/html.
+        :return: The column context to be entered via `with row.add():...`
         """
         if content is not None:
-            self.page.write_html(f"<td>")
-            if isinstance(content, Callable):
-                content()
-            else:
-                self.builder.add(content)
-            self.page.write_html("</td>")
+            with self.add():
+                if isinstance(content, Callable):
+                    content()
+                else:
+                    self.builder.add(content, mimetype=mimetype)
             return None
-
-        return TableColumnContext(self.builder)
+        self.cur_column += 1
+        return TableColumnContext(
+            self.builder, row=self, column_index=self.cur_column - 1
+        )
 
     def iter_cols(self, count: int) -> "TableColumnIterator":
         """
@@ -317,15 +351,29 @@ class TableColumnContext(ElementContext):
     Automatically adds the beginning and ending of a column to the log
     """
 
-    def __init__(self, builder: "LogBuilder"):
+    def __init__(
+        self, builder: "LogBuilder", row: "TableRowContext", column_index: int = 0
+    ):
         """
         :param builder: The builder object with which we write to the log
         """
-        closing_code = {"html": "</td>", "md": "</td>", "txt": " |\n"}
+        self.row = row
+        """The row to which this column belongs"""
+        self.column_index = column_index
+        major_cell = (row.table.header and row.row_index == 0) or (
+            row.table.index and column_index == 0
+        )
+        cell_type = "td" if not major_cell else "th"
+        """Defines this column's index"""
+        closing_code = {
+            "html": f"</{cell_type}>",
+            "md": f"</{cell_type}>",
+            "txt": " |",
+        }
         super().__init__(builder, closing_code)
-        self.page.write_html(f"<td>\n")
-        self.page.write_txt("| ", md=False)
-        self.page.write_md(f"<td>", no_break=True)
+        self.page.write_html(f"<{cell_type}>")
+        self.page.write_txt(" ", targets="-md")
+        self.page.write_md(f"<{cell_type}>", no_break=True)
 
     def __enter__(self) -> TableColumnContext:
         return self
@@ -346,9 +394,11 @@ class TableLogger(BuilderExtension):
     def begin(
         self,
         size: tuple[int, int] | None = None,
-        options: LTableOptions | None = None,
+        options: TableOptions | None = None,
         seamless: bool | None = None,
         html_class: str | None = None,
+        header: bool = False,
+        index: bool = False,
         br: bool = True,
     ):
         """
@@ -360,7 +410,7 @@ class TableLogger(BuilderExtension):
                 for row_index in range(4):
                     with table.add_row() as row:
                         for col_index in range(4):
-                            with row.add_col():
+                            with row.add():
                                 vl.log(col_index)
 
             alternatively:
@@ -381,6 +431,8 @@ class TableLogger(BuilderExtension):
         :param html_class: The html class to be used for the table or the CSS code
             to generate a new class, see :meth:`StyleContext.ensure_css_class`
         :param br: Defines if the table shall be followed by a line break
+        :param index: Defines if the table has an index column
+        :param header: Defines if the table has a header
         :return: The logging context
         """
         return TableContext(
@@ -388,6 +440,8 @@ class TableLogger(BuilderExtension):
             size=size,
             options=options,
             seamless=seamless,
+            header=header,
+            index=index,
             html_class=html_class,
             br=br,
         )
@@ -398,7 +452,7 @@ class TableLogger(BuilderExtension):
         orientation: Literal["vert", "hor"] = "hor",
         index: bool = False,
         header: bool = False,
-        options: LTableOptions | None = None,
+        options: TableOptions | None = None,
         html_class: str | None = None,
         seamless: bool | None = None,
         br: bool = True,
@@ -453,13 +507,14 @@ class TableLogger(BuilderExtension):
                         major_cell = (
                             row_index == 0 and header or col_index == 0 and index
                         )
-                        if major_cell:
+                        if major_cell and "<b>" not in code:
                             code += f"<b>{cur_data}</b>"
                         else:
                             code += f"{cur_data}"
                         if index and col_index == 0:
                             code += "</b>"
-                        self.builder.html(code)
+                        self.builder.html(code, br=False)
+                        self.builder.add_txt(str(cur_data), br=False)
                     else:
                         self.builder.add(cur_data)
                     tabs = tabs[0:-1]
@@ -499,26 +554,20 @@ class TableLogger(BuilderExtension):
             tabs = "\t"
             code += f"{tabs}<tr>\n"
             for col_index, col in enumerate(row):
-                code += f"\t{tabs}<td>\n{tabs}\t"
+                major_cell = (row_index == 0 and header) or (col_index == 0 and index)
+                cell_type = "td" if not major_cell else "th"
+                code += f"\t{tabs}<{cell_type}>\n{tabs}\t"
                 assert isinstance(
                     col, (str, int, float, bool)
                 )  # more types to be supported soon
                 col = str(col)
-                if index and col_index == 0:
-                    code += "<b>"
-                major_cell = row_index == 0 and header or col_index == 0 and index
-                if major_cell:
-                    code += f"<b>{col}</b>"
-                else:
-                    code += col
-                if index and col_index == 0:
-                    code += "</b>"
-                code += f"\n{tabs}</td>\n"
+                code += col
+                code += f"\n{tabs}</{cell_type}>\n"
                 tabs = tabs[0:-1]
             code += f"{tabs}</tr>\n"
         code += "</table>\n"
         if br:
-            code += "<br>"
+            code += "<br>\n"
         self.page_session.write_html(code)
         # txt
         for row in data:
@@ -526,7 +575,7 @@ class TableLogger(BuilderExtension):
             for index, col in enumerate(row):
                 col = str(col)
                 row_text += col + " | "
-            self.page_session.write_txt(row_text, md=False)
+            self.page_session.write_txt(row_text, targets="-md")
         # markdown
         for row_index, row in enumerate(data):
             row_text = "| "

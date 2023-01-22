@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import hashlib
 import io
+import itertools
+import os
 
 import numpy as np
 import pandas as pd
@@ -20,7 +22,7 @@ from scistag.filestag import FileStag, FilePath
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
-    from scistag.vislog.visual_log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder
 
 
 class TestHelper(BuilderExtension):
@@ -34,6 +36,10 @@ class TestHelper(BuilderExtension):
             the document
         """
         super().__init__(builder)
+        self.store_references: bool = True
+        """
+        Defines if references of the tested data shall be stored by default
+        """
         self.checkpoint_backups = []
         "Data from the last checkpoints"
 
@@ -42,14 +48,14 @@ class TestHelper(BuilderExtension):
         name: str,
         figure: plt.Figure | plt.Axes | Figure | Plot,
         hash_val: str,
-        alt_text: str | None = None,
+        alt: str | None = None,
     ):
         """
         Adds a figure to the log and verifies its content to a checksum
 
         :param name: The figure's name
         :param figure: The figure to log
-        :param alt_text: An alternative text to display if the figure can
+        :param alt: An alternative text to display if the figure can
             not be displayed.
         :param hash_val: The hash value to compare to (a checksum of all
             pixels). The correct will be logged via an assertion upon failure
@@ -57,7 +63,7 @@ class TestHelper(BuilderExtension):
         """
         image_data = io.BytesIO()
         self.builder.figure(
-            figure=figure, name=name, alt_text=alt_text, _out_image_data=image_data
+            figure=figure, name=name, alt=alt, _out_image_data=image_data
         )
         assert len(image_data.getvalue()) > 0
         result_hash_val = hashlib.md5(image_data.getvalue()).hexdigest()
@@ -69,7 +75,7 @@ class TestHelper(BuilderExtension):
         source: Image | Canvas,
         hash_val: str,
         scaling: float = 1.0,
-        alt_text: str | None = None,
+        alt: str | None = None,
     ):
         """
         Assert an image object and verifies it's hash value matches the object's
@@ -81,11 +87,11 @@ class TestHelper(BuilderExtension):
             pixels). The correct will be logged via an assertion upon failure
             and can then be copies & pasted.
         :param scaling: The factor by which the image shall be scaled
-        :param alt_text: An alternative text to display if the image can
+        :param alt: An alternative text to display if the image can
             not be displayed.
         """
         result_hash_val = self.log_and_hash_image(
-            name=name, data=source, scaling=scaling, alt_text=alt_text
+            name=name, data=source, scaling=scaling, alt=alt
         )
         self.hash_check_log(result_hash_val, hash_val)
 
@@ -93,7 +99,7 @@ class TestHelper(BuilderExtension):
         self,
         name: str,
         data: Image | Canvas,
-        alt_text: str | None = None,
+        alt: str | None = None,
         scaling: float = 1.0,
     ) -> str:
         """
@@ -103,14 +109,14 @@ class TestHelper(BuilderExtension):
         :param name: The name of the test.
             Will result in a file named logs/TEST_DIR/test_name.png
         :param data: The image object
-        :param alt_text: An alternative text to display if the image can
+        :param alt: An alternative text to display if the image can
             not be displayed.
         :param scaling: The factor by which the image shall be scaled
         :return: The image's hash for consistency checks
         """
         if isinstance(data, Canvas):
             data = data.to_image()
-        self.builder.image(source=data, name=name, alt_text=alt_text, scaling=scaling)
+        self.builder.image(source=data, name=name, alt=alt, scaling=scaling)
         return data.get_hash()
 
     def assert_text(self, name: str, text: str, hash_val: str):
@@ -148,6 +154,8 @@ class TestHelper(BuilderExtension):
             df.to_csv(output, lineterminator="\n")
             result_hash_val = hashlib.md5(output.getvalue()).hexdigest()
             if result_hash_val != hash_val:
+                if self.replace_place_holder(new_hash=result_hash_val, stack_level=2):
+                    return
                 self.page_session.write_to_disk()
                 raise AssertionError(
                     "Hash mismatch - "
@@ -283,8 +291,8 @@ class TestHelper(BuilderExtension):
         :param data: The data to store
         """
         hashed_name = self.builder.get_hashed_filename(name)
-        FilePath.make_dirs(self.builder.target_log.ref_dir, exist_ok=True)
-        hash_fn = self.builder.target_log.ref_dir + "/" + hashed_name + ".dmp"
+        FilePath.make_dirs(self.builder.options.output.ref_dir, exist_ok=True)
+        hash_fn = self.builder.options.output.ref_dir + "/" + hashed_name + ".dmp"
         FileStag.save(hash_fn, data)
 
     def load_ref(self, name: str) -> bytes | None:
@@ -295,29 +303,75 @@ class TestHelper(BuilderExtension):
         :return: The data. None if no reference could be found
         """
         hashed_name = self.builder.get_hashed_filename(name)
-        hash_fn = self.builder.target_log.ref_dir + "/" + hashed_name + ".dmp"
+        hash_fn = self.builder.options.output.ref_dir + "/" + hashed_name + ".dmp"
         if FileStag.exists(hash_fn):
             return FileStag.load(hash_fn)
         return None
 
-    def hash_check_log(self, value, assumed):
+    def hash_check_log(
+        self, value: str, assumed: str, target: LogBuilder | None = None
+    ):
         """
         Verifies a hash and adds the outcome of a hash check to the output
 
         :param value: The hash value
         :param assumed: The assumed value
+        :param target: Defines the LogBuilder into which the results shall be inserted
         """
+        replaced = None
         if value != assumed:
+            replaced = self.replace_place_holder(new_hash=value, stack_level=3)
+        if value != assumed and replaced is None:
             self.builder.log(
-                f"⚠️Hash validation failed!\nValue: " f"{value}\nAssumed: {assumed}",
+                f"⚠ Hash validation failed!\nValue: " f"{value}\nAssumed: {assumed}",
                 level="error",
             )
-            self.builder.target_log.default_page.write_to_disk()
+            self.page_session.write_to_disk()
+            if target is not None:
+                target.insert_backup(self.builder.create_backup())
             raise AssertionError(
                 "Hash mismatch - " f"Found: {value}\n" f"Assumed: {assumed}"
             )
         else:
-            self.builder.log(f"{assumed} ✔")
+            self.builder.log(f"{value} ✔")
+            if target is not None:
+                target = target.__dict__.get("default_builder", target)
+                target.insert_backup(self.builder.create_backup())
+        return True
+
+    @staticmethod
+    def replace_place_holder(new_hash: str, stack_level=2) -> str | None:
+        """
+        Searches for a placeholder like "???" or "123" in a failed assertion line in
+        the source code and replaces it with the correct hash.
+
+        :param new_hash: The new, correct hash value
+        :param stack_level: The stack depth of the calling method
+        :return: True if an occurrence was found
+        """
+        import inspect
+
+        filename = inspect.stack()[stack_level].filename
+        line = inspect.stack()[stack_level].lineno - 1
+        windows_linebreak = "\r\n"
+        source_code = FileStag.load_text(filename)
+        lb = windows_linebreak if windows_linebreak in source_code else "\n"
+        source_code = source_code.split(lb)
+        place_holders = ['"123"', '"???"', "'123'", "'???'"]
+        code_change = None
+        source_line = source_code[line]
+        for cur_ph in place_holders:
+            if cur_ph in source_line:
+                new_code = source_line.replace(cur_ph, f'"{new_hash}"')
+                code_change = (
+                    source_code[line].lstrip(" \t") + " => " + new_code.lstrip(" \t")
+                )
+                source_code[line] = new_code
+                break
+        if code_change is not None:
+            source_code = lb.join(source_code)
+            FileStag.save_text(filename, source_code)
+        return code_change
 
     def checkpoint(self, checkpoint_name: str):
         """
@@ -327,13 +381,15 @@ class TestHelper(BuilderExtension):
             {
                 "name": checkpoint_name,
                 "lengths": [
-                    len(self.target_log.default_page._logs.build(key))
-                    for key in sorted(self.builder.target_log.log_formats)
+                    len(self.page_session._logs.build(key))
+                    for key in sorted(self.builder.options.output.formats_out)
                 ],
             }
         )
 
-    def assert_cp_diff(self, hash_val: str):
+    def assert_cp_diff(
+        self, hash_val: str, ref: bool | None = None, target: LogBuilder | None = None
+    ):
         """
         Computes a hash value from the difference of the single output
         targets (html, md, txt) and the new state and compares it to a
@@ -342,23 +398,59 @@ class TestHelper(BuilderExtension):
         :param hash_val: The hash value to compare to. Upon failure verify
             the different manually and copy & paste the hash value once
             the result was verified.
+        :param ref: Defines if reference shall be stored. See :attr:store_references
+            for default.
+        :param target: Defines the LogBuilder into which the results shall be inserted
         """
+        if ref is None:
+            ref = self.store_references
         last_checkpoint = self.checkpoint_backups.pop()
         lengths = last_checkpoint["lengths"]
         difference = b""
         index = 0
         keys = []
-        for key in sorted(self.builder.target_log.log_formats):
+        pages = {}
+        for key in sorted(self.builder.options.output.formats_out):
             length = lengths[index]
-            data = self.target_log.default_page._logs.build(key)
+            data = self.page_session._logs.build(key)
             index += 1
-            if not isinstance(data, bytes):
-                continue
             difference = difference + data[length:]
+            pages[key] = data[length:]
             keys.append(key)
-        assert sorted(list(keys)) == sorted(list(self.builder.target_log.log_formats))
+        sorted_keys = sorted(list(keys))
+        sorted_builder_keys = sorted(list(self.builder.options.output.formats_out))
+        if target is not None:
+            self.builder.options.output.ref_dir = target.options.output.ref_dir
+        assert sorted_keys == sorted_builder_keys
         result_hash_val = hashlib.md5(difference).hexdigest()
-        self.hash_check_log(result_hash_val, hash_val)
+        if ref and result_hash_val != hash_val:
+            # if an error occurred, show correct version
+            tar_dir = self.builder.options.output.ref_dir
+            self.builder.br()
+
+            def show_previous():
+                for key in sorted(self.builder.options.output.formats_out):
+                    backup_fn = tar_dir + "/" + f"{hash_val}.{key}"
+                    if os.path.exists(backup_fn):
+                        break
+                self.builder.text("Previous variant")
+                for key in sorted(self.builder.options.output.formats_out):
+                    backup_fn = tar_dir + "/" + f"{hash_val}.{key}"
+                    if os.path.exists(backup_fn):
+                        data = FileStag.load(backup_fn)
+                        self.page_session.cur_element.add_data(key, data)
+
+            if hash_val not in ["123", "???"]:
+                self.builder.table([[show_previous]])
+        self.hash_check_log(result_hash_val, hash_val, target=target)
+        if ref:
+            # backup reference version
+            tar_dir = self.builder.options.output.ref_dir
+            os.makedirs(tar_dir, exist_ok=True)
+            for key in sorted(self.builder.options.output.formats_out):
+                output_fn = tar_dir + "/" + f"{result_hash_val}.{key}"
+                if not os.path.exists(output_fn):
+                    FileStag.save(output_fn, pages[key])
 
     def begin(self, text: str) -> "LogBuilder":
         """

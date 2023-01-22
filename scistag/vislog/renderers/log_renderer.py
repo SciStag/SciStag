@@ -6,15 +6,18 @@ base interface for different logging output file types.
 from __future__ import annotations
 
 from scistag.optional.jinja_opt import jinja_available, jinja2
-from scistag.vislog.visual_log import MAIN_LOG
+from scistag.vislog.options import LogOptions
 
 
 class LogRenderer:
     """
     Defines an abstract interface for adding data to a log of any format
+
+    LogRenderer and will be removed soon.
+    TODO: Remove me
     """
 
-    def __init__(self):
+    def __init__(self, options: LogOptions):
         if not jinja_available():
             assert ModuleNotFoundError(
                 "VisualLog with needs the "
@@ -36,6 +39,8 @@ class LogRenderer:
         "The encoded and rendered header"
         self.footer_rendered: bytes = b""
         "The encoded and rendered footer"
+        self.options = options
+        "The logging options"
 
     def get_rendering_variables(self):
         """
@@ -45,7 +50,11 @@ class LogRenderer:
         """
         import scistag
 
-        return {"title": self.title, "scistag_version": scistag.__version__}
+        return {
+            "title": self.title,
+            "vl_slim": self.options.style.slim,
+            "scistag_version": scistag.__version__,
+        }
 
     def set_body_template(self, template: str, **params):
         """
@@ -93,14 +102,15 @@ class LogRenderer:
             **self.get_rendering_variables(), **params
         ).encode("utf-8")
 
-    def build_page(self, body) -> bytes:
+    def build_page(self, body, custom_code) -> bytes:
         """
         Combines the head's header, body and footer to a full html page
 
         :param body: The page's body
+        :param custom_code: Custom code to be inserted
         :return: The full, deliverable page
         """
-        return b"".join([self.header_rendered, body, self.footer_rendered])
+        return b"".join([self.header_rendered, custom_code, body, self.footer_rendered])
 
     def build_body(self, log_data: bytes) -> bytes:
         """

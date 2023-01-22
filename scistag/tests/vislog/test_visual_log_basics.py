@@ -2,6 +2,7 @@ import io
 import os.path
 import shutil
 import time
+from contextlib import redirect_stdout
 from logging import ERROR
 from sys import platform
 from unittest import mock
@@ -17,7 +18,7 @@ from ...filestag import FilePath, FileStag
 from ...imagestag import Color, Image
 from ...logstag import LogLevel
 from ...logstag.console_stag import Console
-from ...vislog import VisualLog, HTMLCode
+from ...vislog import VisualLog, HTMLCode, LogBuilder, cell
 from ...plotstag import Figure, MPLock
 
 
@@ -25,8 +26,15 @@ def test_basics_logging_methods():
     vl.test.begin("Basic logging methods")
     vl.sub_test("Bullets")
     # logging mark down
-    vl.md("* Just a list\n" "* of bullet\n" "* points")
+    vl.test.checkpoint("md.logging")
+    vl.md("* Just a list\n" "* of bullet\n" "* points").br(2)
+    vl.md("* Just a list\n" "* of bullet\n" "* points").br(2)
     vl.md("* Just a list\n" "* of bullet\n" "* points", exclude_targets={"html", "md"})
+    vl.md.log_html_only = True
+    vl.title("test")
+    vl.add_md("nothing_should_happen")
+    vl.md.log_html_only = False
+    vl.test.assert_cp_diff("327ae1d0827a8540b5f1a2d4158bd340")
     temp_path = vl.get_temp_path()
     assert len(temp_path)
     assert vl.get_temp_path("sub_path") == temp_path + "/sub_path"
@@ -37,21 +45,23 @@ def test_basics_logging_methods():
     # test title
     vl.test.checkpoint("log.title")
     vl.title("Title")
-    vl.test.assert_cp_diff(hash_val="86f74d4efab7c70690f1e86e9efec8dc")
+    vl.test.assert_cp_diff(hash_val="3f1c9832d3132dddce5888a95139f8e4")
     # test sub titles
     vl.test.checkpoint("log.subtitle")
     vl.sub("A sub title")
-    vl.sub_x3("Sub sub title")
-    vl.sub_x4("Sub sub sub title")
-    vl.test.assert_cp_diff(hash_val="e69598020011731a12ae74e4d1a259e0")
+    vl.sub("Sub sub title", level=3)
+    vl.sub("Sub sub sub title", level=4)
+    with vl.sub():
+        vl.add("Subtitle")
+    vl.test.assert_cp_diff(hash_val="b16a08095ced23ca09a6af0a9a7f6576")
     vl.sub_test("Text and code")
     vl.test.checkpoint("log.code")
     vl.test.begin("Just a piece of text")
     vl.code("How about a little bit of source code?")
     vl.hr()
     vl.page_break()
-    vl.test.assert_cp_diff(hash_val="deb09ddaa3e0f23720a6536af11da0c9")
-    assert not vl.target_log.is_micro
+    vl.test.assert_cp_diff(hash_val="58f03be4021de8fd19f2a9f59a76ba8a")
+    assert not vl.is_micro
 
 
 def test_add_and_links():
@@ -66,8 +76,6 @@ def test_add_and_links():
     vl.add(123.456, br=True)
     vl.add([123, 456], br=True)
     vl.add({"someProp": "someVal"}, br=True)
-    with pytest.raises(TypeError):
-        vl.add(Color(22, 33, 44), br=True)
     with pytest.raises(ValueError):
         vl.add(b"12345", br=True)
     with pytest.raises(ValueError):
@@ -75,11 +83,20 @@ def test_add_and_links():
         stream = io.BytesIO()
         test_image.to_pil().save(stream, "tiff")
         vl.add(stream.getvalue(), br=True)
-    vl.test.assert_cp_diff(hash_val="5b7dc6c9c321c843ff8fc54170269915")
+    vl.test.assert_cp_diff(hash_val="7fb750a4555ca2441b853795f71ade16")
     vl.test.checkpoint("log.link_adv")
     vl.link("Multiline\nLink", "https://github.com/scistag/scistag").br()
-    vl.test.assert_cp_diff(hash_val="45abc6872d2c85a9c245c7c11d18f0d5")
+    vl.test.assert_cp_diff(hash_val="749e0d5d5ee5556a37b038ea5d380c12")
+    vl.test.checkpoint("callback")
     assert vl.max_fig_size.width > 100
+    vl.add(lambda: vl.log("TestCall"))
+    vl.add("**Bold**", mimetype="md").br()
+    vl.add("<b>Bold</b>", mimetype="html").br()
+    vl.test.assert_cp_diff("87a010d9c35d461b0dd92fd373cee0c9")
+
+    vl.test.checkpoint("add.womime")
+    vl.add("A text", mimetype="notexisting")
+    vl.test.assert_cp_diff("0639df408bd1a2d6fa8b8f4c072b6540")
 
 
 def test_html():
@@ -100,7 +117,11 @@ def test_errors():
         shutil.rmtree("./logs/other")
     except FileNotFoundError:
         pass
-    _ = VisualLog(target_dir="./logs/other", title="Just a test", clear_target_dir=True)
+    options = VisualLog.setup_options("disk")
+    options.output.target_dir = "./logs/other"
+    options.output.clear_target_dir = True
+    options.page.title = "Just a test"
+    _ = VisualLog(options=options)
 
 
 def test_dict():
@@ -137,9 +158,9 @@ def test_figure():
         "test directly logging plot", plot, hash_val="b2927d2e8972b8a912e1155983f872be"
     )
 
-    vl.target_log.log_images = False
+    vl.options.style.image.log_images = False
     vl.figure(plot, "not_plotted_figure")
-    vl.target_log.log_images = True
+    vl.options.style.image.log_images = True
 
     vl.sub_test("Logging figures created with matplotlib using add_matplot")
     np.random.seed(42)
@@ -161,7 +182,7 @@ def test_figure():
     hash_val = (
         "324a86b9b24b1fe1ff1d770cbc31e8e5"
         if platform == "darwin"
-        else "20ee5e3e393ec5099ec10273a838c263"
+        else "f6d2dfff648e3d5885c2677cfc0171a6"
     )
     # note minimal visualization differences between M1 Mac ons AMD64
     vl.sub_test("Logging axes created with matplotlib using MPLock()")
@@ -181,6 +202,8 @@ def test_eval():
     eval_data = vl.evaluate("4*5")
     assert eval_data == 20
     assert vl.evaluate("print('', end='')") is None
+    eval_data = vl.evaluate("4*4", log_code=False)
+    assert eval_data == 16
 
 
 def test_text():
@@ -214,7 +237,9 @@ def test_text():
     vl.text("Two lines\noftext", br=True)
     vl.text("Follow up")
     vl.hr()
-    vl.test.assert_cp_diff("fc6af2a2db7a97ff982430ca891f4324")
+    vl.text(123)
+    vl.hr(title="This is a section")
+    vl.test.assert_cp_diff("806513cc8e03ccf9e06e957a247fdf5c")
 
 
 @patch("builtins.print")
@@ -222,17 +247,15 @@ def test_different_setups(_):
     """
     Tests different constructor settings
     """
-    log: VisualLog = VisualLog(
-        max_fig_size=(128, 128),
-        log_to_disk=False,
-        filetype=("jpg", 80),
-        continuous_write=True,
-    )
-    assert not log.log_to_disk
-    assert log.max_fig_size == (128, 128)
-    assert log.image_format == "jpg" and log.image_quality == 80
+    options = VisualLog.setup_options()
+    options.style.image.max_fig_size = (128, 128)
+    options.style.image.default_filetype = ("jpg", 80)
+    log: VisualLog = VisualLog(options=options)
+    assert not log.options.output.log_to_disk
+    assert log.options.style.image.max_fig_size == (128, 128)
+    assert log.options.style.image.default_filetype == ("jpg", 80)
     log.terminate()
-    assert log._shall_terminate
+    assert log._terminated
     # TODO New log limit test with new component based approach
     #    log.set_log_limit(5)
     #    assert log._log_limit == 5
@@ -241,17 +264,15 @@ def test_different_setups(_):
     #        log.default_builder.log("Test")
     #    assert len(log._logs["html"]) < 6
 
-    log: VisualLog = VisualLog(
-        max_fig_size=(128, 128),
-        log_to_disk=False,
-        filetype=("jpg", 80),
-        continuous_write=True,
-    )
+    options = VisualLog.setup_options()
+    options.style.image.max_fig_size = (128, 128)
+    options.style.image.default_filetype = ("jpg", 80)
+    log: VisualLog = VisualLog(options=options)
     a_console = Console()
-    log.add_console(a_console)
+    log.default_page.add_console(a_console)
     log.default_builder.log("Console text")
     log.default_page.write_to_disk()
-    log.flush()  # just another name for write_to_disk as of now
+    log.default_builder.flush()  # just another name for write_to_disk as of now
     assert log.default_page.get_page("wdwdd") == b""
     assert b"Console text" in log.default_page.get_body("html")
     assert log.default_page.get_body("wdwdd") == b""
@@ -259,7 +280,9 @@ def test_different_setups(_):
     log.default_page.write_to_disk(formats=None, render=False)
 
     # log without html
-    no_html_log = VisualLog(formats_out={"txt"})
+    options = VisualLog.setup_options()
+    options.output.setup(formats={"txt"})
+    no_html_log = VisualLog(options=options)
     no_html_log.default_page.write_html("shouldnt be logged")
     vl = no_html_log.default_builder
     vl.log("should be logged")
@@ -267,38 +290,18 @@ def test_different_setups(_):
         vl.log("text")
 
 
-def test_static_file():
-    log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, filetype=("jpg", 80)
-    )
-    log.add_static_file("testFile.bin", "bHello world")
-    assert log.get_file("testFile.bin") == "bHello world"
-
-
 def test_runner():
     """
     Tests running and looping functionality
     :return:
     """
-    log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, filetype=("jpg", 80)
-    )
+    options = VisualLog.setup_options()
+    options.style.image.max_fig_size = (128, 128)
+    options.style.image.default_filetype = ("jpg", 80)
+    log: VisualLog = VisualLog(options=options)
     assert not log.invalid
     log.invalidate()
     assert log.invalid
-
-
-def test_statistics():
-    """
-    Tests the logging of statistics
-    :return:
-    """
-    log: VisualLog = VisualLog(
-        max_fig_size=(128, 128), log_to_disk=False, filetype=("jpg", 80)
-    )
-    log.default_builder.log_statistics()
-    body = log.default_page.render().get_body("html")
-    assert b"total updates" in body
 
 
 def test_simple_logging():
@@ -345,24 +348,21 @@ def test_clear_log():
         shutil.rmtree(f"{bp}/clogs")
     except FileNotFoundError:
         pass
-    log = VisualLog(
-        log_to_disk=True,
+    options = VisualLog.setup_options()
+    options.output.setup(
+        disk=True,
         target_dir=f"{bp}/clogs",
         clear_target_dir=True,
-        formats_out={"html", "md"},
+        formats={"html", "md"},
     )
+    log = VisualLog(options=options)
     log.default_builder.log("Something")
     log.default_page.write_to_disk()
-    data = log.get_file("index.md")
-    assert log.get_file("../../evil/index.md") is None
-    assert len(data) >= 5
+    data = log.default_builder.service.get_file("index.md")
+    assert log.default_builder.service.get_file("../../evil/index.md") is None
+    assert len(data.body) >= 5
     assert FilePath.exists(f"{bp}/clogs")
-    new_log = VisualLog(
-        log_to_disk=True,
-        target_dir=f"{bp}/clogs",
-        clear_target_dir=True,
-        formats_out={"html", "md"},
-    )
+    new_log = VisualLog(options=options)
     new_log.default_page.write_to_disk()
     data = FileStag.load(f"{bp}/clogs/index.md")
     assert len(data) <= 5
@@ -375,25 +375,24 @@ def test_printing():
     console = Console()
     console.progressive = True
     bp = os.path.dirname(__file__)
-    log = VisualLog(
-        log_to_disk=True,
-        target_dir=f"{bp}/dlogs",
-        formats_out={"html", "md", "txt"},
-        continuous_write=True,
-        log_to_stdout=True,
-    )
-    log.add_console(console)
-    with mock.patch("builtins.print") as printer:
-        log.default_page.write_html("<br>")
-        log.default_page.write_txt("txt")
-        log.default_page.write_md("md")
-        assert printer.called
-        log.default_page.render()
-        static_url = log.local_static_url
-        assert static_url is None
-        log.run(builder=lambda _: None)
-        static_url = log.local_static_url
-        assert static_url.startswith("file://")
+    options = VisualLog.setup_options("disk&console")
+    options.output.target_dir = f"{bp}/dlogs"
+    options.output.formats_out = {"html", "md", "txt"}
+    log = VisualLog(options=options)
+    log.default_page.add_console(console)
+    std_out = io.StringIO()
+    with redirect_stdout(std_out):
+        with mock.patch("builtins.print") as printer:
+            log.default_page.write_html("<br>")
+            log.default_page.write_txt("txt")
+            log.default_page.write_md("md")
+            assert printer.called
+            log.default_page.render()
+            static_url = log.local_static_url
+            assert static_url is None
+            log.run(builder=lambda _: None)
+            static_url = log.local_static_url
+            assert static_url.startswith("file://")
 
 
 def test_backup():
@@ -406,7 +405,7 @@ def test_backup():
     vl.sub_test("inserting backups")
     vl.test.checkpoint("log.title")
     vl.insert_backup(backup)
-    vl.test.assert_cp_diff(hash_val="b4c6a2e280126abb4b4cd7361e2dd102")
+    vl.test.assert_cp_diff(hash_val="e089cbcb0789f120cb0c7dbbd4453f88")
 
 
 def test_start_browser():
@@ -414,7 +413,9 @@ def test_start_browser():
     Tests the browser startup
     """
     with mock.patch("webbrowser.open") as open_browser:
-        vis_log = VisualLog(start_browser=True, refresh_time_s=0.05)
+        options = VisualLog.setup_options()
+        options.run.setup(app_mode="browser", refresh_time_s=0.05)
+        vis_log = VisualLog(options=options)
         with mock.patch.object(
             vis_log.default_builder.widget,
             "handle_event_list",
@@ -424,7 +425,7 @@ def test_start_browser():
         vis_log._start_app_or_browser(real_log=vis_log, url=vis_log.local_live_url)
         assert open_browser.called
     with mock.patch("webbrowser.open") as open_browser:
-        vis_log = VisualLog(start_browser=True, refresh_time_s=0.05)
+        vis_log = VisualLog(options=options)
         vis_log.run_server(test=True, show_urls=False)
         vis_log._start_app_or_browser(real_log=vis_log, url=vis_log.local_live_url)
         assert open_browser.called
@@ -432,13 +433,16 @@ def test_start_browser():
         scistag.common.SystemInfo.os_type.is_windows
         or os.environ.get("QT_TESTS", "0") == "1"
     ):
+        options = VisualLog.setup_options()
+        options.run.setup(app_mode="cute", refresh_time_s=0.05)
         with mock.patch("webbrowser.open") as open_browser:
-            vis_log = VisualLog(app="cute", refresh_time_s=0.05)
+            vis_log = VisualLog(options=options)
             vis_log.run_server(test=True, show_urls=False)
             assert not open_browser.called
+        options.run.app_mode = "unknown"
         with mock.patch("webbrowser.open") as open_browser:
             with pytest.raises(ValueError):
-                vis_log = VisualLog(app="unknownapp", refresh_time_s=0.05)
+                vis_log = VisualLog(options=options)
                 vis_log.run_server(test=True, show_urls=False)
 
 
@@ -447,3 +451,61 @@ def test_dependencies():
     Tests dependency handling
     """
     vl.add_file_dependency("test.md")  # not yet implemented
+
+
+def test_options():
+    """
+    Automatic option setup
+    """
+    tl = VisualLog(options="disk", debug=True)
+    assert tl.options.output.log_to_disk
+
+
+def test_continuous():
+    """
+    Tests continuous log
+    :return:
+    """
+    options = VisualLog.setup_options()
+    options.run.continuous = True
+
+    class MyLog(LogBuilder):
+        @cell
+        def head(self):
+            self.cache.inc("turns")
+            if self["turns"] == 2:
+                self.terminate()
+
+    tl = VisualLog(options=options)
+    tl.run(MyLog)
+    tl = VisualLog(options=options)
+    tl.run_server(MyLog, test=True)
+
+
+def test_live_urls():
+    """
+    Tests the url provision
+    """
+    options = VisualLog.setup_options()
+    tl = VisualLog(options=options)
+    assert tl.local_live_url is None
+    options = VisualLog.setup_options("server")
+    tl = VisualLog(options=options)
+    std_out = io.StringIO()
+    with redirect_stdout(std_out):
+        tl.run_server(test=True)
+        assert tl.local_live_url is not None
+
+
+def test_prepare():
+    """
+    Tests prepare_builder explicitly
+    """
+    options = VisualLog.setup_options()
+    tl = VisualLog(options=options)
+    with pytest.raises(TypeError):
+        tl.prepare_builder(
+            builder=str, page_session=tl.default_page, params={}, kwargs={}
+        )
+    tl._run_builder(builder=None)
+    tl.run(builder=None)

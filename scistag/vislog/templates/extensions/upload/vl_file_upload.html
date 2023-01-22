@@ -1,0 +1,22 @@
+{% if DEMO_MODE %}
+    <link rel="stylesheet" href="vl_file_upload.css">
+    <script src="vl_file_upload.js"></script>
+{% endif %}
+<div class="vl_file_drop_area" id="VL_WIDGET_NAME_DROP_AREA">
+    <form class="vl_upload_form">
+        <p class="vl_upload_info_line" align="center">UPLOAD INFO HERE</p>
+        <input type="file" class="vl_upload_file_input" id="VL_WIDGET_NAME" multiple
+               accept="image/*"
+               onchange='vlFileDropAreaHandleFilesForUpload(this, this.files)'
+               data-show_gallery="1"
+               data-max_gallery_items="9"
+               data-max_preview_size="500000"
+               data-max_file_count="20"
+               data-max_upload_size="1500000">
+        <label class="vl_upload_button" for="VL_WIDGET_NAME">Select files</label>
+    </form>
+    <progress id="VL_WIDGET_NAME_PROGRESS" max=100 value=0
+              style="width: 100%"></progress>
+    <div id="VL_WIDGET_NAME_GALLERY" class="vl_image_gallery"></div>
+</div>
+<script>vlSetupFileDropArea(document.getElementById('VL_WIDGET_NAME'))</script>

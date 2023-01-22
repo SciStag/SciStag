@@ -8,10 +8,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Union, Callable
 
 from scistag.vislog import BuilderExtension, LogBuilder
-from scistag.vislog.widgets.cell import Cell
+from scistag.vislog.widgets.cells import Cell
 
 if TYPE_CHECKING:
-    from scistag.vislog.widgets.cell import CellOnBuildCallback
+    from scistag.vislog.widgets.cells import CellOnBuildCallback
 
 
 class CellLogger(BuilderExtension):
@@ -39,6 +39,8 @@ class CellLogger(BuilderExtension):
         progressive: bool = False,
         interval_s: float | None = None,
         continuous: bool = False,
+        static: bool = False,
+        **kwargs,
     ) -> Cell:
         """
         Begins a new content cell to which you can add content with any logging
@@ -55,6 +57,9 @@ class CellLogger(BuilderExtension):
             continuous.
         :param continuous: Defines if the cell shall updated automatically with the
             interval defined.
+        :param static: Defines if the cell is static and does not need any container
+            when being stored in the html file.
+        :param kwargs: For additional parameters see :class:`Cell`
         :return: The content cell reference
         """
         cell = Cell(
@@ -62,6 +67,8 @@ class CellLogger(BuilderExtension):
             progressive=progressive,
             interval_s=interval_s,
             continuous=continuous,
+            static=static,
+            **kwargs,
         )
         return cell
 
@@ -70,8 +77,11 @@ class CellLogger(BuilderExtension):
         progressive: bool = False,
         interval_s: float | None = None,
         continuous: bool = False,
+        static: bool = False,
+        section: str | None = None,
         on_build: Union["CellOnBuildCallback", None] = None,
         _builder_method: Union[Callable, None] = None,
+        **kwargs,
     ) -> Cell:
         """
         Adds an empty content cell without filling it with content and returns it.
@@ -87,9 +97,13 @@ class CellLogger(BuilderExtension):
             continuous.
         :param continuous: Defines if the cell shall updated automatically with the
             interval defined.
+        :param static: Defines if the cell is static and does not need any container
+            when being stored in the html file.
+        :param section: The section's title
         :param on_build: The method to be called when ever the cell was invalidated
             or if the update mode is set to continuous.
         :param _builder_method: The object method to which this cell is attached
+        :param kwargs: For additional parameters see :class:`Cell`
         :return: The content cell reference.
         """
         cell = Cell(
@@ -97,8 +111,11 @@ class CellLogger(BuilderExtension):
             progressive=progressive,
             interval_s=interval_s,
             continuous=continuous,
+            static=static,
+            section=section,
             on_build=on_build,
             _builder_method=_builder_method,
+            **kwargs,
         )
         cell.leave()
         return cell
@@ -132,3 +149,13 @@ class CellLogger(BuilderExtension):
         Returns if a cell with given name does exist
         """
         return item in self.cells
+
+    def invalidate(self, name: str):
+        """
+        Invalidates the cell with given name
+
+        :param name: The cell's name
+        """
+        if name not in self.cells:
+            raise KeyError(f"Unknown cell {name}")
+        self.cells[name].invalidate()

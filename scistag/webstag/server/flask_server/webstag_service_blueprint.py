@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from flask import Blueprint, request, Response
 
-from scistag.webstag.server import WebRequest, WebResponse
+from scistag.webstag.server import WebRequest, WebResponse, FileAttachment
 
 if TYPE_CHECKING:
     from scistag.webstag.server.web_stag_service import WebStagService
@@ -39,11 +39,25 @@ class WebStagServiceBlueprint(Blueprint):
         :return: The Flask response
         """
         cr = request
+
+        # collect all attached files
+        files = []
+        for key, cur_file in request.files.items():
+            data = cur_file.stream.read()
+            filename = cur_file.filename
+            content_type = cur_file.content_type
+            attachment = FileAttachment(
+                data=data, mimetype=content_type, filename=filename
+            )
+            files.append(attachment)
+
         fw_request = WebRequest(
             path=path,
             method=cr.method,
             headers=dict(cr.headers),
             body=request.data,
+            files=files,
+            form=dict(request.form),
             parameters=dict(cr.args),
             relative_path=path,
             base_url=cr.base_url,
@@ -56,7 +70,9 @@ class WebStagServiceBlueprint(Blueprint):
             host=cr.host,
         )
         w_response: WebResponse = self.service.handle_unified_request(fw_request)
-        r = Response(w_response.body, status=w_response.status)
+        r = Response(
+            w_response.body, status=w_response.status, mimetype=w_response.mimetype
+        )
         headers = w_response.headers if w_response.headers is not None else {}
         if not w_response.cache:
             r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"

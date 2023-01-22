@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from io import BytesIO
 import json
 import os
 from typing import Union
@@ -71,7 +72,9 @@ class FileStag:
         return path
 
     @classmethod
-    def load(cls, source: FileSourceTypes, **params) -> bytes | None:
+    def load(
+        cls, source: FileSourceTypes, as_stream: bool = False, **params
+    ) -> bytes | BytesIO | None:
         """
         Loads a file by filename from a local file, a registered web archive
         or the web
@@ -82,20 +85,32 @@ class FileStag:
             as ``timeout_s`` or ``max_cache_age`` for files from the web.
         :return: The data if the file could be found
         """
+
+        def bundle(result) -> bytes | BytesIO | None:
+            """
+            Bundles the result as stream if desired
+
+            :param result: The original result
+            :return: The result in the desired output format
+            """
+            if result is not None and as_stream:
+                return BytesIO(result)
+            return result
+
         if isinstance(source, bytes):  # pass through
-            return source
+            return bundle(source)
         source = cls.resolve_name(source)
         from .shared_archive import SharedArchive
         from scistag.filestag import ZIP_SOURCE_PROTOCOL
 
         if source.startswith(ZIP_SOURCE_PROTOCOL):
-            return SharedArchive.load_file(source)
+            return bundle(SharedArchive.load_file(source))
         if source.startswith(HTTP_PROTOCOL_URL_HEADER) or source.startswith(
             HTTPS_PROTOCOL_URL_HEADER
         ):
-            return web_fetch(source, **params)
+            return bundle(web_fetch(source, **params))
         if os.path.exists(source):
-            return open(source, "rb").read()
+            return bundle(open(source, "rb").read())
         else:
             return None
 

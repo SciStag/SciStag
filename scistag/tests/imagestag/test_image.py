@@ -231,7 +231,7 @@ def test_hsv(stag_image_data):
     bands = image.split()
     fig = Figure(cols=2, rows=2)
     bands = [org_image, *bands]
-    band_names = ["Original"] + image.pixel_format.get_full_band_names()
+    band_names = ["Original"] + image.pixel_format.full_band_names
     for plot, band, band_name in zip(fig, bands, band_names):
         plot.add_image(band, size_ratio=0.5)
     vl.test.assert_figure("HSV", fig, hash_val="d14022d9f1d948479a81aad7577b7be0")
@@ -307,9 +307,9 @@ def test_conversion(stag_image_data):
     assert len(split_channels) == 3
     assert split_channels[0][0][0] == 255
     assert split_channels[2][0][0] == 0
-    assert image.get_band_names() == ["R", "G", "B"]
+    assert image.band_names == ["R", "G", "B"]
     gray_image = image.copy().convert(PixelFormat.GRAY)
-    assert gray_image.get_band_names() == ["G"]
+    assert gray_image.band_names == ["G"]
     split_channels = gray_image.split()
     assert len(split_channels) == 1
     assert split_channels[0][0][0] == 76
@@ -365,7 +365,7 @@ def test_bgr_support():
         framework=ImsFramework.CV,
     )
     assert image.is_bgr()
-    assert image.get_band_names() == ["B", "G", "R"]
+    assert image.band_names == ["B", "G", "R"]
     assert image.get_size() == (5, 5)
     assert image.get_size_as_size().width == 5
     image = Image(
@@ -374,13 +374,13 @@ def test_bgr_support():
         framework=ImsFramework.RAW,
     )
     assert not image.is_bgr()
-    assert image.get_band_names() == ["R", "G", "B"]
+    assert image.band_names == ["R", "G", "B"]
     image = Image(
         source=np.zeros((5, 5, 3), dtype=np.uint8),
         pixel_format=PixelFormat.BGR,
         framework=ImsFramework.RAW,
     )
-    assert image.get_band_names() == ["R", "G", "B"]
+    assert image.band_names == ["R", "G", "B"]
     assert image.resized((8, 8)).get_size() == (8, 8)
     # cv2 resize
     image.resize((10, 10))

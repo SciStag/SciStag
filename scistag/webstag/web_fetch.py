@@ -13,6 +13,8 @@ import os
 import tempfile
 import shutil
 
+import scistag
+
 FROM_CACHE = "fromCache"
 "Defines if the file was loaded from the local disk cache"
 HEADERS = "headers"
@@ -235,8 +237,12 @@ def web_fetch(
                 out_response_details[FROM_CACHE] = False
     import requests
 
+    headers = {
+        "User-Agent": f"SciStag/{scistag.__version__} (https://github.com/scistag/scistag/)"
+    }
+
     try:
-        response = requests.get(url=url, timeout=timeout_s)
+        response = requests.get(url=url, timeout=timeout_s, headers=headers)
     except requests.exceptions.RequestException:
         return None
     if all_codes or response.status_code != 200:

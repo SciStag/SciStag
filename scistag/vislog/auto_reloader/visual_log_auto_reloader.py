@@ -21,6 +21,7 @@ from typing import Union, TYPE_CHECKING
 from scistag.common import StagLock
 from scistag.filestag import FileStag
 from scistag.vislog import VisualLog
+from scistag.vislog.options import LogOptions
 
 if TYPE_CHECKING:
     from scistag.common.cache import Cache
@@ -89,12 +90,7 @@ class VisualLogAutoReloader:
             low as the update script will detect there were no changes.
         :param params: Additional creation parameters. See :class:`VisualLog`.
         """
-        log_to_disk = params.pop("log_to_disk", False)
-        cls.main_log = VisualLog(
-            title=cls._embedded_log._title,
-            log_to_disk=log_to_disk,
-            refresh_time_s=refresh_time_s,
-        )
+        cls.main_log = VisualLog(options=cls._embedded_log.options)
 
     @classmethod
     def set_log(cls, log):
@@ -144,12 +140,8 @@ class VisualLogAutoReloader:
     def start(
         cls,
         log: VisualLog,
-        host_name: str | None = "127.0.0.1",
-        port: int | tuple[int, int] = 8010,
-        public_ips: str | list[str] | None = None,
-        url_prefix: str = "",
+        server: bool = False,
         check_time_s: float | None = None,
-        server_params: dict | None = None,
         _stack_level=1,
     ):
         """
@@ -160,37 +152,17 @@ class VisualLogAutoReloader:
             The log which shall be visualized in the live view. Due to the
             restarting/module reloading approach this log will be re-created
             each start and thus the object updated.
-        :param host_name: The host name at which the log shall be hosted.
-
-            Localhost by default.
-
-            If None is passed no server will be started and no interaction
-            is possible except via the console.
-        :param port: The port ot listen at or a port range to select the
-            first port within. 8010 by default. 0 for a random port.
-        :param public_ips: If you run the service on a virtual machine in
-            the cloud you can pass its public IPs to log the correct
-            connection URls to the console.
-
-            If you pass "auto" as ip the public IP will be auto-detected via
-            ipify.
-        :param url_prefix: The url prefix at which the service shall be hosted.
-
-            "" = At http://server
-            "log/" = At http://server/log
-        :param server_params: Additional server parameters to be passed into
-            :meth:`VisualLivelog.run_server` server main loop.
+        :param server: Defines if the auto-reloader shall be started in server mode
         :param check_time_s: The time interval at which files are checked
             for modification.
         :param _stack_level: The (relative) stack level of the file which
             shall be auto_reloaded.
         """
         VisualLogAutoReloader.set_log(log)
-        if server_params is None:
-            server_params = dict()
+
+        server_params = dict()
         if check_time_s is None:
             check_time_s = 0.05
-        host_name = server_params.pop("host_name", host_name)
         if cls._reloading:
             return
         cls._reloading = True
@@ -208,16 +180,10 @@ class VisualLogAutoReloader:
         cls.setup()
         VisualLogAutoReloader.set_log(log)
         cls.update_content()
-        mt = server_params.pop("mt", True)
-        if host_name is not None:
+        if server is not None:
             cls.main_log._testing = cls.testing
+            cls.main_log.options.run.wait = False
             cls.main_log.run_server(
-                host_name=host_name,
-                port=port,
-                public_ips=public_ips,
-                url_prefix=url_prefix,
-                wait=False,
-                mt=mt,
                 **server_params,
             )
             with cls._access_lock:

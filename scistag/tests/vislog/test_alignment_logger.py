@@ -23,4 +23,12 @@ def test_alignment():
     with pytest.raises(ValueError):
         with vl.align("sausage"):
             vl.log("sausage")
-    vl.test.assert_cp_diff("1a3db2a3308e2426c9a4a98bc0425f0a")
+    with vl.align.block_left:
+        vl.table(["Table on the left", 123, 456])
+    with vl.align.block_right:
+        vl.table(["Table on the right", 123, 456])
+    with vl.align.block_center:
+        vl.table(["Table centered", 123, 456])
+    with vl.align.center:
+        vl.text("*" * 150)
+    vl.test.assert_cp_diff("7717b8a9e0bb830f71eeff87bd62ea07")

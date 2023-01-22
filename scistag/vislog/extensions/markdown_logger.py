@@ -22,9 +22,15 @@ class MarkdownLogger(BuilderExtension):
         """
         super().__init__(builder)
         self.add = self.__call__
+        self.log_html_only: bool = False
+        """If defined no markdown will be written temporarily but the HTML output
+        will be used instead"""
 
     def __call__(
-        self, text: str, exclude_targets: set[str] | None = None
+        self,
+        text: str,
+        exclude_targets: set[str] | None = None,
+        br=True,
     ) -> LogBuilder:
         """
         Adds a markdown section.
@@ -33,6 +39,7 @@ class MarkdownLogger(BuilderExtension):
 
         :param text: The text to parse
         :param exclude_targets: Defines the target to exclude
+        :param br: Defines if a linebreak shall be inserted
         :return: The builder
         """
         lines = text.split("\n")
@@ -49,15 +56,48 @@ class MarkdownLogger(BuilderExtension):
         import markdown
         from markdown.extensions.tables import TableExtension
 
-        parsed = markdown.markdown(text, extensions=["tables"])
+        parsed = self.quick_parse(text)
+        if parsed is None:
+            parsed = markdown.markdown(text, extensions=["tables"])
         if MD not in exclude_targets:
-            self.builder.add_md(text + "\n")
+            self.builder.add_md(text, br=br)
         if HTML not in exclude_targets:
+            if parsed.startswith("<p>") and parsed.endswith("</p>"):
+                parsed = parsed[3:-4]
             self.builder.add_html(parsed + "\n")
         if TXT not in exclude_targets:
-            self.builder.add_txt(text)
+            self.builder.add_txt(text, br=br)
         self.builder.handle_modified()
         return self.builder
+
+    @staticmethod
+    def quick_parse(text: str):
+        """
+        Tries to parse simple markdown
+
+        :param text: The text to be parsed
+        :return: The result if simple parsing was possible
+        """
+        parsed = None
+        spaceless = text.strip(" ")
+        if len(text) < 80 and "\n" not in text:
+            if spaceless.isalnum():  # just text
+                parsed = text
+            elif (  # bold
+                len(text)
+                and text.startswith("**")
+                and text.endswith("**")
+                and text[2:-2].strip(" ").isalnum()
+            ):
+                parsed = f"<strong>{text[2:-2]}</strong>"
+        elif (  # italic
+            len(text)
+            and text.startswith("*")
+            and text.endswith("*")
+            and text[1:-1].strip(" ").isalnum()
+        ):
+            parsed = f"<strong>{text[2:-2]}</strong>"
+        return parsed
 
     def embed(self, source: FileSourceTypes, encoding="utf-8") -> LogBuilder:
         """

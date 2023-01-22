@@ -20,13 +20,13 @@ class BuilderExtension:
         """
         The builder we are adding our content to
         """
-        self.target_log = self.builder.target_log
-        """
-        The log object
-        """
         self.page_session = builder.page_session
         """
         Defines the target page which holds the page content for each data type
+        """
+        self.options = builder.options
+        """
+        Reference the builder's options
         """
 
     def add_dependency(self, filename: str):
