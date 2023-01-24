@@ -12,13 +12,14 @@ from scistag.imagestag import Image, ImsFramework, Colors, PixelFormat, Canvas
 import pytest
 
 from scistag.common.test_data import TestConstants
-from scistag.emojistag import render_emoji
+from scistag.emojistag import render_emoji, EmojiRenderer, EmojiDb
 from scistag.plotstag import Figure
 
 from . import vl
 from . import skip_imagestag
 
 from .image_tests_common import stag_image_data
+from ...vislog import VisualLog
 
 
 @pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
@@ -429,3 +430,41 @@ def test_compare(stag_image_data):
     assert stag == stag_two
     emoji = render_emoji("deer", height=128)
     assert not emoji == stag
+
+
+@pytest.mark.skipif(skip_imagestag, reason="ImageStag tests disabled")
+def test_background_add():
+    """
+    Tests adding background to the image
+    """
+    vl.test.begin("Testing automatic background insertion")
+    emoji = EmojiDb.find_emojis_by_name("*globe*")[0]
+    image = EmojiRenderer.render_emoji(emoji.sequence, bg_color="#000000")
+    image_rgba = EmojiRenderer.render_emoji(emoji.sequence)
+    gray = image.copy().convert(PixelFormat.GRAY)
+    rgba = gray.copy().convert("RGBA", fg_color="#FF00FF")
+    vl.test.assert_image("rgba", rgba, hash_val="ef073c6ef368408229b9c7fc5332f4f3")
+    red_background = rgba.copy().add_background(color="#999999")
+    vl.test.assert_image(
+        "red_background", red_background, hash_val="e242199ab232201a26850f400887ea64"
+    )
+    # test checkerboard
+    checkerboard = image_rgba.copy().add_background("cb", tile_size=8)
+    vl.test.assert_image(
+        "checkerboard", checkerboard, hash_val="2e88d167e74bdba0f60bb3c5af0784ec"
+    )
+    checkerboard_g = image_rgba.copy().add_background("graywhite", tile_size=16)
+    vl.test.assert_image(
+        "checkerboard_g", checkerboard_g, hash_val="7e94e08c711ad81e5e66403a6e5a4294"
+    )
+    checkerboard_neon = image_rgba.copy().add_background("neon", tile_size=8)
+    vl.test.assert_image(
+        "cb_neon", checkerboard_neon, hash_val="ce47500b0d032c6a59e14050cc1b795f"
+    )
+    pink = image_rgba.copy().add_background("pink", tile_size=8)
+    vl.test.assert_image("pink", pink, hash_val="618d0409c3d66fd1f0203342962939de")
+    black = image_rgba.copy().add_background("black", tile_size=8)
+    vl.test.assert_image("black", black, hash_val="0e2b2b6685b6dae7ae2aad2a9dfe0b71")
+    white = image_rgba.copy().add_background("white", tile_size=8)
+    vl.test.assert_image("white", white, hash_val="ad15c56f4f2ccffa65a657cf9f03224f")
+    vl.flush()

@@ -585,7 +585,10 @@ class Image(ImageBase):
         )
 
     def convert(
-        self, pixel_format: PixelFormat | str, bg_fill: Union["Color", None] = None
+        self,
+        pixel_format: PixelFormat | str,
+        bg_fill: ColorTypes | None = None,
+        fg_color: ColorTypes | None = None,
     ) -> Image:
         """
         Converts the image's pixel format to another one for example from
@@ -597,6 +600,9 @@ class Image(ImageBase):
         :param pixel_format: The new pixel format
         :param bg_fill: For alpha-transparent images only: The color of the
             background of the new non-transparent image.
+        :param fg_color: If provided and an image is convert from Grayscale to RGBA
+            the gray channel will be interpreted as alpha-channel and the RGB channels
+            will be filled with the color provided.
         :return: Self
         """
         pixel_format = PixelFormat(pixel_format)
@@ -608,7 +614,19 @@ class Image(ImageBase):
             raise NotImplementedError(
                 "The conversion to this format is " "currently not supported"
             )
-        if pixel_format == PixelFormat.RGB and original.mode == "RGBA":
+        if bg_fill is not None:
+            bg_fill = Color(bg_fill)
+        if (  # first convert to RGB or RGBA if desired
+            (pixel_format == PixelFormat.RGBA or pixel_format == PixelFormat.RGB)
+            and self.pixel_format == PixelFormat.GRAY
+            and fg_color is not None
+        ):
+            self.convert_gray_to_rgba(fg_color)
+            self.convert_to_pil()
+            original = self._pil_handle
+        if (
+            pixel_format == PixelFormat.RGB or bg_fill is not None
+        ) and original.mode == "RGBA":
             new_image = Image(
                 pixel_format=PixelFormat.RGB, size=self.get_size(), bg_color=bg_fill
             )
@@ -621,6 +639,30 @@ class Image(ImageBase):
         self.__dict__["framework"] = ImsFramework.PIL
         self.__dict__["pixel_format"] = pixel_format
         self.__dict__["_pixel_data"] = None
+        return self
+
+    def convert_gray_to_rgba(self, fg_color):
+        """
+        Converts a grayscale image to an RGBA image.
+
+        The previous gray channel will be used as alpha channel and the color channel
+        filled with the color defined.
+
+        :param fg_color: The foreground color
+        :return: Self
+        """
+        if self.pixel_format != PixelFormat.GRAY:
+            raise ValueError("Function only supported for grayscale images")
+        fg_color = Color(fg_color)
+        r, g, b = fg_color.to_int_rgb()
+        data = np.zeros((self.height, self.width, 4), dtype=np.uint8)
+        gray = self.get_pixels_gray()
+        data[:, :, 0:3] = (r, g, b)
+        data[:, :, 3] = gray
+        self.__dict__["framework"] = ImsFramework.RAW
+        self.__dict__["pixel_format"] = PixelFormat.RGBA
+        self.__dict__["_pixel_data"] = data
+        self.__dict__["_pil_handle"] = None
         return self
 
     def convert_to_raw(self) -> Image:
@@ -800,6 +842,38 @@ class Image(ImageBase):
         data["data"] = self.to_pil().tobytes()
         return data
 
+    @staticmethod
+    def from_array(
+        data: np.ndarray,
+        min_val: int | float = None,
+        max_val: int | float = None,
+        normalize: bool = True,
+        cmap: str = "gray",
+    ):
+        """
+        Creates an image from an array
+
+        :param data: The image data as numpy array
+        :param min_val: The minimum value. auto-detect by default
+        :param max_val: The maximum value. auto-detect by default
+        :param normalize: Defines if the values shall be normalized to a range
+            from 0..255 for integer or 0..1 for floating point values. If this flag
+            is set to False min_val and max_val are defined with 0 and 255 for integer
+            and 0.0 and 1.0 for floating point inputs.
+        :param cmap: The color map to apply. gray by default
+        :return: The image instance
+        """
+        from .filters import ColorMapFilter
+
+        if len(data.shape) == 2:
+            cmap_filter = ColorMapFilter(
+                min_val=min_val, max_val=max_val, color_map=cmap, normalize=normalize
+            )
+            result = cmap_filter.filter(data)
+            return Image(result)
+        else:
+            return Image(data)
+
     def to_cv2(self) -> np.ndarray:
         """
         Converts the pixel data from the current format to it's counter
@@ -844,6 +918,73 @@ class Image(ImageBase):
         from scistag.imagestag.canvas import Canvas
 
         return Canvas(target_image=self)
+
+    def add_background(
+        self,
+        style: Literal["color", "cb", "graywhite", "neon", "pink", "white", "black"]
+        | None = None,
+        color: ColorTypes | None = None,
+        tile_size: int | None = None,
+    ):
+        """
+        Adds a background to an image with an alpha-transparent region.
+
+        Converts the image to the PILLOW format if required.
+
+        :param style: The background style such as:
+            * "color": To fill the background with a single color (default if a color
+                is passed as well)
+            " "cb" / "graywhite": Fill the background with a gray-white checkerboard
+            * "neon": Fill the background with a neon checkerboard
+            * "pink"/"white"/"black": Fill the background with the specified color
+        :param color: The background color
+        :param tile_size: The tile_size size in case of a pattern. None = default
+        :return: Self
+        """
+
+        self.convert_to_pil()  # ensure pil
+
+        if self.pixel_format != PixelFormat.RGBA:
+            raise ValueError(
+                "The image needs to be in the RGBA format to be converted."
+                "See Image.convert()."
+            )
+
+        if style == "black":
+            color = Colors.BLACK
+        elif style == "white":
+            color = Colors.WHITE
+        elif style == "pink":
+            color = Colors.MAGENTA
+
+        canvas = None
+        if style in ["graywhite", "cb", "neon"]:  # checkerboard
+            if style == "cb":
+                style = "graywhite"
+            from scistag.plotstag.layers.image_layer import ImageLayer
+            from scistag.imagestag.canvas import Canvas
+
+            optional = {}
+            if tile_size is not None:
+                optional["tile_size"] = tile_size
+            pattern = ImageLayer.get_cb_pattern(style=style, **optional)
+            canvas = Canvas(self.size, pixel_format="RGB")
+            canvas.pattern(pattern, ((0, 0), (self.width, self.height)))
+            canvas.draw_image(self, pos=(0, 0))
+        elif color is not None:  # insert background color if desired
+            bg_color = Color(color)
+            from scistag.imagestag.canvas import Canvas
+
+            canvas = Canvas(size=self.get_size(), default_color=bg_color)
+            canvas.draw_image(self, pos=(0, 0)).to_image()
+        else:
+            raise ValueError(f"Unknown style {style}")
+        if canvas is not None:
+            image = canvas.to_image()
+            self.__dict__["_pil_handle"] = image._pil_handle
+            self.__dict__["pixel_format"] = image.pixel_format
+
+        return self
 
     def save(
         self,

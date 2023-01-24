@@ -1,0 +1,15 @@
+{% if DEMO_MODE %}
+    <link rel="stylesheet" href="vl_comparator.css">
+    <script src="vl_comparator.js"></script>
+{% endif %}
+<div class="wrap" style=".wrap { position: relative; }" id="VL_WIDGET_NAME">
+    <div class="vl-comp-container" style="width:350px; height:250px">
+        <div class="vl-comp-content">
+            CONTENT
+        </div>
+        <div class="vl-comp-content vl-comp-overlay" id="VL_WIDGET_NAME_overlay">
+            CONTENT
+        </div>
+    </div>
+</div>
+<script>vlSetupComparator(document.getElementById("VL_WIDGET_NAME_overlay"))</script>

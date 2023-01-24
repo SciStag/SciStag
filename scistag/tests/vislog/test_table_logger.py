@@ -83,7 +83,7 @@ def test_table_creation():
         row.add("456")
         row.add(lambda: vl.log.info("789", br=False))
         row.add(MDCode("**Markdown**"))
-    vl.test.assert_cp_diff(hash_val="f51afd075de87c63270f43d6a7353893")
+    vl.test.assert_cp_diff(hash_val="9c684a8191fb92e0edea4d36100532d3")
 
 
 def test_content_logging():

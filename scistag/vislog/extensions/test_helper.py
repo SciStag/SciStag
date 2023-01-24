@@ -49,6 +49,7 @@ class TestHelper(BuilderExtension):
         figure: plt.Figure | plt.Axes | Figure | Plot,
         hash_val: str,
         alt: str | None = None,
+        stack_level: int = 2,
     ):
         """
         Adds a figure to the log and verifies its content to a checksum
@@ -60,6 +61,7 @@ class TestHelper(BuilderExtension):
         :param hash_val: The hash value to compare to (a checksum of all
             pixels). The correct will be logged via an assertion upon failure
             and can then be copies & pasted.
+        :param stack_level: The stack level distance to the original, calling function
         """
         image_data = io.BytesIO()
         self.builder.figure(
@@ -67,7 +69,7 @@ class TestHelper(BuilderExtension):
         )
         assert len(image_data.getvalue()) > 0
         result_hash_val = hashlib.md5(image_data.getvalue()).hexdigest()
-        self.hash_check_log(result_hash_val, hash_val)
+        self.hash_check_log(result_hash_val, hash_val, stack_level=stack_level + 1)
 
     def assert_image(
         self,
@@ -76,6 +78,7 @@ class TestHelper(BuilderExtension):
         hash_val: str,
         scaling: float = 1.0,
         alt: str | None = None,
+        stack_level: int = 2,
     ):
         """
         Assert an image object and verifies it's hash value matches the object's
@@ -89,11 +92,12 @@ class TestHelper(BuilderExtension):
         :param scaling: The factor by which the image shall be scaled
         :param alt: An alternative text to display if the image can
             not be displayed.
+        :param stack_level: The stack level distance to the original, calling function
         """
         result_hash_val = self.log_and_hash_image(
             name=name, data=source, scaling=scaling, alt=alt
         )
-        self.hash_check_log(result_hash_val, hash_val)
+        self.hash_check_log(result_hash_val, hash_val, stack_level=stack_level + 1)
 
     def log_and_hash_image(
         self,
@@ -244,6 +248,7 @@ class TestHelper(BuilderExtension):
         name: str,
         data: dict | list | str | Image | Figure | pd.DataFrame,
         hash_val: str | None = None,
+        stack_level: int = 2,
     ):
         """
         Asserts a text for validity and logs it
@@ -252,14 +257,19 @@ class TestHelper(BuilderExtension):
         :param data: The data
         :param hash_val: The assumed hash value (not required for data w/
             reference)
+        :param stack_level: The stack level distance to the original, calling function
         """
         # image
         if isinstance(data, Image):
-            self.assert_image(name, data, hash_val=hash_val)
+            self.assert_image(
+                name, data, hash_val=hash_val, stack_level=stack_level + 1
+            )
             return
         # figure
         if isinstance(data, Figure):
-            self.assert_figure(name, data, hash_val=hash_val)
+            self.assert_figure(
+                name, data, hash_val=hash_val, stack_level=stack_level + 1
+            )
             return
         # pandas data frame
         if isinstance(data, pd.DataFrame):
@@ -309,7 +319,11 @@ class TestHelper(BuilderExtension):
         return None
 
     def hash_check_log(
-        self, value: str, assumed: str, target: LogBuilder | None = None
+        self,
+        value: str,
+        assumed: str,
+        target: LogBuilder | None = None,
+        stack_level: int = 3,
     ):
         """
         Verifies a hash and adds the outcome of a hash check to the output
@@ -317,10 +331,13 @@ class TestHelper(BuilderExtension):
         :param value: The hash value
         :param assumed: The assumed value
         :param target: Defines the LogBuilder into which the results shall be inserted
+        :param stack_level: The stack level distance to the original, calling function
         """
         replaced = None
         if value != assumed:
-            replaced = self.replace_place_holder(new_hash=value, stack_level=3)
+            replaced = self.replace_place_holder(
+                new_hash=value, stack_level=stack_level
+            )
         if value != assumed and replaced is None:
             self.builder.log(
                 f"⚠ Hash validation failed!\nValue: " f"{value}\nAssumed: {assumed}",
@@ -359,14 +376,22 @@ class TestHelper(BuilderExtension):
         source_code = source_code.split(lb)
         place_holders = ['"123"', '"???"', "'123'", "'???'"]
         code_change = None
-        source_line = source_code[line]
-        for cur_ph in place_holders:
-            if cur_ph in source_line:
-                new_code = source_line.replace(cur_ph, f'"{new_hash}"')
-                code_change = (
-                    source_code[line].lstrip(" \t") + " => " + new_code.lstrip(" \t")
-                )
-                source_code[line] = new_code
+        for off in range(3):
+            eff_line = line + off
+            if not eff_line < len(source_code):
+                break
+            source_line = source_code[eff_line]
+            for cur_ph in place_holders:
+                if cur_ph in source_line:
+                    new_code = source_line.replace(cur_ph, f'"{new_hash}"')
+                    code_change = (
+                        source_code[line].lstrip(" \t")
+                        + " => "
+                        + new_code.lstrip(" \t")
+                    )
+                    source_code[eff_line] = new_code
+                    break
+            if code_change is not None:
                 break
         if code_change is not None:
             source_code = lb.join(source_code)

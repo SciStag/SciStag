@@ -145,6 +145,7 @@ class ImageLogger(BuilderExtension):
             if not isinstance(source, Image):
                 source = Image(source)
             source = source.resized_ext(factor=scaling, max_size=max_size)
+        if isinstance(source, Image):
             size_definition = (
                 f" width={int(round(source.width * optical_scaling))} "
                 f"height={int(round(source.height * optical_scaling))}"

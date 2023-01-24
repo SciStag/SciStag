@@ -40,7 +40,7 @@ class LogElement:
     def __init__(
         self,
         name: str,
-        output_formats: list[str],
+        output_formats: set[str],
         parent: LogElement | None = None,
     ):
         """

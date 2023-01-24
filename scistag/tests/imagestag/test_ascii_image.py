@@ -34,7 +34,7 @@ def test_ascii_gray():
     )
     gray_image_center.convert()
     value = str(gray_image_center)
-    assert len(value) == 4839
+    assert len(value) == 4597
     vl.test.checkpoint("logging ascii")
     vl.log(color_img)
     vl.log(color_img_g)
@@ -42,4 +42,4 @@ def test_ascii_gray():
     vl.log(gray_image)
     vl.log(gray_image_center)
     vl.flush()
-    vl.test.assert_cp_diff("39b8bbdc38f86d609689b8e9a0587ef9")
+    vl.test.assert_cp_diff("75408f0187e697a69d0e4f214be063fb")

@@ -1,7 +1,7 @@
 """
 Defines the module for Widget extensions for VisualLog
 """
-
+from .comparison import LComparison
 from .event import LEvent
 from .base_events import LValueChangedEvent
 from .log_widget import LWidget
@@ -21,4 +21,5 @@ __all__ = [
     "LValueChangedEvent",
     "LFileUpload",
     "LFileUploadEvent",
+    "LComparison",
 ]

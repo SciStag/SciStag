@@ -57,6 +57,7 @@ if TYPE_CHECKING:
     from .extensions.basic_logger import BasicLogger
     from .extensions.build_logger import BuildLogger
     from .extensions.emoji_logger import EmojiLogger
+    from .extensions.snippet_extension import SnippetExtension
     from .extensions.service_extension import (
         LogServiceExtension,
         PublishingInfo,
@@ -153,6 +154,10 @@ class LogBuilder:
         """
         Helper class for adding emojis to the log
         """
+        self._snippet: Union["SnippetExtension", None] = None
+        """
+        Helper class for recording and replaying log output
+        """
         self._log: Union["BasicLogger", None] = None
         """
         Provides methods for classical logging where you can flag each entry with
@@ -212,26 +217,19 @@ class LogBuilder:
 
         # add upload widget extension
         path = FilePath.dirname(__file__)
-        self.publish(
-            "visual_log.css",
-            path + "/css/visual_log.css",
-        )
-        self.publish(
-            "vl_file_upload.css",
-            path + "/templates/extensions/upload/vl_file_upload.css",
-        )
-        self.publish(
-            "vl_file_upload.js",
-            path + "/templates/extensions/upload/vl_file_upload.js",
-        )
-        self.publish(
-            "vl_live_view.js",
-            path + "/templates/liveLog/vl_live_view.js",
-        )
+        ext_path = path + "/templates/extensions/"
+        self.publish("visual_log.css", path + "/css/visual_log.css")
         self.service.register_css("VlBaseCss", "visual_log.css")
-        self.service.register_css("VlUploadWidget", "vl_file_upload.css")
+        self.publish("vl_live_view.js", path + "/templates/liveLog/vl_live_view.js")
         self.service.register_js("VlLiveView", "vl_live_view.js")
+        self.publish("vl_file_upload.css", ext_path + "upload/vl_file_upload.css")
+        self.publish("vl_file_upload.js", ext_path + "upload/vl_file_upload.js")
+        self.service.register_css("VlUploadWidget", "vl_file_upload.css")
         self.service.register_js("VlUploadWidget", "vl_file_upload.js")
+        self.publish("vl_comparator.css", ext_path + "comparator/vl_comparator.css")
+        self.publish("vl_comparator.js", ext_path + "comparator/vl_comparator.js")
+        self.service.register_css("VlComparatorWidget", "vl_comparator.css")
+        self.service.register_js("VlComparatorWidget", "vl_comparator.js")
 
         """The website's title"""
         self._provide_live_view()
@@ -546,6 +544,7 @@ class LogBuilder:
                 self.md(str(content), br=br)
                 return self
         self.text(str(content), br=br)
+        return self
 
     def title(self, text: str = "") -> Union[LogBuilder, ElementContext]:
         """
@@ -773,6 +772,21 @@ class LogBuilder:
         if self._emoji is None:
             self._emoji = EmojiLogger(self)
         return self._emoji
+
+    @property
+    def snippet(self):
+        """
+        Provides methods to record elements added to the log into an isolated buffer
+        and to "replay" (insert) them at some later point.
+
+        This can for example be used to prepare a set of plots at one point all in one
+        go and to insert them at other locations at some later point.
+        """
+        from .extensions.snippet_extension import SnippetExtension
+
+        if self._snippet is None:
+            self._snippet = SnippetExtension(self)
+        return self._snippet
 
     @property
     def log(self) -> "BasicLogger":

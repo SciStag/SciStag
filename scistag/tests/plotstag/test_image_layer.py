@@ -106,9 +106,7 @@ def test_transparent_image():
     vl.test.begin("Plotting transparent images")
     stag_emoji = render_emoji(":deer:")
     image = Figure().add_plot().add_image(stag_emoji, size_ratio=1.0).render()
-    vl.test.assert_image(
-        "stag_plot_alpha_transparent", image, "9e35dbf69b9cb5f31e78379704339400"
-    )
+    vl.test.assert_image("stag_plot_alpha_transparent", image, "aec2b0c9b03cb4401e9674199b558722")
 
 
 @pytest.mark.skipif(skip_plotstag, reason="PlotStag tests disabled")
@@ -119,9 +117,9 @@ def test_checkerboards():
     vl.test.begin("Creating checkerboards")
     neon_layer = ImageLayer.get_cb_pattern(style="neon")
     vl.test.assert_image(
-        "Neon Checkerboard", neon_layer, hash_val="9eb30e84d9b2019d925d12e4f84a4e34"
+        "Neon Checkerboard", neon_layer, hash_val="4fa4568edb5e48368210525854ff2133"
     )
     gray_layer = ImageLayer.get_cb_pattern(style="graywhite")
     vl.test.assert_image(
-        "Gray Checkerboard", gray_layer, hash_val="e8a1fcc3c45e33f2370ca404409c13c6"
+        "Gray Checkerboard", gray_layer, hash_val="511a7ebb2b5cbb0a362920c36ccc2891"
     )
