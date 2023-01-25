@@ -236,6 +236,11 @@ class Image(ImageBase):
                     from scistag.imagestag.svg import SvgRenderer
 
                     max_width = 1280 if target_size is None else target_size.width
+                    if not SvgRenderer.available():
+                        raise ValueError(
+                            "CairoSVG not installed or not found - can"
+                            " not render SVGs"
+                        )
                     rendered_image = SvgRenderer.render(
                         value, output_width=max_width, bg_color=bg_color
                     )

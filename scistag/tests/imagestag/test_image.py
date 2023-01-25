@@ -19,6 +19,7 @@ from . import vl
 from . import skip_imagestag
 
 from .image_tests_common import stag_image_data
+from ...imagestag.svg import SvgRenderer
 from ...vislog import VisualLog
 
 
@@ -484,14 +485,15 @@ def test_svg_loading():
     """
     Tests the loading and rendering of SVGs
     """
-    seq = EmojiDb.find_emojis_by_name("deer")[0].sequence
-    globe_svg = EmojiDb.get_svg(seq)
-    image_from_svg = Image(source=globe_svg, size=(190, 190))
-    vl.test.assert_image(
-        "deer_from_svg", image_from_svg, "e8abdbb81ad2004468940e34f7b4afc7"
-    )
-    with pytest.raises(ValueError):
-        image_from_svg = Image(source=b"1234", size=(190, 190))
+    if SvgRenderer.available():  # only test if available
+        seq = EmojiDb.find_emojis_by_name("deer")[0].sequence
+        globe_svg = EmojiDb.get_svg(seq)
+        image_from_svg = Image(source=globe_svg, size=(190, 190))
+        vl.test.assert_image(
+            "deer_from_svg", image_from_svg, "e8abdbb81ad2004468940e34f7b4afc7"
+        )
+        with pytest.raises(ValueError):
+            image_from_svg = Image(source=b"1234", size=(190, 190))
 
 
 def test_convert_gray():
