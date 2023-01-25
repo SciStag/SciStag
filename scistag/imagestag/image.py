@@ -96,7 +96,7 @@ class Image(ImageBase):
             size = Size2D(size) if not isinstance(size, Size2D) else size
         bg_color = Color(bg_color).to_int_rgb_auto() if bg_color is not None else None
 
-        if framework != PIL:
+        if self.framework != self.framework.PIL:
             if source is not None and size is not None:
                 raise ValueError(
                     "Source and size may only be specified at the same time for SVG "
@@ -108,7 +108,7 @@ class Image(ImageBase):
                 bg_color = Colors.BLACK
             if source is not None:
                 raise ValueError(
-                    "Can not pass a source and an image size of " "a new image"
+                    "Can not pass a source and an image size of a new image"
                 )
             if pixel_format is None:
                 pixel_format = PixelFormat.RGB
@@ -135,8 +135,6 @@ class Image(ImageBase):
             framework, source, self.pixel_format, **params
         )
         # ------------------------------------------
-        if self.framework is None:
-            self.framework = ImsFramework.PIL
         if self.framework == ImsFramework.PIL:
             self._init_as_pil(source, target_size=size)
         elif self.framework == ImsFramework.RAW:
@@ -234,7 +232,7 @@ class Image(ImageBase):
             if isinstance(source, bytes):
                 data = io.BytesIO(source)
                 value = data.getvalue()
-                if value.startswith(b"<svg"):
+                if value.startswith(b"<") and b"<svg" in value:
                     from scistag.imagestag.svg import SvgRenderer
 
                     max_width = 1280 if target_size is None else target_size.width
@@ -250,6 +248,8 @@ class Image(ImageBase):
                         )
                     self._pil_handle = PIL.Image.open(data)
             elif isinstance(source, np.ndarray):
+                if not source.dtype == np.uint8:
+                    raise ValueError("Unsupported array source")
                 self._pil_handle = PIL.Image.fromarray(source)
             elif isinstance(source, PIL.Image.Image):
                 self._pil_handle = source
@@ -745,6 +745,8 @@ class Image(ImageBase):
             :class:`PixelFormat`. By default the own format
         :return: The numpy array containing the pixels
         """
+        if desired_format is not None:
+            desired_format = PixelFormat(desired_format)
         if desired_format is None:
             desired_format = self.pixel_format
         if self.framework != ImsFramework.PIL:  # not PIL
@@ -866,6 +868,8 @@ class Image(ImageBase):
         from .filters import ColorMapFilter
 
         if len(data.shape) == 2:
+            if cmap == "gray" and not normalize and data.dtype == np.uint8:
+                return Image(data)
             cmap_filter = ColorMapFilter(
                 min_val=min_val, max_val=max_val, color_map=cmap, normalize=normalize
             )

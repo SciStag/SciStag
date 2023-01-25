@@ -8,7 +8,7 @@ from unittest import mock
 import numpy as np
 import pandas as pd
 
-from scistag.imagestag import Image, ImsFramework, Colors, PixelFormat, Canvas
+from scistag.imagestag import Image, ImsFramework, Colors, PixelFormat, Canvas, Size2D
 import pytest
 
 from scistag.common.test_data import TestConstants
@@ -66,6 +66,9 @@ def test_image_color_conversion(stag_image_data):
     """
     image = Image(stag_image_data)
     pixel_data = image.get_pixels()
+    rgb_pixels = image.copy().convert("RGBA")
+    reread_rgb_pixels = rgb_pixels.get_pixels(desired_format="RGB")
+    assert np.all(rgb_pixels.get_pixels_rgb() == reread_rgb_pixels)
     bgr_pixel_data = image.get_pixels_bgr()
     gray_pixel_data = image.get_pixels_gray()
     rgb_pixel = (144, 140, 137)
@@ -468,3 +471,85 @@ def test_background_add():
     white = image_rgba.copy().add_background("white", tile_size=8)
     vl.test.assert_image("white", white, hash_val="ad15c56f4f2ccffa65a657cf9f03224f")
     vl.flush()
+    # provoke errors
+    with pytest.raises(ValueError):
+        checkerboard_neon = image_rgba.copy().add_background("neonx", tile_size=8)
+    with pytest.raises(ValueError):
+        checkerboard_neon = (
+            image_rgba.copy().convert("G").add_background("neon", tile_size=8)
+        )
+
+
+def test_svg_loading():
+    """
+    Tests the loading and rendering of SVGs
+    """
+    seq = EmojiDb.find_emojis_by_name("deer")[0].sequence
+    globe_svg = EmojiDb.get_svg(seq)
+    image_from_svg = Image(source=globe_svg, size=(190, 190))
+    vl.test.assert_image(
+        "deer_from_svg", image_from_svg, "e8abdbb81ad2004468940e34f7b4afc7"
+    )
+    with pytest.raises(ValueError):
+        image_from_svg = Image(source=b"1234", size=(190, 190))
+
+
+def test_convert_gray():
+    """
+    Tests conversion functions
+    """
+    gray_image = Image(bg_color="#FF0000", size=(16, 16), pixel_format="RGBA")
+    assert str(gray_image) == "Image (PIL 16x16 RGBA)"
+    pix_sum = np.sum(gray_image.get_pixels_gray()).tolist()
+    assert pix_sum == 19456
+    with pytest.raises(ValueError):
+        gray_image.convert_gray_to_rgba("#FF0000")
+
+
+def test_compute_rescaled_size_from_max_size():
+    """
+    Tests the compute rescaled_size method
+    """
+    simple = Image(bg_color="#FF0000", size=(20, 10), pixel_format="RGBA")
+    assert (
+        simple.compute_rescaled_size_from_max_size(
+            max_size=(40, 20), org_size=Size2D(20, 10)
+        )[1]
+        == 20
+    )
+    assert (
+        simple.compute_rescaled_size_from_max_size(
+            max_size=Size2D(40, 20), org_size=Size2D(20, 10)
+        )[1]
+        == 20
+    )
+    assert (
+        simple.compute_rescaled_size_from_max_size(
+            max_size=60, org_size=Size2D(20, 10)
+        )[1]
+        == 30
+    )
+
+
+def test_from_array():
+    """
+    Tests creating an image from an array
+    """
+    test_data = np.zeros((32, 32), dtype=np.uint8)
+    black_array = Image.from_array(test_data, normalize=False)
+    assert black_array.pixel_format == PixelFormat.GRAY
+    vl.test.assert_image(
+        "black_from_array", black_array, "0f343b0931126a20f133d67c2b018a3b"
+    )
+    magma_array = Image.from_array(
+        np.ones((32, 32), dtype=np.uint8) * 128, cmap="magma", normalize=False
+    )
+    assert magma_array.pixel_format == PixelFormat.RGB
+    vl.test.assert_image(
+        "magma_from_array", magma_array, "fabfa9fbca5a05f1cc94da85ffe3f770"
+    )
+    conv_magma_array = Image.from_array(magma_array.pixels, normalize=False)
+    assert magma_array.pixel_format == PixelFormat.RGB
+    vl.test.assert_image(
+        "magma_from_array_2", conv_magma_array, "fabfa9fbca5a05f1cc94da85ffe3f770"
+    )
