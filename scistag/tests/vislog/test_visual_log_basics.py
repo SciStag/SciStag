@@ -34,7 +34,7 @@ def test_basics_logging_methods():
     vl.title("test")
     vl.add_md("nothing_should_happen")
     vl.md.log_html_only = False
-    vl.test.assert_cp_diff("327ae1d0827a8540b5f1a2d4158bd340")
+    vl.test.assert_cp_diff("81e249984ee4ef8dabfea39d1b1e0cb1")
     temp_path = vl.get_temp_path()
     assert len(temp_path)
     assert vl.get_temp_path("sub_path") == temp_path + "/sub_path"
@@ -83,7 +83,7 @@ def test_add_and_links():
         stream = io.BytesIO()
         test_image.to_pil().save(stream, "tiff")
         vl.add(stream.getvalue(), br=True)
-    vl.test.assert_cp_diff(hash_val="7fb750a4555ca2441b853795f71ade16")
+    vl.test.assert_cp_diff(hash_val="06a40c0c8c59555546bce15052a1559a")
     vl.test.checkpoint("log.link_adv")
     vl.link("Multiline\nLink", "https://github.com/scistag/scistag").br()
     vl.test.assert_cp_diff(hash_val="749e0d5d5ee5556a37b038ea5d380c12")
@@ -92,7 +92,7 @@ def test_add_and_links():
     vl.add(lambda: vl.log("TestCall"))
     vl.add("**Bold**", mimetype="md").br()
     vl.add("<b>Bold</b>", mimetype="html").br()
-    vl.test.assert_cp_diff("87a010d9c35d461b0dd92fd373cee0c9")
+    vl.test.assert_cp_diff("1785d8ba1f47b92d37f4781f6990f0c8")
 
     vl.test.checkpoint("add.womime")
     vl.add("A text", mimetype="notexisting")
@@ -146,17 +146,13 @@ def test_figure():
     figure = Figure(cols=1)
     image_data = render_emoji(":deer:")
     figure.add_plot().add_image(image_data, size_ratio=1.0)
-    vl.test.assert_val(
-        "figure_test", figure, hash_val="b2927d2e8972b8a912e1155983f872be"
-    )
+    vl.test.assert_val("figure_test", figure, hash_val="a706d00b64ad66ad7009e32f0fcb8709")
     with pytest.raises(AssertionError):
         vl.test.assert_val(
             "figure_test", figure, hash_val="d41d8cd98f00b204e9800998ecf8427c"
         )
     plot = figure.add_plot().add_image(image_data, size_ratio=1.0)
-    vl.test.assert_figure(
-        "test directly logging plot", plot, hash_val="b2927d2e8972b8a912e1155983f872be"
-    )
+    vl.test.assert_figure("test directly logging plot", plot, hash_val="a706d00b64ad66ad7009e32f0fcb8709")
 
     vl.options.style.image.log_images = False
     vl.figure(plot, "not_plotted_figure")

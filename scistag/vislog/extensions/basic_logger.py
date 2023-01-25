@@ -125,14 +125,14 @@ class BasicLogger(BuilderExtension):
         if level is not None and level in self.level_tag:
             split_t = text.split("\n")
             md_text = "\n".join(
-                [f"<b>{self.level_tag[level]}</b>: {cur}" for cur in split_t]
+                [f"<b>{self.level_tag[level]:9s}</b> {cur}" for cur in split_t]
             )
-            text = "\n".join([f"{self.level_tag[level]}: {cur}" for cur in split_t])
+            text = "\n".join([f"{self.level_tag[level]:9s} {cur}" for cur in split_t])
         escaped_text = self.builder.encode_html(text)
         br_code = "<br>" if br else ""
         if level in self.level_color:
             self.builder.add_html(
-                f'<span class="logtext" style="color:{self.level_color[level]}">'
+                f'<span class="logtext" style="color:{self.level_color[level]:9s}">'
                 f"{self.builder.html_linebreaks(escaped_text)}</span>"
                 f"{br_code}\n"
             )

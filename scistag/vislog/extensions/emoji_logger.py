@@ -54,7 +54,7 @@ class EmojiLogger(BuilderExtension):
         :return: The LogBuilder if return_image is False, otherwise the image
         """
         if size is None:
-            size = 14
+            size = None if return_image else 14
         results = EmojiDb.find_emojis_by_name(search_mask)
         if len(results) == 0:
             results = EmojiDb.find_emojis_by_name("sad*")

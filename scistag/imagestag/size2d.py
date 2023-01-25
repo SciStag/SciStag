@@ -10,7 +10,9 @@ from typing import Union
 
 Size2DTuple = tuple[float, float]
 "A size tuple defined by width and height"
-Size2DTypes = Union[Size2DTuple, "Size2D"]
+Size2DIntTuple = tuple[int, int]
+"A size tuple defined by width and height"
+Size2DTypes = Union[Size2DTuple, Size2DIntTuple, "Size2D"]
 """
 Type definition for any supported 2D size type. Use Size2D(value) to convert 
 the value automatically

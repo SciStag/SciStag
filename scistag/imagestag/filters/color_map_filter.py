@@ -61,24 +61,39 @@ class ColorMapFilter(ImageFilter):
     _color_map_names: set[str] = set()
     "A set containing all valid color map names"
 
-    def __init__(self, normalize=True, color_map: str = COLOR_MAP_VIRIDIS):
+    def __init__(
+        self,
+        min_val: int | float = None,
+        max_val: int | float = None,
+        normalize: bool = False,
+        color_map: str = COLOR_MAP_VIRIDIS,
+    ):
         """
         Initializer
 
-        :param normalize: Defines if the grayscale image gets normalized to
-            a range from 0..255 before applying the
+        :param min_val: The minimum value. auto-detect by default
+        :param max_val: The maximum value. auto-detect by default
+        :param normalize: Defines if the values shall be normalized to a range
+            from 0..255 for integer or 0..1 for floating point values. If this flag
+            is set to False min_val and max_val are defined with 0 and 255 for integer
+            and 0.0 and 1.0 for floating point inputs.
         :param color_map: The color map to be used. Use one of the provided
             COLOR_MAPS constants or have a look
             at https://matplotlib.org/stable/tutorials/colors/colormaps.html.
         """
         super(ColorMapFilter, self).__init__()
         self.requires_format = PixelFormat.GRAY
+        self.min_val = min_val
+        self.max_val = max_val
         self.normalize = normalize
         self._color_map_name = ""
         self.precise = False
         self._ensure_colormaps()
         if color_map not in self._color_map_names:
-            raise ValueError(f"Unknown color map {color_map}")
+            raise ValueError(
+                f"Unknown color map {color_map}. Known maps "
+                f"are {sorted(self._color_map_names)}"
+            )
         self._set_color_map(color_map)
         """
         Defines if the grayscale image gets normalized to a range from 0..255 
@@ -102,9 +117,13 @@ class ColorMapFilter(ImageFilter):
         org_image = image = input_data[IMAGE_FILTER_IMAGE]
         image: Image
         gray_image = image.get_pixels_gray()
-        if self.normalize:
-            min_v = np.min(gray_image)
-            max_v = np.max(gray_image[gray_image.shape[0] // 3 :, :])
+        if not self.normalize:
+            min_v = 0
+            max_v = 255
+        else:
+            min_v = np.min(gray_image) if self.min_val is None else self.min_val
+            max_v = np.max(gray_image) if self.max_val is None else self.max_val
+        if self.min_val != 0 or self.max_val != 255 or gray_image.dtype == float:
             diff = max_v - min_v
             if diff > 0:
                 scaling = 255.0 / diff

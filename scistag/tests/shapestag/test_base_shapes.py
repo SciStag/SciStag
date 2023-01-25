@@ -20,26 +20,26 @@ def test_checkerboard():
 
     cb = Checkerboard(bounding=(0, 0, 300, 256), tile_size=10)
     cb.draw(canvas)
-    vl.test.assert_image("checkerboard", canvas, "5559fd4635350f823434b37da31b6f4e")
+    vl.test.assert_image("checkerboard", canvas, "789f08e4816cf6df8d9d253c1e649d03")
 
     # with offset
     vl.sub_test("A checkerboard using a specified region and starting at an offset")
     canvas.clear(Colors.BLACK)
     cb = Checkerboard(bounding=(15.0, 15.0, 300, 256), tile_size=30)
     cb.draw(canvas)
-    vl.test.assert_image("checkerboard", canvas, "212dc3bd9697b20e2117a86193495bea")
+    vl.test.assert_image("checkerboard", canvas, "fd841083202be231b16da6c9b5ae1dba")
     vl.sub_test("A checkerboard with a specified " "column and row count")
     canvas.clear(Colors.BLACK)
     cb = Checkerboard(col_row_count=(16, 10), tile_size=16)
     cb.draw(canvas)
-    vl.test.assert_image("checkerboard", canvas, "51b6fd23a7af332fd72bf2ad33aeb02e")
+    vl.test.assert_image("checkerboard", canvas, "9b12fce0a2d5add3bbc8b2c1634557bf")
     vl.sub_test(
         "A checkerboard with a specified " "column and row count and custom colors"
     )
     cb = Checkerboard(
         col_row_count=(14, 14), tile_size=20, color_a="#FFEEEE", color_b="#999999"
     ).to_image()
-    vl.test.assert_image("checkerboard", cb, "240be440718718180babb8af5ecfd955")
+    vl.test.assert_image("checkerboard", cb, "4abd42ecb2be7c39466fc23d78a1b425")
     vl.sub_test(
         "A checkerboard with a specified "
         "column and row count and a negative painting offset"
@@ -52,4 +52,4 @@ def test_checkerboard():
         offset=(-10, -10),
     ).to_image()
 
-    vl.test.assert_image("checkerboard", cb, "240be440718718180babb8af5ecfd955")
+    vl.test.assert_image("checkerboard", cb, "4abd42ecb2be7c39466fc23d78a1b425")

@@ -14,9 +14,10 @@ Steps:
 
 Tip for users of PyCharm who want to see the log directly inside PyCharm:
 * Right-click the URL in the console -> Copy URL
-* Press Ctrl-Shift-A -> Type "Open source..." -> Click on "Open Source Code from URL"
+* Press Ctrl-Shift-A or press shift two times in a row and type "Open source..." ->
+  Click on "Open Source Code from URL"
 * Paste the URL and confirm. A source code tab with live will open.
-* Click the PyCharm logo in the upper right corner of the source code.
+* Click the little PyCharm logo in the upper right corner of the source code.
 * The page will open now directly inside PyCharm and auto-reload on all changes.
 * You can close the tab with the HTML code now, the website will stay open.
 """

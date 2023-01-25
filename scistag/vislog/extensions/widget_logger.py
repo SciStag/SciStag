@@ -105,6 +105,8 @@ class WidgetLogger(BuilderExtension):
         Adds a button to the log which can be clicked and raise a click event.
 
         For further details see :class:`LButton`.
+
+        :keyword name: The button's name
         """
         from scistag.vislog.widgets.button import LButton
 

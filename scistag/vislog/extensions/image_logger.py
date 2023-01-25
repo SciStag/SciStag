@@ -145,6 +145,7 @@ class ImageLogger(BuilderExtension):
             if not isinstance(source, Image):
                 source = Image(source)
             source = source.resized_ext(factor=scaling, max_size=max_size)
+        if isinstance(source, Image):
             size_definition = (
                 f" width={int(round(source.width * optical_scaling))} "
                 f"height={int(round(source.height * optical_scaling))}"
@@ -187,13 +188,13 @@ class ImageLogger(BuilderExtension):
                 if not SystemInfo.os_type.is_windows:
                     method = AsciiImageMethod.COLOR_ASCII
                 ascii_code = source.to_ascii(
-                    max_width=max_width, min_width=cw, align=align, method=method
+                    max_columns=max_width, min_columns=cw, align=align, method=method
                 )
                 self.builder.add_txt(ascii_code, align=False, targets={"console"})
             if TXT in self.builder.options.output.formats_out:
                 ascii_code = source.to_ascii(
-                    max_width=max_width,
-                    min_width=cw,
+                    max_columns=max_width,
+                    min_columns=cw,
                     method=AsciiImageMethod.GRAY_LEVELS_69,
                     align=align,
                 )

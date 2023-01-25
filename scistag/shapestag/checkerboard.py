@@ -110,9 +110,13 @@ class Checkerboard(Shape):
             for cur_col in range(self.columns):
                 cur_x = ox + cur_col * sy
                 if (cur_col + cur_row) % 2 == 0:
-                    bright_rects.append(((cur_x, cur_y), (cur_x + sx, cur_y + sy)))
+                    bright_rects.append(
+                        ((cur_x, cur_y), (cur_x + sx - 1, cur_y + sy - 1))
+                    )
                 else:
-                    dark_rects.append(((cur_x, cur_y), (cur_x + sx, cur_y + sy)))
+                    dark_rects.append(
+                        ((cur_x, cur_y), (cur_x + sx - 1, cur_y + sy - 1))
+                    )
         # draw dark and bright rects in one batch each
         target.rectangle_list(bright_rects, single_color=self.color_b.to_int_rgba())
         target.rectangle_list(dark_rects, single_color=self.color_a.to_int_rgba())

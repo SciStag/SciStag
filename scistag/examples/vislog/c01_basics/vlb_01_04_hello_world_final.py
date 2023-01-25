@@ -13,4 +13,6 @@ class HelloWorldLog(LogBuilder):
 if VisualLog.is_main():
     options = VisualLog.setup_options("disk&console", title="First VisualLog")
     options.output.setup(formats={"html", "md", "txt"}, console=True)
-    VisualLog(options=options).run(HelloWorldLog)
+    vl = VisualLog(options=options)
+    vl.run(HelloWorldLog)
+    vl.default_page.show_info()

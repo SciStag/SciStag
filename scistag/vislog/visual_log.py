@@ -126,6 +126,7 @@ class VisualLog:
         self,
         options: Union["LogOptions", LOG_DEFAULT_OPTION_LITERALS, None] = None,
         debug: bool = False,
+        auto_reload: LogBuilder | type | None = None,
         fixed_session_id: str | None = None,
         stack_level: int = 1,
     ):
@@ -141,6 +142,8 @@ class VisualLog:
             See :meth:`setup_options` to receive a standard option set you can
             customize.
         :param debug: If set to true additional debug logging will be enabled
+        :param auto_reload: If defines the builder or builder class defined will
+            be run in auto_reload mode
         :param fixed_session_id: If provided a fix page session ID will be used,
             e.g. required for regression and consistency tests where names are not
             allowed to change.
@@ -260,6 +263,12 @@ class VisualLog:
         """
         Defines if this log is the main entry point (and e.g. not an embedded log)
         """
+        self._ran: bool = False
+        """
+        Defines if the log was ever built
+        """
+        if auto_reload is not None:
+            self.run_server(builder=auto_reload, auto_reload=True)
 
     def terminate(self):
         """
@@ -347,6 +356,7 @@ class VisualLog:
         :param kwargs: Additional parameters which shall be passed to the
             builder upon creation.
         """
+        self._ran = True
         self.options.validate_options()
         mt: bool = self.options.run.mt
         "Use multi-threading"
@@ -525,6 +535,7 @@ class VisualLog:
         :return: False if overwrite=False was passed and a log
             could successfully be loaded, so that no run was required.
         """
+        self._ran = True
         if builder is not None:
             builder = self.prepare_builder(
                 builder, self.default_page, params=params, kwargs=kwargs
@@ -847,6 +858,8 @@ class VisualLog:
         self.default_page.write_to_disk(render=True)
         if FilePath.exists(self.options.output.tmp_dir):
             shutil.rmtree(self.options.output.tmp_dir)
+        if not self._ran:
+            self.run()
         return self
 
     def clear(self):

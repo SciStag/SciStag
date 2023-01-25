@@ -84,10 +84,9 @@ SciStag comes completely bundled with all required standard components.
 `pip install scistag[full]` or when using poetry `poetry add scistag[full]` and
 you are ready to go! :)
 
-If you do not want to install advanced components such as Kivy you are also fine
-with a more light-weighted
+If you do not want to install advanced components with a more light-weighted
 
-`pip install scistag[logstag,flask]`
+`pip install scistag[common]`
 
 ## Getting started
 
