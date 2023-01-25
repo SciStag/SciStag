@@ -3517,7 +3517,7 @@ rfc3986-validator = [
     {file = "rfc3986_validator-0.1.1.tar.gz", hash = "sha256:3d44bde7921b3b9ec3ae4e3adca370438eccebc676456449b145d533b240d055"},
 ]
 scistag = [
-    {file = "scistag-0.8.0-py3-none-any.whl", hash = "sha256:e26a3b31418af2f5996abf9fef6d91d30b93710a1339019cdbac0116bd3bf9b1"},
+    {file = "scistag-0.8.0-py3-none-any.whl", hash = "sha256:b6b96708ae13e8c621dec59721bb9ff0e5cbd4e66876b3de296b20312e13aa6b"},
 ]
 send2trash = [
     {file = "Send2Trash-1.8.0-py3-none-any.whl", hash = "sha256:f20eaadfdb517eaca5ce077640cb261c7d2698385a6a0f072a4a5447fd49fa08"},

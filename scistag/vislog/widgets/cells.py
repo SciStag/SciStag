@@ -259,6 +259,8 @@ class Cell(LWidget):
         """Build counter at last stats update"""
         self._build_time_acc = 0.0
         """Accumulated time for builds since the last reset"""
+        self.log_std_out = False
+        """Defines if elements logged via print() shall be logged into the cell"""
         self.build()
         self.leave()
         if not static:
@@ -323,7 +325,10 @@ class Cell(LWidget):
                 name=self.identifier, widget=self, builder=self.builder
             )
             std_out = io.StringIO()
-            with redirect_stdout(std_out):
+            if self.log_std_out:
+                with redirect_stdout(std_out):
+                    self.raise_event(event)
+            else:
                 self.raise_event(event)
             buffer = std_out.getvalue()
             if len(buffer) > 0:

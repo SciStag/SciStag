@@ -377,6 +377,7 @@ class VisualLog:
 
             if isinstance(builder, LogBuilder):
                 self.default_builder = builder
+                self.default_page.set_builder(builder)
         else:
             builder = self.default_builder
             builder_was_none = True
@@ -544,6 +545,7 @@ class VisualLog:
 
             if isinstance(builder, LogBuilder):
                 self.default_builder = builder
+                self.default_page.set_builder(builder)
         if builder is None:
             builder = self.default_builder
         self._builder_handler = builder
@@ -637,6 +639,7 @@ class VisualLog:
             from scistag.vislog import LogBuilder
 
             self.default_builder = builder
+            self.default_page.set_builder(builder)
         return builder
 
     def _start_app_or_browser(self, real_log: VisualLog, url: str):

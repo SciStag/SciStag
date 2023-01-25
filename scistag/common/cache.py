@@ -4,13 +4,19 @@ and in memory to minimize repetitive downloads and re-computations.
 """
 from __future__ import annotations
 
-import hashlib
 import time
 from fnmatch import fnmatch
 
-from typing import Any, Callable
+from typing import Any, Callable, TYPE_CHECKING
 
+from scistag.common.cache_ref import CacheRef
 from scistag.common.mt.stag_lock import StagLock
+
+if TYPE_CHECKING:
+    from .cache_ref import CacheRef
+
+LIST_APPEND_PREFIX = "@L+"
+"""Prefix to flag async updates as a list extension"""
 
 DISK_CACHE_HEADER = "$"
 
@@ -90,6 +96,10 @@ class Cache:
         """
         self._mem_cache_versions = {}
         "Version numbers for the elements stored in the memory cache"
+        self._async_inbox = {}
+        """Elements which are staged for an update and will be applied once the owner
+        of the cache fetches them via async_fetch"""
+
         from scistag.common.disk_cache import DiskCache
 
         self._disk_cache = DiskCache(version=version, cache_dir=cache_dir)
@@ -246,7 +256,7 @@ class Cache:
             self.set(key, new_data, version=version)
             return new_data
 
-    def set(self, key: str, value, version=None) -> Any:
+    def set(self, key: str, value, version=None, keep: bool = False) -> Any:
         """
         Adds an item to the cache or updates it.
 
@@ -259,6 +269,8 @@ class Cache:
         :param value: The value to assign
         :param version: The version of the cache element. By default 0 for
             memory cache elements and 1 for disk cache elements.
+        :param keep: If set to True the version will not be updated if the
+            key does already exist and has an equal value
         :return: The assigned value
 
         """
@@ -275,6 +287,9 @@ class Cache:
             ):
                 raise ValueError("Keys has to start with a character")
             if key in self._key_revisions:
+                if keep:
+                    if self[key] == value:  # don't alter version if the value is equal
+                        return
                 self._key_revisions[key] += 1
             else:
                 self._key_revisions[key] = 1
@@ -287,6 +302,17 @@ class Cache:
             self._mem_cache[key] = value
             self._mem_cache_versions[key] = eff_version
             return value
+
+    def set_async(self, key: str, value):
+        """
+        Stages an update for the cache which will be applied once the owner thread of
+        the cache regains control and fetches them via :meth:`async_fetch`.
+
+        :param key: The key to be updated
+        :param value: The key's new value
+        """
+        with self._access_lock:
+            self._async_inbox[key] = value
 
     def get(self, key: str, default=None, version=None):
         """
@@ -331,6 +357,20 @@ class Cache:
         """
         with self._access_lock:
             return self._key_revisions.get(key, 0)
+
+    def async_fetch(self):
+        """
+        Applies all values staged via async_set and lpush_async, e.g. from a
+        remote thread
+        """
+        with self._access_lock:
+            for key, value in self._async_inbox.items():
+                if key.startswith(LIST_APPEND_PREFIX):
+                    key = key[len(LIST_APPEND_PREFIX) :]
+                    self.lpush(key, value, unpack=True)
+                else:
+                    self.set(key, value)
+            self._async_inbox = {}
 
     def clear(self):
         """
@@ -541,6 +581,20 @@ class Cache:
             else:
                 tar_list.append(value)
 
+    def lpush_async(self, key: str, value):
+        """
+        Adds an entry to the list as soon as the owning thread regains control
+
+        :param key: The key of the list to which the element shall be added
+        :param value: The element to be added
+        """
+        with self._access_lock:
+            list_key = f"{LIST_APPEND_PREFIX}{key}"
+            if list_key in self._async_inbox:
+                self._async_inbox[list_key].append(value)
+            else:
+                self._async_inbox[list_key] = [value]
+
     def lpop(self, key: str, index: int = 0, count: int = 1):
         """
         Pops one or multiple values from the list
@@ -582,6 +636,35 @@ class Cache:
                         f"Indices other than 0 and -count currently not supported"
                     )
             return results
+
+    def pop(self, key: str, default=None, index: int = 0) -> Any | None:
+        """
+        Tries to receive a single value from the cache.
+
+        If the entry is a list-like object it will return an element from the list
+        at given index. If it is a normal value it will return the value and remove
+        it from the cache.
+
+        If the value does not exist or the list is empty the default value will be
+        returned.
+
+        :param key: The key to search for
+        :param default: The default value
+        :param index: The index from which the value shall be received. 0 = front of the
+        list, -1 = end of the list.
+        :return: The value
+        """
+        with self._access_lock:
+            element = self.get(key, None)
+            if element is None:
+                return None
+            if isinstance(element, list):
+                result = self.lpop(key, index=index, count=1)
+                if len(result):
+                    return result[0]
+                return default
+            del self[key]
+            return element
 
     def llen(self, key: str) -> int:
         """
@@ -658,13 +741,28 @@ class Cache:
             if key not in self:
                 return False
             element = self[key]
+            if element is None:
+                return False
             if isinstance(element, (float, bool, int)):
                 return element != 0
             if isinstance(element, (str, dict, list, bytes, tuple)):
                 return len(element) > 0
             if hasattr(element, "shape"):  # np.ndarray and DataFrame
                 return element.shape[0] > 0
-            return False
+            return True  # by default True (it exists)
+
+    def create_ref(self, key: str, update_async: bool = False) -> "CacheRef":
+        """
+        Creates a reference to a single cache entry.
+
+        This reference can be used to for example store data in the cache from
+        another thread.
+
+        :param key: The name of the key which shall be referred
+        :param update_async: Defines if the value shall be updated once the main
+            thread regains control
+        """
+        return CacheRef(name=key, update_async=update_async, cache=self)
 
     def __delitem__(self, key):
         """
@@ -698,6 +796,15 @@ class Cache:
             return (
                 key in self._mem_cache and self._mem_cache_versions[key] == eff_version
             )
+
+    def __enter__(self):
+        """Locks the cache to ensure no other threads reads it out while it's updated"""
+        self._access_lock.__enter__()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Unlocks the cache"""
+        self._access_lock.__exit__(exc_type, exc_val, exc_tb)
 
 
 _cache_access_lock = StagLock()

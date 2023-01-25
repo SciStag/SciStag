@@ -29,6 +29,7 @@ class LSlider(LWidget):
         max_value: float | int,
         stepping: float | int | None = None,
         on_change: Union[Callable, None] = None,
+        target: str | None = None,
         name: str = "Slider",
         options: LSliderOptions | None = None,
         insert: bool = True,
@@ -43,6 +44,8 @@ class LSlider(LWidget):
 
             If not defined integer value step with 1 and float values continuously.
         :param on_change: Called when ever the slider was modified
+        :param target: Cache target key. If defined all updates to the slider's value
+            will be stored in the cache variable defined
         :param name: The slider's unique name, for easier debugging
         :param style: The slider's style
         :param insert: Defines if the element shall be inserted into the log
@@ -60,6 +63,10 @@ class LSlider(LWidget):
         "The slider's stepping size"
         self.on_change = on_change
         """The event to be called when the slider's value was modified"""
+        self.target = target
+        """Name of the cache variable in which updates shall be stored"""
+        if self.target is not None:
+            self.builder.cache.set(self.target, value, keep=True)
         self.options: LSliderOptions = (
             options if options is not None else builder.options.style.slider.clone()
         )
@@ -174,11 +181,14 @@ class LSlider(LWidget):
             f'max="{self.max_value}" '
             f'value="{self.value}"'
             f'oninput="document.'
-            f"getElementById('{self.identifier}').value=this.value\" />"
+            f"getElementById('{self.identifier}').value=this.value; "
+            f"vl_handle_value_changed('{self.identifier}', this.value);\" />"
         )
         return value_html
 
     def handle_event(self, event: "LEvent"):
+        if self.target is not None:
+            self.builder.cache.set(self.target, event.value, keep=True)
         if isinstance(event, LValueChangedEvent):
             self.call_event_handler(self.on_change, event)
         super().handle_event(event)
@@ -196,6 +206,7 @@ class LSlider(LWidget):
 
         :param new_value: The new value
         """
+        # ignore invalid values
         val_range = self.max_value - self.min_value
         if val_range == 0.0:
             return
@@ -208,6 +219,8 @@ class LSlider(LWidget):
             new_value = int(round(float(new_value)))
             if self._value == new_value:
                 return
+        if new_value < self.min_value or new_value > self.max_value:
+            return
         self._value = new_value
         change_event = LValueChangedEvent(widget=self, value=new_value)
         self.raise_event(change_event)

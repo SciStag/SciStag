@@ -2,6 +2,7 @@ import platform
 from enum import IntEnum
 
 from .cache import Cache, get_global_cache
+from .cache_ref import CacheRef
 from .component import Component
 from .config_stag import ConfigStag
 from .env import Env
@@ -23,6 +24,7 @@ __all__ = [
     "get_edp",
     "ESSENTIAL_DATA_SIZE",
     "Cache",
+    "CacheRef",
     "StagApp",
     "Component",
     "ConfigStag",
