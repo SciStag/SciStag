@@ -9,6 +9,7 @@
 - Executing JavaScript commands
 - Missing widgets:
     - Checkbox
+    - ComboBox
     - Interactive image, e.g. pixel tracking
     - Progress bar
     - Pure int and float edit fields

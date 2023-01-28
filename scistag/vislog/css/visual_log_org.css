@@ -213,3 +213,14 @@ ul
 {
 	margin:0
 }
+
+select
+{
+    font-size:12pt;
+    width: 200px;
+}
+
+option
+{
+    font-size:12pt;
+}

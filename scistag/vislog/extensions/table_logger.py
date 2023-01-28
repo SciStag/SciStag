@@ -51,7 +51,6 @@ class TableContext(ElementContext):
         seamless: bool | None = None,
         header: bool = False,
         index: bool = False,
-        br: bool = True,
     ):
         """
         :param builder: The builder object with which we write to the log

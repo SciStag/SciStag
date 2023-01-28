@@ -7,15 +7,14 @@ from typing import TYPE_CHECKING, Callable, Union
 
 from scistag.vislog.log_elements import HTMLCode
 from scistag.vislog.options import LSliderOptions
-from scistag.vislog.widgets.base_events import LValueChangedEvent
-from scistag.vislog.widgets.log_widget import LWidget
-from scistag.vislog.widgets.event import LEvent
+from scistag.vislog.widgets.value_widget import LValueWidget
+from scistag.vislog.widgets.base_events import LValueChangedEvent, LValueChangedCallable
 
 if TYPE_CHECKING:
     from scistag.vislog.log_builder import LogBuilder
 
 
-class LSlider(LWidget):
+class LSlider(LValueWidget):
     """
     The LSlider defines a horizontal or vertical slider which lets you select a value
     in a defined range and with a defined stepping.
@@ -28,10 +27,12 @@ class LSlider(LWidget):
         min_value: float | int,
         max_value: float | int,
         stepping: float | int | None = None,
-        on_change: Union[Callable, None] = None,
+        on_change: Union[LValueChangedCallable, None] = None,
         target: str | None = None,
         name: str = "Slider",
         options: LSliderOptions | None = None,
+        html_class: Union[str, None] = None,
+        html_style: Union[str, None] = None,
         insert: bool = True,
         **kwargs,
     ):
@@ -43,30 +44,31 @@ class LSlider(LWidget):
         :param stepping: Value stepping.
 
             If not defined integer value step with 1 and float values continuously.
-        :param on_change: Called when ever the slider was modified
+        :param on_change: Called when ever the element's value was modified
         :param target: Cache target key. If defined all updates to the slider's value
             will be stored in the cache variable defined
         :param name: The slider's unique name, for easier debugging
-        :param style: The slider's style
+        :param html_class: The html class to be used for this widget
+        :param html_style: Additional html style flags to be applied
         :param insert: Defines if the element shall be inserted into the log
         :param kwargs: Additional arguments will override the corresponding settings
             in the :class:`LSliderOptions`.
         """
-        super().__init__(name=name, builder=builder)
-        self._value = value
-        "The slider's initial value"
+        super().__init__(
+            name=name,
+            builder=builder,
+            target=target,
+            value=value,
+            on_change=on_change,
+            html_class=html_class,
+            html_style=html_style,
+        )
         self.min_value = min_value
         "The minimum value the slider can be moved to"
         self.max_value = max_value
         "The maximum value the slider can be moved to"
         self.stepping = stepping
         "The slider's stepping size"
-        self.on_change = on_change
-        """The event to be called when the slider's value was modified"""
-        self.target = target
-        """Name of the cache variable in which updates shall be stored"""
-        if self.target is not None:
-            self.builder.cache.set(self.target, value, keep=True)
         self.options: LSliderOptions = (
             options if options is not None else builder.options.style.slider.clone()
         )
@@ -107,6 +109,7 @@ class LSlider(LWidget):
             h_height = self.options.horizontal_height
             style = f"width:{h_width}; height:{h_height};"
             style += "vertical-align: middle;"
+        add_code = self._get_add_html_code(style=style)
         html = ""
         if not self.options.vertical:
             html += "<span style='vertical-align: middle'>"
@@ -114,7 +117,7 @@ class LSlider(LWidget):
             f'<input id="{self.identifier}" type="range" value="{self._value}" '
             f'step="{self.stepping}" min="{self.min_value}" '
             f'max="{self.max_value}" '
-            f'style="{style}" '
+            f"{add_code}"
             f'oninput="{script}" />'
         )
         value_html = ""
@@ -186,13 +189,6 @@ class LSlider(LWidget):
         )
         return value_html
 
-    def handle_event(self, event: "LEvent"):
-        if self.target is not None:
-            self.builder.cache.set(self.target, event.value, keep=True)
-        if isinstance(event, LValueChangedEvent):
-            self.call_event_handler(self.on_change, event)
-        super().handle_event(event)
-
     @property
     def value(self) -> int | float:
         """
@@ -200,11 +196,12 @@ class LSlider(LWidget):
         """
         return self._value
 
-    def sync_value(self, new_value: float | int):
+    def sync_value(self, new_value: float | int, trigger_event: bool = False):
         """
         Updates the value after modifications on client side
 
         :param new_value: The new value
+        :param trigger_event: Defines if an event may be triggered
         """
         # ignore invalid values
         val_range = self.max_value - self.min_value
@@ -221,9 +218,7 @@ class LSlider(LWidget):
                 return
         if new_value < self.min_value or new_value > self.max_value:
             return
-        self._value = new_value
-        change_event = LValueChangedEvent(widget=self, value=new_value)
-        self.raise_event(change_event)
+        super().sync_value(new_value, trigger_event)
 
     def get_value(self) -> int | float | bool | None:
         return self._value

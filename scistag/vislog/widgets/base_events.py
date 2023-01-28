@@ -4,7 +4,7 @@ Implements common, not widget-specific base events
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Union
 
 from scistag.vislog.widgets.event import LEvent
 
@@ -31,3 +31,7 @@ class LValueChangedEvent(LEvent):
 
     value: int | float | str | bool
     """The widget's new value"""
+
+
+LValueChangedCallable = Union[Callable[[LValueChangedEvent], None], Callable]
+"""Callable which is called when a value changed event is triggerd"""
