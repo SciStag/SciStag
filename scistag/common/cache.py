@@ -288,7 +288,9 @@ class Cache:
                 raise ValueError("Keys has to start with a character")
             if key in self._key_revisions:
                 if keep:
-                    if self[key] == value:  # don't alter version if the value is equal
+                    if (
+                        self[org_key] == value
+                    ):  # don't alter version if the value is equal
                         return
                 self._key_revisions[key] += 1
             else:
@@ -655,12 +657,12 @@ class Cache:
         :return: The value
         """
         with self._access_lock:
-            element = self.get(key, None)
-            if element is None:
-                return None
+            if key not in self:
+                return default
+            element = self.get(key)
             if isinstance(element, list):
                 result = self.lpop(key, index=index, count=1)
-                if len(result):
+                if len(result) > 0:
                     return result[0]
                 return default
             del self[key]

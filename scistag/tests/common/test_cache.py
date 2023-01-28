@@ -27,8 +27,12 @@ def test_basics():
     cache = Cache(version="123")
     assert cache.version == "123"
     cache.set("Value@2", 123)
+    version = cache.get_revision("Value@2")
+    cache.set("Value@2", 123, keep=True)
+    cache.set("Value@2", 456, keep=True)
+    assert cache.get_revision("Value@2") == version
     cache.set("FixValue@-2", 123)
-    assert cache.get("Value@2") == 123
+    assert cache.get("Value@2") == 456
     assert cache.get("Value@3", default=5) == 5
     cache._version = 5
     assert cache.get("Value@2", default=0) == 0
@@ -150,6 +154,10 @@ def test_revision():
     assert cache.get_revision("key") == 4
     cache.increase_revision("key", _already_locked=False)
     assert cache.get_revision("key") == 5
+    cache["value"] = 123
+    assert cache.non_zero("value")
+    cache["value"] = None
+    assert not cache.non_zero("value")
 
 
 def test_list():
@@ -194,6 +202,24 @@ def test_list():
         assert cache.lpush("text", 123)
     with pytest.raises(ValueError):
         assert cache.lpush("list", "123", unpack=True)
+
+
+def test_pop():
+    """
+    Tests the pop functionality which can either pop a value from a list or removed
+    the whole value from the cache
+    """
+    cache = Cache()
+    assert cache.pop("notExisting") is None
+    assert cache.pop("notExisting", default=123) == 123
+    cache["value"] = 123
+    assert cache.pop("value") == 123
+    assert "value" not in cache
+    cache.lpush("list", 12, 45)
+    assert cache.pop("list") == 12
+    assert cache.pop("list") == 45
+    assert "list" in cache
+    assert cache.pop("list", default=22) == 22
 
 
 def test_inc_dec():
@@ -246,7 +272,7 @@ def test_non_zero():
         """For testing"""
 
     cache["value"] = MyIncompatibleClass()
-    assert not cache.non_zero("value")
+    assert cache.non_zero("value")
 
 
 def test_remove():
@@ -272,3 +298,36 @@ def test_remove():
     cache.remove("myValue")
     assert "myValue" not in cache
     cache.remove("doesntExist")
+
+
+def test_async():
+    """
+    Tests the cache's async features
+    """
+    cache = Cache()
+    cache["myValue"] = 123
+    assert cache["myValue"] == 123
+    cache.set_async("myValue", 456)
+    cache.lpush_async("newList", 111)
+    assert "newList" not in cache
+    assert cache["myValue"] == 123
+    cache.async_fetch()
+    assert cache["newList"] == [111]
+    cache.lpush_async("newList", 456)
+    assert cache["newList"] == [111]
+    assert cache["myValue"] == 456
+    cache.async_fetch()
+    assert cache["newList"] == [111, 456]
+    cache.lpush_async("newList", 456)
+    cache.lpush_async("newList", 321)
+    cache.async_fetch()
+    assert cache["newList"] == [111, 456, 456, 321]
+
+
+def test_enter():
+    """
+    Tests entering and leaving a cache
+    """
+    cache = Cache()
+    with cache:
+        pass

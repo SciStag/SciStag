@@ -29,6 +29,7 @@ def cell(
     requires: str | list[str] = None,
     tab: str | None = None,
     page: int | str | None = None,
+    capture_stdout: bool = False,
     ctype: str | None = None,
 ):
     """
@@ -76,6 +77,8 @@ def cell(
     :param tab: The tab in which the cell shall be displayed.
     :param page: The page index, e.g. to easily create browsable documents where
         always only one page is displayed at a time.
+    :param capture_stdout: Defines if stdout (e.g. print outputs) shall be captured and
+        added to the log
     :return: The decorated method or function
     """
 
@@ -103,6 +106,7 @@ def cell(
                 "groups": groups,
                 "tab": tab,
                 "page": page,
+                "capture_stdout": capture_stdout,
                 "ctype": ctype,
             },
         )
@@ -212,6 +216,7 @@ def section(
     uses: str | list[str] = None,
     output: str | list[str] = None,
     requires: str | list[str] = None,
+    capture_stdout: bool = False,
     **kwargs,
 ):
     """
@@ -232,6 +237,8 @@ def section(
         the elements does change the cell will be invalidated.
     :param output: A list of cache and file names this cell produces or updates
     :param requires: A list of cache and file names which are required.
+    :param capture_stdout: Defines if stdout (e.g. print outputs) shall be captured and
+        added to the log
     :param args: Further positional arguments
     :param kwargs: Further keyword arguments. See :class:`Cell`
     :return: The wrapped method
@@ -249,6 +256,7 @@ def section(
         uses=uses,
         output=output,
         requires=requires,
+        capture_stdout=capture_stdout,
         **kwargs,
     )
 

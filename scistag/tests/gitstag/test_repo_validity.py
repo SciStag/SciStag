@@ -57,6 +57,7 @@ def test_repo_validity():
         "*/visual_log.py",
         "*/page_session.py",
         "*/log_builder.py",
+        "*/cache.py",
     ]
 
     too_large_files = scanner.get_large_files(

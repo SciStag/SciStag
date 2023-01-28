@@ -30,7 +30,7 @@ class MyLog(LogBuilder):
     def second_text(self):
         self.text("Hello second")
 
-    @section("section with name")
+    @section("section with name", capture_stdout=True)
     def sub_section(self):
         self.text("Hello second")
         self.cell.add(section="sub_section")

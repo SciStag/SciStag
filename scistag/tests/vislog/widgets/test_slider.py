@@ -29,7 +29,7 @@ def test_slider_embedding():
     svl.test.checkpoint("addingSliders")
 
     hor_slider = svl.widget.slider(
-        5, 20, 30, on_change=event_handler_with_event, value_bold=True
+        5, 4, 30, on_change=event_handler_with_event, value_bold=True
     )
     vert_slider = LSlider(
         vl,
@@ -52,7 +52,7 @@ def test_slider_embedding():
     )
     # vl.insert_backup(svl.create_backup())
     # vl.flush()
-    svl.test.assert_cp_diff("6cf8f708ce075ef3c753b75ca850080d")
+    svl.test.assert_cp_diff("e2b7933d0a6472037ff8b159557443fb")
     assert vert_slider.get_value() == 0.2
     assert not event_called
     vert_slider.sync_value(0.2)

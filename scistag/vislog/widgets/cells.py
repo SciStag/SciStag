@@ -103,6 +103,7 @@ class Cell(LWidget):
         requires: str | list[str] = None,
         tab: str | None = None,
         page: int | str | None = None,
+        capture_stdout: bool = False,
         ctype: str | None = None,
         on_build: CellOnBuildCallback = None,
         _builder_method: Union[Callable, None] = None,
@@ -142,6 +143,8 @@ class Cell(LWidget):
         :param page: The cell's page index. If a page is defined in the LogBuilder
             (by default it is not) only cells with the associated page or None will be
             displayed.
+        :param capture_stdout: Defines if the stdout shall be captured and added to
+            the log, e.g. print calls.
         :param on_build: The callback to be called when the cell shall be build
         :param _builder_method: The object method to which this cell is attached
         """
@@ -259,7 +262,7 @@ class Cell(LWidget):
         """Build counter at last stats update"""
         self._build_time_acc = 0.0
         """Accumulated time for builds since the last reset"""
-        self.log_std_out = False
+        self.capture_stdout = capture_stdout
         """Defines if elements logged via print() shall be logged into the cell"""
         self.build()
         self.leave()
@@ -325,7 +328,7 @@ class Cell(LWidget):
                 name=self.identifier, widget=self, builder=self.builder
             )
             std_out = io.StringIO()
-            if self.log_std_out:
+            if self.capture_stdout:
                 with redirect_stdout(std_out):
                     self.raise_event(event)
             else:
