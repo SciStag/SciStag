@@ -37,7 +37,12 @@ CELL_TYPE_STREAM = "stream"
 """Defines a data cell which processes stream data or data provided via cache 
 modifications"""
 
-ZERO_SIZE_CHECK_POSTFIX = ">0"
+CELL_REQUIREMENTS_ZERO_SIZE_CHECK_POSTFIX = ">0"
+"""Postfix which can be added to a cell's requirement key names to only count them
+as valid if they are not zero, not None or contain at least one list element"""
+
+CELL_REQUIREMENTS_EQUAL = "=="
+"""Comparison flag to compare a cache variable with a certain value"""
 
 _LEVENT_TYPE_CELL_BUILD = "LEVENT_CELL_BUILD"
 "Identifier for a cell rebuilt event"
@@ -373,9 +378,12 @@ class Cell(LWidget):
         """
         for key in self.requires:
             real_key = key
-            if real_key.endswith(ZERO_SIZE_CHECK_POSTFIX):
-                real_key = real_key[0 : -len(ZERO_SIZE_CHECK_POSTFIX)]
+            if real_key.endswith(CELL_REQUIREMENTS_ZERO_SIZE_CHECK_POSTFIX):
+                real_key = self._clean_key_name(real_key)
                 if not self.builder.cache.non_zero(real_key):
+                    return False
+            elif CELL_REQUIREMENTS_EQUAL in real_key:
+                if not self.builder.cache.eval(real_key):
                     return False
             else:
                 if key not in self.builder.cache:
@@ -393,10 +401,12 @@ class Cell(LWidget):
             dependencies.
         """
         if self.page is not None:  # verify page - if one is set
-            if self.builder._page is None or self.builder._page != self.page:
+            cp = self.builder.current_page
+            if cp == "" or cp != self.page:
                 return False
         if self.tab is not None:  # verify tab - if one is set
-            if self.builder._tab is None or self.builder._tab != self.tab:
+            ct = self.builder.current_tab
+            if ct == "" or ct != self.tab:
                 return False
         included: bool = False
         for group in self.builder.visible_groups:
@@ -418,8 +428,7 @@ class Cell(LWidget):
         """
         element_set = self.uses.union(self.requires)
         for key in element_set:
-            if key.endswith(ZERO_SIZE_CHECK_POSTFIX):
-                key = key[0 : -len(ZERO_SIZE_CHECK_POSTFIX)]
+            key = self._clean_key_name(key)
             self.hashes[key] = self.builder.cache.get_revision(key)
 
     def handle_build(self):
@@ -471,8 +480,7 @@ class Cell(LWidget):
 
         element_set = self.uses.union(self.requires)
         for key in element_set:
-            if key.endswith(ZERO_SIZE_CHECK_POSTFIX):
-                key = key[0 : -len(ZERO_SIZE_CHECK_POSTFIX)]
+            key = self._clean_key_name(key)
             hash_val = self.builder.cache.get_revision(key)
             if hash_val != self.hashes.get(key, 0):
                 self._next_tick = cur_time
@@ -522,3 +530,18 @@ class Cell(LWidget):
             ],
             index=True,
         )
+
+    @staticmethod
+    def _clean_key_name(key: str) -> str:
+        """
+        Removes statements from requirement keys
+
+        :param key: The key
+        :return: The cleaned key name to hash
+        """
+        if key.endswith(CELL_REQUIREMENTS_ZERO_SIZE_CHECK_POSTFIX):
+            return key[0 : -len(CELL_REQUIREMENTS_ZERO_SIZE_CHECK_POSTFIX)]
+        if CELL_REQUIREMENTS_EQUAL in key:
+            values = key.split(CELL_REQUIREMENTS_EQUAL)
+            return values[0]
+        return key

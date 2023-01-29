@@ -398,7 +398,6 @@ class TableLogger(BuilderExtension):
         html_class: str | None = None,
         header: bool = False,
         index: bool = False,
-        br: bool = True,
     ):
         """
         Creates a table logging context
@@ -429,7 +428,6 @@ class TableLogger(BuilderExtension):
             and padding.
         :param html_class: The html class to be used for the table or the CSS code
             to generate a new class, see :meth:`StyleContext.ensure_css_class`
-        :param br: Defines if the table shall be followed by a line break
         :param index: Defines if the table has an index column
         :param header: Defines if the table has a header
         :return: The logging context
@@ -453,7 +451,7 @@ class TableLogger(BuilderExtension):
         options: TableOptions | None = None,
         html_class: str | None = None,
         seamless: bool | None = None,
-        br: bool = True,
+        mimetype: str | None = None,
     ):
         """
         Adds a table to the log.
@@ -476,7 +474,8 @@ class TableLogger(BuilderExtension):
             to generate a new class, see :meth:`StyleContext.ensure_css_class`
         :param seamless: Defines if the table shall be seamless, without visible borders
             and padding.
-        :param br: Defines if the table shall be followed by a line break
+        :param mimetype: Defines the explicit mime type and applies it
+            were possible such as parsing text provided as text/markdown or text/html.
         """
         if len(data) > 0 and not isinstance(data[0], list):
             if orientation == "hor":
@@ -498,20 +497,21 @@ class TableLogger(BuilderExtension):
                 for col_index, col in enumerate(row):
                     cur_data = data[row_index][col_index]
                     if isinstance(cur_data, (str, int, float, bool)):
-                        code = ""
+                        is_index = False
                         if index and col_index == 0:
-                            code += "<b>"
+                            self.page_session.write_html("<b>")
+                            is_index = True
                         major_cell = (
                             row_index == 0 and header or col_index == 0 and index
                         )
-                        if major_cell and "<b>" not in code:
-                            code += f"<b>{cur_data}</b>"
+                        if major_cell and not is_index:
+                            self.page_session.write_html("<b>")
+                            self.builder.add(cur_data, mimetype=mimetype)
+                            self.page_session.write_html("</b>")
                         else:
-                            code += f"{cur_data}"
+                            self.builder.add(cur_data, mimetype=mimetype)
                         if index and col_index == 0:
-                            code += "</b>"
-                        self.builder.html(code, br=False)
-                        self.builder.add_txt(str(cur_data), br=False)
+                            self.page_session.write_html("</b>")
                     else:
                         self.builder.add(cur_data)
                     tabs = tabs[0:-1]
@@ -548,20 +548,18 @@ class TableLogger(BuilderExtension):
         # html
         code = '<table class="vl_log_table">\n'
         for row_index, row in enumerate(data):
-            tabs = "\t"
-            code += f"{tabs}<tr>\n"
+            code += f"<tr>"
             for col_index, col in enumerate(row):
                 major_cell = (row_index == 0 and header) or (col_index == 0 and index)
                 cell_type = "td" if not major_cell else "th"
-                code += f"\t{tabs}<{cell_type}>\n{tabs}\t"
+                code += f"<{cell_type}>"
                 assert isinstance(
                     col, (str, int, float, bool)
                 )  # more types to be supported soon
                 col = str(col)
                 code += col
-                code += f"\n{tabs}</{cell_type}>\n"
-                tabs = tabs[0:-1]
-            code += f"{tabs}</tr>\n"
+                code += f"</{cell_type}>"
+            code += f"</tr>\n"
         code += "</table>\n"
         if br:
             code += "<br>\n"

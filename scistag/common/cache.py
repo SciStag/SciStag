@@ -766,6 +766,30 @@ class Cache:
         """
         return CacheRef(name=key, update_async=update_async, cache=self)
 
+    def eval(self, statement: str) -> Any:
+        """Evaluates a simple comparison statement and returns its result,
+
+        e.g. keyName==value
+
+        At the moment only simple comparisons of str, int, bool and float are supported
+
+        :param statement: The statement to be evaluated
+        :return: The evaluation's result
+        """
+        compare = "=="
+        assert compare in statement
+        values = statement.split(compare)
+        assert len(values) == 2
+        key_value = self.get(values[0], "")
+        if isinstance(key_value, int):
+            return key_value == int(values[1])
+        if isinstance(key_value, float):
+            return key_value == float(values[1])
+        if isinstance(key_value, bool):
+            val = values[1].replace("True", "1").replace("False", "0")
+            return key_value == int(val)
+        return key_value == values[1]
+
     def __delitem__(self, key):
         """
         Deletes an element from the cache.

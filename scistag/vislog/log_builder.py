@@ -327,6 +327,7 @@ class LogBuilder:
     def run(
         cls,
         options: LogOptions | LOG_DEFAULT_OPTION_LITERALS | None = None,
+        title: str | None = None,
         nested: bool = False,
         filetype: str | None = None,
         as_service: bool = False,
@@ -335,10 +336,11 @@ class LogBuilder:
         test: bool = False,
         fixed_session_id: str | None = None,
         **kwargs,
-    ) -> dict | WebResponse:
+    ) -> dict | WebResponse | None:
         """
         Executes the builder and returns its response
 
+        :param title: The log's title
         :param options: The style and output options. By default only a HTML log
             w/o any custom style will be generated.
         :param nested: Defines if the log will be nested and just the HTML body shall
@@ -346,7 +348,9 @@ class LogBuilder:
         :param filetype: If defined only the result of the defined format will be
             returned as bytes string.
         :param as_service: Defines if the Log shall be hosted via a server as a service.
-            Requires the calling file to be the main entry point. ("__main__")
+
+            Requires the calling file to be the application's main entry point.
+            (`__name__=="__main__"`)
         :param auto_reload: Defines if the calling source file shall be tracked and
             reloaded upon change
         :param out_details: If provided additional details will be stored in the
@@ -364,11 +368,7 @@ class LogBuilder:
         if as_service:
             is_main = VisualLog.is_main(2) or test
             if not is_main:
-                raise ValueError(
-                    "as_service is only valid if the calling file is "
-                    "the applications main entry point. For hosting a "
-                    "service from another file use VisualLog.run_server()"
-                )
+                return None
         else:
             if auto_reload:
                 raise ValueError(
@@ -378,6 +378,8 @@ class LogBuilder:
             filetype = kwargs["params"].get("filetype", filetype)
         if isinstance(options, str) or options is None:
             options = VisualLog.setup_options(options)
+        if title is not None:
+            options.page.title = title
         vl = VisualLog(
             options=options, stack_level=2, fixed_session_id=fixed_session_id
         )
@@ -544,7 +546,7 @@ class LogBuilder:
             return self
         # numpy array
         if isinstance(content, np.ndarray):
-            self.np(content, br=br)
+            self.np(content)
             return self
         if isinstance(content, (str, int, float)):
             content = str(content)

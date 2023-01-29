@@ -92,7 +92,7 @@ class LSelect(LValueWidget):
             self.elements[default_index].default = True
 
         self._selected: LSelect.Element | None = (
-            None if len(elements) == 0 else elements[0]
+            None if len(self.elements) == 0 else self.elements[0]
         )
         """The current index"""
 

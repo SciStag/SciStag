@@ -165,7 +165,7 @@ def data(
 def stream(
     *args,
     name: str | None = None,
-    interval_s: float | None = None,
+    interval_s: float | None = 0.0,
     continuous: bool = False,
     uses: str | list[str] = None,
     output: str | list[str] = None,
