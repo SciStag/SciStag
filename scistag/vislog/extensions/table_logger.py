@@ -442,7 +442,6 @@ class TableLogger(BuilderExtension):
             header=header,
             index=index,
             html_class=html_class,
-            br=br,
         )
 
     def __call__(
@@ -492,7 +491,6 @@ class TableLogger(BuilderExtension):
             options=options,
             seamless=seamless,
             html_class=html_class,
-            br=br,
         )
         with tc:
             for row_index, row in enumerate(tc):

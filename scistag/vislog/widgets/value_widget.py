@@ -85,7 +85,7 @@ class LValueWidget(LWidget):
         """
         return self._value
 
-    def sync_value(self, new_value: Any, trigger_event: bool = False):
+    def sync_value(self, new_value: Any, trigger_event: bool = True):
         """
         Updates the value and triggers all related events
 

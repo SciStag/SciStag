@@ -52,7 +52,7 @@ def test_slider_embedding():
     )
     # vl.insert_backup(svl.create_backup())
     # vl.flush()
-    svl.test.assert_cp_diff("e2b7933d0a6472037ff8b159557443fb")
+    svl.test.assert_cp_diff("e2b7933d0a6472037ff8b159557443fb", target=vl)
     assert vert_slider.get_value() == 0.2
     assert not event_called
     vert_slider.sync_value(0.2)

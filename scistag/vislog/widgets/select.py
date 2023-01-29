@@ -148,7 +148,7 @@ class LSelect(LValueWidget):
         """
         return "" if self.selected is None else self.selected.value
 
-    def sync_value(self, new_value: str, trigger_event: bool = False):
+    def sync_value(self, new_value: str, trigger_event: bool = True):
         """
         Updates the value after modifications on client side
 

@@ -116,9 +116,9 @@ class LSlider(LValueWidget):
         html += (
             f'<input id="{self.identifier}" type="range" value="{self._value}" '
             f'step="{self.stepping}" min="{self.min_value}" '
-            f'max="{self.max_value}" '
+            f'max="{self.max_value}"'
             f"{add_code}"
-            f'oninput="{script}" />'
+            f' oninput="{script}" />'
         )
         value_html = ""
         if self.options.show_value:
@@ -196,7 +196,7 @@ class LSlider(LValueWidget):
         """
         return self._value
 
-    def sync_value(self, new_value: float | int, trigger_event: bool = False):
+    def sync_value(self, new_value: float | int, trigger_event: bool = True):
         """
         Updates the value after modifications on client side
 

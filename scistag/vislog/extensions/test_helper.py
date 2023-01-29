@@ -346,6 +346,7 @@ class TestHelper(BuilderExtension):
             self.page_session.write_to_disk()
             if target is not None:
                 target.insert_backup(self.builder.create_backup())
+                target.flush()
             raise AssertionError(
                 "Hash mismatch - " f"Found: {value}\n" f"Assumed: {assumed}"
             )

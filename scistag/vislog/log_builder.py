@@ -30,6 +30,7 @@ from scistag.plotstag import Figure, Plot, MPHelper
 from scistag.vislog.common.log_backup import LogBackup
 from .common.log_builder_statistics import LogBuilderStatistics
 from .log_builder_registry import LogBuilderRegistry
+from .pages import PageDescription
 from ..common import Cache
 from ..webstag.mime_types import MIMETYPE_MARKDOWN, MIMETYPE_HTML
 from ..webstag.server import WebResponse
@@ -214,6 +215,19 @@ class LogBuilder:
         The service extension for hosting static files and services
         """
         self._title = self.options.page.title
+        """Defines the log's title, initially a copy of the default title"""
+        self._page: str = ""
+        """Defines which page is currently visible. Affects all cells which have
+        a page property assigned"""
+        self._tab: str = ""
+        """Defines which tab is currently visible. Affects all cells which have a tab
+        property assigned"""
+        self.visible_groups: set[str] = {"default"}
+        """Defines which groups are currently visible. Placeholders such as * and ?
+        are supported"""
+        self.hidden_groups: set[str] = set()
+        """Defines which groups are currently explicitly hidden. Placeholders such 
+        as * and ? are supported"""
 
         # add upload widget extension
         path = FilePath.dirname(__file__)
@@ -257,6 +271,8 @@ class LogBuilder:
         """The builder's statistic's"""
         self._terminated = False
         """Defines if the builder was terminated"""
+        self.pages: dict[str, PageDescription] = {}
+        """Defines a single sub page"""
 
     def build(self):
         """
@@ -1264,6 +1280,64 @@ class LogBuilder:
         Ends the update mode
         """
         self.page_session.end_update()
+
+    @property
+    def current_page(self):
+        """
+        The currently visible page. Only cells with None or the associated page will
+        be shown and processed.
+        """
+        return self._page
+
+    @current_page.setter
+    def current_page(self, page: str):
+        """
+        Sets the new page.
+
+        All cells with given page name (or without any page) will be set visible,
+        all other pages will be hidden.
+
+        :param page: The name of the new page
+        """
+        self.set_page(page=page)
+
+    @property
+    def current_tab(self):
+        """
+        The currently visible tab. Only cells with None or the associated tab will
+        be shown and processed.
+        """
+        return self._tab
+
+    @current_tab.setter
+    def current_tab(self, tab: str):
+        """
+        Sets the new tab.
+
+        All cells with given tab name (or without any page) will be set visible,
+        all other pages will be hidden.
+
+        :param tab: The name of the new tab
+        """
+        self._tab = tab
+
+    def set_page(self, page: str | None = None, tab: str | None = None):
+        """
+        Jumps to given page and tab (without creating an entry in the navigation
+        history)
+
+        :param page: The page to move to. If no page is passed the current page will
+            be kept.
+        :param tab: The tab to move to. If no tab is passed and the page is changed
+            the initial tab will be received from self.pages[page].default_tab if
+            defined.
+        """
+        if page is not None:
+            self._page = page
+            if tab is None and page in self.pages:
+                tab = self.pages[page].default_tab
+        if tab is not None:
+            self._tab = tab
 
     def terminate(self):
         """

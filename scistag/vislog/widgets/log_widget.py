@@ -44,7 +44,7 @@ class LWidget:
             name = self.__class__.__qualname__
         self.identifier = name
         "The widget's name"
-        self.builder = builder
+        self.builder: "LogBuilder" = builder
         "The log builder"
         self.page_session = self.builder.page_session
         "The page to which we are logging"

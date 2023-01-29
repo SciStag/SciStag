@@ -11,6 +11,7 @@ from __future__ import annotations
 import io
 import time
 from contextlib import redirect_stdout
+from fnmatch import fnmatch
 from inspect import signature
 from typing import Union, Callable
 
@@ -201,10 +202,6 @@ class Cell(LWidget):
         Define on which page the cell shall be visible. Will automatically add the
         cell to a group named p{page} if just the tab is specified or t{tab}.page{} if
         tab and page are defined"""
-        if self.tab:
-            self.groups.add(f"tab_{tab}")
-        if self.page:
-            self.groups.add(f"page_{page}")
         self.section_name = section
         """The section name to be displayed before the section"""
         if ctype is None:
@@ -264,6 +261,8 @@ class Cell(LWidget):
         """Accumulated time for builds since the last reset"""
         self.capture_stdout = capture_stdout
         """Defines if elements logged via print() shall be logged into the cell"""
+        self.could_build = False
+        """Defines if the cell could be build the last time"""
         self.build()
         self.leave()
         if not static:
@@ -318,6 +317,7 @@ class Cell(LWidget):
         if not self.progressive:
             self.clear()
         if self.can_build:
+            self.could_build = True
             start_time = time.time()
             old_mod = self.sub_element.last_direct_change_time
             if not self.progressive and not self.static:
@@ -348,6 +348,8 @@ class Cell(LWidget):
             self.statistics.build_time_s = time_required
             self._build_time_acc += time_required
             self.statistics.builds += 1
+        else:
+            self.could_build = False
         if opened:
             self.leave()
         self.update_hashes()
@@ -380,6 +382,34 @@ class Cell(LWidget):
                     return False
         if self.ctype == CELL_TYPE_ONCE and self.statistics.builds > 0:
             return False
+        return self.may_be_shown()
+
+    def may_be_shown(self) -> bool:
+        """
+        Returns if the cell is not hidden or included by any visibility flags such as
+        its groups, page or tab
+
+        :return: True if the cell can be painted in general, independent of data
+            dependencies.
+        """
+        if self.page is not None:  # verify page - if one is set
+            if self.builder._page is None or self.builder._page != self.page:
+                return False
+        if self.tab is not None:  # verify tab - if one is set
+            if self.builder._tab is None or self.builder._tab != self.tab:
+                return False
+        included: bool = False
+        for group in self.builder.visible_groups:
+            for own_group in self.groups:
+                if fnmatch(own_group, group):
+                    included = True
+                    break
+        if not included:
+            return False
+        for group in self.builder.hidden_groups:
+            for own_group in self.groups:
+                if fnmatch(own_group, group):
+                    return False
         return True
 
     def update_hashes(self):
@@ -447,6 +477,8 @@ class Cell(LWidget):
             if hash_val != self.hashes.get(key, 0):
                 self._next_tick = cur_time
                 break
+        if self.could_build != self.can_build:  # check if the visibility changed
+            self._next_tick = cur_time
         if self._next_tick is None:
             return None
         if cur_time >= self._next_tick:

@@ -32,8 +32,7 @@ class MyLog(LogBuilder):
 
     @section("section with name", capture_stdout=True)
     def sub_section(self):
-        self.text("Hello second")
-        self.cell.add(section="sub_section")
+        self.text("Hello section with printed text")
         print("Some printed text which will be added too")
 
     @cell(page="second", tab="main")
@@ -65,5 +64,5 @@ def test_adv_cells():
     """
     vl.test.checkpoint("insert_builder")
     vl.add(MyLog, share="sessionId")
-    vl.test.assert_cp_diff("dc4e75108ddc26bbed1fb445c0b54e3d")
+    vl.test.assert_cp_diff("080d9cd349ebf23837d07d2c1882dfde")
     vl.flush()
