@@ -28,10 +28,10 @@ from scistag.vislog.visual_log import VisualLog, HTML, MD, TXT
 from scistag.vislog.options.log_options import LOG_DEFAULT_OPTION_LITERALS
 from scistag.plotstag import Figure, Plot, MPHelper
 from scistag.vislog.common.log_backup import LogBackup
+from .common.log_builder_base import LogBuilderBase
 from .common.log_builder_statistics import LogBuilderStatistics
 from .log_builder_registry import LogBuilderRegistry
 from .pages import PageDescription
-from ..common import Cache
 from ..webstag.mime_types import MIMETYPE_MARKDOWN, MIMETYPE_HTML
 from ..webstag.server import WebResponse
 
@@ -83,7 +83,7 @@ for tables, lists and divs.
 """
 
 
-class LogBuilder:
+class LogBuilder(LogBuilderBase):
     """
     Defines the central element to dynamically build and update a log document.
 
@@ -114,6 +114,7 @@ class LogBuilder:
         :param params: Additional parameters
         :param kwargs: Additional keyword arguments
         """
+        super().__init__()
         self.initial_module = log.initial_module
         "Handle of the module from which this VisualLog instance was initialized"
         self.page_session = page_session
@@ -263,8 +264,6 @@ class LogBuilder:
         """The current text alignment"""
         self._console_size = (120, 25)
         """The console width"""
-        self.cache = Cache()
-        """The local data cache"""
         self.global_cache = log.cache
         """The global data cache"""
         self.stats = LogBuilderStatistics()

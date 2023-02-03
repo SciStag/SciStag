@@ -1,12 +1,18 @@
 -- TODO NOTES --
+
+- Tests and example for the usage of attribute binding via .clref
+- Removal of unnecessary requirements from the essentials file by recompiling it
+- Changing widget values from server side (slider value, select index etc.)
 - Add fetching print output in cell to options
 - Allow creating references to file in a FileSource
 - Parallel execution of embedded logs
+- Lazy execution of streaming cells
 - Finalization of snippet usage
 - File dependencies and automatic cell rebuild on change
 - Share cache between auto-reload sessions (again)
 - Add unit tests for yet completely missing areas and remove them from the omit list
 - Executing JavaScript commands
+- Demos for DataStag
 - Missing widgets:
     - Checkbox
     - ComboBox

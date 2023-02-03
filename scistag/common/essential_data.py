@@ -95,8 +95,11 @@ _ESSENTIAL_DATA_PATH = "zip://@scistagessential/"
 
 def get_edp() -> str:
     """
-    Verifies if the essential data archive was initialized and afterwards returns the FileStag access path to it.
-    :return: The base path to access data within the essential data archive. See filestag.FileStag
+    Verifies if the essential data archive was initialized and afterwards returns
+    the FileStag access path to it.
+
+    :return: The base path to access data within the essential data archive.
+    See filestag.FileStag
     """
     _prepare_essential_data()
     return _ESSENTIAL_DATA_PATH

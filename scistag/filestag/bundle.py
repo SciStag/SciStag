@@ -31,6 +31,8 @@ TUPLE = "tuple"
 "Defines the input/output type tuple"
 LIST = "list"
 "Defines the input/output type list"
+SINGLE = "single"
+"Defines the input/output type single variable"
 DICT = "dict"
 "Defines the input/output type dict"
 
@@ -64,7 +66,7 @@ class BundleInfo(BaseModel):
     Defines the bundle information
     """
 
-    source_type: Literal["dict", "tuple", "list"]
+    source_type: Literal["dict", "tuple", "list", "single"]
     "The list of keys in their original order"
     keys: list[str]
     "The source type"
@@ -175,10 +177,10 @@ class Bundle:
                 if isinstance(elements, list)
                 else TUPLE
                 if isinstance(elements, tuple)
-                else None
+                else SINGLE
             )
-            if source_type is None:
-                raise ValueError("Unsupported source type")
+            if source_type is SINGLE:
+                elements = [elements]
             keys = []
             simple = {}
             advanced = {}
@@ -255,6 +257,8 @@ class Bundle:
                 return result
             if st == LIST:
                 return result_elements
+            if st == SINGLE:
+                return result_elements[0]
             if st == TUPLE:
                 return tuple(result_elements)
             raise NotImplementedError(f"The return type {st} is not supported")
@@ -325,6 +329,22 @@ class Bundle:
         """
         with cls._access_lock:
             cls._unpackers[data_type] = callback
+
+    @classmethod
+    def is_type_supported(cls, element) -> bool:
+        """
+        Returns if the object may be bundled.
+
+        Does not deep dive into the object but just scans the highest level.
+
+        :param element: The element you would like to bundle, e.g. to transfer it
+        :return: True if it's possible to bundle the object
+        """
+        if isinstance(element, (int, str, float, bool, bytes, list, tuple, dict)):
+            return True
+        with cls._access_lock:
+            fcn = ClassHelper.get_full_class_name(element)
+            return fcn in cls._bundlers
 
     @classmethod
     def _ensure_base_types(cls):

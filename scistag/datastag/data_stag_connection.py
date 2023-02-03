@@ -1,9 +1,11 @@
 from __future__ import annotations
 import time
+import uuid
 from threading import RLock
 
 import io
 import numpy as np
+import pandas as pd
 import base64
 from .data_stag_common import StagDataTypes, StagDataReturnTypes
 from .data_stag_vault import DataStagVault
@@ -35,6 +37,7 @@ class DataStagConnection:
     _VERSION_COUNTER = "versionCounter"
 
     _TYPE_BYTES = "bytes"
+    _TYPE_BUNDLE = "bundle"
     _TYPE_NUMPY = "numpy"
 
     # Definition of server commands
@@ -62,16 +65,22 @@ class DataStagConnection:
     """
 
     def __init__(
-        self, url: str = "", local=True, _request_client: "FlaskClient" = None
+        self,
+        url: str = "",
+        local: bool | None = None,
+        _request_client: "FlaskClient" = None,
     ):
         """
         Initializer
 
         :param url: The connection url of a remote server
-        :param local: Defines if the local in memory database shall be used
+        :param local: Defines if the local in memory database shall be used. True by
+            default if no URL is passed, otherwise False.
         :param _request_client: For unit tests only. Uses Flask's internal test
             client to test the API.
         """
+        if local is None:
+            local = len(url) == 0
         self.local = local
         "Defines if a local storage is being used"
         self.vault: DataStagVault | None = DataStagVault.local_vault
@@ -348,6 +357,38 @@ class DataStagConnection:
         result = self.json_to_data(response)
         return result[0], result[1]
 
+    UNIQUE_VALUE = str(uuid.uuid4())
+    """Unique value as placeholder to test for non-existence"""
+
+    def wait_for(
+        self,
+        name: str,
+        default: StagDataReturnTypes = None,
+        timeout_s: float | None = None,
+        delete: bool = False,
+    ):
+        """
+        Waits for an element to be present in the database and returns.
+
+        TODO: At the moment this method is client-side executed and should be moved
+        to server-side.
+
+        :param name: The name of the value to wait for
+        :param default: The default value to return if the function times-out
+        :param timeout_s: The maximum waiting time in seconds
+        :param delete: Defines if the value shall be deleted when it was read
+        :return: The value if it could be read, otherwise default
+        """
+        start_time = time.time()
+        while timeout_s is None or time.time() - start_time < timeout_s:
+            value = self.get(name=name, default=self.UNIQUE_VALUE)
+            if value == self.UNIQUE_VALUE:
+                continue
+            if delete:
+                self.delete(name)
+            return value
+        return default
+
     def add(
         self,
         name: str,
@@ -556,8 +597,11 @@ class DataStagConnection:
         else:
             import requests
 
-            response = requests.post(f"{self.target_url}/run", json=command)
-            json_data = response.json()
+            try:
+                response = requests.post(f"{self.target_url}/run", json=command)
+                json_data = response.json()
+            except requests.exceptions.RequestException:
+                return None
         if json_data is not None and isinstance(json_data, list):
             # return the single results as a list
             result = [ele for ele in json_data if ele is not None and "data" in ele]
@@ -567,7 +611,7 @@ class DataStagConnection:
     @classmethod
     def _verify_result(
         cls, result, supported_types: list
-    ) -> int | float | bool | str | dict | bytes | np.ndarray | None:
+    ) -> int | float | bool | str | dict | bytes | np.ndarray | pd.Series | pd.DataFrame | None:
         """
         Verifies if the result is of a given type
 
@@ -619,7 +663,8 @@ class DataStagConnection:
         :return: The result value if the type is allowed, otherwise None
         """
         return self._verify_result(
-            result, [int, float, bool, str, dict, bytes, np.ndarray]
+            result,
+            [int, float, bool, str, dict, bytes, np.ndarray, pd.Series, pd.DataFrame],
         )
 
     @classmethod
@@ -641,11 +686,11 @@ class DataStagConnection:
         data: dict
         if cls._TYPE in data and cls._VALUE in data:
             dtype = data.get(cls._TYPE)
-            if dtype == cls._TYPE_BYTES:
-                return base64.b64decode(data[cls._VALUE])
-            elif dtype == cls._TYPE_NUMPY:
-                decoded = base64.b64decode(data[cls._VALUE])
-                return np.load(io.BytesIO(decoded))
+            decoded = base64.b64decode(data[cls._VALUE])
+            from scistag.filestag.bundle import Bundle
+
+            if dtype == cls._TYPE_BUNDLE:
+                return Bundle.unpack(decoded)
         return data
 
     @classmethod
@@ -658,20 +703,17 @@ class DataStagConnection:
         :return: The JSON representation which can decoded on the receiver side
             again using json_to_data
         """
-        if type(data) in [int, bool, float, str, dict]:
+        if type(data) in [int, bool, float, str]:
             return data
         if type(data) in [list]:
             return [cls.data_to_json(element) for element in data]
-        if isinstance(data, bytes):
+        from scistag.filestag.bundle import Bundle
+
+        if Bundle.is_type_supported(data):
+            data = Bundle.bundle(data, compression=0)
             encoded = base64.b64encode(data).decode("ascii")
-            return {cls._TYPE: cls._TYPE_BYTES, cls._VALUE: encoded}
-        if isinstance(data, np.ndarray):
-            output = io.BytesIO()
-            data: np.ndarray
-            np.save(output, data)
-            value = output.getvalue()
-            encoded = base64.b64encode(value).decode("ascii")
-            return {cls._TYPE: cls._TYPE_NUMPY, cls._VALUE: encoded}
+            return {cls._TYPE: cls._TYPE_BUNDLE, cls._VALUE: encoded}
+        return None
 
 
 class DataStagTransaction:

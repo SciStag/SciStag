@@ -88,13 +88,14 @@ class LSelect(LValueWidget):
         self.elements = [setup(cur) for cur in elements]
         """The elements which can be selected"""
 
-        if default_index != -1 and 0 <= default_index < len(elements):
-            self.elements[default_index].default = True
-
-        self._selected: LSelect.Element | None = (
-            None if len(self.elements) == 0 else self.elements[0]
-        )
+        self._selected: LSelect.Element | None = None
         """The current index"""
+        if default_index != -1 and 0 <= default_index < len(elements):
+            for index, element in enumerate(self.elements):
+                element.default = index == default_index
+            self._selected = self.elements[default_index]
+        else:
+            self._selected = None if len(self.elements) == 0 else self.elements[0]
 
         self.value_dict: dict[str, LSelect.Element] = {}
         """Mapping from value to Element"""
@@ -148,7 +149,7 @@ class LSelect(LValueWidget):
         """
         return "" if self.selected is None else self.selected.value
 
-    def sync_value(self, new_value: str, trigger_event: bool = True):
+    def sync_value(self, new_value: str | None, trigger_event: bool = True):
         """
         Updates the value after modifications on client side
 
@@ -157,6 +158,8 @@ class LSelect(LValueWidget):
         """
         if self._value == new_value:
             return
+        if new_value == "" or new_value is None:
+            self._selected = None
         for cur in self.elements:
             if cur.value == new_value:
                 self._selected = cur
@@ -181,5 +184,5 @@ class LSelect(LValueWidget):
     def __len__(self):
         return len(self.elements)
 
-    def get_value(self) -> Element | None:
+    def get_value(self) -> str:
         return self.selected.value if self.selected is not None else ""

@@ -173,12 +173,13 @@ class Cell(LWidget):
         super().__init__(builder=builder, name="cell", explicit_name=gen_name)
         self.cell_name = gen_name
         self.name = name
-        self.groups = {"default"}
         if groups is not None:
             if isinstance(groups, str):
-                self.groups.add(groups)
+                self.groups = {groups}
             else:
-                self.groups = self.groups.union(set(groups))
+                self.groups = self.groups = set(groups)
+        else:
+            self.groups = {"default"}
         self.uses = set()
         if uses is not None:
             if isinstance(uses, str):

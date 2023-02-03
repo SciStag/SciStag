@@ -7,17 +7,23 @@ from scistag.vislog import LogBuilder, cell, section, data, stream, once
 
 
 class MyLog(LogBuilder):
-    @once(groups="data", output="data")
+    @once
+    def init(self):
+        self.visible_groups.add("data")
+        self.hidden_groups.add("hidden")
+
+    @once(groups=["data"], output="data")
     def load_data(self):
         self["data"] = 111
         self.text("once_text")  # should not be ignored
+        self.set_page("first", "start")
 
     @data(groups={"data"}, output=["data"])
     def we_are_loading_data(self):
         self["data"] = self["data"] * 2
         self.text("data_text")  # should not be ignored
 
-    @stream(requires=["data"], output=["data"])
+    @stream(groups="data", requires=["data"], output=["data"])
     def just_a_stream(self):
         self["data"] = self["data"] * 2
         self.text("stream_text")  # should not be ignored
@@ -30,10 +36,47 @@ class MyLog(LogBuilder):
     def second_text(self):
         self.text("Hello second")
 
+    @cell(section_name="123")
+    def second_text(self):
+        self.text("Hello auto-section")
+        self["shouldExist"] = "test"
+
+    @cell(requires="shouldExist==test")
+    def test_equals(self):
+        self.text("Equals fulfilled")
+
+    @cell(requires="shouldExist==xest")
+    def test_equals_not_match(self):
+        self.text("Equals not fulfilled")
+
+    @cell(uses=["shouldExist", "data"])
+    def uses_two(self):
+        self.text("Uses two")
+
     @section("section with name", capture_stdout=True)
     def sub_section(self):
         self.text("Hello section with printed text")
         print("Some printed text which will be added too")
+
+    @cell(page="first", tab="start")
+    def just_page(self):
+        self.text("First page")
+
+    @cell(page="first", groups=["default", "hidden"])
+    def just_page_hidden(self):
+        self.text("Hidden page")
+
+    @cell(page="first", groups=["default", "visible"])
+    def just_page_visible(self):
+        self.text("Visible page with group")
+
+    @cell(page="first", groups=["other"])
+    def just_page_not_included(self):
+        self.text("Visible page with group but not included")
+
+    @cell(page="first", tab="subtab")
+    def page_wrong_tab(self):
+        self.text("First page")
 
     @cell(page="second", tab="main")
     def sub_sub_section(self):
@@ -64,5 +107,5 @@ def test_adv_cells():
     """
     vl.test.checkpoint("insert_builder")
     vl.add(MyLog, share="sessionId")
-    vl.test.assert_cp_diff("080d9cd349ebf23837d07d2c1882dfde")
+    vl.test.assert_cp_diff("ffb4659baa15b9f52bcc903811a67b69")
     vl.flush()

@@ -179,7 +179,11 @@ class Image(ImageBase):
         :return: The prepared source data
         """
         if isinstance(source, cls):
-            source = source.to_pil()
+            pixel_format = source.pixel_format
+            if framework == ImsFramework.PIL:
+                source = source.to_pil()  # no copy needed if read-only
+            else:
+                source = source.get_pixels()
         if (
             isinstance(source, np.ndarray)
             and pixel_format == PixelFormat.BGR
