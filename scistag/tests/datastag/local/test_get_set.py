@@ -58,9 +58,9 @@ def test_get_ex(vault_connections, connections=None):
         new_v, value = connection.get_ex("modifyingValue", version_counter=v)
         assert new_v == v + 1 and value == 6
         assert connection.get_ex("doesntExist") == (0, None)
-        connection.set("deprValue", 22, timeout_s=0.001)
+        connection.set("deprValue", 22, timeout_s=0.1)
         assert connection.get_ex("deprValue") == (1, 22)
-        sleep_min(0.0015)
+        sleep_min(0.1)
         assert connection.get_ex("deprValue") == (0, None)
 
 
