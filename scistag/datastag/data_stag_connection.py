@@ -381,6 +381,7 @@ class DataStagConnection:
         """
         start_time = time.time()
         while timeout_s is None or time.time() - start_time < timeout_s:
+            time.sleep(0.0)
             value = self.get(name=name, default=self.UNIQUE_VALUE)
             if value == self.UNIQUE_VALUE:
                 continue

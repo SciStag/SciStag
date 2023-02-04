@@ -93,6 +93,9 @@ def test_list_delete_multiple(vault_connections, connections=None):
         assert connection.set("folderA.B", 2)
         assert connection.set("folderA.C", 3)
         assert connection.exists("folderA.A")
+        assert connection.delete_multiple("", recursive=True) == 0
+        assert connection.delete_multiple("./", recursive=True) == 0
+        assert connection.delete_multiple("*", recursive=True) == 0
         assert connection.delete_multiple(["folderA.*"], recursive=True) == 4
 
 

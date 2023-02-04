@@ -1,5 +1,7 @@
 import pytest
 
+from scistag.common.time import sleep_min
+
 try:
     from scistag.tests.datastag.local.vt_common import vault_connections
 except ModuleNotFoundError:
@@ -55,6 +57,11 @@ def test_get_ex(vault_connections, connections=None):
         connection.set("modifyingValue", 6)
         new_v, value = connection.get_ex("modifyingValue", version_counter=v)
         assert new_v == v + 1 and value == 6
+        assert connection.get_ex("doesntExist") == (0, None)
+        connection.set("deprValue", 22, timeout_s=0.001)
+        assert connection.get_ex("deprValue") == (1, 22)
+        sleep_min(0.0015)
+        assert connection.get_ex("deprValue") == (0, None)
 
 
 def all_get_set_tests(connection):

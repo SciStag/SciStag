@@ -1,4 +1,8 @@
+from __future__ import annotations
+
 import pytest
+
+from scistag.datastag import DataStagVault
 from scistag.datastag.data_stag_connection import DataStagConnection
 import time
 import json
@@ -10,6 +14,13 @@ except ModuleNotFoundError:
 
 
 # pylint: disable=W0621
+
+
+def test_basics():
+    """
+    Tests some basic functions
+    """
+    assert DataStagVault.local_vault == DataStagVault.get_local_vault()
 
 
 def test_delete(vault_connections, connections=None):
@@ -104,6 +115,28 @@ def test_garbage_collection(vault_connections, connections=None):
         connection.collect_garbage()
         status = connection.get_status()
         assert status["elementCount"] < prev_status[index]["elementCount"]
+
+
+def test_vault_ll():
+    """
+    Tests vault low level functions
+    """
+    vault = DataStagVault.get_local_vault()
+    vault.push("folder.subfolder.value", [123], timeout_s=-1.0)
+    vault.last_garbage_collection_time = int(time.time()) - 2
+    vault.collect_garbage()
+    vault.set("depValue", 1, timeout_s=0.0)
+    vault.set("depValue2", 2, timeout_s=1.0)
+    vault.set("depValue3", 3, timeout_s=0.0)
+    assert vault._get_element_by_name("depValue", deprecation_time=-1) is None
+    from scistag.datastag.data_stag_element import DataStagElement
+
+    element: DataStagElement | None = vault._get_element_by_name(
+        "depValue2", deprecation_time=vault.get_server_up_time()
+    )
+    assert element is not None and element.data == 2
+    assert vault._get_element_by_name("depValue3", deprecation_time=-1) is None
+    assert vault._get_global_name("", "testname") == "testname"
 
 
 def all_common_tests(connection):
