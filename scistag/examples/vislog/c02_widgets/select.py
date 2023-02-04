@@ -41,10 +41,10 @@ class Demo(LogBuilder):
         )
         elements = [
             "An element",
-            {"text": "Select", "value": "First selected"},
-            ("a value", "Second selected"),
+            {"text": "Select", "value": "Second selected"},
+            ("a value", "Third selected"),
             LSelect.Element(
-                text="from the list", value="Third selected", html_style="color:red"
+                text="from the list", value="Fourths selected", html_style="color:red"
             ),
             LSelect.Element(
                 text="But not me :)",
