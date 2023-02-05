@@ -17,7 +17,7 @@ class MyPage(LogBuilder):
         """
         Builds the page's content
         """
-        self.md.embed("./vlb_07_embedded_doc.md")
+        self.md.embed("./embedded_doc.md")
 
 
 if VisualLog.is_main():

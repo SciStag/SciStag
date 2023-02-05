@@ -262,6 +262,7 @@ class DataStagVault:
     def get_sub_folders(self, name, recursive=True):
         """
         Returns all sub folders of folder_name
+
         :param name: The main folder
         :param recursive: Defines if the search shall be recursive.
         :return: The list of all nested folders
@@ -282,6 +283,7 @@ class DataStagVault:
     def get_values_by_name(self, mask: str, limit: int = 100, flat: bool = True):
         """
         Returns the data of a set of elements by name.
+
         :param mask: The search mask. If it contains a folder the mask is only applied to the nested element
         :param limit: The maximum count of entries
         :param flat: Returns a list of all values received without providing the element names
@@ -364,6 +366,7 @@ class DataStagVault:
     def delete_multiple(self, search_masks: list[str], recursive: bool = False) -> int:
         """
         Deletes a set of elements.
+
         :param search_masks: The element's names or search masks. May not point directly to the root directory
         :param recursive: Defines if the search shall be executed recursive
         :return: The count of removed elements
@@ -542,12 +545,8 @@ class DataStagVault:
                             if cur_element in parent_list.list_elements:
                                 parent_list.list_elements.remove(cur_element)
                             elements.remove(cur_element)
-                        else:
-                            raise NotImplemented
                     elif cur_element.name is not None:
                         self._delete_element(cur_element.name)
-                    else:
-                        raise Exception("Element has neither name mor parent")
                     elements = self.deprecating_elements[cur_time_offset]
                 if cur_time_offset in self.deprecating_elements:
                     # in case the list did not empty itself yet

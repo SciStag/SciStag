@@ -1,4 +1,6 @@
 import pytest
+import numpy as np
+import pandas as pd
 
 try:
     from scistag.tests.datastag.local.vt_common import vault_connections
@@ -20,6 +22,46 @@ def test_list_basics(vault_connections, connections=None):
         assert connection.llen("someList") == 1
         assert not connection.delete("notExistingElement")
         assert connection.delete("someList")
+
+        series = pd.Series([1, 3, 5, np.nan, 6, 8])
+        df = pd.DataFrame(
+            {
+                "A": 1.0,
+                "B": pd.Timestamp("20130102"),
+                "C": pd.Series(1, index=list(range(4)), dtype="float32"),
+                "D": np.array([3] * 4, dtype="int32"),
+                "E": pd.Categorical(["test", "train", "test", "train"]),
+                "F": "foo",
+            }
+        )
+
+        data = {
+            "command": "set",
+            "value": b"123",
+            "npa": np.array(["123.456", "789.0"]),
+            "pd": df,
+            "pds": series,
+        }
+        assert connection.push("dataList", data)
+        fetched_data = connection.pop("dataList")
+        for element in fetched_data.keys():
+            cur_ele = fetched_data[element]
+            if isinstance(cur_ele, (pd.Series, pd.DataFrame)):
+                assert cur_ele.equals(data[element])
+            elif isinstance(cur_ele, np.ndarray):
+                assert np.all(fetched_data[element] == data[element])
+            else:
+                assert cur_ele == data[element]
+        np_data = np.array(["123.456", "789.0"])
+        assert connection.push("dataList", np_data)
+        received_data = connection.pop("dataList")
+        assert all(received_data == np_data)
+        assert connection.push("dataList", series)
+        received_data = connection.pop("dataList")
+        assert received_data.equals(series)
+        assert connection.push("dataList", df)
+        received_data = connection.pop("dataList")
+        assert received_data.equals(df)
 
 
 def test_list_delete(vault_connections, connections=None):
@@ -51,6 +93,9 @@ def test_list_delete_multiple(vault_connections, connections=None):
         assert connection.set("folderA.B", 2)
         assert connection.set("folderA.C", 3)
         assert connection.exists("folderA.A")
+        assert connection.delete_multiple("", recursive=True) == 0
+        assert connection.delete_multiple("./", recursive=True) == 0
+        assert connection.delete_multiple("*", recursive=True) == 0
         assert connection.delete_multiple(["folderA.*"], recursive=True) == 4
 
 

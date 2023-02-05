@@ -11,6 +11,7 @@ from __future__ import annotations
 import io
 import time
 from contextlib import redirect_stdout
+from fnmatch import fnmatch
 from inspect import signature
 from typing import Union, Callable
 
@@ -36,7 +37,12 @@ CELL_TYPE_STREAM = "stream"
 """Defines a data cell which processes stream data or data provided via cache 
 modifications"""
 
-ZERO_SIZE_CHECK_POSTFIX = ">0"
+CELL_REQUIREMENTS_ZERO_SIZE_CHECK_POSTFIX = ">0"
+"""Postfix which can be added to a cell's requirement key names to only count them
+as valid if they are not zero, not None or contain at least one list element"""
+
+CELL_REQUIREMENTS_EQUAL = "=="
+"""Comparison flag to compare a cache variable with a certain value"""
 
 _LEVENT_TYPE_CELL_BUILD = "LEVENT_CELL_BUILD"
 "Identifier for a cell rebuilt event"
@@ -103,6 +109,7 @@ class Cell(LWidget):
         requires: str | list[str] = None,
         tab: str | None = None,
         page: int | str | None = None,
+        capture_stdout: bool = False,
         ctype: str | None = None,
         on_build: CellOnBuildCallback = None,
         _builder_method: Union[Callable, None] = None,
@@ -142,6 +149,8 @@ class Cell(LWidget):
         :param page: The cell's page index. If a page is defined in the LogBuilder
             (by default it is not) only cells with the associated page or None will be
             displayed.
+        :param capture_stdout: Defines if the stdout shall be captured and added to
+            the log, e.g. print calls.
         :param on_build: The callback to be called when the cell shall be build
         :param _builder_method: The object method to which this cell is attached
         """
@@ -164,12 +173,13 @@ class Cell(LWidget):
         super().__init__(builder=builder, name="cell", explicit_name=gen_name)
         self.cell_name = gen_name
         self.name = name
-        self.groups = {"default"}
         if groups is not None:
             if isinstance(groups, str):
-                self.groups.add(groups)
+                self.groups = {groups}
             else:
-                self.groups = self.groups.union(set(groups))
+                self.groups = self.groups = set(groups)
+        else:
+            self.groups = {"default"}
         self.uses = set()
         if uses is not None:
             if isinstance(uses, str):
@@ -198,10 +208,6 @@ class Cell(LWidget):
         Define on which page the cell shall be visible. Will automatically add the
         cell to a group named p{page} if just the tab is specified or t{tab}.page{} if
         tab and page are defined"""
-        if self.tab:
-            self.groups.add(f"tab_{tab}")
-        if self.page:
-            self.groups.add(f"page_{page}")
         self.section_name = section
         """The section name to be displayed before the section"""
         if ctype is None:
@@ -259,6 +265,10 @@ class Cell(LWidget):
         """Build counter at last stats update"""
         self._build_time_acc = 0.0
         """Accumulated time for builds since the last reset"""
+        self.capture_stdout = capture_stdout
+        """Defines if elements logged via print() shall be logged into the cell"""
+        self.could_build = False
+        """Defines if the cell could be build the last time"""
         self.build()
         self.leave()
         if not static:
@@ -313,6 +323,7 @@ class Cell(LWidget):
         if not self.progressive:
             self.clear()
         if self.can_build:
+            self.could_build = True
             start_time = time.time()
             old_mod = self.sub_element.last_direct_change_time
             if not self.progressive and not self.static:
@@ -323,7 +334,10 @@ class Cell(LWidget):
                 name=self.identifier, widget=self, builder=self.builder
             )
             std_out = io.StringIO()
-            with redirect_stdout(std_out):
+            if self.capture_stdout:
+                with redirect_stdout(std_out):
+                    self.raise_event(event)
+            else:
                 self.raise_event(event)
             buffer = std_out.getvalue()
             if len(buffer) > 0:
@@ -340,6 +354,8 @@ class Cell(LWidget):
             self.statistics.build_time_s = time_required
             self._build_time_acc += time_required
             self.statistics.builds += 1
+        else:
+            self.could_build = False
         if opened:
             self.leave()
         self.update_hashes()
@@ -363,15 +379,48 @@ class Cell(LWidget):
         """
         for key in self.requires:
             real_key = key
-            if real_key.endswith(ZERO_SIZE_CHECK_POSTFIX):
-                real_key = real_key[0 : -len(ZERO_SIZE_CHECK_POSTFIX)]
+            if real_key.endswith(CELL_REQUIREMENTS_ZERO_SIZE_CHECK_POSTFIX):
+                real_key = self._clean_key_name(real_key)
                 if not self.builder.cache.non_zero(real_key):
+                    return False
+            elif CELL_REQUIREMENTS_EQUAL in real_key:
+                if not self.builder.cache.eval(real_key):
                     return False
             else:
                 if key not in self.builder.cache:
                     return False
         if self.ctype == CELL_TYPE_ONCE and self.statistics.builds > 0:
             return False
+        return self.may_be_shown()
+
+    def may_be_shown(self) -> bool:
+        """
+        Returns if the cell is not hidden or included by any visibility flags such as
+        its groups, page or tab
+
+        :return: True if the cell can be painted in general, independent of data
+            dependencies.
+        """
+        if self.page is not None:  # verify page - if one is set
+            cp = self.builder.current_page
+            if cp == "" or cp != self.page:
+                return False
+        if self.tab is not None:  # verify tab - if one is set
+            ct = self.builder.current_tab
+            if ct == "" or ct != self.tab:
+                return False
+        included: bool = False
+        for group in self.builder.visible_groups:
+            for own_group in self.groups:
+                if fnmatch(own_group, group):
+                    included = True
+                    break
+        if not included:
+            return False
+        for group in self.builder.hidden_groups:
+            for own_group in self.groups:
+                if fnmatch(own_group, group):
+                    return False
         return True
 
     def update_hashes(self):
@@ -380,8 +429,7 @@ class Cell(LWidget):
         """
         element_set = self.uses.union(self.requires)
         for key in element_set:
-            if key.endswith(ZERO_SIZE_CHECK_POSTFIX):
-                key = key[0 : -len(ZERO_SIZE_CHECK_POSTFIX)]
+            key = self._clean_key_name(key)
             self.hashes[key] = self.builder.cache.get_revision(key)
 
     def handle_build(self):
@@ -433,12 +481,13 @@ class Cell(LWidget):
 
         element_set = self.uses.union(self.requires)
         for key in element_set:
-            if key.endswith(ZERO_SIZE_CHECK_POSTFIX):
-                key = key[0 : -len(ZERO_SIZE_CHECK_POSTFIX)]
+            key = self._clean_key_name(key)
             hash_val = self.builder.cache.get_revision(key)
             if hash_val != self.hashes.get(key, 0):
                 self._next_tick = cur_time
                 break
+        if self.could_build != self.can_build:  # check if the visibility changed
+            self._next_tick = cur_time
         if self._next_tick is None:
             return None
         if cur_time >= self._next_tick:
@@ -482,3 +531,18 @@ class Cell(LWidget):
             ],
             index=True,
         )
+
+    @staticmethod
+    def _clean_key_name(key: str) -> str:
+        """
+        Removes statements from requirement keys
+
+        :param key: The key
+        :return: The cleaned key name to hash
+        """
+        if key.endswith(CELL_REQUIREMENTS_ZERO_SIZE_CHECK_POSTFIX):
+            return key[0 : -len(CELL_REQUIREMENTS_ZERO_SIZE_CHECK_POSTFIX)]
+        if CELL_REQUIREMENTS_EQUAL in key:
+            values = key.split(CELL_REQUIREMENTS_EQUAL)
+            return values[0]
+        return key

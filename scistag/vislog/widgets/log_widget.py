@@ -6,7 +6,7 @@ widgets which can be visualized within the live-area of a VisualLivelog.
 from __future__ import annotations
 
 from inspect import signature
-from typing import TYPE_CHECKING, Callable, Any
+from typing import TYPE_CHECKING, Callable, Any, Union
 
 import jinja2
 
@@ -29,18 +29,22 @@ class LWidget:
         name: str,
         is_view: bool = True,
         explicit_name: str | None = None,
+        html_class: Union[str, None] = None,
+        html_style: Union[str, None] = None,
     ):
         """
         :param builder: The log to which this widget belongs
         :param name: The widget's name
         :param is_view: Defines if the widget is a view / a UI component
         :param explicit_name: The (absolute) name to be assigned to the widget
+        :param html_class: The html class to be used
+        :param html_style: Additional style flags
         """
-        if len(name) == 0:
+        if name is None or len(name) == 0:
             name = self.__class__.__qualname__
         self.identifier = name
         "The widget's name"
-        self.builder = builder
+        self.builder: "LogBuilder" = builder
         "The log builder"
         self.page_session = self.builder.page_session
         "The page to which we are logging"
@@ -60,6 +64,10 @@ class LWidget:
         self.sub_element.flags["widget"] = self
         self.options = LWidgetOptions()
         "The widget's options"
+        self._html_class = html_class
+        """The html class to use for this element"""
+        self._html_style = html_style
+        """Additional html styling flags"""
 
     def insert_into_page(self):
         """
@@ -185,3 +193,21 @@ class LWidget:
         config_variables = {"DEMO_MODE": False}
         rendered = template.render(**config_variables, **parameters)
         return rendered
+
+    def _get_add_html_code(self, style: str = "") -> str:
+        """
+        Returns code to apply the defined html style and class
+
+        :param style: Other style parameters to be applied
+        :return: The html such as " style='font-size:12px'"
+        """
+        add_flags = ""
+        if self._html_class is not None:
+            add_flags += f' class="{self._html_class}"'
+        if self._html_style is not None:
+            if len(style) > 0:
+                style = " " + style
+            add_flags += f' style="{self._html_style}{style}"'
+        elif len(style) > 0:
+            add_flags += f' style="{style}"'
+        return add_flags

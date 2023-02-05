@@ -42,13 +42,13 @@ def test_table_enumeration():
 
     for row_index, row in enumerate(vl.table.begin(size=(4, 3))):
         for col_index, col in enumerate(row):
-            vl.log(f"{col_index}x{row_index}")
-    vl.test.assert_cp_diff(hash_val="fd00b40d736e856eb1793793720b31cb")
+            vl.text(f"{col_index}x{row_index}")
+    vl.test.assert_cp_diff(hash_val="8692cd8b3be7e9c8fcf794e4c594de40")
     vl.test.checkpoint("log.table.iter_pass_size")
     for row_index, row in enumerate(vl.table.begin().iter_rows(3)):
         for col_index, col in enumerate(row.iter_cols(4)):
-            vl.log(f"{col_index}x{row_index}")
-    vl.test.assert_cp_diff(hash_val="fd00b40d736e856eb1793793720b31cb")
+            vl.text(f"{col_index}x{row_index}")
+    vl.test.assert_cp_diff(hash_val="8692cd8b3be7e9c8fcf794e4c594de40")
 
     with pytest.raises(ValueError):
         with vl.table.begin() as table:
@@ -75,7 +75,7 @@ def test_table_creation():
     vl.test.begin("Table logging direct")
     vl.test.checkpoint("log.table.direct")
     vl.table.show([[1, 2, 3], [4, 5, 6]], index=True)
-    vl.test.assert_cp_diff(hash_val="b8e9d904b7b934139c9b759772d5389a")
+    vl.test.assert_cp_diff(hash_val="60784b3ccbef190c9bc519df13a65642")
 
     vl.test.checkpoint("log.table.add_col")
     for row_index, row in enumerate(vl.table.begin().iter_rows(3)):
@@ -94,14 +94,18 @@ def test_content_logging():
     with vl.table.begin() as table:
         table.add_row(123)
         table.add_row([456, 789])
-
+    vl.br()
     vl.table([123, 456])  # log a horizontal, single row table
+    vl.br()
     vl.table([123, 456], orientation="ver")  # log a vertical, single column table
+    vl.br()
     vl.table.simple_table([[123, 456], [789, "123"], [45.678, True]], header=True)
+    vl.br()
     vl.table.simple_table([123, 456])  # single, horizontal
+    vl.br()
     vl.table.simple_table([456.78, 910], orientation="ver", br=False, index=True)
     # single, vertical
-    vl.test.assert_cp_diff("0b48c1969345c5e4c7cfcb186955e2b7")
+    vl.test.assert_cp_diff("29193e2317131657e089b5cef547b0a9")
 
 
 def test_custom_class():

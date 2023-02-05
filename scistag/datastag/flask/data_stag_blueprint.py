@@ -30,14 +30,9 @@ def handle_run():
     Execution function. Converts all commands provided as a JSON object or list
     of JSON object to local Vault commands and returns their data
     """
-    try:
-        json_data = request.get_json()
-        if json_data is not None:
-            result = data_stag_service.command_handler.handle_command_data(json_data)
-            return jsonify(result)
-        current_app.logger.error("No data provided to DataStag call")
-        return jsonify({})
-    except:
-        current_app.logger.error(
-            "An error occurred during the execution of a DataStag request"
-        )
+    json_data = request.get_json()
+    if json_data is not None:
+        result = data_stag_service.command_handler.handle_command_data(json_data)
+        return jsonify(result)
+    current_app.logger.error("No data provided to DataStag call")
+    return jsonify({})

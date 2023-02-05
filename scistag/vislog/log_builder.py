@@ -28,9 +28,10 @@ from scistag.vislog.visual_log import VisualLog, HTML, MD, TXT
 from scistag.vislog.options.log_options import LOG_DEFAULT_OPTION_LITERALS
 from scistag.plotstag import Figure, Plot, MPHelper
 from scistag.vislog.common.log_backup import LogBackup
+from .common.log_builder_base import LogBuilderBase
 from .common.log_builder_statistics import LogBuilderStatistics
 from .log_builder_registry import LogBuilderRegistry
-from ..common import Cache
+from .pages import PageDescription
 from ..webstag.mime_types import MIMETYPE_MARKDOWN, MIMETYPE_HTML
 from ..webstag.server import WebResponse
 
@@ -82,7 +83,7 @@ for tables, lists and divs.
 """
 
 
-class LogBuilder:
+class LogBuilder(LogBuilderBase):
     """
     Defines the central element to dynamically build and update a log document.
 
@@ -113,6 +114,7 @@ class LogBuilder:
         :param params: Additional parameters
         :param kwargs: Additional keyword arguments
         """
+        super().__init__()
         self.initial_module = log.initial_module
         "Handle of the module from which this VisualLog instance was initialized"
         self.page_session = page_session
@@ -214,6 +216,19 @@ class LogBuilder:
         The service extension for hosting static files and services
         """
         self._title = self.options.page.title
+        """Defines the log's title, initially a copy of the default title"""
+        self._page: str = ""
+        """Defines which page is currently visible. Affects all cells which have
+        a page property assigned"""
+        self._tab: str = ""
+        """Defines which tab is currently visible. Affects all cells which have a tab
+        property assigned"""
+        self.visible_groups: set[str] = {"default"}
+        """Defines which groups are currently visible. Placeholders such as * and ?
+        are supported"""
+        self.hidden_groups: set[str] = set()
+        """Defines which groups are currently explicitly hidden. Placeholders such 
+        as * and ? are supported"""
 
         # add upload widget extension
         path = FilePath.dirname(__file__)
@@ -249,14 +264,14 @@ class LogBuilder:
         """The current text alignment"""
         self._console_size = (120, 25)
         """The console width"""
-        self.cache = Cache()
-        """The local data cache"""
         self.global_cache = log.cache
         """The global data cache"""
         self.stats = LogBuilderStatistics()
         """The builder's statistic's"""
         self._terminated = False
         """Defines if the builder was terminated"""
+        self.pages: dict[str, PageDescription] = {}
+        """Defines a single sub page"""
 
     def build(self):
         """
@@ -311,6 +326,7 @@ class LogBuilder:
     def run(
         cls,
         options: LogOptions | LOG_DEFAULT_OPTION_LITERALS | None = None,
+        title: str | None = None,
         nested: bool = False,
         filetype: str | None = None,
         as_service: bool = False,
@@ -319,10 +335,11 @@ class LogBuilder:
         test: bool = False,
         fixed_session_id: str | None = None,
         **kwargs,
-    ) -> dict | WebResponse:
+    ) -> dict | WebResponse | None:
         """
         Executes the builder and returns its response
 
+        :param title: The log's title
         :param options: The style and output options. By default only a HTML log
             w/o any custom style will be generated.
         :param nested: Defines if the log will be nested and just the HTML body shall
@@ -330,7 +347,9 @@ class LogBuilder:
         :param filetype: If defined only the result of the defined format will be
             returned as bytes string.
         :param as_service: Defines if the Log shall be hosted via a server as a service.
-            Requires the calling file to be the main entry point. ("__main__")
+
+            Requires the calling file to be the application's main entry point.
+            (`__name__=="__main__"`)
         :param auto_reload: Defines if the calling source file shall be tracked and
             reloaded upon change
         :param out_details: If provided additional details will be stored in the
@@ -348,11 +367,7 @@ class LogBuilder:
         if as_service:
             is_main = VisualLog.is_main(2) or test
             if not is_main:
-                raise ValueError(
-                    "as_service is only valid if the calling file is "
-                    "the applications main entry point. For hosting a "
-                    "service from another file use VisualLog.run_server()"
-                )
+                return None
         else:
             if auto_reload:
                 raise ValueError(
@@ -362,6 +377,8 @@ class LogBuilder:
             filetype = kwargs["params"].get("filetype", filetype)
         if isinstance(options, str) or options is None:
             options = VisualLog.setup_options(options)
+        if title is not None:
+            options.page.title = title
         vl = VisualLog(
             options=options, stack_level=2, fixed_session_id=fixed_session_id
         )
@@ -528,7 +545,7 @@ class LogBuilder:
             return self
         # numpy array
         if isinstance(content, np.ndarray):
-            self.np(content, br=br)
+            self.np(content)
             return self
         if isinstance(content, (str, int, float)):
             content = str(content)
@@ -1264,6 +1281,64 @@ class LogBuilder:
         Ends the update mode
         """
         self.page_session.end_update()
+
+    @property
+    def current_page(self):
+        """
+        The currently visible page. Only cells with None or the associated page will
+        be shown and processed.
+        """
+        return self._page
+
+    @current_page.setter
+    def current_page(self, page: str):
+        """
+        Sets the new page.
+
+        All cells with given page name (or without any page) will be set visible,
+        all other pages will be hidden.
+
+        :param page: The name of the new page
+        """
+        self.set_page(page=page)
+
+    @property
+    def current_tab(self):
+        """
+        The currently visible tab. Only cells with None or the associated tab will
+        be shown and processed.
+        """
+        return self._tab
+
+    @current_tab.setter
+    def current_tab(self, tab: str):
+        """
+        Sets the new tab.
+
+        All cells with given tab name (or without any page) will be set visible,
+        all other pages will be hidden.
+
+        :param tab: The name of the new tab
+        """
+        self._tab = tab
+
+    def set_page(self, page: str | None = None, tab: str | None = None):
+        """
+        Jumps to given page and tab (without creating an entry in the navigation
+        history)
+
+        :param page: The page to move to. If no page is passed the current page will
+            be kept.
+        :param tab: The tab to move to. If no tab is passed and the page is changed
+            the initial tab will be received from self.pages[page].default_tab if
+            defined.
+        """
+        if page is not None:
+            self._page = page
+            if tab is None and page in self.pages:
+                tab = self.pages[page].default_tab
+        if tab is not None:
+            self._tab = tab
 
     def terminate(self):
         """

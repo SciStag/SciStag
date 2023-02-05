@@ -1,12 +1,21 @@
 -- TODO NOTES --
 
-- Accessing hosted files / directories
+- Tests and example for the usage of attribute binding via .clref
+- Removal of unnecessary requirements from the essentials file by recompiling it
+- Changing widget values from server side (slider value, select index etc.)
+- Add fetching print output in cell to options
+- Allow creating references to file in a FileSource
+- Parallel execution of embedded logs
+- Lazy execution of streaming cells
+- Finalization of snippet usage
+- File dependencies and automatic cell rebuild on change
+- Share cache between auto-reload sessions (again)
 - Add unit tests for yet completely missing areas and remove them from the omit list
-- PageSession or LogBuilder specific cache
-- Adding layouting possibilities to VisLog, e.g. centering, relative scaling etc.
+- Executing JavaScript commands
+- Demos for DataStag
 - Missing widgets:
-    - File upload
     - Checkbox
+    - ComboBox
     - Interactive image, e.g. pixel tracking
     - Progress bar
     - Pure int and float edit fields
@@ -18,35 +27,24 @@
     - Tag input
     - Defining ranges, range slider
     - Text field
-- Move VisualLog options to separate class, further extract elements
-- Allow VisuaLog to exchange single parts of a page rather than the whole page
-- Switching to Black for code formatting
 - Evaluation of integration of mypy
 - Effective logging and access for logs on virtual machines
 - Providing access to the system's health status via the VisualLog server
-- Providing time measurement and assumed process finishing in VirtualLog
 - Add timestamps to log entries for a better overview
 - Storing intermediate VisualLog reports in the cloud
-- Allow direct downloads to disk from any file source
 - Possibility of passing a stream to Image constructor
 - rework of image filters
-- Check nunpy array type when creating images.
 - FileStag save always overwrites, add check
 - Logging for process information and system info
 - Whem starting VisualLog with autoreload no server is available while the log is being build. Also no progress is available when reloading.
 - Catching VisualLog build assertions and storing them on a server if a process crashes
 - Allow to cache FileSources from zip completely in memory
 - Cleaner Zip FileSink instead of ://
-- Parameters for VisualLog's builder constructor if a class was passed
 - FilePath.get_size
 - Missing UT for bundling and unbundling bytes
 - Bundling of images
 - Possibility to receive directory names from FileSource
-- VisualLogBuilder.create and insert backup unit tests
 - Should .stscache always be created in the log dir, even if its temporary?
-- Test for creating Color from HSV
 - Granting access to Material Design icons
 - Fast histogram visualization via PlotStag
 - VisualLog init start_browser does not fail even if the disk is neither hosted nor stored on disk
-- Passing format to VisualLogBuilder logging functions instead of explicitly passing
-md=True or False

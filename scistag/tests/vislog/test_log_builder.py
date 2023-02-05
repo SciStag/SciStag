@@ -200,8 +200,7 @@ def test_run():
     with pytest.raises(ValueError):
         MyBuilder.run(filetype="html", as_service=False, auto_reload=True)
 
-    with pytest.raises(ValueError):
-        MyBuilder.run(filetype="html", as_service=True)
+    assert MyBuilder.run(filetype="html", as_service=True) is None
 
     details = {}
     MyBuilder.run(filetype="html", as_service=True, test=True, out_details=details)

@@ -1,6 +1,7 @@
 """
 Integrates VisualLog and VisualTestLog
 """
+from .common.cache_log_ref import CLRef
 from .sessions.page_session import MD, HTML, TXT, CONSOLE
 from .visual_log import VisualLog
 
@@ -17,6 +18,7 @@ __all__ = [
     "VisualLog",
     "VisualTestLog",
     "LogBuilder",
+    "CLRef",
     "LogStatistics",
     "BuilderExtension",
     "Cell",

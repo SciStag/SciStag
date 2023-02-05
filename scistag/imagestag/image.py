@@ -179,7 +179,11 @@ class Image(ImageBase):
         :return: The prepared source data
         """
         if isinstance(source, cls):
-            source = source.to_pil()
+            pixel_format = source.pixel_format
+            if framework == ImsFramework.PIL:
+                source = source.to_pil()  # no copy needed if read-only
+            else:
+                source = source.get_pixels()
         if (
             isinstance(source, np.ndarray)
             and pixel_format == PixelFormat.BGR
@@ -252,6 +256,7 @@ class Image(ImageBase):
                             "for SVG images initialized with PIL"
                         )
                     self._pil_handle = PIL.Image.open(data)
+                    self._pil_handle.load()
             elif isinstance(source, np.ndarray):
                 if not source.dtype == np.uint8:
                     raise ValueError("Unsupported array source")
@@ -739,7 +744,7 @@ class Image(ImageBase):
         """
         return self.get_pixels()
 
-    def get_pixels(self, desired_format: PixelFormat | None = None) -> np.ndarray:
+    def get_pixels(self, desired_format: PixelFormatTypes | None = None) -> np.ndarray:
         """
         Returns the image's pixel data as :class:`np.ndarray`.
 
@@ -764,6 +769,10 @@ class Image(ImageBase):
             return pixel_data
         if self.pixel_format == PixelFormat.RGBA and desired_format == PixelFormat.RGB:
             return pixel_data[:, :, 0:3]
+        if self.pixel_format == PixelFormat.RGB and desired_format == PixelFormat.RGBA:
+            gray = np.zeros(pixel_data.shape[0:2], dtype=np.uint8)
+            gray[:, :] = 255
+            return np.dstack((pixel_data, gray))
         to_rgb = desired_format == PixelFormat.RGB or desired_format == PixelFormat.RGBA
         if self.pixel_format not in {PixelFormat.RGB, PixelFormat.RGBA} and to_rgb:
             return self.normalize_to_rgb(pixel_data, input_format=self.pixel_format)

@@ -106,9 +106,14 @@ class Canvas:
             self.target_image = target_image.get_handle()
             assert isinstance(self.target_image, PIL.Image.Image)
         else:
-            img_format = PixelFormat(pixel_format).to_pil()
+            pixel_format = PixelFormat(pixel_format)
+            img_format = pixel_format.to_pil()
+            if pixel_format.band_count == 1:
+                color = default_color.to_int_gray()
+            else:
+                color = default_color.to_int_rgba()
             self.target_image = PIL.Image.new(
-                img_format, (self.width, self.height), color=default_color.to_int_rgba()
+                img_format, (self.width, self.height), color=color
             )
         self.image_draw = PIL.ImageDraw.ImageDraw(self.target_image)
 
