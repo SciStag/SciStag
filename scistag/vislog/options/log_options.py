@@ -6,6 +6,7 @@ from typing import Literal
 
 from scistag.vislog.options.cache_options import CacheOptions
 from scistag.vislog.options.debug_options import LogDebugOptions
+from scistag.vislog.options.extension_options import ExtensionOptions
 from scistag.vislog.options.format_options import FormatOptions
 from scistag.vislog.options.page_options import PageOptions
 
@@ -45,6 +46,8 @@ class LogOptions(BaseModel):
     """File format specific options"""
     cache: CacheOptions = Field(default_factory=CacheOptions)
     """The cache configuration"""
+    extensions: ExtensionOptions = Field(default_factory=ExtensionOptions)
+    """Extension configuration. Allows enabling advanced features"""
 
     def validate_options(self):
         """
@@ -58,13 +61,14 @@ class LogOptions(BaseModel):
         self.page.validate_options()
         self.formats.validate_options()
         self.cache.validate_options()
+        self.extensions.validate_options()
 
     def setup_defaults(
-        self,
-        defaults: Literal["local", "server", "disk", "console", "disk&console"]
-        | None = None,
-        title: str | None = None,
-        index_name: str | None = None,
+            self,
+            defaults: Literal["local", "server", "disk", "console", "disk&console"]
+                      | None = None,
+            title: str | None = None,
+            index_name: str | None = None,
     ) -> LogOptions:
         """
         Applies one of the standard configurations to the option sets depending on

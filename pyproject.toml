@@ -51,8 +51,8 @@ imgkit = { version = "1.2.2", optional = true }
 jupyterlab = { version = "^3.4.7", optional = true }
 jupyter = { version = "^1.0.0", optional = true }
 PySide6-Addons = { version = "6.4.1", optional = true }
-shiboken6 = { version =  "6.4.1", optional = true }
-chartstag = "0.8.1"
+shiboken6 = { version = "6.4.1", optional = true }
+chartstag = { version = "0.8.1", optional = true }
 
 [tool.poetry.extras]
 logstag = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib"]
@@ -68,7 +68,8 @@ moviepy = ["moviepy", "imgkit"]
 cutestag = ["PySide6-Addons", "shiboken6"]
 common = [
     "requests", "matplotlib",
-    "pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib",
+    "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib",
+    "chartstag",
     "pyarrow",
     "CairoSVG",
     "opencv-contrib-python",
@@ -77,7 +78,8 @@ common = [
     "moviepy", "imgkit"]
 full = [
     "requests", "matplotlib",
-    "pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib",
+    "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib",
+    "chartstag",
     "pyarrow",
     "CairoSVG",
     "opencv-contrib-python",

@@ -99,12 +99,12 @@ class LogBuilder(LogBuilderBase):
     """
 
     def __init__(
-        self,
-        log: "VisualLog",
-        page_session: Union["PageSession", None] = None,
-        nested: bool = False,
-        params: dict | BaseModel | Any | None = None,
-        **kwargs,
+            self,
+            log: "VisualLog",
+            page_session: Union["PageSession", None] = None,
+            nested: bool = False,
+            params: dict | BaseModel | Any | None = None,
+            **kwargs,
     ):
         """
         :param log: The log to which the content shall be added.
@@ -246,6 +246,20 @@ class LogBuilder(LogBuilderBase):
         self.service.register_css("VlComparatorWidget", "vl_comparator.css")
         self.service.register_js("VlComparatorWidget", "vl_comparator.js")
 
+        extensions = self.options.extensions
+        for key, value in extensions.additional_js.items():
+            self.publish(key, value)
+            self.service.register_js(key, key)
+        for key, value in extensions.additional_css.items():
+            self.publish(key, value)
+            self.service.register_css(key, key)
+        for key, value in extensions.additional_code.items():
+            code: str = value.decode("utf-8")
+            if not code.startswith("<script>"):
+                raise ValueError("Additional script code has to start with the <script>"
+                                 "tag")
+            self.service.register_js(key + "_code", code)
+
         """The website's title"""
         self._provide_live_view()
         self.params = params if params is not None else {}
@@ -324,17 +338,17 @@ class LogBuilder(LogBuilderBase):
 
     @classmethod
     def run(
-        cls,
-        options: LogOptions | LOG_DEFAULT_OPTION_LITERALS | None = None,
-        title: str | None = None,
-        nested: bool = False,
-        filetype: str | None = None,
-        as_service: bool = False,
-        auto_reload: bool = False,
-        out_details: dict | None = None,
-        test: bool = False,
-        fixed_session_id: str | None = None,
-        **kwargs,
+            cls,
+            options: LogOptions | LOG_DEFAULT_OPTION_LITERALS | None = None,
+            title: str | None = None,
+            nested: bool = False,
+            filetype: str | None = None,
+            as_service: bool = False,
+            auto_reload: bool = False,
+            out_details: dict | None = None,
+            test: bool = False,
+            fixed_session_id: str | None = None,
+            **kwargs,
     ) -> dict | WebResponse | None:
         """
         Executes the builder and returns its response
@@ -448,12 +462,12 @@ class LogBuilder(LogBuilderBase):
         return result
 
     def add(
-        self,
-        content: LogableContent,
-        br: bool = False,
-        mimetype: str | None = None,
-        share: Literal["sessionId"] | None = None,
-        **kwargs,
+            self,
+            content: LogableContent,
+            br: bool = False,
+            mimetype: str | None = None,
+            share: Literal["sessionId"] | None = None,
+            **kwargs,
     ) -> LogBuilder:
         """
         Adds the provided content to the log.
@@ -511,7 +525,7 @@ class LogBuilder(LogBuilderBase):
             content()
             return self
         if hasattr(content, "to_html") and not isinstance(
-            content, (pd.DataFrame, pd.Series)
+                content, (pd.DataFrame, pd.Series)
         ):
             self.html(content.to_html(), br=br)
             return self
@@ -956,12 +970,12 @@ class LogBuilder(LogBuilderBase):
         return res.decode("utf-8")
 
     def figure(
-        self,
-        figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
-        name: str | None = None,
-        alt: str | None = None,
-        _out_image_data: io.IOBase | None = None,
-        br: bool = False,
+            self,
+            figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
+            name: str | None = None,
+            alt: str | None = None,
+            _out_image_data: io.IOBase | None = None,
+            br: bool = False,
     ):
         """
         Adds a figure to the log
@@ -1000,10 +1014,10 @@ class LogBuilder(LogBuilderBase):
         self.image(image_data, name, alt=alt, br=br)
 
     def pyplot(
-        self,
-        assertion_name: str | None = None,
-        assertion_hash: str | None = None,
-        br: bool = False,
+            self,
+            assertion_name: str | None = None,
+            assertion_hash: str | None = None,
+            br: bool = False,
     ) -> "PyPlotLogContext":
         """
         Opens a matplotlib context to add a figure directly to the plot.
@@ -1130,11 +1144,11 @@ class LogBuilder(LogBuilderBase):
         self.page_session.write_md(md_code, no_break=not br)
 
     def add_txt(
-        self,
-        txt_code: str,
-        targets: str | set[str] | None = None,
-        align: bool = True,
-        br: bool = True,
+            self,
+            txt_code: str,
+            targets: str | set[str] | None = None,
+            align: bool = True,
+            br: bool = True,
     ):
         """
         Adds html code directly of the text and console section of this log.
@@ -1156,7 +1170,7 @@ class LogBuilder(LogBuilderBase):
         from scistag.vislog import TXT, CONSOLE
 
         if align and (
-            self._cur_alignment != "left" or self._cur_alignment_block != "left"
+                self._cur_alignment != "left" or self._cur_alignment_block != "left"
         ):
             lines = txt_code.split("\n")
             alignment, cw = self.get_ascii_alignment()
