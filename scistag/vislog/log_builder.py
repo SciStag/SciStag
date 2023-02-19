@@ -59,6 +59,7 @@ if TYPE_CHECKING:
     from .extensions.build_logger import BuildLogger
     from .extensions.emoji_logger import EmojiLogger
     from .extensions.snippet_extension import SnippetExtension
+    from .extensions.data_source_extension import DataSourceExtension
     from .extensions.service_extension import (
         LogServiceExtension,
         PublishingInfo,
@@ -99,12 +100,12 @@ class LogBuilder(LogBuilderBase):
     """
 
     def __init__(
-            self,
-            log: "VisualLog",
-            page_session: Union["PageSession", None] = None,
-            nested: bool = False,
-            params: dict | BaseModel | Any | None = None,
-            **kwargs,
+        self,
+        log: "VisualLog",
+        page_session: Union["PageSession", None] = None,
+        nested: bool = False,
+        params: dict | BaseModel | Any | None = None,
+        **kwargs,
     ):
         """
         :param log: The log to which the content shall be added.
@@ -117,19 +118,12 @@ class LogBuilder(LogBuilderBase):
         super().__init__()
         self.initial_module = log.initial_module
         "Handle of the module from which this VisualLog instance was initialized"
-        self.page_session = page_session
+        self.page_session: "PageSession" = page_session
         """
         Defines the target page which will store this builder's data
         """
         if self.page_session is None:
             self.page_session = log.default_page
-        self._file_dependencies = []
-        """
-        A list of files which were used to build the current log. When ever
-        any of these files changes the log should be rebuild.
-        """
-        "The main logging target"
-
         self._test: Union["TestHelper", None] = None
         """
         Helper class for adding regression tests to the log.
@@ -143,22 +137,26 @@ class LogBuilder(LogBuilderBase):
 
         self._table: Union["TableLogger", None] = None
         """
-        Helper class for adding tables to the log.
+        Helper r adding tables to the log.
         
         Can also be called directly to add a simple table to the log.
         """
 
         self._time: Union["TimeLogger", None] = None
         """
-        Helper class for time measuring and logging times to the log
+        Helper for time measuring and logging times to the log
         """
         self._emoji: Union["EmojiLogger", None] = None
         """
-        Helper class for adding emojis to the log
+        Helper for adding emojis to the log
         """
         self._snippet: Union["SnippetExtension", None] = None
         """
-        Helper class for recording and replaying log output
+        Helper for recording and replaying log output
+        """
+        self._data_source: Union["DataSourceExtension", None] = None
+        """
+        Helper for integrating and tracking external data sources such as files
         """
         self._log: Union["BasicLogger", None] = None
         """
@@ -256,8 +254,9 @@ class LogBuilder(LogBuilderBase):
         for key, value in extensions.additional_code.items():
             code: str = value.decode("utf-8")
             if not code.startswith("<script>"):
-                raise ValueError("Additional script code has to start with the <script>"
-                                 "tag")
+                raise ValueError(
+                    "Additional script code has to start with the <script>" "tag"
+                )
             self.service.register_js(key + "_code", code)
 
         """The website's title"""
@@ -338,17 +337,17 @@ class LogBuilder(LogBuilderBase):
 
     @classmethod
     def run(
-            cls,
-            options: LogOptions | LOG_DEFAULT_OPTION_LITERALS | None = None,
-            title: str | None = None,
-            nested: bool = False,
-            filetype: str | None = None,
-            as_service: bool = False,
-            auto_reload: bool = False,
-            out_details: dict | None = None,
-            test: bool = False,
-            fixed_session_id: str | None = None,
-            **kwargs,
+        cls,
+        options: LogOptions | LOG_DEFAULT_OPTION_LITERALS | None = None,
+        title: str | None = None,
+        nested: bool = False,
+        filetype: str | None = None,
+        as_service: bool = False,
+        auto_reload: bool = False,
+        out_details: dict | None = None,
+        test: bool = False,
+        fixed_session_id: str | None = None,
+        **kwargs,
     ) -> dict | WebResponse | None:
         """
         Executes the builder and returns its response
@@ -462,12 +461,12 @@ class LogBuilder(LogBuilderBase):
         return result
 
     def add(
-            self,
-            content: LogableContent,
-            br: bool = False,
-            mimetype: str | None = None,
-            share: Literal["sessionId"] | None = None,
-            **kwargs,
+        self,
+        content: LogableContent,
+        br: bool = False,
+        mimetype: str | None = None,
+        share: Literal["sessionId"] | None = None,
+        **kwargs,
     ) -> LogBuilder:
         """
         Adds the provided content to the log.
@@ -525,7 +524,7 @@ class LogBuilder(LogBuilderBase):
             content()
             return self
         if hasattr(content, "to_html") and not isinstance(
-                content, (pd.DataFrame, pd.Series)
+            content, (pd.DataFrame, pd.Series)
         ):
             self.html(content.to_html(), br=br)
             return self
@@ -820,6 +819,14 @@ class LogBuilder(LogBuilderBase):
         return self._snippet
 
     @property
+    def data_sources(self):
+        from .extensions.data_source_extension import DataSourceExtension
+
+        if self._data_source is None:
+            self._data_source = DataSourceExtension(self)
+        return self._data_source
+
+    @property
     def log(self) -> "BasicLogger":
         """
         Provides methods for classical logging where you can flag each entry with
@@ -970,12 +977,12 @@ class LogBuilder(LogBuilderBase):
         return res.decode("utf-8")
 
     def figure(
-            self,
-            figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
-            name: str | None = None,
-            alt: str | None = None,
-            _out_image_data: io.IOBase | None = None,
-            br: bool = False,
+        self,
+        figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
+        name: str | None = None,
+        alt: str | None = None,
+        _out_image_data: io.IOBase | None = None,
+        br: bool = False,
     ):
         """
         Adds a figure to the log
@@ -1014,10 +1021,10 @@ class LogBuilder(LogBuilderBase):
         self.image(image_data, name, alt=alt, br=br)
 
     def pyplot(
-            self,
-            assertion_name: str | None = None,
-            assertion_hash: str | None = None,
-            br: bool = False,
+        self,
+        assertion_name: str | None = None,
+        assertion_hash: str | None = None,
+        br: bool = False,
     ) -> "PyPlotLogContext":
         """
         Opens a matplotlib context to add a figure directly to the plot.
@@ -1144,11 +1151,11 @@ class LogBuilder(LogBuilderBase):
         self.page_session.write_md(md_code, no_break=not br)
 
     def add_txt(
-            self,
-            txt_code: str,
-            targets: str | set[str] | None = None,
-            align: bool = True,
-            br: bool = True,
+        self,
+        txt_code: str,
+        targets: str | set[str] | None = None,
+        align: bool = True,
+        br: bool = True,
     ):
         """
         Adds html code directly of the text and console section of this log.
@@ -1170,7 +1177,7 @@ class LogBuilder(LogBuilderBase):
         from scistag.vislog import TXT, CONSOLE
 
         if align and (
-                self._cur_alignment != "left" or self._cur_alignment_block != "left"
+            self._cur_alignment != "left" or self._cur_alignment_block != "left"
         ):
             lines = txt_code.split("\n")
             alignment, cw = self.get_ascii_alignment()
@@ -1228,17 +1235,6 @@ class LogBuilder(LogBuilderBase):
         """
         self.page_session.write_to_disk()
         return self
-
-    def add_file_dependency(self, filename: str):
-        """
-        Adds a file dependency to the log for automatic cache clearance and
-        triggering the auto-reloader (if enabled) when an included file gets
-        modified.
-
-        :param filename: The name of the file which shall be tracked. By
-            default only local files are observed.
-        """
-        self._file_dependencies.append(filename)
 
     def _provide_live_view(self):
         """

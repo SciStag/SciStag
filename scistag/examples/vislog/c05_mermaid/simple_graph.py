@@ -6,7 +6,6 @@ from scistag.vislog.options.extension_options import MERMAID_EXTENSION
 
 
 class SimpleGraph(LogBuilder):
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 

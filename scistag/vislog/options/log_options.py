@@ -64,11 +64,11 @@ class LogOptions(BaseModel):
         self.extensions.validate_options()
 
     def setup_defaults(
-            self,
-            defaults: Literal["local", "server", "disk", "console", "disk&console"]
-                      | None = None,
-            title: str | None = None,
-            index_name: str | None = None,
+        self,
+        defaults: Literal["local", "server", "disk", "console", "disk&console"]
+        | None = None,
+        title: str | None = None,
+        index_name: str | None = None,
     ) -> LogOptions:
         """
         Applies one of the standard configurations to the option sets depending on

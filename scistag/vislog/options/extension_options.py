@@ -66,12 +66,13 @@ class ExtensionOptions(BaseModel):
         """
         if name == MERMAID_EXTENSION:
             from chartstag.mermaid import get_mermaid_script
-            self.additional_js[
-                "mermaid_min.js"] = get_mermaid_script()
-            self.additional_code[
-                "mermaid"] = b"<script>mermaid.initialize({startOnLoad:true," \
-                             b"flowchart:{htmlLabels:true}," \
-                             b"securityLevel:'loose'})</script>"
+
+            self.additional_js["mermaid_min.js"] = get_mermaid_script()
+            self.additional_code["mermaid"] = (
+                b"<script>mermaid.initialize({startOnLoad:true,"
+                b"flowchart:{htmlLabels:true},"
+                b"securityLevel:'loose'})</script>"
+            )
 
     def verify_extension(self, name: str) -> bool:
         """
@@ -83,6 +84,7 @@ class ExtensionOptions(BaseModel):
         if name == MERMAID_EXTENSION:
             try:
                 from chartstag.mermaid import get_mermaid_script
+
                 return True
             except ModuleNotFoundError:
                 return False

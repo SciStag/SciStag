@@ -27,10 +27,10 @@ class MarkdownLogger(BuilderExtension):
         will be used instead"""
 
     def __call__(
-            self,
-            text: str,
-            exclude_targets: set[str] | None = None,
-            br=True,
+        self,
+        text: str,
+        exclude_targets: set[str] | None = None,
+        br=True,
     ) -> LogBuilder:
         """
         Adds a markdown section.
@@ -58,8 +58,10 @@ class MarkdownLogger(BuilderExtension):
 
         parsed = self.quick_parse(text)
         if parsed is None:
-            parsed = markdown.markdown(text, extensions=["tables",
-                                                         "scistag.vislog.md.mermaid_ext:MermaidExtension"])
+            parsed = markdown.markdown(
+                text,
+                extensions=["tables", "scistag.vislog.md.mermaid_ext:MermaidExtension"],
+            )
         if MD not in exclude_targets:
             self.builder.add_md(text, br=br)
         if HTML not in exclude_targets:
@@ -85,17 +87,17 @@ class MarkdownLogger(BuilderExtension):
             if spaceless.isalnum():  # just text
                 parsed = text
             elif (  # bold
-                    len(text)
-                    and text.startswith("**")
-                    and text.endswith("**")
-                    and text[2:-2].strip(" ").isalnum()
+                len(text)
+                and text.startswith("**")
+                and text.endswith("**")
+                and text[2:-2].strip(" ").isalnum()
             ):
                 parsed = f"<strong>{text[2:-2]}</strong>"
         elif (  # italic
-                len(text)
-                and text.startswith("*")
-                and text.endswith("*")
-                and text[1:-1].strip(" ").isalnum()
+            len(text)
+            and text.startswith("*")
+            and text.endswith("*")
+            and text[1:-1].strip(" ").isalnum()
         ):
             parsed = f"<strong>{text[2:-2]}</strong>"
         return parsed
@@ -109,7 +111,7 @@ class MarkdownLogger(BuilderExtension):
         :return: The builder
         """
         if isinstance(source, str):
-            self.add_dependency(source)
+            self.add_data_dependency(source)
         data = FileStag.load_text(source, encoding=encoding)
         if data is not None:
             self.add(data)

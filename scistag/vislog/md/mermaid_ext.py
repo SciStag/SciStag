@@ -23,10 +23,10 @@ class MermaidProcessor(Preprocessor):
         output.append('<div class="mermaid">')
         for line in code:
             output.append(line)
-        output.append('</div><script>mermaid.contentLoaded()</script>')
+        output.append("</div><script>mermaid.contentLoaded()</script>")
 
     def run(self, lines):
-        """ Find code blocks and store in htmlStash. """
+        """Find code blocks and store in htmlStash."""
         result_lines = []
         in_block = False
         is_target = False

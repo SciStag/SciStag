@@ -29,13 +29,13 @@ class BuilderExtension:
         Reference the builder's options
         """
 
-    def add_dependency(self, filename: str):
+    def add_data_dependency(self, source: str):
         """
-        Adds a file dependency to the log for automatic cache clearance and
+        Adds a data dependency to the current cell for automatic cache clearance and
         triggering the auto-reloader (if enabled) when an included file gets
         modified.
 
-        :param filename: The name of the file which shall be tracked. By
-            default only local files are observed.
+        :param source: The data source or the name of the file which shall be tracked.
+            By default only local files are observed.
         """
-        self.builder.add_file_dependency(filename)
+        self.builder.data_sources.add_dependency(source)

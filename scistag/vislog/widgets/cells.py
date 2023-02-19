@@ -269,6 +269,8 @@ class Cell(LWidget):
         """Defines if elements logged via print() shall be logged into the cell"""
         self.could_build = False
         """Defines if the cell could be build the last time"""
+        self._data_dependencies: dict[str, int] = {}
+        """Defines which dependencies this element used and which hash they had"""
         self.build()
         self.leave()
         if not static:
@@ -323,6 +325,7 @@ class Cell(LWidget):
         if not self.progressive:
             self.clear()
         if self.can_build:
+            self.clear_dependencies()
             self.could_build = True
             start_time = time.time()
             old_mod = self.sub_element.last_direct_change_time
@@ -546,3 +549,20 @@ class Cell(LWidget):
             values = key.split(CELL_REQUIREMENTS_EQUAL)
             return values[0]
         return key
+
+    def clear_dependencies(self):
+        """
+        Clears all current dependencies
+        """
+        self._data_dependencies = {}
+
+    def add_data_dependency(self, source: str):
+        """
+        Adds a data dependency to the cell for automatic cache clearance and
+        triggering the auto-reloader (if enabled) when an included data source gets
+        modified.
+
+        :param source: The name of the file which shall be tracked. By
+            default only local files are observed.
+        """
+        self._data_dependencies[source] = 0

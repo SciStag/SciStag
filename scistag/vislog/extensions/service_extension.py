@@ -47,11 +47,11 @@ class LogServiceExtension(BuilderExtension):
         self.publish("vl_upload_file", self.handle_file_upload)
 
     def publish(
-            self,
-            path: str,
-            content: bytes | str | Callable[[WebRequest], WebResponse],
-            store: bool | None = None,
-            embeddable: bool = False,
+        self,
+        path: str,
+        content: bytes | str | Callable[[WebRequest], WebResponse],
+        store: bool | None = None,
+        embeddable: bool = False,
     ) -> PublishingInfo:
         """
         Provides a data file relative to the current log / website location.
@@ -87,7 +87,7 @@ class LogServiceExtension(BuilderExtension):
                 exist_ok=True,
             )
             if self.builder.options.output.log_to_disk and (
-                    not self.builder.options.output.single_file or not embeddable
+                not self.builder.options.output.single_file or not embeddable
             ):
                 FileStag.save(self.page_session.target_dir + "/" + path, content)
         info = PublishingInfo(relative_url=path)

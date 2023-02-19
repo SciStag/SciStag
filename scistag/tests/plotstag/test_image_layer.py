@@ -106,7 +106,9 @@ def test_transparent_image():
     vl.test.begin("Plotting transparent images")
     stag_emoji = render_emoji(":deer:")
     image = Figure().add_plot().add_image(stag_emoji, size_ratio=1.0).render()
-    vl.test.assert_image("stag_plot_alpha_transparent", image, "aec2b0c9b03cb4401e9674199b558722")
+    vl.test.assert_image(
+        "stag_plot_alpha_transparent", image, "aec2b0c9b03cb4401e9674199b558722"
+    )
 
 
 @pytest.mark.skipif(skip_plotstag, reason="PlotStag tests disabled")

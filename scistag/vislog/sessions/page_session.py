@@ -43,7 +43,7 @@ ROOT_ELEMENT_NAME = "vlbody"
 if TYPE_CHECKING:
     from scistag.vislog.visual_log import VisualLog
     from scistag.vislog.common.page_update_context import PageUpdateContext
-    from scistag.vislog import LogBuilder
+    from scistag.vislog import LogBuilder, Cell
 
 session_id_counter_set = set()
 """Set storing the already used session IDs"""
@@ -122,7 +122,7 @@ class PageSession:
         self.cur_element: LogElement = self._logs
         """Defines the current target element"""
         self.element_stack: list[LogElement] = []
-        """Stag of previous elements which were previously a target"""
+        """Stag of **previous** elements which were previously a target"""
         self._html_export = HTML in self.log_formats
         "Defines if HTML gets exported"
         self.md_export = MD in self.log_formats
@@ -756,6 +756,60 @@ class PageSession:
             )
         self.cur_element = self.element_stack.pop()
         return self.cur_element
+
+    def get_widget_stack(self) -> list["Cell"]:
+        """
+        Returns a stack of all widgets which are currently being "entered" such as
+        cells or other elements such as grids which are dynamically written.
+
+        :return: The list of all active widgets
+        """
+        result = []
+        stack = self.element_stack + [self.cur_element]
+        for element in stack:
+            if "widget" in element.flags:
+                result.append(element.flags["widget"])
+        return result
+
+    def get_cell_stack(self) -> list["Cell"]:
+        """
+        Returns a stack of all cells which are currently being "entered" either
+        by a LogBuilder method flagged with @cell, @sector etc. or by a cell
+        created dynamically.
+
+        :return: The list of all active cells
+        """
+        result = []
+        from scistag.vislog.widgets.cells import Cell
+
+        stack = self.element_stack + [self.cur_element]
+        for element in stack:
+            if "widget" in element.flags:
+                widget = element.flags["widget"]
+                if isinstance(widget, Cell):
+                    result.append(widget)
+        return result
+
+    def get_active_cell(self) -> Union["Cell", None]:
+        """
+        Returns the cell currently written (if there is one). None otherwise.
+
+        :return: The cell (if there currently is one one the element_stack).
+        """
+        from scistag.vislog.widgets.cells import Cell
+
+        if "widget" in self.cur_element.flags:
+            widget = self.cur_element.flags["widget"]
+            if isinstance(widget, Cell):
+                return widget
+
+        stack = self.element_stack + [self.cur_element]
+        for element in reversed(stack):
+            if "widget" in element.flags:
+                widget = element.flags["widget"]
+                if isinstance(widget, Cell):
+                    return widget
+        return None
 
     def handle_events(self) -> float | None:
         """
