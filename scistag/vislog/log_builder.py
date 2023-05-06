@@ -83,6 +83,9 @@ Definition of all types which can be logged via `add` or provided as content
 for tables, lists and divs.
 """
 
+HTML_SCRIPT_TAG = "<script>"
+"HTML tag for embedding scripts"
+
 
 class LogBuilder(LogBuilderBase):
     """
@@ -137,7 +140,7 @@ class LogBuilder(LogBuilderBase):
 
         self._table: Union["TableLogger", None] = None
         """
-        Helper r adding tables to the log.
+        Helper class for adding tables to the log.
         
         Can also be called directly to add a simple table to the log.
         """
@@ -244,20 +247,7 @@ class LogBuilder(LogBuilderBase):
         self.service.register_css("VlComparatorWidget", "vl_comparator.css")
         self.service.register_js("VlComparatorWidget", "vl_comparator.js")
 
-        extensions = self.options.extensions
-        for key, value in extensions.additional_js.items():
-            self.publish(key, value)
-            self.service.register_js(key, key)
-        for key, value in extensions.additional_css.items():
-            self.publish(key, value)
-            self.service.register_css(key, key)
-        for key, value in extensions.additional_code.items():
-            code: str = value.decode("utf-8")
-            if not code.startswith("<script>"):
-                raise ValueError(
-                    "Additional script code has to start with the <script>" "tag"
-                )
-            self.service.register_js(key + "_code", code)
+        self.setup_extensions()  # register custom css, js etc.
 
         """The website's title"""
         self._provide_live_view()
@@ -285,6 +275,26 @@ class LogBuilder(LogBuilderBase):
         """Defines if the builder was terminated"""
         self.pages: dict[str, PageDescription] = {}
         """Defines a single sub page"""
+
+    def setup_extensions(self) -> None:
+        """
+        Setups extensions configured in options.extensions such as custom css or
+        javascript
+        """
+        extensions = self.options.extensions
+        for key, value in extensions.additional_js.items():
+            self.publish(key, value)
+            self.service.register_js(key, key)
+        for key, value in extensions.additional_css.items():
+            self.publish(key, value)
+            self.service.register_css(key, key)
+        for key, value in extensions.additional_code.items():
+            code: str = value.decode("utf-8")
+            if not code.startswith(HTML_SCRIPT_TAG):
+                raise ValueError(
+                    "Additional script code has to start with the <script>" "tag"
+                )
+            self.service.register_js(key + "_code", code)
 
     def build(self):
         """

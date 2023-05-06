@@ -1,5 +1,12 @@
 -- TODO NOTES --
 
+- Bug: It's not possible to embed an SVG on disk as the filetype is not detected
+- Bug: Image(None) raises NotImplementedError instead of warning that the data is None
+- Easy customization of elements such as buttons
+- More neutral and smaller button appearance
+- Buttons should be able to auto-trigger with a defined frequency
+- Modification of properties such as a slider's index without having to rewrite it's
+  cell.
 - Tests and example for the usage of attribute binding via .clref
 - Removal of unnecessary requirements from the essentials file by recompiling it
 - Changing widget values from server side (slider value, select index etc.)
@@ -36,7 +43,7 @@
 - rework of image filters
 - FileStag save always overwrites, add check
 - Logging for process information and system info
-- Whem starting VisualLog with autoreload no server is available while the log is being build. Also no progress is available when reloading.
+- When starting VisualLog with autoreload no server is available while the log is being build. Also no progress is available when reloading.
 - Catching VisualLog build assertions and storing them on a server if a process crashes
 - Allow to cache FileSources from zip completely in memory
 - Cleaner Zip FileSink instead of ://

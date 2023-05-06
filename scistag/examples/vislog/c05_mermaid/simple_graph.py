@@ -15,6 +15,7 @@ class SimpleGraph(LogBuilder):
         self.md.embed("./simple_graph.md")
 
 
-options = VisualLog.setup_options()
-options.extensions.add(MERMAID_EXTENSION)
-SimpleGraph.run(as_service=True, options=options)
+if VisualLog.is_main():
+    options = VisualLog.setup_options()
+    options.extensions.add(MERMAID_EXTENSION)
+    SimpleGraph.run(as_service=True, options=options)

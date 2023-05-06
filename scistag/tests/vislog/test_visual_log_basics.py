@@ -450,7 +450,7 @@ def test_dependencies():
     """
     Tests dependency handling
     """
-    vl.add_data_dependency("test.md")  # not yet implemented
+    vl.add_data_dependency("test.md")  # TODO Not yet implemented
 
 
 def test_options():
