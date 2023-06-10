@@ -6,6 +6,9 @@
   data is None
 - Bug: ImageStag: InterpolationMethod not exported
 - Bug: ImageStag: Return Image from Image.resize method to be compatible to PIL
+- "Bug": SciStag is currently incompatible with MkDocs due to outdated dependencies
+  of MKDocs. To be verified if a compromise can be found.
+- FileStag: Support for matching multiple extensions with file masks (e.g. FileSource)
 - VisualLog: Finalization of dynamic markdown and basic mermaid integration
 - VisualLog: Simplification of Cell visibility groups (e.g. removal of tabs)
 - VisualLog: Passing column names to a VisualLog Table in it's constructor
