@@ -300,7 +300,7 @@ class TestHelper(BuilderExtension):
         :param name: The reference's unique name
         :param data: The data to store
         """
-        hashed_name = self.builder.get_hashed_filename(name)
+        hashed_name = self.builder._get_hashed_filename(name)
         FilePath.make_dirs(self.builder.options.output.ref_dir, exist_ok=True)
         hash_fn = self.builder.options.output.ref_dir + "/" + hashed_name + ".dmp"
         FileStag.save(hash_fn, data)
@@ -312,7 +312,7 @@ class TestHelper(BuilderExtension):
         :param name: The reference's unique name
         :return: The data. None if no reference could be found
         """
-        hashed_name = self.builder.get_hashed_filename(name)
+        hashed_name = self.builder._get_hashed_filename(name)
         hash_fn = self.builder.options.output.ref_dir + "/" + hashed_name + ".dmp"
         if FileStag.exists(hash_fn):
             return FileStag.load(hash_fn)

@@ -234,16 +234,24 @@ class LogBuilder(LogBuilderBase):
         # add upload widget extension
         path = FilePath.dirname(__file__)
         ext_path = path + "/templates/extensions/"
-        self.publish("visual_log.css", path + "/css/visual_log.css")
+        self.service.publish("visual_log.css", path + "/css/visual_log.css")
         self.service.register_css("VlBaseCss", "visual_log.css")
-        self.publish("vl_live_view.js", path + "/templates/liveLog/vl_live_view.js")
+        self.service.publish(
+            "vl_live_view.js", path + "/templates/liveLog/vl_live_view.js"
+        )
         self.service.register_js("VlLiveView", "vl_live_view.js")
-        self.publish("vl_file_upload.css", ext_path + "upload/vl_file_upload.css")
-        self.publish("vl_file_upload.js", ext_path + "upload/vl_file_upload.js")
+        self.service.publish(
+            "vl_file_upload.css", ext_path + "upload/vl_file_upload.css"
+        )
+        self.service.publish("vl_file_upload.js", ext_path + "upload/vl_file_upload.js")
         self.service.register_css("VlUploadWidget", "vl_file_upload.css")
         self.service.register_js("VlUploadWidget", "vl_file_upload.js")
-        self.publish("vl_comparator.css", ext_path + "comparator/vl_comparator.css")
-        self.publish("vl_comparator.js", ext_path + "comparator/vl_comparator.js")
+        self.service.publish(
+            "vl_comparator.css", ext_path + "comparator/vl_comparator.css"
+        )
+        self.service.publish(
+            "vl_comparator.js", ext_path + "comparator/vl_comparator.js"
+        )
         self.service.register_css("VlComparatorWidget", "vl_comparator.css")
         self.service.register_js("VlComparatorWidget", "vl_comparator.js")
 
@@ -283,10 +291,10 @@ class LogBuilder(LogBuilderBase):
         """
         extensions = self.options.extensions
         for key, value in extensions.additional_js.items():
-            self.publish(key, value)
+            self.service.publish(key, value)
             self.service.register_js(key, key)
         for key, value in extensions.additional_css.items():
-            self.publish(key, value)
+            self.service.publish(key, value)
             self.service.register_css(key, key)
         for key, value in extensions.additional_code.items():
             code: str = value.decode("utf-8")
@@ -496,7 +504,7 @@ class LogBuilder(LogBuilderBase):
             * Image(s) - see :class:`Image
             * Figure(s) - :class:`Figure`
             * Pandas DataFrame(s) and Series
-            * Nunpy Arrays
+            * Numpy Arrays
             * Common Python types such as dicts and dists, strings, floats and
                 ints.
         :param br: Defines if the element shall be followed by a linebreak
@@ -974,18 +982,6 @@ class LogBuilder(LogBuilderBase):
         self.handle_modified()
         return self
 
-    @staticmethod
-    def encode_html(text: str) -> str:
-        """
-        Escaped text to html compatible text
-
-        :param text: The original unicode text
-        :return: The escaped text
-        """
-        escaped = html.escape(text)
-        res = escaped.encode("ascii", "xmlcharrefreplace")
-        return res.decode("utf-8")
-
     def figure(
         self,
         figure: Union["plt.Figure", "plt.Axes", Figure, Plot],
@@ -1064,28 +1060,6 @@ class LogBuilder(LogBuilderBase):
         )
         return log_context
 
-    @staticmethod
-    def get_hashed_filename(name):
-        """
-        Returns a hashed filename for name to be store it with a fixed size
-        on disk
-
-        :param name: The file's name
-        :return: The hash name to be used as filename
-        """
-        hashed_name = hashlib.md5(name.encode("utf-8")).hexdigest()
-        return hashed_name
-
-    @staticmethod
-    def html_linebreaks(text: str) -> str:
-        """
-        Replaces linebreaks through html linebreaks
-
-        :param text: The original text
-        :return: The text with html linebreaks
-        """
-        return text.replace("\n\r", "\n").replace("\n", "<br>")
-
     def create_backup(self) -> LogBackup:
         """
         Creates a backup of the log's content so it can for example be
@@ -1114,22 +1088,6 @@ class LogBuilder(LogBuilderBase):
         for key, value in backup.data.items():
             if key in self.page_session.log_formats:
                 self.page_session.write_data(key, value)
-
-    def publish(self, path: str, content: bytes | str, **kwargs) -> "PublishingInfo":
-        """
-        Publishes a result data file.
-
-        If the log is stored to disk the result data will be stored in the log's
-        directory. If sub paths are used missing paths will automatically be created.
-
-        If the log is not stored to disk the file is available at the URLs provided
-        in the returned result.
-
-        :param path: The relative path at which the data or service shall be provided
-        :param content: The file's content (if provided as bytes string) or the file's
-            path.
-        """
-        return self.service.publish(path, content, **kwargs)
 
     def add_html(self, html_code: str | bytes):
         """
@@ -1446,3 +1404,37 @@ class LogBuilder(LogBuilderBase):
         :return: True if it is a mock
         """
         return False
+
+    @staticmethod
+    def _get_hashed_filename(name):
+        """
+        Returns the hash value for a filename and returns a new filename just consisting
+        of letters and numbers to ensure it will work on every operating system.
+
+        :param name: The file's name
+        :return: The hash name to be used as filename
+        """
+        hashed_name = hashlib.md5(name.encode("utf-8")).hexdigest()
+        return hashed_name
+
+    @staticmethod
+    def _html_linebreaks(text: str) -> str:
+        """
+        Replaces linebreaks through html linebreaks
+
+        :param text: The original text
+        :return: The text with html linebreaks
+        """
+        return text.replace("\n\r", "\n").replace("\n", "<br>")
+
+    @staticmethod
+    def _encode_text_html(text: str) -> str:
+        """
+        Escaped text to html compatible text
+
+        :param text: The original unicode text
+        :return: The escaped text
+        """
+        escaped = html.escape(text)
+        res = escaped.encode("ascii", "xmlcharrefreplace")
+        return res.decode("utf-8")
