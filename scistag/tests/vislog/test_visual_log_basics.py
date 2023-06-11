@@ -450,7 +450,13 @@ def test_dependencies():
     """
     Tests dependency handling
     """
-    vl.add_data_dependency("test.md")  # TODO Not yet implemented
+    temp_path = vl.get_temp_path()
+    os.makedirs(temp_path, exist_ok=True)
+    fn = temp_path + "/test_markdown_dependency.md"
+    FileStag.save_text(fn, text="DependsTest")
+    with vl.cell.add():
+        vl.data_sources.add_dependency(fn)
+        assert vl.data_sources.get_hash(fn) is not None
 
 
 def test_options():

@@ -565,4 +565,5 @@ class Cell(LWidget):
         :param source: The name of the file which shall be tracked. By
             default only local files are observed.
         """
-        self._data_dependencies[source] = 0
+        self.builder.data_sources.add_source(source)
+        self._data_dependencies[source] = self.builder.data_sources.get_hash(source)

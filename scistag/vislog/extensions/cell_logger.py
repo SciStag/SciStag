@@ -34,44 +34,6 @@ class CellLogger(BuilderExtension):
         Dictionary of all registered cells
         """
 
-    def begin(
-        self,
-        progressive: bool = False,
-        interval_s: float | None = None,
-        continuous: bool = False,
-        static: bool = False,
-        **kwargs,
-    ) -> Cell:
-        """
-        Begins a new content cell to which you can add content with any logging
-        function and can update this content at any later point in time.
-
-        :param progressive: Defines if the cell shall be updated progressively.
-
-            Data will be visible as soon as the line was executed rather than at
-            the end of the cell's build function.
-        :param interval_s: The update interval of the cell in seconds.
-
-            The cell will be updated at a maximum update interval either when the
-            cell.invalidate() method is called or when the cell is flagged as
-            continuous.
-        :param continuous: Defines if the cell shall updated automatically with the
-            interval defined.
-        :param static: Defines if the cell is static and does not need any container
-            when being stored in the html file.
-        :param kwargs: For additional parameters see :class:`Cell`
-        :return: The content cell reference
-        """
-        cell = Cell(
-            builder=self.builder,
-            progressive=progressive,
-            interval_s=interval_s,
-            continuous=continuous,
-            static=static,
-            **kwargs,
-        )
-        return cell
-
     def add(
         self,
         progressive: bool = False,

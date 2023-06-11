@@ -1,5 +1,5 @@
 """
-The class :class:`FileObserver` observers a specified FileSource such
+The class :class:`FileDataObserver` observers a specified FileSource such
 as a directory or cloud storage and trigger its callbacks or changes its
 hash value when ever a file was modified.
 """
@@ -10,14 +10,14 @@ import hashlib
 import io
 import os
 
-from scistag.common.observer import Observer
+from scistag.common.observer import DataObserver
 from scistag.filestag import FileStag
 from scistag.filestag.file_source import FileSource
 
 
-class FileObserver(Observer):
+class FileDataObserver(DataObserver):
     """
-    The FileObserver creates a hash of a defined FileSource by combining
+    The FileDataObserver creates a hash of a defined file or FileSource by combining
     the hashes of all filenames, sizes and time stamps into a single hash.
 
     When ever a single file is changed the observer is triggered and it's
@@ -26,7 +26,7 @@ class FileObserver(Observer):
 
     def __init__(
         self,
-        source: FileSource | list[FileSource] | None,
+        source: FileSource | list[FileSource | str] | None | str,
         max_content_size: int = 0,
         refresh_time_s: float = 1.0,
     ):
@@ -45,11 +45,17 @@ class FileObserver(Observer):
         """
         if source is None:
             source = []
-        elif not isinstance(source, list):
+        elif isinstance(source, FileSource):
             source = [source]
-        self.sources: list[FileSource] = source
+        elif isinstance(source, str):
+            source = [source]
+        else:
+            raise TypeError("Unsupported data type")
+        self.sources: list[FileSource] = [
+            element for element in source if isinstance(element, FileSource)
+        ]
         "The file sources to observe"
-        self.files = []
+        self.files = [element for element in source if isinstance(element, str)]
         "The list of single files to observe"
 
     def add(self, source: FileSource | str):
@@ -65,7 +71,7 @@ class FileObserver(Observer):
         else:
             self.sources.append(source)
 
-    def hash_int(self) -> str:
+    def hash_int(self) -> int:
         hashes = "hi"
         for cur_source in self.sources:
             cur_source.refresh()
@@ -83,4 +89,4 @@ class FileObserver(Observer):
             stream.write(int(mod_date * 10).to_bytes(8, "little", signed=True))
             stream.write(size.to_bytes(8, "little", signed=True))
             hashes += hashlib.md5(stream.getvalue()).hexdigest()
-        return hashlib.md5(hashes.encode("utf-8")).hexdigest()
+        return int(hashlib.md5(hashes.encode("utf-8")).hexdigest(), 16)

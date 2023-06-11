@@ -1,5 +1,8 @@
 -- TODO NOTES --
 
+- VisualLog: Move data source tracking to cell data to clear dependencies of each cell
+  when ever the cell is fully rebuilt. Allow fix dependencies which can not be removed
+  by a clear.
 - Bug: ImageStag: It's not possible to embed an SVG on disk as the filetype is not
   detected
 - Bug: ImageStag: Image(None) raises NotImplementedError instead of warning that the

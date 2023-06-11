@@ -16,7 +16,7 @@ def test_cell_creation():
     vl = log.default_builder
     vp = log.default_page
     vl.title("Header")
-    with vl.cell.begin() as cell:
+    with vl.cell.add() as cell:
         vl.log("Hello world")
     cell.leave()  # twice, just for testing
     assert b"Hello world" in vp.render_element(None)[1]
