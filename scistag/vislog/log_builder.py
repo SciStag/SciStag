@@ -58,8 +58,9 @@ if TYPE_CHECKING:
     from .extensions.basic_logger import BasicLogger
     from .extensions.build_logger import BuildLogger
     from .extensions.emoji_logger import EmojiLogger
+    from .extensions.chart_logger import ChartLogger
     from .extensions.snippet_extension import SnippetExtension
-    from .extensions.data_source_extension import DataSourceExtension
+    from .extensions.data_loader_extension import DataLoaderExtension
     from .extensions.service_extension import (
         LogServiceExtension,
         PublishingInfo,
@@ -157,7 +158,7 @@ class LogBuilder(LogBuilderBase):
         """
         Helper for recording and replaying log output
         """
-        self._data_source: Union["DataSourceExtension", None] = None
+        self._data_source: Union["DataLoaderExtension", None] = None
         """
         Helper for integrating and tracking external data sources such as files
         """
@@ -190,6 +191,10 @@ class LogBuilder(LogBuilderBase):
         self._widget: Union["WidgetLogger", None] = None
         """
         Extension to add visual, interactive components 
+        """
+        self._chart: Union["ChartLogger", None] = None
+        """
+        Extension to add charts and diagrams
         """
         self._align: Union["AlignmentLogger", None] = None
         """
@@ -837,11 +842,11 @@ class LogBuilder(LogBuilderBase):
         return self._snippet
 
     @property
-    def data_sources(self):
-        from .extensions.data_source_extension import DataSourceExtension
+    def data_loader(self):
+        from .extensions.data_loader_extension import DataLoaderExtension
 
         if self._data_source is None:
-            self._data_source = DataSourceExtension(self)
+            self._data_source = DataLoaderExtension(self)
         return self._data_source
 
     @property
@@ -911,6 +916,17 @@ class LogBuilder(LogBuilderBase):
         if self._widget is None:
             self._widget = WidgetLogger(self)
         return self._widget
+
+    @property
+    def chart(self) -> "ChartLogger":
+        """
+        Methods to charts and diagrams to the log
+        """
+        from .extensions.chart_logger import ChartLogger
+
+        if self._chart is None:
+            self._chart = ChartLogger(self)
+        return self._chart
 
     @property
     def align(self) -> "AlignmentLogger":
@@ -1224,7 +1240,7 @@ class LogBuilder(LogBuilderBase):
             "reload_url": "events",
             "vl_slim": self.options.style.slim,
             "vl_log_updates": self.options.debug.html_client.log_updates,
-            "scistag_version": scistag.__version__,
+            "scistag_version": scistag.common.__version__,
         }
         template = environment.from_string(
             FileStag.load_text(base_path + "/templates/liveLog/default_liveView.html")

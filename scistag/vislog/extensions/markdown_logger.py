@@ -102,15 +102,23 @@ class MarkdownLogger(BuilderExtension):
             parsed = f"<strong>{text[2:-2]}</strong>"
         return parsed
 
-    def embed(self, source: FileSourceTypes, encoding="utf-8") -> LogBuilder:
+    def embed(
+        self,
+        source: FileSourceTypes,
+        encoding="utf-8",
+        watch: bool = True,
+    ) -> LogBuilder:
         """
         Embeds a markdown file into the log
 
         :param source: The filename or a compatible file source
         :param encoding: The file's encoding
+        :param watch: If watch is enabled the cell will be refreshed automatically if
+            the cell is dynamic and the embedded data changed (if it is a trackable
+            source such as a file)
         :return: The builder
         """
-        if isinstance(source, str):
+        if watch:
             self.add_data_dependency(source)
         data = FileStag.load_text(source, encoding=encoding)
         if data is not None:

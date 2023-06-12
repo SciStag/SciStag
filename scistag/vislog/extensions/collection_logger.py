@@ -1,6 +1,6 @@
 """
-Implements the :class:`NumpyLogger` extension for LogBuilder to log
-numpy data such as matrices and vectors.
+Implements the :class:`CollectionLogger` extension for LogBuilder to log
+nested lists and dictionaries
 """
 from __future__ import annotations
 

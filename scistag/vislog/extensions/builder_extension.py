@@ -2,7 +2,7 @@
 Defines the class :class:`BuilderExtension` which is the base class
 for LogBuilder extensions such as adding markdown or HTML.
 """
-
+from scistag.filestag import FileStag
 from scistag.vislog import LogBuilder
 
 
@@ -29,7 +29,7 @@ class BuilderExtension:
         Reference the builder's options
         """
 
-    def add_data_dependency(self, source: str):
+    def add_data_dependency(self, source: str) -> bool:
         """
         Adds a data dependency to the current cell for automatic cache clearance and
         triggering the auto-reloader (if enabled) when an included file gets
@@ -38,4 +38,4 @@ class BuilderExtension:
         :param source: The data source or the name of the file which shall be tracked.
             By default only local files are observed.
         """
-        self.builder.data_sources.add_dependency(source)
+        return self.builder.data_loader.add_dependency(source)

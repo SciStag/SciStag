@@ -53,7 +53,7 @@ class LogRenderer:
         return {
             "title": self.title,
             "vl_slim": self.options.style.slim,
-            "scistag_version": scistag.__version__,
+            "scistag_version": scistag.common.__version__,
         }
 
     def set_body_template(self, template: str, **params):

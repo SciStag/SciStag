@@ -482,13 +482,8 @@ class Cell(LWidget):
             )
             self._build_time_acc = 0.0
 
-        element_set = self.uses.union(self.requires)
-        for key in element_set:
-            key = self._clean_key_name(key)
-            hash_val = self.builder.cache.get_revision(key)
-            if hash_val != self.hashes.get(key, 0):
-                self._next_tick = cur_time
-                break
+        if self.detect_changes():
+            self._next_tick = cur_time
         if self.could_build != self.can_build:  # check if the visibility changed
             self._next_tick = cur_time
         if self._next_tick is None:
@@ -503,6 +498,24 @@ class Cell(LWidget):
         else:
             self._next_tick = None
         return self._next_tick
+
+    def detect_changes(self):
+        """
+        Is called in intervals to detect changes in used cache variables or tracked
+        data sources.
+        """
+        element_set = self.uses.union(self.requires)
+        for key in element_set:
+            key = self._clean_key_name(key)
+            hash_val = self.builder.cache.get_revision(key)
+            if hash_val != self.hashes.get(key, 0):
+                return True
+        for element in self._data_dependencies:
+            cur_hash = self._data_dependencies[element]
+            new_hash = self.builder.data_loader.get_hash(element)
+            if new_hash is None or cur_hash != element:
+                return True
+        return False
 
     def handle_stdout(self, buffer: str):
         """
@@ -555,6 +568,7 @@ class Cell(LWidget):
         Clears all current dependencies
         """
         self._data_dependencies = {}
+        self.builder.data_loader.handle_cell_modified(self)
 
     def add_data_dependency(self, source: str):
         """
@@ -565,5 +579,6 @@ class Cell(LWidget):
         :param source: The name of the file which shall be tracked. By
             default only local files are observed.
         """
-        self.builder.data_sources.add_source(source)
-        self._data_dependencies[source] = self.builder.data_sources.get_hash(source)
+        self.builder.data_loader.add_source(source, self)
+        if source not in self._data_dependencies:
+            self._data_dependencies[source] = self.builder.data_loader.get_hash(source)

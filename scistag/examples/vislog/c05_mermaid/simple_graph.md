@@ -1,11 +1,7 @@
-# Hi
-
-like this
+A simple left to right graph
      
 ``` mermaid
 graph LR;
     A-->B;
-    B-->C;
-```        
-
-sometext...
+    B-->F;
+```

@@ -38,3 +38,6 @@ __all__ = [
     "DataObserverList",
     "SystemInfo",
 ]
+
+__version__ = "0.8.2"
+"""The current release version"""

@@ -455,8 +455,8 @@ def test_dependencies():
     fn = temp_path + "/test_markdown_dependency.md"
     FileStag.save_text(fn, text="DependsTest")
     with vl.cell.add():
-        vl.data_sources.add_dependency(fn)
-        assert vl.data_sources.get_hash(fn) is not None
+        vl.data_loader.add_dependency(fn)
+        assert vl.data_loader.get_hash(fn) is not None
 
 
 def test_options():

@@ -11,8 +11,9 @@ class SimpleGraph(LogBuilder):
 
     @cell
     def show_graph(self):
-        self.title("Hello world")
-        self.md.embed("./simple_graph.md")
+        self.title("Simple Graph")
+        self.md.embed("./simple_graph.md", watch=True)
+        self.chart.mmd("graph TD\nX-->Y")
 
 
 if VisualLog.is_main():
