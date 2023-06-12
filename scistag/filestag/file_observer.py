@@ -79,6 +79,8 @@ class FileDataObserver(DataObserver):
         for element in self.files:
             if not FileStag.is_simple(element):
                 raise ValueError("Only local files supported as of now")
+            if not os.path.isfile(element):
+                return 0
             mod_date = os.path.getmtime(element)
             size = os.path.getsize(element)
             content_hash: str = ""
