@@ -9,7 +9,7 @@ from .protocols import ZIP_SOURCE_PROTOCOL
 from .file_stag import FileStag, FileSourceTypes
 from .file_path import FilePath
 from .file_source import FileSource
-from .file_observer import FileObserver
+from .file_observer import FileDataObserver
 from .file_sink import FileSink, FileStorageOptions
 from .memory_zip import MemoryZip
 from .bundle import Bundle
@@ -23,6 +23,6 @@ __all__ = [
     "Bundle",
     "FileSink",
     "FileStorageOptions",
-    "FileObserver",
+    "FileDataObserver",
     "MemoryZip",
 ]

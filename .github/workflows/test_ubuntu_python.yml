@@ -13,9 +13,10 @@ jobs:
         uses: abatilo/actions-poetry@v2
         with:
           poetry-version: 1.2.2
-      - uses: actions/setup-python@v4.4.0
+      - uses: actions/setup-python@v4.5.0
         with:
           python-version: 3.9
+          cache-dependency-path: poetry.lock
           cache: 'poetry'
       - run: poetry install -E "common cutestag" --with dev --no-interaction --no-root
         env:

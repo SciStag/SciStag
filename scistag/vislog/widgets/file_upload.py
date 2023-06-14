@@ -109,12 +109,12 @@ class LFileUpload(LWidget):
                 f"Please drop the {file_ph} <b>here</b> you would like to " f"upload"
             )
         else:
-            upload_text = self.builder.encode_html(upload_text)
+            upload_text = self.builder._encode_text_html(upload_text)
         self.upload_text = upload_text
         if button_text is None:
             button_text = f"Select {file_ph}"
         else:
-            button_text = self.builder.encode_html(button_text)
+            button_text = self.builder._encode_text_html(button_text)
         """Text to be displayed in the upload box"""
         self.button_text = button_text
         """Defines the text to show in the upload button"""

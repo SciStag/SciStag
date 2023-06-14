@@ -1,19 +1,49 @@
 -- TODO NOTES --
 
-- Tests and example for the usage of attribute binding via .clref
-- Removal of unnecessary requirements from the essentials file by recompiling it
-- Changing widget values from server side (slider value, select index etc.)
-- Add fetching print output in cell to options
-- Allow creating references to file in a FileSource
-- Parallel execution of embedded logs
-- Lazy execution of streaming cells
-- Finalization of snippet usage
-- File dependencies and automatic cell rebuild on change
-- Share cache between auto-reload sessions (again)
-- Add unit tests for yet completely missing areas and remove them from the omit list
-- Executing JavaScript commands
-- Demos for DataStag
-- Missing widgets:
+- VisualLog: Add a command line app to serve a file and the LogBuilder it hosts
+- VisualLog: Move data source tracking to cell data to clear dependencies of each cell
+  when ever the cell is fully rebuilt. Allow fix dependencies which can not be removed
+  by a clear.
+- VisualLog: Easy integration into MkDocs
+- Bug: ImageStag: It's not possible to embed an SVG on disk as the filetype is not
+  detected
+- Bug: ImageStag: Image(None) raises NotImplementedError instead of warning that the
+  data is None
+- Bug: ImageStag: InterpolationMethod not exported
+- Bug: ImageStag: Return Image from Image.resize method to be compatible to PIL
+- "Bug": SciStag is currently incompatible with MkDocs due to outdated dependencies
+  of MKDocs. To be verified if a compromise can be found.
+- FileStag: Support for matching multiple extensions with file masks (e.g. FileSource)
+- VisualLog: Move plotting functionality to separate class
+- VisualLog: Finalization of dynamic markdown and basic mermaid integration
+- VisualLog: Simplification of Cell visibility groups (e.g. removal of tabs)
+- VisualLog: Passing column names to a VisualLog Table in it's constructor
+- VisualLog: Stateless provision of web-sites to be able to host them via
+  Lambda Functions / Azure Functions
+- VisualLog: Image capturing, live and as stream and provision to a live server as
+  stream or to lambda function or live server as single call.
+- ImageStag: Easy blending two images
+- MediaStag: Using a set of images or image file names as movie input source
+- VisualLog: Using PIL and OpenCV images directly in VisualLog (w/o need of ImageStag)
+- VisualLog: Easy customization of elements such as buttons
+- VisualLog: More neutral and smaller button appearance
+- VisualLog: Buttons should be able to auto-trigger with a defined frequency
+- VisualLog: Modification of properties (such as a slider's index or the content of
+  an image) without having to rewrite it's cell.
+- VisualLog: Tests and example for the usage of attribute binding via .clref
+- All: Removal of unnecessary requirements from the essentials file by recompiling it
+- VisualLog: Add fetching print output in cell to options
+- FileStag: Allow creating references to a file in a FileSource
+- VisualLog: Parallel execution of embedded logs
+- VisualLog: Lazy execution of streaming cells
+- VisualLog: Finalization of snippet usage
+- VisualLog: File dependencies and automatic cell rebuild on change
+- VisualLog: Share cache between auto-reload sessions (again)
+- All: Add unit tests for yet completely missing areas and remove them from the omit
+  list
+- VisualLog: Executing JavaScript commands
+- VisualLog: Demos for DataStag
+- VisualLog: Missing widgets:
     - Checkbox
     - ComboBox
     - Interactive image, e.g. pixel tracking
@@ -27,24 +57,26 @@
     - Tag input
     - Defining ranges, range slider
     - Text field
-- Evaluation of integration of mypy
-- Effective logging and access for logs on virtual machines
-- Providing access to the system's health status via the VisualLog server
-- Add timestamps to log entries for a better overview
-- Storing intermediate VisualLog reports in the cloud
-- Possibility of passing a stream to Image constructor
-- rework of image filters
+- All: Evaluation of integration of mypy
+- VisualLog: Effective logging and access for logs on virtual machines
+- VisualLog: Providing access to the system's health status via the VisualLog server
+- VisualLog: Add timestamps to log entries for a better overview
+- VisualLog: Storing intermediate VisualLog reports in the cloud
+- VisualLog: Possibility of passing a stream to Image constructor
+- ImageStag: Rework of image filters
 - FileStag save always overwrites, add check
-- Logging for process information and system info
-- Whem starting VisualLog with autoreload no server is available while the log is being build. Also no progress is available when reloading.
-- Catching VisualLog build assertions and storing them on a server if a process crashes
-- Allow to cache FileSources from zip completely in memory
-- Cleaner Zip FileSink instead of ://
-- FilePath.get_size
-- Missing UT for bundling and unbundling bytes
-- Bundling of images
-- Possibility to receive directory names from FileSource
-- Should .stscache always be created in the log dir, even if its temporary?
-- Granting access to Material Design icons
-- Fast histogram visualization via PlotStag
-- VisualLog init start_browser does not fail even if the disk is neither hosted nor stored on disk
+- VisualLog: Asynchronicity. When starting VisualLog with autoreload no server is
+  available while the log is being build. Also no progress is available when reloading.
+- VisualLog: Catching VisualLog build assertions and storing them on a server if a
+  process crashes.
+- FileStag: Allow to cache FileSources from zip completely in memory
+- FileStag: Cleaner Zip FileSink instead of ://
+- FileStag: FilePath.get_size
+- FileStag: Missing UnitTest for bundling and unbundling bytes
+- FileStag: Bundling of images
+- FileStag: Possibility to receive directory names from FileSource
+- FileStag: Should .stscache always be created in the log dir, even if its temporary?
+- All: Granting access to Material Design icons
+- PlotStag: Fast histogram visualization via PlotStag
+- VisualLog: VisualLog init start_browser does not fail even if the disk is neither
+  hosted nor stored on disk

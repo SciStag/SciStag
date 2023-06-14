@@ -13,7 +13,7 @@ from .essential_data import (
     ESSENTIAL_DATA_SIZE,
 )
 from .mt import StagLock
-from .observer import Observer, ObserverList
+from .observer import DataObserver, DataObserverList
 from .stag_app import StagApp
 from .test_data import get_test_data, get_test_image, TestDataNames
 from .sytem_info import SystemInfo
@@ -34,7 +34,10 @@ __all__ = [
     "StagLock",
     "Env",
     "get_global_cache",
-    "Observer",
-    "ObserverList",
+    "DataObserver",
+    "DataObserverList",
     "SystemInfo",
 ]
+
+__version__ = "0.8.2"
+"""The current release version"""

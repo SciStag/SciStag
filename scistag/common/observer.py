@@ -1,7 +1,7 @@
 """
-Implements the classes :class:`Observer` and :class:`ObserverList` whose
+Implements the classes :class:`DataObserver` and :class:`DataObserverList` whose
 ancestors / implementations allow the observing of databases, data elements
-and file sources. See :class:`FileObserver` for example.
+and file sources. See :class:`FileDataObserver` for example.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import time
 from hashlib import md5
 
 
-class Observer:
+class DataObserver:
     """
     The observer class is the base class for observers of file storages and
     databases.
@@ -27,15 +27,15 @@ class Observer:
         """
         self.refresh_time_s = refresh_time_s
         self.last_update = None
-        self._last_hash: str = ""
+        self._last_hash: int = 0
 
-    def hash_int(self) -> str:
+    def hash_int(self) -> int:
         """
         Returns the hash of the object we are observing as single MD5 string
         """
         raise NotImplementedError("Hash function not implemented")
 
-    def __hash__(self) -> str:
+    def __hash__(self) -> int:
         """
         Returns the observer's hash. When ever a sub element of the observer
         was modified this value will change.
@@ -52,7 +52,7 @@ class Observer:
         return self._last_hash
 
 
-class ObserverList(Observer):
+class DataObserverList(DataObserver):
     """
     Defines a list of observers with multiple data targets.
 
@@ -61,16 +61,16 @@ class ObserverList(Observer):
     """
 
     def __init__(
-        self, observers: list[Observer] | None = None, refresh_time_s: float = 1.0
+        self, observers: list[DataObserver] | None = None, refresh_time_s: float = 1.0
     ):
         """
         :param observers: The list of observers we shall combine
         :param refresh_time_s: The minimum time gap between a refresh
         """
         super().__init__(refresh_time_s=refresh_time_s)
-        self.observers: list[Observer] = observers
+        self.observers: list[DataObserver] = observers
 
-    def add(self, observer: list[Observer] | Observer) -> None:
+    def add(self, observer: list[DataObserver] | DataObserver) -> None:
         """
         Adds one or multiple new observers to the list
 
@@ -82,8 +82,8 @@ class ObserverList(Observer):
         else:
             self.observers.append(observer)
 
-    def hash_int(self) -> str:
+    def hash_int(self) -> int:
         hashes = "obsl"
         for element in self.observers:
             hashes += element.__hash__()
-        return md5(hashes.encode("utf-8")).hexdigest()
+        return int(md5(hashes.encode("utf-8")).hexdigest(), 16)

@@ -25,22 +25,21 @@ class ButtonLog(LogBuilder):
         self.md(f"**You clicked the button {self.counter} times**").br()
         # A button which increases the counter and rebuilds this cell
         self.widget.button(
-            "Click me to increase the counter", on_click=inc_counter,
-            name="inc_button"
+            "Click me to increase the counter", on_click=inc_counter, name="inc_button"
         )
         self.br().br()
         # A button which triggers the progressive content cell to extend itself
         self.widget.button(
             "Click me to add an entry to the progress list",
             on_click=lambda: self.add_progressive_content(),
-            name="add_button"
+            name="add_button",
         )
         self.br(2)
         # A button which clears the progress list
         self.widget.button(
             "Clear the progress list",
             on_click=lambda: self.progressive_content.cell.clear(),
-            name="clear_button"
+            name="clear_button",
         )
         self.br(2).hr().br()
 

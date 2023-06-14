@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "scistag"
-version = "0.8.1"
+version = "0.8.2"
 description = "A stack of helpful libraries & applications for the rapid development of data driven solutions."
 authors = ["Michael Ikemann"]
 license = "MIT"
@@ -29,13 +29,13 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
 python = ">=3.9 <3.12"
-pandas = "^1.4.2"
+pandas = ">=1.4.2"
 pydantic = "^1.10.2"
 numpy = "^1.23.5"
 pillow = "^9.2.0"
 requests = { version = "^2.27.1", optional = true }
 matplotlib = { version = "^3.5.2", optional = true }
-Markdown = { version = "^3.4.1", optional = true }
+Markdown = { version = ">=3.2.1", optional = true }
 tabulate = { version = "^0.9.0", optional = true }
 filetype = { version = "^1.1.0", optional = true }
 pyarrow = { version = "^10.0.1", optional = true }
@@ -48,10 +48,13 @@ Flask = { version = "^2.1.2", optional = true }
 kivy = { version = "^2.1.0", optional = true }
 moviepy = { version = "^1.0.3", optional = true }
 imgkit = { version = "1.2.2", optional = true }
-jupyterlab = { version = "^3.4.7", optional = true }
+jupyterlab = { version = ">=3.4.7", optional = true }
 jupyter = { version = "^1.0.0", optional = true }
 PySide6-Addons = { version = "6.4.1", optional = true }
-shiboken6 = { version =  "6.4.1", optional = true }
+shiboken6 = { version = "6.4.1", optional = true }
+chartstag = { version = "0.8.1", optional = true }
+mkdocs = { version = "^1.4.3", optional = true }
+
 
 [tool.poetry.extras]
 logstag = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib"]
@@ -67,7 +70,8 @@ moviepy = ["moviepy", "imgkit"]
 cutestag = ["PySide6-Addons", "shiboken6"]
 common = [
     "requests", "matplotlib",
-    "pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib",
+    "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib",
+    "chartstag",
     "pyarrow",
     "CairoSVG",
     "opencv-contrib-python",
@@ -76,7 +80,8 @@ common = [
     "moviepy", "imgkit"]
 full = [
     "requests", "matplotlib",
-    "pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib",
+    "Markdown", "tabulate", "filetype", "pyarrow", "Jinja2", "matplotlib",
+    "chartstag",
     "pyarrow",
     "CairoSVG",
     "opencv-contrib-python",
@@ -85,7 +90,8 @@ full = [
     "moviepy", "imgkit",
     "jupyter", "jupyterlab",
     "kivy",
-    "PySide6-Addons"
+    "PySide6-Addons",
+    "mkdocs"
 ]
 
 [tool.poetry.group.dev.dependencies]

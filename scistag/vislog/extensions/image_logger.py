@@ -19,7 +19,6 @@ from scistag.vislog.extensions.builder_extension import BuilderExtension
 
 if TYPE_CHECKING:
     from scistag.imagestag import PixelFormat
-    from scistag.vislog.visual_log import VisualLog
     from scistag.vislog.log_builder import LogBuilder
 
 MAXIMUM_IMAGE_WIDTH = 8096

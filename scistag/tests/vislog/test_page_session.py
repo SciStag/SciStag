@@ -9,7 +9,7 @@ import random
 
 from scistag.common.time import sleep_min
 from scistag.logstag.console_stag import Console
-from scistag.vislog import VisualLog
+from scistag.vislog import VisualLog, LogBuilder, cell
 from scistag.vislog.common.log_element import LogElement
 from scistag.vislog.sessions.page_session import PageSession, create_unique_session_id
 from scistag.vislog.widgets.button import CLICK_EVENT_TYPE
@@ -206,4 +206,54 @@ def test_index_name():
     assert page.get_index_name("txt") == "test.txt"
     assert page.get_index_name("md") == "test.md"
     assert page.get_index_name("html") == "test.html"
+    abs_path = page.get_index_name("html", absolute=True)
+    assert abs_path != "test.html"
+    abs_path = page.get_index_name("html", absolute=True, url="file://")
+    assert "file://" in abs_path
+    assert "test" in abs_path
     assert page.get_index_name("console") is None
+
+
+def test_info():
+    """Test the logging of info"""
+
+    class SimpleLog(LogBuilder):
+        @cell
+        def info(self):
+            self.page_session.show_info()
+            index_name = self.page_session.get_index_name("html")
+            assert index_name == "test_output.html"
+
+    options = VisualLog.setup_options()
+    options.output.index_name = "test_output"
+    with mock.patch("builtins.print") as pmock:
+        SimpleLog.run(filetype="html", options=options)
+        assert "Output logs" in pmock.call_args_list[0].args[0]
+        assert "Output directory" in pmock.call_args_list[2].args[0]
+
+
+class CellTest(LogBuilder):
+    @cell
+    def test(self):
+        stack = self.page_session.get_cell_stack()
+        assert len(stack) == 1
+        assert stack[0] == self.test.cell
+        w_stack = self.page_session.get_cell_stack()
+        assert len(w_stack) == 1
+        assert w_stack[0] == self.test.cell
+        assert self.page_session.get_active_cell() == self.test.cell
+
+    @cell
+    def test_nested(self: LogBuilder):
+        sub_element = self.builder.page_session.cur_element.add_sub_element(name="Test")
+        self.page_session.enter_element(sub_element)
+        assert self.page_session.get_active_cell() == self.test_nested.cell
+        self.page_session.get_widget_stack()
+        self.page_session.end_sub_element()
+        w_stack = self.page_session.get_widget_stack()
+        assert len(w_stack) == 1
+
+
+def test_stack():
+    """Verifies the cell stack and widget iteration methods"""
+    CellTest.run()

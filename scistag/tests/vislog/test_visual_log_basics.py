@@ -146,13 +146,17 @@ def test_figure():
     figure = Figure(cols=1)
     image_data = render_emoji(":deer:")
     figure.add_plot().add_image(image_data, size_ratio=1.0)
-    vl.test.assert_val("figure_test", figure, hash_val="a706d00b64ad66ad7009e32f0fcb8709")
+    vl.test.assert_val(
+        "figure_test", figure, hash_val="a706d00b64ad66ad7009e32f0fcb8709"
+    )
     with pytest.raises(AssertionError):
         vl.test.assert_val(
             "figure_test", figure, hash_val="d41d8cd98f00b204e9800998ecf8427c"
         )
     plot = figure.add_plot().add_image(image_data, size_ratio=1.0)
-    vl.test.assert_figure("test directly logging plot", plot, hash_val="a706d00b64ad66ad7009e32f0fcb8709")
+    vl.test.assert_figure(
+        "test directly logging plot", plot, hash_val="a706d00b64ad66ad7009e32f0fcb8709"
+    )
 
     vl.options.style.image.log_images = False
     vl.figure(plot, "not_plotted_figure")
@@ -178,7 +182,7 @@ def test_figure():
     hash_val = (
         "324a86b9b24b1fe1ff1d770cbc31e8e5"
         if platform == "darwin"
-        else "f6d2dfff648e3d5885c2677cfc0171a6"
+        else "475da1690ccdeae5ca4ce05bd20b1396"
     )
     # note minimal visualization differences between M1 Mac ons AMD64
     vl.sub_test("Logging axes created with matplotlib using MPLock()")
@@ -446,7 +450,13 @@ def test_dependencies():
     """
     Tests dependency handling
     """
-    vl.add_file_dependency("test.md")  # not yet implemented
+    temp_path = vl.get_temp_path()
+    os.makedirs(temp_path, exist_ok=True)
+    fn = temp_path + "/test_markdown_dependency.md"
+    FileStag.save_text(fn, text="DependsTest")
+    with vl.cell.add():
+        vl.data_loader.add_dependency(fn)
+        assert vl.data_loader.get_hash(fn) is not None
 
 
 def test_options():

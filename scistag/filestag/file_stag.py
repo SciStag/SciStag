@@ -51,7 +51,7 @@ class FileStag:
         """
         if isinstance(filename, SecretStr):
             filename = filename.get_secret_value()
-        if "://" in filename:
+        if isinstance(filename, str) and "://" in filename:
             return False
         return True
 

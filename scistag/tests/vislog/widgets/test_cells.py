@@ -1,9 +1,11 @@
 """
 Tests the different cell features of a LogBuilder
 """
+from unittest import mock
+
 from .. import vl
 
-from scistag.vislog import LogBuilder, cell, section, data, stream, once
+from scistag.vislog import LogBuilder, cell, section, data, stream, once, VisualLog
 
 
 class MyLog(LogBuilder):

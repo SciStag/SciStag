@@ -58,7 +58,9 @@ if TYPE_CHECKING:
     from .extensions.basic_logger import BasicLogger
     from .extensions.build_logger import BuildLogger
     from .extensions.emoji_logger import EmojiLogger
+    from .extensions.chart_logger import ChartLogger
     from .extensions.snippet_extension import SnippetExtension
+    from .extensions.data_loader_extension import DataLoaderExtension
     from .extensions.service_extension import (
         LogServiceExtension,
         PublishingInfo,
@@ -81,6 +83,9 @@ LogableContent = Union[
 Definition of all types which can be logged via `add` or provided as content
 for tables, lists and divs.
 """
+
+HTML_SCRIPT_TAG = "<script>"
+"HTML tag for embedding scripts"
 
 
 class LogBuilder(LogBuilderBase):
@@ -117,19 +122,12 @@ class LogBuilder(LogBuilderBase):
         super().__init__()
         self.initial_module = log.initial_module
         "Handle of the module from which this VisualLog instance was initialized"
-        self.page_session = page_session
+        self.page_session: "PageSession" = page_session
         """
         Defines the target page which will store this builder's data
         """
         if self.page_session is None:
             self.page_session = log.default_page
-        self._file_dependencies = []
-        """
-        A list of files which were used to build the current log. When ever
-        any of these files changes the log should be rebuild.
-        """
-        "The main logging target"
-
         self._test: Union["TestHelper", None] = None
         """
         Helper class for adding regression tests to the log.
@@ -150,15 +148,19 @@ class LogBuilder(LogBuilderBase):
 
         self._time: Union["TimeLogger", None] = None
         """
-        Helper class for time measuring and logging times to the log
+        Helper for time measuring and logging times to the log
         """
         self._emoji: Union["EmojiLogger", None] = None
         """
-        Helper class for adding emojis to the log
+        Helper for adding emojis to the log
         """
         self._snippet: Union["SnippetExtension", None] = None
         """
-        Helper class for recording and replaying log output
+        Helper for recording and replaying log output
+        """
+        self._data_source: Union["DataLoaderExtension", None] = None
+        """
+        Helper for integrating and tracking external data sources such as files
         """
         self._log: Union["BasicLogger", None] = None
         """
@@ -189,6 +191,10 @@ class LogBuilder(LogBuilderBase):
         self._widget: Union["WidgetLogger", None] = None
         """
         Extension to add visual, interactive components 
+        """
+        self._chart: Union["ChartLogger", None] = None
+        """
+        Extension to add charts and diagrams
         """
         self._align: Union["AlignmentLogger", None] = None
         """
@@ -233,18 +239,28 @@ class LogBuilder(LogBuilderBase):
         # add upload widget extension
         path = FilePath.dirname(__file__)
         ext_path = path + "/templates/extensions/"
-        self.publish("visual_log.css", path + "/css/visual_log.css")
+        self.service.publish("visual_log.css", path + "/css/visual_log.css")
         self.service.register_css("VlBaseCss", "visual_log.css")
-        self.publish("vl_live_view.js", path + "/templates/liveLog/vl_live_view.js")
+        self.service.publish(
+            "vl_live_view.js", path + "/templates/liveLog/vl_live_view.js"
+        )
         self.service.register_js("VlLiveView", "vl_live_view.js")
-        self.publish("vl_file_upload.css", ext_path + "upload/vl_file_upload.css")
-        self.publish("vl_file_upload.js", ext_path + "upload/vl_file_upload.js")
+        self.service.publish(
+            "vl_file_upload.css", ext_path + "upload/vl_file_upload.css"
+        )
+        self.service.publish("vl_file_upload.js", ext_path + "upload/vl_file_upload.js")
         self.service.register_css("VlUploadWidget", "vl_file_upload.css")
         self.service.register_js("VlUploadWidget", "vl_file_upload.js")
-        self.publish("vl_comparator.css", ext_path + "comparator/vl_comparator.css")
-        self.publish("vl_comparator.js", ext_path + "comparator/vl_comparator.js")
+        self.service.publish(
+            "vl_comparator.css", ext_path + "comparator/vl_comparator.css"
+        )
+        self.service.publish(
+            "vl_comparator.js", ext_path + "comparator/vl_comparator.js"
+        )
         self.service.register_css("VlComparatorWidget", "vl_comparator.css")
         self.service.register_js("VlComparatorWidget", "vl_comparator.js")
+
+        self.setup_extensions()  # register custom css, js etc.
 
         """The website's title"""
         self._provide_live_view()
@@ -272,6 +288,26 @@ class LogBuilder(LogBuilderBase):
         """Defines if the builder was terminated"""
         self.pages: dict[str, PageDescription] = {}
         """Defines a single sub page"""
+
+    def setup_extensions(self) -> None:
+        """
+        Setups extensions configured in options.extensions such as custom css or
+        javascript
+        """
+        extensions = self.options.extensions
+        for key, value in extensions.additional_js.items():
+            self.service.publish(key, value)
+            self.service.register_js(key, key)
+        for key, value in extensions.additional_css.items():
+            self.service.publish(key, value)
+            self.service.register_css(key, key)
+        for key, value in extensions.additional_code.items():
+            code: str = value.decode("utf-8")
+            if not code.startswith(HTML_SCRIPT_TAG):
+                raise ValueError(
+                    "Additional script code has to start with the <script>" "tag"
+                )
+            self.service.register_js(key + "_code", code)
 
     def build(self):
         """
@@ -473,7 +509,7 @@ class LogBuilder(LogBuilderBase):
             * Image(s) - see :class:`Image
             * Figure(s) - :class:`Figure`
             * Pandas DataFrame(s) and Series
-            * Nunpy Arrays
+            * Numpy Arrays
             * Common Python types such as dicts and dists, strings, floats and
                 ints.
         :param br: Defines if the element shall be followed by a linebreak
@@ -806,6 +842,14 @@ class LogBuilder(LogBuilderBase):
         return self._snippet
 
     @property
+    def data_loader(self):
+        from .extensions.data_loader_extension import DataLoaderExtension
+
+        if self._data_source is None:
+            self._data_source = DataLoaderExtension(self)
+        return self._data_source
+
+    @property
     def log(self) -> "BasicLogger":
         """
         Provides methods for classical logging where you can flag each entry with
@@ -872,6 +916,17 @@ class LogBuilder(LogBuilderBase):
         if self._widget is None:
             self._widget = WidgetLogger(self)
         return self._widget
+
+    @property
+    def chart(self) -> "ChartLogger":
+        """
+        Methods to charts and diagrams to the log
+        """
+        from .extensions.chart_logger import ChartLogger
+
+        if self._chart is None:
+            self._chart = ChartLogger(self)
+        return self._chart
 
     @property
     def align(self) -> "AlignmentLogger":
@@ -942,18 +997,6 @@ class LogBuilder(LogBuilderBase):
         self.add_txt(code)
         self.handle_modified()
         return self
-
-    @staticmethod
-    def encode_html(text: str) -> str:
-        """
-        Escaped text to html compatible text
-
-        :param text: The original unicode text
-        :return: The escaped text
-        """
-        escaped = html.escape(text)
-        res = escaped.encode("ascii", "xmlcharrefreplace")
-        return res.decode("utf-8")
 
     def figure(
         self,
@@ -1033,28 +1076,6 @@ class LogBuilder(LogBuilderBase):
         )
         return log_context
 
-    @staticmethod
-    def get_hashed_filename(name):
-        """
-        Returns a hashed filename for name to be store it with a fixed size
-        on disk
-
-        :param name: The file's name
-        :return: The hash name to be used as filename
-        """
-        hashed_name = hashlib.md5(name.encode("utf-8")).hexdigest()
-        return hashed_name
-
-    @staticmethod
-    def html_linebreaks(text: str) -> str:
-        """
-        Replaces linebreaks through html linebreaks
-
-        :param text: The original text
-        :return: The text with html linebreaks
-        """
-        return text.replace("\n\r", "\n").replace("\n", "<br>")
-
     def create_backup(self) -> LogBackup:
         """
         Creates a backup of the log's content so it can for example be
@@ -1083,22 +1104,6 @@ class LogBuilder(LogBuilderBase):
         for key, value in backup.data.items():
             if key in self.page_session.log_formats:
                 self.page_session.write_data(key, value)
-
-    def publish(self, path: str, content: bytes | str, **kwargs) -> "PublishingInfo":
-        """
-        Publishes a result data file.
-
-        If the log is stored to disk the result data will be stored in the log's
-        directory. If sub paths are used missing paths will automatically be created.
-
-        If the log is not stored to disk the file is available at the URLs provided
-        in the returned result.
-
-        :param path: The relative path at which the data or service shall be provided
-        :param content: The file's content (if provided as bytes string) or the file's
-            path.
-        """
-        return self.service.publish(path, content, **kwargs)
 
     def add_html(self, html_code: str | bytes):
         """
@@ -1215,17 +1220,6 @@ class LogBuilder(LogBuilderBase):
         self.page_session.write_to_disk()
         return self
 
-    def add_file_dependency(self, filename: str):
-        """
-        Adds a file dependency to the log for automatic cache clearance and
-        triggering the auto-reloader (if enabled) when an included file gets
-        modified.
-
-        :param filename: The name of the file which shall be tracked. By
-            default only local files are observed.
-        """
-        self._file_dependencies.append(filename)
-
     def _provide_live_view(self):
         """
         Assembles a website file which automatically updates the
@@ -1246,7 +1240,7 @@ class LogBuilder(LogBuilderBase):
             "reload_url": "events",
             "vl_slim": self.options.style.slim,
             "vl_log_updates": self.options.debug.html_client.log_updates,
-            "scistag_version": scistag.__version__,
+            "scistag_version": scistag.common.__version__,
         }
         template = environment.from_string(
             FileStag.load_text(base_path + "/templates/liveLog/default_liveView.html")
@@ -1426,3 +1420,37 @@ class LogBuilder(LogBuilderBase):
         :return: True if it is a mock
         """
         return False
+
+    @staticmethod
+    def _get_hashed_filename(name):
+        """
+        Returns the hash value for a filename and returns a new filename just consisting
+        of letters and numbers to ensure it will work on every operating system.
+
+        :param name: The file's name
+        :return: The hash name to be used as filename
+        """
+        hashed_name = hashlib.md5(name.encode("utf-8")).hexdigest()
+        return hashed_name
+
+    @staticmethod
+    def _html_linebreaks(text: str) -> str:
+        """
+        Replaces linebreaks through html linebreaks
+
+        :param text: The original text
+        :return: The text with html linebreaks
+        """
+        return text.replace("\r\n", "\n").replace("\n", "<br>")
+
+    @staticmethod
+    def _encode_text_html(text: str) -> str:
+        """
+        Escaped text to html compatible text
+
+        :param text: The original unicode text
+        :return: The escaped text
+        """
+        escaped = html.escape(text)
+        res = escaped.encode("ascii", "xmlcharrefreplace")
+        return res.decode("utf-8")

@@ -238,7 +238,7 @@ def web_fetch(
     import requests
 
     headers = {
-        "User-Agent": f"SciStag/{scistag.__version__} (https://github.com/scistag/scistag/)"
+        "User-Agent": f"SciStag/{scistag.common.__version__} (https://github.com/scistag/scistag/)"
     }
 
     try:

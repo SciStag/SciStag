@@ -149,16 +149,19 @@ class LogServiceExtension(BuilderExtension):
             return self.services[request.path](request)
         return self.get_file(request.path)
 
-    def register_js(self, name: str, path: str):
+    def register_js(self, name: str, script: str):
         """
         Registers an additional JavaScript file which shall be loaded from the log.
 
         The data needs to be published via :meth:`publish` prior registering it.
 
         :param name: A unique identifier of the script added to distinguish it
-        :param path: The path as passed to :meth:`publish`.
+        :param script: The path of the script file as passed to :meth:`publish`.
+
+            Alternatively the script to be executed can be passed in the form
+            <script>...
         """
-        self.js_sources[name] = path
+        self.js_sources[name] = script
 
     def register_css(self, name: str, path: str):
         """
@@ -187,13 +190,19 @@ class LogServiceExtension(BuilderExtension):
                 content = self.get_file(path).body.decode("utf-8")
                 css += f"<style>{content}</style>"
             for key, path in self.js_sources.items():
-                content = self.get_file(path).body.decode("utf-8")
-                js += f"<script>{content}</script>\n"
+                if path.startswith("<script>"):
+                    js += path
+                else:
+                    content = self.get_file(path).body.decode("utf-8")
+                    js += f"<script>{content}</script>\n"
         else:
             for key, path in self.css_sources.items():
                 css += f'<link rel="stylesheet" type="text/css" href="{path}"/>\n'
             for key, path in self.js_sources.items():
-                js += f'<script src="{path}"></script>\n'
+                if path.startswith("<script>"):
+                    js += path
+                else:
+                    js += f'<script src="{path}"></script>\n'
         return css + js
 
     def handle_file_upload(self, request: WebRequest):
