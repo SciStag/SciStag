@@ -32,6 +32,8 @@ def test_repo_validity():
     """
     scanner = GitScanner()
     base_path = os.path.normpath(os.path.dirname(__file__) + "/../../../")
+    if not os.path.exists(base_path + "/.gitignore"):
+        return
     scanner.scan(base_path)
     # check the repo does not exceed a reasonable size and
     # has a reasonable count of files and directories
