@@ -513,7 +513,7 @@ class Cell(LWidget):
         for element in self._data_dependencies:
             cur_hash = self._data_dependencies[element]
             new_hash = self.builder.data_loader.get_hash(element)
-            if new_hash is None or cur_hash != element:
+            if new_hash is None or cur_hash != new_hash:
                 return True
         return False
 

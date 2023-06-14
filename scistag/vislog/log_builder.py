@@ -1441,7 +1441,7 @@ class LogBuilder(LogBuilderBase):
         :param text: The original text
         :return: The text with html linebreaks
         """
-        return text.replace("\n\r", "\n").replace("\n", "<br>")
+        return text.replace("\r\n", "\n").replace("\n", "<br>")
 
     @staticmethod
     def _encode_text_html(text: str) -> str:

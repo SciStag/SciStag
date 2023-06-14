@@ -33,6 +33,10 @@ class ChartLogger(BuilderExtension):
 
         :param code: The mermaid code
         """
+        lines = code.split("\n")
+        lines = [line.lstrip(" ").lstrip("\t") for line in lines]
+        lines = [line for line in lines if len(lines) > 0]
+        code = "\n".join(lines)
         self.builder.md("```mermaid\n" + code + "\n```")
 
     def embed(self, filename: str, watch=True, extension: str | None = None) -> bool:
@@ -54,6 +58,8 @@ class ChartLogger(BuilderExtension):
         if watch:
             self.add_data_dependency(filename)
         data = FileStag.load_text(filename)
+        if data is not None:
+            data = data.replace("\r\n", "\n")
         if data is not None:
             self.mmd(data)
             return True
