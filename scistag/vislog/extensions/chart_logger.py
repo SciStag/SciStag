@@ -9,7 +9,7 @@ from scistag.common.trees.text_tree import (
     TextTreeBuilderOptions,
     TextTree,
 )
-from scistag.filestag import FileStag
+from scistag.filestag import FileStag, FilePath
 from scistag.vislog import BuilderExtension, LogBuilder
 
 
@@ -35,18 +35,26 @@ class ChartLogger(BuilderExtension):
         """
         self.builder.md("```mermaid\n" + code + "\n```")
 
-    def embed(self, filename: str, watch=True, extension: str | None = None):
+    def embed(self, filename: str, watch=True, extension: str | None = None) -> bool:
         """
         Embeds a chart file. The file type will be auto-detected if no extension is
             passed.
 
-        :param filename: The source filename
+        :param filename: The data to embed
         :param watch: Defines if the file shall be watched and the diagrams be
             auto-updated if necessary.
         :param extension: The file type, e.g. "mmd" in case no name is passed
         """
+        if not isinstance(filename, str):
+            raise TypeError("Only filenames allowed as source at the moment")
+        if extension is None:
+            extension = FilePath.split_ext(filename)[-1]
+        if extension not in {".mmd", ".mermaid"}:
+            raise ValueError("Unsupported file extension")
         if watch:
             self.add_data_dependency(filename)
         data = FileStag.load_text(filename)
         if data is not None:
             self.mmd(data)
+            return True
+        return False

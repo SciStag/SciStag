@@ -1,5 +1,6 @@
 -- TODO NOTES --
 
+- VisualLog: Add a command line app to serve a file and the LogBuilder it hosts
 - VisualLog: Move data source tracking to cell data to clear dependencies of each cell
   when ever the cell is fully rebuilt. Allow fix dependencies which can not be removed
   by a clear.
