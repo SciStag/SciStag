@@ -77,9 +77,17 @@ class AlignmentLogger(BuilderExtension):
         self, hor_align: HORIZONTAL_ALIGNMENTS | None = None
     ) -> ElementContext:
         """
-        Horizontally aligns the element
+        Creates an alignment context
 
         :param hor_align: The horizontal alignment
+
+            Following values are supported:
+            - "left" / "l" - Left align the text
+            - "right" / "r" - Right align the text
+            - "center" / "c" - Center align the text
+            - "left_block" / "lb" - Left align the block (div)
+            - "right_block" / "rb" - Right align the block (div)
+            - "center_block" / "cb" - Center align the (div)
         :return: The alignment context
         """
         if hor_align is None:
@@ -111,9 +119,14 @@ class AlignmentLogger(BuilderExtension):
                 block=block,
                 state=hor_align,
                 builder=self.builder,
+                opening_code={
+                    "html": html,
+                    "md": html if md_html else "",
+                    "txt": "",
+                },
                 closing_code={
                     "html": "</div>\n</div>\n",
-                    "md": "</div\n</div>\n" if md_html else "",
+                    "md": "</div>\n</div>\n" if md_html else "",
                     "txt": "",
                 },
             )
@@ -127,6 +140,11 @@ class AlignmentLogger(BuilderExtension):
                 block=block,
                 state=hor_align,
                 builder=self.builder,
+                opening_code={
+                    "html": html,
+                    "md": html if md_html else "",
+                    "txt": "",
+                },
                 closing_code={
                     "html": "</div>\n",
                     "md": "</div>\n" if md_html else "",

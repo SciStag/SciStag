@@ -69,6 +69,14 @@ class ElementContext:
     def __enter__(self):
         return self
 
+    def add(self, *args, **kwargs):
+        """
+        Enters the context, adds the content to the logbuilder and leaves the context
+        again.
+        """
+        with self:
+            self.builder.add(*args, **kwargs)
+
     def close(self):
         """
         Can be called to explicitly finish the current element

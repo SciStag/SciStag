@@ -19,7 +19,7 @@ Build Status
 ------------
 
 [![PyPi Version](https://img.shields.io/pypi/v/SciStag.svg)](https://pypi.python.org/pypi/SciStag)
-![](https://shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11-blue)
+![](https://shields.io/badge/Python-3.9%20%7C%203.10%20%7C%203.11%7C%203.12-blue)
 [![Documentation Status](https://readthedocs.org/projects/scistag/badge/?version=latest)](https://scistag.readthedocs.io/en/latest/?badge=latest)
 [![Coverage](https://coveralls.io/repos/github/SciStag/SciStag/badge.svg?branch=main)](https://coveralls.io/github/SciStag/SciStag)
 [![Pylint](https://raw.githubusercontent.com/SciStag/SciStag/main/docs/source/generated/pylint.svg)](https://coveralls.io/github/SciStag/SciStag)

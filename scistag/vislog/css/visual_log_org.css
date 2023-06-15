@@ -23,7 +23,8 @@ code
 {
 	font-family:courier,monospace;
 	font-size:12pt;
-	font-weight:700
+	font-weight:700;
+	white-space:pre;
 }
 
 table

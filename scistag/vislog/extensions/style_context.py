@@ -4,12 +4,15 @@ and temporarily modifying the style for parts of it.
 """
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Union, Callable
 
+from scistag.vislog.common.element_context import ElementContext
 from scistag.vislog.extensions.builder_extension import BuilderExtension
+from scistag.webstag.mime_types import MIMETYPE_ASCII
 
 if TYPE_CHECKING:
-    from scistag.vislog.log_builder import LogBuilder
+    from scistag.vislog.log_builder import LogBuilder, LogableContent
 
 
 class StyleContext(BuilderExtension):
@@ -78,3 +81,224 @@ class StyleContext(BuilderExtension):
         if "{" not in name_or_code:
             return name_or_code
         return self.css(code=name_or_code, class_name=class_category)
+
+    def _parse_style_code(
+        self,
+        code: str,
+        md: [str],
+        md_closing: [str],
+        html: [str],
+        html_closing: [str],
+        css_style: [str],
+    ):
+        """
+        Parses a special style code and adds the required code snippets to the code
+        lists."""
+        if not "=" in code:
+            raise ValueError(f"Missing value in code style {code}, e.g. color=red")
+        style_prop, value = code.split("=")
+        if style_prop == "color":
+            css_style += [f"color:{value}"]
+        else:
+            raise ValueError(f"Unknown style code: {code}")
+
+    def __call__(
+        self, style: str, content: LogableContent | None = None
+    ) -> ElementContext | LogBuilder:
+        """
+        Creates a style content and returns it
+
+        :param style: The style(s) to be applied defined as a semicolon separated string
+            of the following style configuration elements types:
+            * Single character sequence - A single string (w/o semicolons) in which
+              each style flag is represented by a single character:
+                * "b" - Bold
+                * "i" - Italic
+                * "_" or "u" - Underlined
+                * "-" - Strike-through
+                * "‾" or "o" - Overline
+                * "~" - Waved marker with the default error color
+                * "^" - Superscript vertical text alignment
+                * "." - Subscript vertical text alignment
+
+              Example: logbuilder.style("ib_") would lead to italic, bold
+              underlined text.
+            * "bold" / "italic" / "underline" - The given style will be applied
+            * "color=HTML_COLOR_NAME" - Modifies the text's color
+        :param content: If provided the content will be added via the "add" method
+            within the new style's context. This allows writing more compact code
+            as the content does not need to be entered.
+
+            Example: logbuilder.add("x").style("^", "2") - will add x squared to the
+            log.
+        :return: The context element if no content was provided. Otherwise
+            the LogBuilder object.
+        """
+        md_html = self.builder.md.log_html_only
+        md = []  # code to be inserted in front of md content
+        md_closing = []  # code to be inserted after md content
+        html = []  # code to be inserted in front of html content
+        html_closing = []  # code to be inserted after html content
+        css_style = []  # css style elements to be concatenated
+        text_deco = []  # text-decoration
+        sub_styles = style.split(";")
+        flag_set = set()
+        for cs_element in sub_styles:
+            if "=" in cs_element:
+                self._parse_style_code(
+                    cs_element,
+                    md=md,
+                    md_closing=md_closing,
+                    html=html,
+                    html_closing=html_closing,
+                    css_style=css_style,
+                )
+                continue
+            elif cs_element == "bold" or cs_element == "**":
+                flag_set += "b"
+                continue
+            elif cs_element == "italic" or cs_element == "*":
+                flag_set += "i"
+                continue
+            elif cs_element == "underline":
+                flag_set += "_"
+                continue
+            elif cs_element == "ascii":
+                css_style += [
+                    "display:inline; font-family:monospace; font-size:12pt; white-space:pre"
+                ]
+                continue
+            if cs_element == "***":
+                flag_set += "b"
+                flag_set += "i"
+
+            flag_set = flag_set.union(set(cs_element.lower()))
+        self._evaluate_flags(
+            css_style, flag_set, html, html_closing, md, md_closing, text_deco
+        )
+        if len(text_deco):
+            css_style += [f"text-decoration: {' '.join(text_deco)}"]
+        if len(css_style) > 0:
+            html += [f'<span style="{";".join(css_style)}">']
+            html_closing += ["</span>"]
+        j_html = "".join(html)
+        j_html_closing = "".join(html_closing)
+        j_md = "".join(md)
+        j_md_closing = "".join(md_closing)
+        context = ElementContext(
+            builder=self.builder,
+            opening_code={"html": j_html, "md": j_html if md_html else j_md},
+            closing_code={
+                "html": j_html_closing,
+                "md": j_html_closing if md_html else j_md_closing,
+            },
+        )
+        if content is not None:
+            context.add(content)
+            return self.builder
+        return context
+
+    def bold(self) -> ElementContext:
+        """
+        Returns a bold context within which all text is written bold
+
+        :return: The context
+        """
+        md_html = self.builder.md.log_html_only
+        html = '<span style="font-weight:bold">'
+        html_closing = "</span>"
+        return ElementContext(
+            builder=self.builder,
+            opening_code={
+                "html": html,
+                "md": html if md_html else "**",
+            },
+            closing_code={
+                "html": html_closing,
+                "md": html_closing if md_html else "**",
+            },
+        )
+
+    def italic(self) -> ElementContext:
+        """
+        Returns an intalic context within which all text is written italic
+
+        :return: The context
+        """
+        md_html = self.builder.md.log_html_only
+        html = '<span style="font-style:italic">'
+        html_closing = "</span>"
+        return ElementContext(
+            builder=self.builder,
+            opening_code={
+                "html": html,
+                "md": html if md_html else "*",
+            },
+            closing_code={
+                "html": html_closing,
+                "md": html_closing if md_html else "*",
+            },
+        )
+
+    @staticmethod
+    def _evaluate_flags(
+        css_style, flag_set, html, html_closing, md, md_closing, text_deco
+    ):
+        """Evaluates character style flags in flag_set and adds the required tags
+        to the markdown, html and css code to apply them"""
+        if "b" in flag_set:  # bold
+            css_style += ["font-weight:bold"]
+            md += ["**"]
+            md_closing += ["**"]
+        if "i" in flag_set:  # italic
+            css_style += ["font-style:italic"]
+            md += ["*"]
+            md_closing += ["*"]
+        if "-" in flag_set:  # line-through
+            text_deco += ["line-through"]
+        if "_" in flag_set or "u" in flag_set:  # underline
+            text_deco += ["underline"]
+        if "‾" in flag_set or "o" in flag_set:
+            text_deco += ["overline"]  # overline
+        if "~" in flag_set:
+            text_deco += ["red underline overline wavy"]
+        if "^" in flag_set:  # superscript
+            html += ["<sup>"]
+            html_closing += ["</sup>"]
+        if "." in flag_set:  # subscript
+            html += ["<sub>"]
+            html_closing += ["</sub>"]
+
+    def help(self):
+        vl = self.builder
+        vl.title("Style Context")
+        vl = self.builder
+        vl.md(
+            """The StyleContext class allows you to control the visual style of the
+elements which are added within the style's context such as **text color**,
+**font, font-weight** or decorations such as **underlining**.
+
+The most compact way to modify the style is via the `call` function of the
+StyleContext in which you pass all style parameters as a single string in
+the first parameter and  and passing the content as second parameter such as"""
+        )
+        vl.sub("Example")
+        vl.evaluate(
+            'vl.add("This text is not bold ").style("b", "But this one is!")',
+            br=True,
+            log_code=True,
+        )
+        vl.md(
+            """
+        * "b" - Bold
+        * "i" - Italic
+        * "_" or "u" - Underlined
+        * "-" - Strike-through
+        * "‾" or "o" - Overline
+        * "~" - Waved marker with the default error color
+        * "^" - Superscript vertical text alignment
+        * "." - Subscript vertical text alignment"""
+        )
+        vl.evaluate(
+            'with vl.style("bi"):\n\tvl.text("Styled text")', br=True, log_code=True
+        )

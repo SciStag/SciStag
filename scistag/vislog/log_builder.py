@@ -32,7 +32,7 @@ from .common.log_builder_base import LogBuilderBase
 from .common.log_builder_statistics import LogBuilderStatistics
 from .log_builder_registry import LogBuilderRegistry
 from .pages import PageDescription
-from ..webstag.mime_types import MIMETYPE_MARKDOWN, MIMETYPE_HTML
+from ..webstag.mime_types import MIMETYPE_MARKDOWN, MIMETYPE_HTML, MIMETYPE_ASCII
 from ..webstag.server import WebResponse
 
 if TYPE_CHECKING:
@@ -464,19 +464,27 @@ class LogBuilder(LogBuilderBase):
         """
         self.page_session.embed(page)
 
-    def evaluate(self, code: str, log_code: bool = True) -> Any:
+    def evaluate(self, code: str, log_code: bool | int = True, br: bool = False) -> Any:
         """
         Runs a piece of code and returns it's output
 
         :param code: The code to execute
-        :param log_code: Defines if the code shall be added to the log
+        :param log_code: Defines if the code shall be added to the log. If -1 is passed
+            the code is logged before the execution.
+        :param br: Defines if a whitespace shall be kept between code and result
         :return: The returned data (if any)
         """
         import inspect
 
         frame = inspect.currentframe()
-        result = eval(code, frame.f_back.f_globals, frame.f_back.f_locals)
-        if log_code:
+        if log_code == -1:
+            self.code(code)
+
+        result = exec(code, frame.f_back.f_globals, frame.f_back.f_locals)
+        if log_code and log_code != -1:
+            if br:
+                self.br()
+                self.br()
             if result is not None:
                 self.code(code + f"\n>>> {result}")
             else:
@@ -595,6 +603,13 @@ class LogBuilder(LogBuilderBase):
                 return self
             if mimetype == MIMETYPE_MARKDOWN or mimetype == MD:
                 self.md(str(content), br=br)
+                return self
+            if mimetype == MIMETYPE_ASCII or mimetype == "ascii":
+                self.add_html(content)
+                self.add_txt(content)
+                self.add_md(content)
+                if br:
+                    self.br()
                 return self
         self.text(str(content), br=br)
         return self
