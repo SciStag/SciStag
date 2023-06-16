@@ -480,7 +480,7 @@ class LogBuilder(LogBuilderBase):
         if log_code == -1:
             self.code(code)
 
-        result = exec(code, frame.f_back.f_globals, frame.f_back.f_locals)
+        result = eval(code, frame.f_back.f_globals, frame.f_back.f_locals)
         if log_code and log_code != -1:
             if br:
                 self.br()

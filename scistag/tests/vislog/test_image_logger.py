@@ -68,7 +68,7 @@ def test_image():
     vl.test.checkpoint("image.log.originalSize")
     vl.sub_test("An image from the web scaled to 100%")
     vl.image(TestConstants.STAG_URL, "anotherStag_3", scaling=1.0)
-    vl.test.assert_cp_diff(hash_val="1b4691fec0fcc6c6ff80a37bef189449")
+    vl.test.assert_cp_diff(hash_val="a490b9c1634df6b0d24c801e89ebbcd0")
     # add image from bytes stream
     vl.sub_test("Logging an image provided as byte stream")
     vl.test.checkpoint("image.log.bytestream")

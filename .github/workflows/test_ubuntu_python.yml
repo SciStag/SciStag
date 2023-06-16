@@ -18,7 +18,7 @@ jobs:
           python-version: 3.9
           cache-dependency-path: poetry.lock
           cache: 'poetry'
-      - run: poetry install -E "common cutestag" --with dev --no-interaction --no-root
+      - run: poetry install -E "common cutestag azure opencvcon" --with dev --no-interaction --no-root
         env:
           PYTHON_KEYRING_BACKEND: keyring.backends.null.Keyring
       - run: |

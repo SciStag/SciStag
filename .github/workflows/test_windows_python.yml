@@ -18,7 +18,7 @@ jobs:
           cache-dependency-path: poetry.lock
           python-version: '3.10'
           cache: 'poetry'
-      - run: poetry install -E "common cutestag" --with dev --no-interaction --no-root
+      - run: poetry install -E "common cutestag azure opencvcon" --with dev --no-interaction --no-root
         env:
           PYTHON_KEYRING_BACKEND: keyring.backends.null.Keyring
       - run: poetry run python -m scistag.addons install emojis.svg
