@@ -6,13 +6,10 @@ Steps:
 * Start the application
 * Click the URL http://127.0.0.1:8010/live in your console/terminal output to open the
   page in the browser of your choice. SciStag is optimized for Chrome.
-* Move the browser window to your second monitor or use Windows Key+Cursor Left in your
-  IDE window and Windows+Cursor Right in your browser window for a split view on Linux
-  and Windows.
-  Under OS X just click and hold the window's green maximize button and choose the
-  window sides for each window.
+* Optional: Move the browser window to your second monitor
 
-Tip for users of PyCharm who want to see the log directly inside PyCharm:
+Advanced tip for users of PyCharm for a side by side view:
+
 * Right-click the URL in the console -> Copy URL
 * Press Ctrl-Shift-A or press shift two times in a row and type "Open source..." ->
   Click on "Open Source Code from URL"
@@ -27,9 +24,22 @@ IMAGE_URL = "https://upload.wikimedia.org/wikipedia/commons/7/7f/Rotating_earth_
 
 
 def main(vl: LogBuilder):
+    """
+    Main entry point
+    :param vl: The LogBuilder object containing all methods to add text, images etc.
+    """
+    # center the content of the context:
     with vl.align.center:
+        # add a title
         vl.title(f"Hello world!")
+        # add an image from Wikipedia
         vl.image(IMAGE_URL, alt="planet earth")
 
 
-LogBuilder.run(as_service=True)
+if __name__ == "__main__":
+    # Run the LogBuilder on the local file
+    # def main(vl) is the default VisualLog entry point if no builder is defined
+    #
+    # For cleaner structuring you can flag further methods using the @cell decorator
+    # to also execute these methods.
+    LogBuilder.run(as_service=True)

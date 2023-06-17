@@ -67,7 +67,7 @@ class MarkdownLogger(BuilderExtension):
         if HTML not in exclude_targets:
             if parsed.startswith("<p>") and parsed.endswith("</p>"):
                 parsed = parsed[3:-4]
-            self.builder.add_html(parsed + "<br>")
+            self.builder.add_html(parsed + ("<br>" if br else ""))
         if TXT not in exclude_targets:
             self.builder.add_txt(text, br=br)
         self.builder.handle_modified()

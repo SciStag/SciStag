@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from matplotlib import pyplot as plt
     from scistag.vislog.sessions.page_session import PageSession
     from scistag.vislog.common.page_update_context import PageUpdateContext
+    from .extensions import BuilderExtension
     from .common.element_context import ElementContext
     from .extensions.test_helper import TestHelper
     from .extensions.pyplot_log_context import PyPlotLogContext
@@ -128,6 +129,8 @@ class LogBuilder(LogBuilderBase):
         """
         if self.page_session is None:
             self.page_session = log.default_page
+
+        self._loggers = {"style": {}}
         self._test: Union["TestHelper", None] = None
         """
         Helper class for adding regression tests to the log.
@@ -200,7 +203,7 @@ class LogBuilder(LogBuilderBase):
         """
         Extension to align elements 
         """
-        self._style: Union["StyleContext", None] = None
+        self.style: Union["StyleContext", None] = None
         """
         Extension to temporarily modify the style of the current log region or cell
         and to insert custom CSS code into the document.
@@ -260,7 +263,7 @@ class LogBuilder(LogBuilderBase):
         self.service.register_css("VlComparatorWidget", "vl_comparator.css")
         self.service.register_js("VlComparatorWidget", "vl_comparator.js")
 
-        self.setup_extensions()  # register custom css, js etc.
+        self._setup_extensions()  # register custom css, js etc.
 
         """The website's title"""
         self._provide_live_view()
@@ -288,8 +291,11 @@ class LogBuilder(LogBuilderBase):
         """Defines if the builder was terminated"""
         self.pages: dict[str, PageDescription] = {}
         """Defines a single sub page"""
+        for element in self._loggers:  # remove extension placeholders
+            if element in self.__dict__ and self.__dict__[element] is None:
+                del self.__dict__[element]
 
-    def setup_extensions(self) -> None:
+    def _setup_extensions(self) -> None:
         """
         Setups extensions configured in options.extensions such as custom css or
         javascript
@@ -308,6 +314,20 @@ class LogBuilder(LogBuilderBase):
                     "Additional script code has to start with the <script>" "tag"
                 )
             self.service.register_js(key + "_code", code)
+
+    def _setup_logger(self, name: str) -> Union["BuilderExtension", None]:
+        """
+        Setups a logger extension such as .style or .align
+
+        :param name: The extensions name, see self._loggers
+        """
+        if name == "style":
+            from scistag.vislog.extensions.style_context import StyleContext
+
+            style = StyleContext(builder=self)
+            self.style = style
+            return style
+        return None
 
     def build(self):
         """
@@ -494,8 +514,8 @@ class LogBuilder(LogBuilderBase):
     def add(
         self,
         content: LogableContent,
-        br: bool = False,
         mimetype: str | None = None,
+        br: bool = False,
         share: Literal["sessionId"] | None = None,
         **kwargs,
     ) -> LogBuilder:
@@ -770,8 +790,9 @@ class LogBuilder(LogBuilderBase):
         """
         if isinstance(code, HTMLCode):
             code = code.to_html()
+
         self.add_md(code, br=br)
-        self.add_html(code + ("\n" if br else ""))
+        self.add_html(code + ("<br>" if br else ""))
         self.handle_modified()
         return self
 
@@ -953,18 +974,6 @@ class LogBuilder(LogBuilderBase):
         if self._align is None:
             self._align = AlignmentLogger(self)
         return self._align
-
-    @property
-    def style(self) -> "StyleContext":
-        """
-        Extension to temporarily modify the style of the current log region or cell
-        and to insert custom CSS code into the document.
-        """
-        from .extensions.style_context import StyleContext
-
-        if self._style is None:
-            self._style = StyleContext(self)
-        return self._style
 
     @property
     def builder(self) -> "BuildLogger":
@@ -1402,6 +1411,23 @@ class LogBuilder(LogBuilderBase):
 
     def __setitem__(self, key, value):
         return self.cache.__setitem__(key, value)
+
+    def __getattr__(self, item):
+        if (
+            item != "__dict__"
+            and "_loggers" in self.__dict__
+            and item in self.__dict__.get("_loggers")
+        ):  # setup missing loggers
+            value = self.__dict__.get(item, None)
+            if value is None:
+                return self._setup_logger(item)
+            else:
+                return value
+        return super().__getattr__(item)
+
+    def __getattribute__(self, item):
+        value = super().__getattribute__(item)
+        return value
 
     def __getitem__(self, item):
         return self.cache.__getitem__(item)

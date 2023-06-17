@@ -82,28 +82,11 @@ class StyleContext(BuilderExtension):
             return name_or_code
         return self.css(code=name_or_code, class_name=class_category)
 
-    def _parse_style_code(
-        self,
-        code: str,
-        md: [str],
-        md_closing: [str],
-        html: [str],
-        html_closing: [str],
-        css_style: [str],
-    ):
-        """
-        Parses a special style code and adds the required code snippets to the code
-        lists."""
-        if not "=" in code:
-            raise ValueError(f"Missing value in code style {code}, e.g. color=red")
-        style_prop, value = code.split("=")
-        if style_prop == "color":
-            css_style += [f"color:{value}"]
-        else:
-            raise ValueError(f"Unknown style code: {code}")
-
     def __call__(
-        self, style: str, content: LogableContent | None = None
+        self,
+        style: str,
+        content: LogableContent | None = None,
+        mimetype: str | None = None,
     ) -> ElementContext | LogBuilder:
         """
         Creates a style content and returns it
@@ -113,7 +96,15 @@ class StyleContext(BuilderExtension):
             * Single character sequence - A single string (w/o semicolons) in which
               each style flag is represented by a single character:
                 * "b" - Bold
+                * "B" - Ultra bold
+                * "t" - Thin
+                * "n" - Normal
+                * "S" - Strong
+                * "s" - Small
                 * "i" - Italic
+                * "e" - Emphasize
+                * "d" - Deleted
+                * "m" - Mark text
                 * "_" or "u" - Underlined
                 * "-" - Strike-through
                 * "‾" or "o" - Overline
@@ -121,16 +112,19 @@ class StyleContext(BuilderExtension):
                 * "^" - Superscript vertical text alignment
                 * "." - Subscript vertical text alignment
 
-              Example: logbuilder.style("ib_") would lead to italic, bold
+              Example: with logbuilder.style("ib_"):... would result in italic, bold
               underlined text.
-            * "bold" / "italic" / "underline" - The given style will be applied
-            * "color=HTML_COLOR_NAME" - Modifies the text's color
+            * Color: Either RGB values in the HTML-like format #RRGGBB (all uppercase)
+                such as style("#00FF00") or as well a # followed by the
+                color's name (all lower case) such as style("#green")
         :param content: If provided the content will be added via the "add" method
             within the new style's context. This allows writing more compact code
             as the content does not need to be entered.
 
             Example: logbuilder.add("x").style("^", "2") - will add x squared to the
             log.
+        :param mimetype: Defines the mimetype (such as "md" for markdown) to be passed
+            to the **add** call. Only has effect if **content** is provided.
         :return: The context element if no content was provided. Otherwise
             the LogBuilder object.
         """
@@ -144,35 +138,13 @@ class StyleContext(BuilderExtension):
         sub_styles = style.split(";")
         flag_set = set()
         for cs_element in sub_styles:
-            if "=" in cs_element:
-                self._parse_style_code(
-                    cs_element,
-                    md=md,
-                    md_closing=md_closing,
-                    html=html,
-                    html_closing=html_closing,
-                    css_style=css_style,
-                )
+            if cs_element.startswith("#") and len(cs_element) > 1:  # color
+                rest = cs_element[1:]
+                if len(rest) == 6 and rest.upper() == rest:
+                    rest = "#" + rest
+                css_style += [f"color:{rest}"]
                 continue
-            elif cs_element == "bold" or cs_element == "**":
-                flag_set += "b"
-                continue
-            elif cs_element == "italic" or cs_element == "*":
-                flag_set += "i"
-                continue
-            elif cs_element == "underline":
-                flag_set += "_"
-                continue
-            elif cs_element == "ascii":
-                css_style += [
-                    "display:inline; font-family:monospace; font-size:12pt; white-space:pre"
-                ]
-                continue
-            if cs_element == "***":
-                flag_set += "b"
-                flag_set += "i"
-
-            flag_set = flag_set.union(set(cs_element.lower()))
+            flag_set = flag_set.union(set(cs_element))
         self._evaluate_flags(
             css_style, flag_set, html, html_closing, md, md_closing, text_deco
         )
@@ -194,7 +166,7 @@ class StyleContext(BuilderExtension):
             },
         )
         if content is not None:
-            context.add(content)
+            context.add(content, mimetype=mimetype)
             return self.builder
         return context
 
@@ -221,7 +193,7 @@ class StyleContext(BuilderExtension):
 
     def italic(self) -> ElementContext:
         """
-        Returns an intalic context within which all text is written italic
+        Returns an italic context within which all text is written italic
 
         :return: The context
         """
@@ -240,6 +212,49 @@ class StyleContext(BuilderExtension):
             },
         )
 
+    def underlined(self) -> ElementContext:
+        """
+        Returns an underlined context within which all text is written italic
+
+        :return: The context
+        """
+        md_html = self.builder.md.log_html_only
+        html = '<span style="text-decoration: underlined">'
+        html_closing = "</span>"
+        return ElementContext(
+            builder=self.builder,
+            opening_code={
+                "html": html,
+                "md": html if md_html else "",
+            },
+            closing_code={
+                "html": html_closing,
+                "md": html_closing if md_html else "",
+            },
+        )
+
+    def color(self, name: str) -> ElementContext:
+        """
+        Returns a color context within which all text is written italic
+
+        :param name: The color's name or hex code such as "red" or "#FF0000"
+        :return: The context
+        """
+        md_html = self.builder.md.log_html_only
+        html = f'<span style="color: {name}">'
+        html_closing = "</span>"
+        return ElementContext(
+            builder=self.builder,
+            opening_code={
+                "html": html,
+                "md": html if md_html else "",
+            },
+            closing_code={
+                "html": html_closing,
+                "md": html_closing if md_html else "",
+            },
+        )
+
     @staticmethod
     def _evaluate_flags(
         css_style, flag_set, html, html_closing, md, md_closing, text_deco
@@ -250,10 +265,35 @@ class StyleContext(BuilderExtension):
             css_style += ["font-weight:bold"]
             md += ["**"]
             md_closing += ["**"]
+        if "B" in flag_set:  # ultra bold
+            css_style += ["font-weight:950"]
+            md += ["**"]
+            md_closing += ["**"]
+        if "n" in flag_set:  # thin
+            css_style += ["font-weight:400"]
+            md += ["**"]
+            md_closing += ["**"]
+        if "t" in flag_set:  # thin
+            css_style += ["font-weight:200"]
+            md += ["**"]
+            md_closing += ["**"]
         if "i" in flag_set:  # italic
             css_style += ["font-style:italic"]
             md += ["*"]
             md_closing += ["*"]
+        if "e" in flag_set:  # emphasized
+            html += ["<em>"]
+            html_closing += ["</em>"]
+        if "d" in flag_set:  # deleted
+            html += ["<del>"]
+            html_closing += ["</del>"]
+        if "s" in flag_set:  # strong
+            html += ["<strong>"]
+            html_closing += ["</strong>"]
+        if "a" in flag_set:
+            css_style += [
+                "display:inline; font-family:monospace; font-size:12pt; white-space:pre"
+            ]
         if "-" in flag_set:  # line-through
             text_deco += ["line-through"]
         if "_" in flag_set or "u" in flag_set:  # underline
