@@ -5,8 +5,10 @@ and temporarily modifying the style for parts of it.
 
 from __future__ import annotations
 
+import inspect
 from typing import TYPE_CHECKING, Union, Callable
 
+from scistag.filestag import FileStag
 from scistag.vislog.common.element_context import ElementContext
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 from scistag.webstag.mime_types import MIMETYPE_ASCII
@@ -87,7 +89,7 @@ class StyleContext(BuilderExtension):
         style: str,
         content: LogableContent | None = None,
         mimetype: str | None = None,
-    ) -> ElementContext | LogBuilder:
+    ) -> Union[ElementContext, "LogBuilder"]:
         """
         Creates a style content and returns it
 
@@ -108,7 +110,9 @@ class StyleContext(BuilderExtension):
                 * "_" or "u" - Underlined
                 * "-" - Strike-through
                 * "‾" or "o" - Overline
-                * "~" - Waved marker with the default error color
+                * "~" - Waved marker with the default error color. The wave marker
+                  always needs to be combined with either underline, overline or
+                  line-through.
                 * "^" - Superscript vertical text alignment
                 * "." - Subscript vertical text alignment
 
@@ -170,6 +174,7 @@ class StyleContext(BuilderExtension):
             return self.builder
         return context
 
+    @property
     def bold(self) -> ElementContext:
         """
         Returns a bold context within which all text is written bold
@@ -191,6 +196,7 @@ class StyleContext(BuilderExtension):
             },
         )
 
+    @property
     def italic(self) -> ElementContext:
         """
         Returns an italic context within which all text is written italic
@@ -212,6 +218,7 @@ class StyleContext(BuilderExtension):
             },
         )
 
+    @property
     def underlined(self) -> ElementContext:
         """
         Returns an underlined context within which all text is written italic
@@ -219,7 +226,7 @@ class StyleContext(BuilderExtension):
         :return: The context
         """
         md_html = self.builder.md.log_html_only
-        html = '<span style="text-decoration: underlined">'
+        html = '<span style="text-decoration: underline">'
         html_closing = "</span>"
         return ElementContext(
             builder=self.builder,
@@ -255,12 +262,35 @@ class StyleContext(BuilderExtension):
             },
         )
 
+    def bg_color(self, name: str) -> ElementContext:
+        """
+        Returns a background color context within which all text is written italic
+
+        :param name: The color's name or hex code such as "red" or "#FF0000"
+        :return: The context
+        """
+        md_html = self.builder.md.log_html_only
+        html = f'<span style="background-color: {name}">'
+        html_closing = "</span>"
+        return ElementContext(
+            builder=self.builder,
+            opening_code={
+                "html": html,
+                "md": html if md_html else "",
+            },
+            closing_code={
+                "html": html_closing,
+                "md": html_closing if md_html else "",
+            },
+        )
+
     @staticmethod
     def _evaluate_flags(
         css_style, flag_set, html, html_closing, md, md_closing, text_deco
     ):
         """Evaluates character style flags in flag_set and adds the required tags
         to the markdown, html and css code to apply them"""
+
         if "b" in flag_set:  # bold
             css_style += ["font-weight:bold"]
             md += ["**"]
@@ -284,6 +314,9 @@ class StyleContext(BuilderExtension):
         if "e" in flag_set:  # emphasized
             html += ["<em>"]
             html_closing += ["</em>"]
+        if "m" in flag_set:  # deleted
+            html += ["<mark>"]
+            html_closing += ["</mark>"]
         if "d" in flag_set:  # deleted
             html += ["<del>"]
             html_closing += ["</del>"]
@@ -294,14 +327,7 @@ class StyleContext(BuilderExtension):
             css_style += [
                 "display:inline; font-family:monospace; font-size:12pt; white-space:pre"
             ]
-        if "-" in flag_set:  # line-through
-            text_deco += ["line-through"]
-        if "_" in flag_set or "u" in flag_set:  # underline
-            text_deco += ["underline"]
-        if "‾" in flag_set or "o" in flag_set:
-            text_deco += ["overline"]  # overline
-        if "~" in flag_set:
-            text_deco += ["red underline overline wavy"]
+        StyleContext._handle_line_flags(flag_set, text_deco)
         if "^" in flag_set:  # superscript
             html += ["<sup>"]
             html_closing += ["</sup>"]
@@ -309,36 +335,49 @@ class StyleContext(BuilderExtension):
             html += ["<sub>"]
             html_closing += ["</sub>"]
 
-    def help(self):
-        vl = self.builder
-        vl.title("Style Context")
-        vl = self.builder
-        vl.md(
-            """The StyleContext class allows you to control the visual style of the
-elements which are added within the style's context such as **text color**,
-**font, font-weight** or decorations such as **underlining**.
+    @staticmethod
+    def _handle_line_flags(flag_set, text_deco):
+        """
+        Handles the line flags for under, over and line through, wavy or normal
 
-The most compact way to modify the style is via the `call` function of the
-StyleContext in which you pass all style parameters as a single string in
-the first parameter and  and passing the content as second parameter such as"""
-        )
-        vl.sub("Example")
-        vl.evaluate(
-            'vl.add("This text is not bold ").style("b", "But this one is!")',
-            br=True,
-            log_code=True,
-        )
-        vl.md(
-            """
-        * "b" - Bold
-        * "i" - Italic
-        * "_" or "u" - Underlined
-        * "-" - Strike-through
-        * "‾" or "o" - Overline
-        * "~" - Waved marker with the default error color
-        * "^" - Superscript vertical text alignment
-        * "." - Subscript vertical text alignment"""
-        )
-        vl.evaluate(
-            'with vl.style("bi"):\n\tvl.text("Styled text")', br=True, log_code=True
-        )
+        :param flag_set: The flag set
+        :param text_deco: The text decoration to which the effects shall be added
+        """
+        if "~" in flag_set:
+            line_deco = "red wavy"
+            org_len = len(line_deco)
+            if "-" in flag_set:  # line-through
+                line_deco += " line-through"
+            if "_" in flag_set or "u" in flag_set:  # underline
+                line_deco += " underline"
+            if "‾" in flag_set or "o" in flag_set:
+                line_deco += " overline"
+            if len(line_deco) == org_len:
+                raise ValueError(
+                    "You have to be combine the style ~ with one or more "
+                    "underline, overline or line-through flags such"
+                    'as "~_".'
+                )
+            text_deco += [line_deco]  # overline
+        else:
+            if "-" in flag_set:  # line-through
+                text_deco += [f"line-through"]
+            if "_" in flag_set or "u" in flag_set:  # underline
+                text_deco += [f"underline"]
+            if "‾" in flag_set or "o" in flag_set:
+                text_deco += [f"overline"]  # overline
+
+    def help(self):
+        """
+        Displays help about this element in the current log
+        """
+        from scistag.examples.vislog.c01_basics.styling import StyleDemo
+
+        source = FileStag.load_text(inspect.getsourcefile(StyleDemo))
+        result = StyleDemo.run(filetype="html", nested=True)
+        self.builder.text(
+            "Below you can find the output and source code of the styling example."
+        ).hr()
+        self.builder.add_html(result)
+        self.builder.br()
+        self.builder.code(source)

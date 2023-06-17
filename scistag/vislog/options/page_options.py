@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+import scistag
+
 
 class PageOptions(BaseModel):
     """
@@ -17,6 +19,14 @@ class PageOptions(BaseModel):
 
     title: str = "SciStag - VisualLog"
     """The page's initial title"""
+
+    footer_promo = (
+        f'<p style="text-align: center"><small style="color: gray">Built '
+        f'with <a style="color: gray" href="https://github.com/scistag/scis'
+        f'tag">SciStag v{scistag.common.__version__}</a></small></p>'
+    )
+    """The footer promo. Thanks for not disabling it but you can of course if you
+    want to"""
 
     def setup(self, title: str | None = None):
         """

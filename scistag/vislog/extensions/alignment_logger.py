@@ -112,9 +112,6 @@ class AlignmentLogger(BuilderExtension):
 
         if block:
             html = f'<div style="display: flex; justify-content: {hor_align}">\n<div>\n'
-            if md_html:
-                self.builder.add_md(html)
-            self.builder.add_html(html)
             context = AlignmentContext(
                 block=block,
                 state=hor_align,
@@ -133,9 +130,6 @@ class AlignmentLogger(BuilderExtension):
             return context
         else:
             html = f'<div style="text-align: {hor_align}">\n'
-            if md_html:
-                self.builder.add_md(html)
-            self.builder.add_html(html)
             context = AlignmentContext(
                 block=block,
                 state=hor_align,

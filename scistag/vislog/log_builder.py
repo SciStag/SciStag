@@ -391,7 +391,7 @@ class LogBuilder(LogBuilderBase):
         test: bool = False,
         fixed_session_id: str | None = None,
         **kwargs,
-    ) -> dict | WebResponse | None:
+    ) -> dict | WebResponse | None | bytes:
         """
         Executes the builder and returns its response
 
@@ -484,7 +484,14 @@ class LogBuilder(LogBuilderBase):
         """
         self.page_session.embed(page)
 
-    def evaluate(self, code: str, log_code: bool | int = True, br: bool = False) -> Any:
+    def evaluate(
+        self,
+        code: str,
+        log_code: bool | int = True,
+        br: bool = True,
+        ml=False,
+        sl: bool = False,
+    ) -> Any:
         """
         Runs a piece of code and returns it's output
 
@@ -492,23 +499,32 @@ class LogBuilder(LogBuilderBase):
         :param log_code: Defines if the code shall be added to the log. If -1 is passed
             the code is logged before the execution.
         :param br: Defines if a whitespace shall be kept between code and result
+        :param ml: If exec is passed multiple lines of code can be executed
+            though no result can be fetched then
+        :param sl: Defines if just a single line of code is used and the result shall
+            be compact
         :return: The returned data (if any)
         """
         import inspect
 
         frame = inspect.currentframe()
         if log_code == -1:
-            self.code(code)
+            self.code(code, sl=sl)
 
-        result = eval(code, frame.f_back.f_globals, frame.f_back.f_locals)
+        if ml:
+            result = exec(code, frame.f_back.f_globals, frame.f_back.f_locals)
+        else:
+            result = eval(code, frame.f_back.f_globals, frame.f_back.f_locals)
         if log_code and log_code != -1:
             if br:
                 self.br()
                 self.br()
             if result is not None:
-                self.code(code + f"\n>>> {result}")
+                self.code(code + f"\n>>> {result}", sl=sl)
             else:
                 self.code(code)
+        elif sl:
+            self.br()
         return result
 
     def add(
@@ -690,7 +706,7 @@ class LogBuilder(LogBuilderBase):
         lines = lines.split("\n")
         if br:
             for index, text in enumerate(lines):
-                self.add_html(f"{text}<br>\n")
+                self.add_html(f"{text}<br>")
                 if index == len(lines) - 1:
                     self.add_md(f"{text}\n")
                 else:
@@ -702,7 +718,7 @@ class LogBuilder(LogBuilderBase):
                     self.add_html(f"{text}")
                     self.add_md(f"{text}", br=False)
                 else:  # only break if there is really an explicit line break
-                    self.add_html(f"{text}<br>\n")
+                    self.add_html(f"{text}<br>")
                     self.add_md(f"{text}\\")
                 self.add_txt(text, br=False)
         self.handle_modified()
@@ -1003,13 +1019,17 @@ class LogBuilder(LogBuilderBase):
         """
         return LogBuilderRegistry.current_builder()
 
-    def code(self, code: str) -> LogBuilder:
+    def code(self, code: str, sl: bool = False) -> LogBuilder:
         """
         Adds code to the log
 
         :param code: The code to execute
+        :param sl: Defines if just a single line of code shall be displayed
         :return: The builder
         """
+        if sl:
+            self.md(f"`{code}` -> ", br=False)
+            return self
         escaped_code = html.escape(code).replace("\n", "<br>")
         self.add_html(
             f'Code<br><table class="source_code"\n>'
@@ -1265,6 +1285,7 @@ class LogBuilder(LogBuilderBase):
             "vl_slim": self.options.style.slim,
             "vl_log_updates": self.options.debug.html_client.log_updates,
             "scistag_version": scistag.common.__version__,
+            "scistag_footer_code": self.options.page.footer_promo,
         }
         template = environment.from_string(
             FileStag.load_text(base_path + "/templates/liveLog/default_liveView.html")

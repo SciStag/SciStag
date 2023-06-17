@@ -54,6 +54,7 @@ class LogRenderer:
             "title": self.title,
             "vl_slim": self.options.style.slim,
             "scistag_version": scistag.common.__version__,
+            "scistag_footer_code": self.options.page.footer_promo,
         }
 
     def set_body_template(self, template: str, **params):

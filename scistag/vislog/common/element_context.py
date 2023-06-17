@@ -105,21 +105,17 @@ class ElementContext:
         with self:
             self.builder.md(text, br=br)
 
-    def align(self, *args, **kwargs) -> ElementContext:
+    def text(self, text: str, br=False) -> None:
         """
-        Creates an align context and merges it with this one
-        """
-        context = self.builder.align(*args, **kwargs)
-        self.merge(context)
-        return self
+        Adds text.
 
-    def style(self, *args, **kwargs) -> ElementContext:
+        Note that for optimal chaining no linebreak is inserted by default.
+
+        :param text: The text to be plotted
+        :param br Defines if a linebreak shall be added
         """
-        Creates a style context and merges it with this one
-        """
-        context = self.builder.style(*args, **kwargs)
-        self.merge(context)
-        return self
+        with self:
+            self.builder.text(text, br=br)
 
     def merge(self, context: ElementContext) -> ElementContext:
         """
@@ -147,8 +143,9 @@ class ElementContext:
         :return: The combined context
         """
         context = ElementContext(builder=self.builder)
-        context += self
-        context += other
+        context.merge(self)
+        context.merge(other)
+        return context
 
     def close(self):
         """

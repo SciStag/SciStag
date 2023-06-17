@@ -18,6 +18,9 @@ from .stag_app import StagApp
 from .test_data import get_test_data, get_test_image, TestDataNames
 from .sytem_info import SystemInfo
 
+__version__ = "0.8.2"
+"""The current release version"""
+
 __all__ = [
     "ESSENTIAL_DATA_ARCHIVE_NAME",
     "ESSENTIAL_DATA_URL",
@@ -37,7 +40,5 @@ __all__ = [
     "DataObserver",
     "DataObserverList",
     "SystemInfo",
+    "__version__",
 ]
-
-__version__ = "0.8.2"
-"""The current release version"""
