@@ -6,13 +6,13 @@ and temporarily modifying the style for parts of it.
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, Union, Callable
+from typing import TYPE_CHECKING, Union
 
 from scistag.filestag import FileStag
-from scistag.vislog import VisualLog
 from scistag.vislog.common.element_context import ElementContext
 from scistag.vislog.extensions.builder_extension import BuilderExtension
-from scistag.webstag.mime_types import MIMETYPE_ASCII
+from scistag.vislog.extensions.font_style_context import FontStyleContext
+from scistag.vislog.extensions.color_style_context import ColorStyleContext
 
 if TYPE_CHECKING:
     from scistag.vislog.log_builder import LogBuilder, LogableContent
@@ -29,8 +29,14 @@ class StyleContext(BuilderExtension):
         :param builder: The builder object with which we write to the log
         """
         super().__init__(builder)
+        self.font = FontStyleContext(builder)
+        "The font selection extension"
+        self.color = ColorStyleContext(self.builder)
+        "Color styling context"
+        self.bg_color = ColorStyleContext(self.builder, background=True)
+        "Background color styling context"
 
-    def css(
+    def add_css(
         self,
         code: str,
         class_name: str | None = None,
@@ -83,7 +89,31 @@ class StyleContext(BuilderExtension):
         """
         if "{" not in name_or_code:
             return name_or_code
-        return self.css(code=name_or_code, class_name=class_category)
+        return self.add_css(code=name_or_code, class_name=class_category)
+
+    def css(self, css: str = "", css_class: str | None = None) -> ElementContext:
+        """
+        Returns an element context defining a custom span style
+
+        :param css: The code, such as "font-weight: 250"
+        :param css_class: The class to use for the span
+        :return: The element context
+        """
+        md_html = self.builder.md.log_html_only
+        class_str = "" if css_class is None else f' class="{css_class}"'
+        html = f'<span style="{css}"{class_str}>'
+        html_closing = "</span>"
+        return ElementContext(
+            builder=self.builder,
+            opening_code={
+                "html": html,
+                "md": html if md_html else "*",
+            },
+            closing_code={
+                "html": html_closing,
+                "md": html_closing if md_html else "*",
+            },
+        )
 
     def __call__(
         self,
@@ -108,6 +138,8 @@ class StyleContext(BuilderExtension):
                 * "e" - Emphasize
                 * "d" - Deleted
                 * "m" - Mark text
+                * "h" - Highlight text
+                * "E" - Error (highlight error)
                 * "_" or "u" - Underlined
                 * "-" - Strike-through
                 * "‾" or "o" - Overline
@@ -241,50 +273,6 @@ class StyleContext(BuilderExtension):
             },
         )
 
-    def color(self, name: str) -> ElementContext:
-        """
-        Returns a color context within which all text is written italic
-
-        :param name: The color's name or hex code such as "red" or "#FF0000"
-        :return: The context
-        """
-        md_html = self.builder.md.log_html_only
-        html = f'<span style="color: {name}">'
-        html_closing = "</span>"
-        return ElementContext(
-            builder=self.builder,
-            opening_code={
-                "html": html,
-                "md": html if md_html else "",
-            },
-            closing_code={
-                "html": html_closing,
-                "md": html_closing if md_html else "",
-            },
-        )
-
-    def bg_color(self, name: str) -> ElementContext:
-        """
-        Returns a background color context within which all text is written italic
-
-        :param name: The color's name or hex code such as "red" or "#FF0000"
-        :return: The context
-        """
-        md_html = self.builder.md.log_html_only
-        html = f'<span style="background-color: {name}">'
-        html_closing = "</span>"
-        return ElementContext(
-            builder=self.builder,
-            opening_code={
-                "html": html,
-                "md": html if md_html else "",
-            },
-            closing_code={
-                "html": html_closing,
-                "md": html_closing if md_html else "",
-            },
-        )
-
     @staticmethod
     def _evaluate_flags(
         css_style, flag_set, html, html_closing, md, md_closing, text_deco
@@ -315,7 +303,13 @@ class StyleContext(BuilderExtension):
         if "e" in flag_set:  # emphasized
             html += ["<em>"]
             html_closing += ["</em>"]
-        if "m" in flag_set:  # deleted
+        if "h" in flag_set:  # highlighted
+            html += ["<span class='vl_highlighted'>"]
+            html_closing += ["</span>"]
+        if "E" in flag_set:  # error
+            html += ["<span class='vl_error'>"]
+            html_closing += ["</span>"]
+        if "m" in flag_set:  # marked
             html += ["<mark>"]
             html_closing += ["</mark>"]
         if "d" in flag_set:  # deleted

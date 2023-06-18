@@ -229,9 +229,6 @@ class LogBuilder(LogBuilderBase):
         self._page: str = ""
         """Defines which page is currently visible. Affects all cells which have
         a page property assigned"""
-        self._tab: str = ""
-        """Defines which tab is currently visible. Affects all cells which have a tab
-        property assigned"""
         self.visible_groups: set[str] = {"default"}
         """Defines which groups are currently visible. Placeholders such as * and ?
         are supported"""
@@ -660,6 +657,19 @@ class LogBuilder(LogBuilderBase):
         self.text(str(content), br=br)
         return self
 
+    def __call__(self, *args, **kwargs) -> LogBuilder:
+        """
+        Executes self.add with Markdown as default
+
+        :param args: The positional arguments
+        :param kwargs: The keyword arguments
+        :return: Self
+        """
+        if len(args) == 1 and "mimetype" not in kwargs:
+            kwargs["mimetype"] = "md"
+        self.add(*args, **kwargs)
+        return self
+
     def title(self, text: str = "") -> Union[LogBuilder, ElementContext]:
         """
         Adds a title to the log
@@ -734,12 +744,12 @@ class LogBuilder(LogBuilderBase):
         self.handle_modified()
         return self
 
-    def link(self, content: Any, link: str) -> LogBuilder:
+    def link(self, link: str, content: Any) -> LogBuilder:
         """
         Adds a hyperlink to the log
 
-        :param content: The text or content to add to the log
         :param link: The link target
+        :param content: The text or content to add to the log
         :return: The builder
         """
 
@@ -1351,43 +1361,16 @@ class LogBuilder(LogBuilderBase):
         """
         self.set_page(page=page)
 
-    @property
-    def current_tab(self):
-        """
-        The currently visible tab. Only cells with None or the associated tab will
-        be shown and processed.
-        """
-        return self._tab
-
-    @current_tab.setter
-    def current_tab(self, tab: str):
-        """
-        Sets the new tab.
-
-        All cells with given tab name (or without any page) will be set visible,
-        all other pages will be hidden.
-
-        :param tab: The name of the new tab
-        """
-        self._tab = tab
-
-    def set_page(self, page: str | None = None, tab: str | None = None):
+    def set_page(self, page: str | None = None):
         """
         Jumps to given page and tab (without creating an entry in the navigation
         history)
 
         :param page: The page to move to. If no page is passed the current page will
             be kept.
-        :param tab: The tab to move to. If no tab is passed and the page is changed
-            the initial tab will be received from self.pages[page].default_tab if
-            defined.
         """
         if page is not None:
             self._page = page
-            if tab is None and page in self.pages:
-                tab = self.pages[page].default_tab
-        if tab is not None:
-            self._tab = tab
 
     def terminate(self):
         """
@@ -1449,16 +1432,8 @@ class LogBuilder(LogBuilderBase):
             and "_loggers" in self.__dict__
             and item in self.__dict__.get("_loggers")
         ):  # setup missing loggers
-            value = self.__dict__.get(item, None)
-            if value is None:
-                return self._setup_logger(item)
-            else:
-                return value
+            return self._setup_logger(item)
         return super().__getattr__(item)
-
-    def __getattribute__(self, item):
-        value = super().__getattribute__(item)
-        return value
 
     def __getitem__(self, item):
         return self.cache.__getitem__(item)

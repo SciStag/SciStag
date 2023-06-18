@@ -27,7 +27,6 @@ def cell(
     uses: str | list[str] = None,
     output: str | list[str] = None,
     requires: str | list[str] = None,
-    tab: str | None = None,
     page: int | str | None = None,
     capture_stdout: bool = False,
     ctype: str | None = None,
@@ -74,7 +73,6 @@ def cell(
 
         See :meth:`Cache.non_zero`.
     :param groups: A list of visibility groups the page is attached to.
-    :param tab: The tab in which the cell shall be displayed.
     :param page: The page index, e.g. to easily create browsable documents where
         always only one page is displayed at a time.
     :param capture_stdout: Defines if stdout (e.g. print outputs) shall be captured and
@@ -104,7 +102,6 @@ def cell(
                 "output": output,
                 "requires": requires,
                 "groups": groups,
-                "tab": tab,
                 "page": page,
                 "capture_stdout": capture_stdout,
                 "ctype": ctype,

@@ -107,7 +107,6 @@ class Cell(LWidget):
         uses: str | list[str] = None,
         output: str | list[str] = None,
         requires: str | list[str] = None,
-        tab: str | None = None,
         page: int | str | None = None,
         capture_stdout: bool = False,
         ctype: str | None = None,
@@ -131,10 +130,6 @@ class Cell(LWidget):
             the cell will be refreshed if the value changes but in addition the cell
             also won't be build at all before the value or file is present.
         :param groups: A list of visibility groups the page is attached to.
-        :param tab: The tab in which the cell shall be displayed. If a tabe is defined
-            in the LogBuilder (by default it is not) only cells with the associated tab
-            or None  will be displayed. IF tab and page are defined the hierarchy is
-            tab>page.
         :param ctype: Defines the cell's type.
 
             Supported types are:
@@ -198,11 +193,6 @@ class Cell(LWidget):
                 self.requires.add(requires)
             else:
                 self.requires = self.requires.union(set(requires))
-        self.tab = tab
-        """
-        Define on which tab the cell shall be visible. Will automatically add the
-        cell to a group named t{tab} if just the tab is specified or t{tab}.page{} if
-        tab and page are defined"""
         self.page = page
         """
         Define on which page the cell shall be visible. Will automatically add the
@@ -407,10 +397,6 @@ class Cell(LWidget):
         if self.page is not None:  # verify page - if one is set
             cp = self.builder.current_page
             if cp == "" or cp != self.page:
-                return False
-        if self.tab is not None:  # verify tab - if one is set
-            ct = self.builder.current_tab
-            if ct == "" or ct != self.tab:
                 return False
         included: bool = False
         for group in self.builder.visible_groups:

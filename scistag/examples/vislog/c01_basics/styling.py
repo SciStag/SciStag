@@ -7,7 +7,7 @@ forward way is to use text codes such as **bold** or *italic* to change the text
 Alternatively and for more advanced, html-only styling you can though also use the
 extensions .style and .align to style and align the text.
 """
-from scistag.vislog import VisualLog, LogBuilder, cell
+from scistag.vislog import VisualLog, LogBuilder, cell, section
 
 
 class StyleDemo(LogBuilder):
@@ -21,7 +21,7 @@ class StyleDemo(LogBuilder):
             "`.align` extensions as well as with classical markdown or html styling"
         )
 
-    @cell(section_name="Basic Styling")
+    @section("Basic Styling")
     def basic_styling(self):
         # Use markdown to make the text **bold** by enclosing it between
         # "double-asteriks"
@@ -40,7 +40,7 @@ class StyleDemo(LogBuilder):
         # third parameter"
         self.style("#red", "**I combine styling and markdown**\n", "md")
 
-    @cell(section_name="Combining style elements")
+    @section("Combining style elements")
     def combining(self):
         # Of course you can also combine default elements such as titles and sub titles
         # with additional style flags:
@@ -65,7 +65,9 @@ class StyleDemo(LogBuilder):
             self.text("Should be centered")
         self.text("Should be left")
 
-    @cell(section_name="Reusing elements")
+        self("It's of the ").style("h", "utmost importance ")("to build beautiful logs")
+
+    @section("Reusing elements")
     def multi_use(self):
         # ElementContext objects can be used multiple times and also be combined
         # via the add operator.
@@ -84,7 +86,73 @@ class StyleDemo(LogBuilder):
             # but switch the color element by element
             red.md("Red"), green.md("Green"), blue.md("Blue")
 
-    @cell(section_name="Overview")
+    @section("Custom css")
+    def custom_css(self):
+        # You can also register your own css style class using add_css. Use {{c}}
+        # as placeholder for the class name
+        style_class = self.style.add_css(
+            ".{{C}} {color:red; font-weight: 950}", class_name="custom_style"
+        )
+
+        # pass the retrieved class name to style.css. do not hardcode the name if
+        # you used add_css as it may be altered with a session id
+        with self.style.css(css_class=style_class):
+            self.text("Red ultra bold text")
+
+        # of course you can also use css directly without declaring a class first
+        with self.style.css("text-decoration: underline"):
+            self.text("Underlined")
+
+    @section("Fonts")
+    def font_changing(self):
+        # With the following approaches you can change font family, size and height
+        with self.style.font(size=20):
+            # Fonts can be selected by either calling style.font(family, size, weight)
+            # or by selecting style.font.default to select the default font or any
+            # of the common font families
+            with self.style.font("Arial"):  # all elements in this block use Arial now
+                self.text("Arial")
+                with self.style.font(size="50px"):  # just increase size
+                    self.text("... in large")
+                self.style.font(None, 10)("... or small", br=True)  # just decrease size
+            # Other default font families:
+            with self.style.font.arial:
+                self.text("Arial")
+            with self.style.font.courier:
+                self.text("Courier")
+            with self.style.font.lucida:
+                self.text("Lucida")
+            with self.style.font.times:
+                self.text("Times")
+            with self.style.font.tahoma:
+                self.text("Tahoma")
+            with self.style.font.trebuchet:
+                self.text("Trebuchet")
+            with self.style.font.georgia:
+                self.text("Georgia")
+            with self.style.font.default:
+                self.text("Default font")
+            with self.style.font("sans-serif", size=35, weight=950):
+                self.text("Tahoma")
+            with self.style.font("sans-serif", size=35):
+                self.text("Tahoma")
+
+    @section("Defaults")
+    def defaults(self):
+        with self.style.font.courier:
+            self.text("Courier")
+            with self.style.font.default:
+                self.text("Default font")
+        with self.style.color("red"):
+            self.text("Colored red")
+            self.style.color.default.text("Using default color")
+        with self.style.bg_color("black"):
+            with self.style.color("blue"):
+                self.text("Using black background")
+        with self.style.bg_color.default:
+            self.text("Using default background")
+
+    @section("Overview")
     def overview(self):
         # Overview which evaluates every single style
         self.md("### Overview of all single character style codes", br=False)
@@ -108,6 +176,9 @@ class StyleDemo(LogBuilder):
         self.evaluate('self.style("d", "Deleted")', -1, ml=True, sl=True)
         self.evaluate('self.style("e", "Emphasized")', -1, ml=True, sl=True)
         self.evaluate('self.style("s", "Strong")', -1, ml=True, sl=True)
+        self.br()
+        self.evaluate('self.style("h", "Highlighted")', -1, ml=True, sl=True)
+        self.evaluate('self.style("E", "Error")', -1, ml=True, sl=True)
         self.evaluate('self.style("a", "ASCII\\nis\\nfun ;-)")', -1, ml=True, sl=True)
         self.md("### Property based style selection", br=False)
         self.evaluate('self.style.bold.add("Bold")', -1, ml=True, sl=True)

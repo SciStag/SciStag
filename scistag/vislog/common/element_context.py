@@ -81,41 +81,26 @@ class ElementContext:
         with self:
             self.builder.add(*args, **kwargs)
 
-    def html(self, text: str, br=False) -> None:
+    def html(self, *args, **kwargs) -> None:
         """
-        Adds html text.
-
-        Note that for optimal chaining no linebreak is inserted by default.
-
-        :param text: The text to be plotted
-        :param br Defines if a linebreak shall be added
+        Adds html text in this element's context via LogBuilder.html
         """
         with self:
-            self.builder.html(text, br=br)
+            self.builder.html(*args, **kwargs)
 
-    def md(self, text: str, br=False) -> None:
+    def md(self, *args, **kwargs) -> None:
         """
-        Adds markdown text.
-
-        Note that for optimal chaining no linebreak is inserted by default.
-
-        :param text: The text to be plotted
-        :param br Defines if a linebreak shall be added
+        Adds markdown text in this element's context via LogBuilder.md
         """
         with self:
-            self.builder.md(text, br=br)
+            self.builder.md(*args, **kwargs)
 
-    def text(self, text: str, br=False) -> None:
+    def text(self, *args, **kwargs) -> None:
         """
-        Adds text.
-
-        Note that for optimal chaining no linebreak is inserted by default.
-
-        :param text: The text to be plotted
-        :param br Defines if a linebreak shall be added
+        in this element's context via LogBuilder.text
         """
         with self:
-            self.builder.text(text, br=br)
+            self.builder.text(*args, **kwargs)
 
     def merge(self, context: ElementContext) -> ElementContext:
         """
@@ -146,6 +131,13 @@ class ElementContext:
         context.merge(self)
         context.merge(other)
         return context
+
+    def __call__(self, *args, **kwargs) -> LogBuilder:
+        """
+        Adds content to the LogBuilder via it's call method
+        """
+        with self:
+            return self.builder(*args, **kwargs)
 
     def close(self):
         """

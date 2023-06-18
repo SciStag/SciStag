@@ -70,7 +70,7 @@ def test_add_and_links():
     :return:
     """
     vl.test.checkpoint("log.link")
-    vl.link("SciStag", "https://github.com/scistag/scistag").br()
+    vl.link("https://github.com/scistag/scistag", "SciStag").br()
     vl.add("Test text", True)
     vl.add(123, br=True)
     vl.add(123.456, br=True)
@@ -85,7 +85,7 @@ def test_add_and_links():
         vl.add(stream.getvalue(), br=True)
     vl.test.assert_cp_diff(hash_val="30f1df7df36c528ee58ead4ba3fbcc51")
     vl.test.checkpoint("log.link_adv")
-    vl.link("Multiline\nLink", "https://github.com/scistag/scistag").br()
+    vl.link("https://github.com/scistag/scistag", "Multiline\nLink").br()
     vl.test.assert_cp_diff(hash_val="71d71e2014bb58db9dfc9a713b7b4678")
     vl.test.checkpoint("callback")
     assert vl.max_fig_size.width > 100
@@ -129,7 +129,9 @@ def test_dict():
     Tests the assertion of a dictionary
     """
     test_dict = {"child": {"value": 123}, "anotherValue": "Test"}
-    vl.test.assert_val("test_dict", test_dict, hash_val="95886f8348cd7b32465f9b96f32b232c")
+    vl.test.assert_val(
+        "test_dict", test_dict, hash_val="95886f8348cd7b32465f9b96f32b232c"
+    )
     test_dict["child"]["value"] = 456
     with pytest.raises(AssertionError):
         vl.test.assert_val(
