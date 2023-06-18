@@ -83,16 +83,16 @@ def test_add_and_links():
         stream = io.BytesIO()
         test_image.to_pil().save(stream, "tiff")
         vl.add(stream.getvalue(), br=True)
-    vl.test.assert_cp_diff(hash_val="06a40c0c8c59555546bce15052a1559a")
+    vl.test.assert_cp_diff(hash_val="30f1df7df36c528ee58ead4ba3fbcc51")
     vl.test.checkpoint("log.link_adv")
     vl.link("Multiline\nLink", "https://github.com/scistag/scistag").br()
-    vl.test.assert_cp_diff(hash_val="749e0d5d5ee5556a37b038ea5d380c12")
+    vl.test.assert_cp_diff(hash_val="71d71e2014bb58db9dfc9a713b7b4678")
     vl.test.checkpoint("callback")
     assert vl.max_fig_size.width > 100
     vl.add(lambda: vl.log("TestCall"))
     vl.add("**Bold**", mimetype="md").br()
     vl.add("<b>Bold</b>", mimetype="html").br()
-    vl.test.assert_cp_diff("1785d8ba1f47b92d37f4781f6990f0c8")
+    vl.test.assert_cp_diff("3f81fba6b62d8a29aa3d91fcf96eeb00")
 
     vl.test.checkpoint("add.womime")
     vl.add("A text", mimetype="notexisting")
@@ -106,7 +106,7 @@ def test_html():
     vl.test.checkpoint("logbuilder.html")
     vl.html("<b>A bold html text</b>")
     vl.html(HTMLCode("<b>Another bold html text</b>"))
-    vl.test.assert_cp_diff("b87408f537be6834db17b518376c9451")
+    vl.test.assert_cp_diff("ff45ab867438e7284f2198b4ad8329e9")
 
 
 def test_errors():
@@ -129,13 +129,11 @@ def test_dict():
     Tests the assertion of a dictionary
     """
     test_dict = {"child": {"value": 123}, "anotherValue": "Test"}
-    vl.test.assert_val(
-        "test_dict", test_dict, hash_val="95886f8348cd7b32465f9b96f32b232c"
-    )
+    vl.test.assert_val("test_dict", test_dict, hash_val="95886f8348cd7b32465f9b96f32b232c")
     test_dict["child"]["value"] = 456
     with pytest.raises(AssertionError):
         vl.test.assert_val(
-            "test_dict", test_dict, hash_val="95886f8348cd7b32465f9b96f32b232c"
+            "test_dict", test_dict, hash_val="c1b926dbe20fca8f1fc68543c3de55f3"
         )
 
 
@@ -149,7 +147,7 @@ def test_figure():
     vl.test.assert_val(
         "figure_test", figure, hash_val="a706d00b64ad66ad7009e32f0fcb8709"
     )
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # Note: This test shall fail
         vl.test.assert_val(
             "figure_test", figure, hash_val="d41d8cd98f00b204e9800998ecf8427c"
         )
@@ -219,11 +217,11 @@ def test_text():
     )
     vl.hr()
     vl.log("Note: The following lines show a failed assertion on purpose for testing")
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # Note: Shall fail
         vl.test.assert_text(
             "test_text", my_text, hash_val="0956d2fbd5d5c29844a4d21ed2f76e0a"
         )
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # Note: Shall fail
         vl.test.assert_val(
             "test_text", my_text, hash_val="0956d2fbd5d5c29844a4d21ed2f76e0a"
         )
@@ -239,7 +237,7 @@ def test_text():
     vl.hr()
     vl.text(123)
     vl.hr(title="This is a section")
-    vl.test.assert_cp_diff("806513cc8e03ccf9e06e957a247fdf5c")
+    vl.test.assert_cp_diff("e803d327feee668dcbe6a629edefd177")
 
 
 @patch("builtins.print")

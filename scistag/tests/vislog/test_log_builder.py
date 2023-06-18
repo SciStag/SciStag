@@ -169,7 +169,7 @@ def test_advanced_br():
     vl.text("test after 1 line spacing, not in txt")
     vl.br(1, exclude="md")
     vl.text("test after 1 line spacing, not in md")
-    vl.test.assert_cp_diff("5a5cea290c048376a9d14e176125b264")
+    vl.test.assert_cp_diff("36728ca6671b340e82d7af71362ce757")
 
 
 def test_cache():
@@ -220,4 +220,4 @@ def test_no_module():
 
     """Test if builder also works without known initial module"""
     builder.initial_module = None
-    builder.build()
+    builder._build_page()

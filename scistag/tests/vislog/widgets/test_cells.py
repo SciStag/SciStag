@@ -109,5 +109,5 @@ def test_adv_cells():
     """
     vl.test.checkpoint("insert_builder")
     vl.add(MyLog, share="sessionId")
-    vl.test.assert_cp_diff("ffb4659baa15b9f52bcc903811a67b69")
+    vl.test.assert_cp_diff("d0d36d21494adbe4da8a2500e3aec936")
     vl.flush()

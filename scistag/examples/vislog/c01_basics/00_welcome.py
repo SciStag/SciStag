@@ -9,12 +9,13 @@ from math import ceil
 import numpy as np
 import pandas as pd
 
-from scistag.vislog import VisualLog, LogBuilder
+from scistag.vislog import VisualLog, LogBuilder, section
 from scistag.emojistag import EmojiDb, render_emoji
 
 
 class DemoBuilder(LogBuilder):
-    def build(self):
+    @section("Overview")
+    def overview(self):
         self.md(
             """
             # Welcome to SciStag VisualLog!
@@ -34,7 +35,7 @@ class DemoBuilder(LogBuilder):
             ## Getting started
             
             * Install SciStag with Flask installed, e.g. via 
-            `pip install scistag[logstag,flask]`
+            `pip install scistag[full]`
             * Start this demo in the IDE of your choice such as Visual Studio
             Code or PyCharm Professional.
             * After starting the demo you should see an 
@@ -76,13 +77,8 @@ class DemoBuilder(LogBuilder):
             **Have fun**!"""
         )
         self.image(render_emoji(":sunglasses:", height=64))
-        self.hr()
-        self.show_dataframe()
-        self.hr()
-        self.show_images()
-        self.hr()
-        self.show_plots()
 
+    @section
     def show_dataframe(self):
         """
         Demo showing how to add a dataframe to your log
@@ -96,6 +92,7 @@ class DemoBuilder(LogBuilder):
         df = pd.DataFrame(d)
         self.add(df)
 
+    @section
     def show_images(self):
         """
         Demo showing how to add tables and images to a log
@@ -115,6 +112,7 @@ class DemoBuilder(LogBuilder):
             table.add_row(content)
         table.close()
 
+    @section
     def show_plots(self):
         """
         Demo showing how to add matplotlib figures to your log
@@ -141,9 +139,9 @@ class DemoBuilder(LogBuilder):
             ax1.set_xlabel("Time")
             ax1.set_ylabel("s1 and s2")
             ax1.grid(True)
-            cxy, f = ax2.csd(s1, s2, 256, 1.0 / dt)
+            ax2.csd(s1, s2, 256, 1.0 / dt)
             ax2.set_ylabel("CSD (dB)")
 
 
 if VisualLog.is_main():
-    VisualLog(auto_reload=DemoBuilder)
+    VisualLog().run_server(builder=DemoBuilder)

@@ -31,4 +31,4 @@ def test_alignment():
         vl.table(["Table centered", 123, 456])
     with vl.align.center:
         vl.text("*" * 150)
-    vl.test.assert_cp_diff("fb85bba7e621c849982dd06caf539a5e")
+    vl.test.assert_cp_diff("65402e394c401a777092ae7d45b39993")

@@ -9,6 +9,7 @@ import inspect
 from typing import TYPE_CHECKING, Union, Callable
 
 from scistag.filestag import FileStag
+from scistag.vislog import VisualLog
 from scistag.vislog.common.element_context import ElementContext
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 from scistag.webstag.mime_types import MIMETYPE_ASCII
@@ -374,7 +375,9 @@ class StyleContext(BuilderExtension):
         from scistag.examples.vislog.c01_basics.styling import StyleDemo
 
         source = FileStag.load_text(inspect.getsourcefile(StyleDemo))
-        result = StyleDemo.run(filetype="html", nested=True)
+        result = StyleDemo.run(
+            filetype="html", nested=True, fixed_session_id="style_demo"
+        )
         self.builder.text(
             "Below you can find the output and source code of the styling example."
         ).hr()

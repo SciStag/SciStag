@@ -4,6 +4,8 @@ Defines the page specific default options :class:`PageOptions`.
 
 from __future__ import annotations
 
+from typing import Union
+
 from pydantic import BaseModel
 
 import scistag
@@ -27,6 +29,14 @@ class PageOptions(BaseModel):
     )
     """The footer promo. Thanks for not disabling it but you can of course if you
     want to"""
+
+    session_id: Union[str, None] = None
+    """The unique session ID.
+    
+    Usually every instance of a LogBuilder creates its own, unique session ID to prevent
+    collisions between dom names in a complex html page. This randomness of course
+    leads to the page changing every run. If you want to suppress this you can assign
+    a custom id so the content of the page stays the same every run."""
 
     def setup(self, title: str | None = None):
         """

@@ -43,12 +43,12 @@ def test_table_enumeration():
     for row_index, row in enumerate(vl.table.begin(size=(4, 3))):
         for col_index, col in enumerate(row):
             vl.text(f"{col_index}x{row_index}")
-    vl.test.assert_cp_diff(hash_val="8692cd8b3be7e9c8fcf794e4c594de40")
+    vl.test.assert_cp_diff(hash_val="d6bcc258ae853a0e54ffc2ac34ede9d4")
     vl.test.checkpoint("log.table.iter_pass_size")
     for row_index, row in enumerate(vl.table.begin().iter_rows(3)):
         for col_index, col in enumerate(row.iter_cols(4)):
             vl.text(f"{col_index}x{row_index}")
-    vl.test.assert_cp_diff(hash_val="8692cd8b3be7e9c8fcf794e4c594de40")
+    vl.test.assert_cp_diff(hash_val="d6bcc258ae853a0e54ffc2ac34ede9d4")
 
     with pytest.raises(ValueError):
         with vl.table.begin() as table:
@@ -83,7 +83,7 @@ def test_table_creation():
         row.add("456")
         row.add(lambda: vl.log.info("789", br=False))
         row.add(MDCode("**Markdown**"))
-    vl.test.assert_cp_diff(hash_val="9c684a8191fb92e0edea4d36100532d3")
+    vl.test.assert_cp_diff(hash_val="53dd03a2dd140679c92fbb51820d8ebe")
 
 
 def test_content_logging():
@@ -126,7 +126,7 @@ def test_custom_class():
         table.add_row(["Test", "Test2"])
         table.add_row(["Test3", "Test4"])
 
-    temp_log.default_builder.test.assert_cp_diff("a630392f5b62923fd5862df410a548b8")
+    temp_log.default_builder.test.assert_cp_diff("12c2382c34937c23b3219ecc8ec968f6")
 
     backup = temp_log.default_builder.create_backup()
     vl.insert_backup(backup)

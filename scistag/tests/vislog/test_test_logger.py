@@ -86,7 +86,10 @@ def dummy_test3(vl):
     dummy_test(vl)
     from .temp.generic_hash_replace_2 import dummy_test2
 
-    os.remove(ref_data_dir + f"/{cur_hash}.html")
+    try:
+        os.remove(ref_data_dir + f"/{cur_hash}.html")
+    except FileNotFoundError:
+        pass
 
     dummy_test2(vl)
 

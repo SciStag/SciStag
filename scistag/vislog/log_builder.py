@@ -331,6 +331,13 @@ class LogBuilder(LogBuilderBase):
 
     def build(self):
         """
+        Custom build function you can overwrite if you do not want to work with cells
+        but just want a minimalistic log
+        """
+        pass
+
+    def _build_page(self):
+        """
         Is called when the body of the log shall be build or rebuild.
 
         This is usually the function you want to override to implement your
@@ -361,6 +368,9 @@ class LogBuilder(LogBuilderBase):
 
                     if LOG_CELL_METHOD_FLAG in attr.__dict__ or is_main:
                         cell_methods.append(attr)
+
+        if type(self).build != LogBuilder.build:  # attach build if overridden
+            cell_methods.append(self.build)
 
         for key, value in self.__class__.__dict__.items():
             attr = getattr(self, key)

@@ -23,7 +23,7 @@ def test_log_runner_basics():
 
 
 class DummyBuilder(LogBuilder):
-    def build(self):
+    def _build_page(self):
         self.add("Some content")
         if self.stats.build_counter == 2:
             self.terminate()

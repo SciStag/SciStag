@@ -25,7 +25,7 @@ def test_basic_setup():
             max_gallery_preview_size=500,
         )
     assert b"drop the videos" in ll.page_session.render_element()[1]
-    ll.test.assert_cp_diff("b2fdda5bd7492cb7b99411404d5566ff", target=vl)
+    ll.test.assert_cp_diff("2bbf8b9370f7d5fd73a35f8140de73af", target=vl)
     with ll.align.block_center:
         upload = LFileUpload(
             ll,

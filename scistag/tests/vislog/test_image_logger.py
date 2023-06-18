@@ -56,7 +56,7 @@ def test_image():
     vl.test.assert_val(
         "assert_stag", image_data, hash_val="4e5e428357fcf315f25b148747d633db"
     )
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # note this SHALL fail to test the assertion
         vl.test.assert_val("assert_stag", image_data, hash_val="124567")
     vl.test.checkpoint("image.log.scaled.nodownload")
     vl.sub_test("An image from the web scaled to 50%")
