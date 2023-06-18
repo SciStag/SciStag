@@ -162,13 +162,21 @@ class FileStag:
 
     @classmethod
     def load_text(
-        cls, source: FileSourceTypes, encoding: str = "utf-8", **params
+        cls,
+        source: FileSourceTypes,
+        encoding: str = "utf-8",
+        crlf: bool | None = None,
+        **params,
     ) -> str | None:
         """
         Loads a text file from a given file source
 
         :param source: The file's source, see :meth:`load_file`.
         :param encoding: The text encoding. utf-8 by default
+        :param crlf: Defines if Windows line endings shall be used or suppressed.
+            * None = Keep current state
+            * False = Linux line endings only (newline)
+            * True = Windows line endings only (carriage return, newline)
         :param params: The advanced loading parameters, file source dependent,
             e.g. timeout_s for a timeout from file's from the web.
         :return: The file's content
@@ -177,7 +185,12 @@ class FileStag:
         data = cls.load(source, **params)
         if data is None:
             return None
-        return data.decode(encoding=encoding)
+        result = data.decode(encoding=encoding)
+        if crlf is not None:
+            result = result.replace("\r\n", "\n")  # normalize to linux first
+            if crlf:
+                result = result.replace("\n", "\r\n")
+        return result
 
     @classmethod
     def save_text(

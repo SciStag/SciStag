@@ -374,7 +374,7 @@ class StyleContext(BuilderExtension):
         """
         from scistag.examples.vislog.c01_basics.styling import StyleDemo
 
-        source = FileStag.load_text(inspect.getsourcefile(StyleDemo))
+        source = FileStag.load_text(inspect.getsourcefile(StyleDemo), crlf=False)
         result = StyleDemo.run(
             filetype="html", nested=True, fixed_session_id="style_demo"
         )
