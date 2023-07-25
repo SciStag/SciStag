@@ -693,7 +693,7 @@ class LogBuilder(LogBuilderBase):
 
             return ElementContext(
                 self,
-                closing_code=f"</h{level}>",
+                closing_code=f"</h{level}>\n\n",
                 opening_code=f"<h{level}>",
                 html_only=True,
             )
@@ -702,7 +702,7 @@ class LogBuilder(LogBuilderBase):
         md_level = "#" * level
         escaped_lines = html.escape(text)
         for cur_row in escaped_lines.split("\n"):
-            self.add_html(f"<h{level}>{cur_row}</h{level}>\n")
+            self.add_html(f"<h{level}>{cur_row}</h{level}>\n\n")
         self.add_md(f"{md_level} {text}\n")
         if self.add_txt(text) and level <= 4:
             character = "=" if level < 2 else "-"
@@ -728,9 +728,9 @@ class LogBuilder(LogBuilderBase):
             for index, text in enumerate(lines):
                 self.add_html(f"{text}<br>")
                 if index == len(lines) - 1:
-                    self.add_md(f"{text}\n")
+                    self.add_md(f"{text}<br>")
                 else:
-                    self.add_md(f"{text}\\")
+                    self.add_md(f"{text}<br>")
                 self.add_txt(text)
         else:  # no line break
             for index, text in enumerate(lines):
@@ -739,7 +739,7 @@ class LogBuilder(LogBuilderBase):
                     self.add_md(f"{text}", br=False)
                 else:  # only break if there is really an explicit line break
                     self.add_html(f"{text}<br>")
-                    self.add_md(f"{text}\\")
+                    self.add_md(f"{text}<br>")
                 self.add_txt(text, br=False)
         self.handle_modified()
         return self
@@ -810,11 +810,12 @@ class LogBuilder(LogBuilderBase):
         :return: The builder
         """
         if title is not None:
-            self.add_html(f"<h3 class='vl_section_header'>{title}</h3>")
-            self.add_md(f"---\n### {title}\n\n")
+            self.add_html(f"<h3 class='vl_section_header'>{title}</h3>\n\n")
+            self.add_md(f"\n---\n## {title}\n\n")
+            self.add_txt("---", targets="-md")
         else:
             self.add_html("<hr>")
-        self.add_txt("---", targets="*")
+            self.add_txt("---", targets="*")
         return self
 
     def html(self, code: str | HTMLCode, br: bool = True) -> LogBuilder:
@@ -827,8 +828,9 @@ class LogBuilder(LogBuilderBase):
         if isinstance(code, HTMLCode):
             code = code.to_html()
 
+        code = code + ("<br>" if br else "")
         self.add_md(code, br=br)
-        self.add_html(code + ("<br>" if br else ""))
+        self.add_html(code)
         self.handle_modified()
         return self
 
@@ -1179,8 +1181,6 @@ class LogBuilder(LogBuilderBase):
         :param html_code: The html code
         :return: True if txt logging is enabled
         """
-        if self.md.log_html_only:
-            self.page_session.write_md(html_code, no_break=True)
         self.page_session.write_html(html_code)
 
     def add_md(self, md_code: str, br: bool = True):
@@ -1194,8 +1194,6 @@ class LogBuilder(LogBuilderBase):
         :param br: If defined a linebreak will be inserted afterwards
         :return: True if txt logging is enabled
         """
-        if self.md.log_html_only:
-            return
         self.page_session.write_md(md_code, no_break=not br)
 
     def add_txt(

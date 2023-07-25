@@ -31,18 +31,17 @@ class ColorStyleContext:
         :param name: The color's name or hex code such as "red" or "#FF0000"
         :return: The context
         """
-        md_html = self.builder.md.log_html_only
-        html = f'<span style="{self._style_tag}: {name}">'
+        html = f' <span style="{self._style_tag}: {name}">'
         html_closing = "</span>"
         return ElementContext(
             builder=self.builder,
             opening_code={
                 "html": html,
-                "md": html if md_html else "",
+                "md": "",
             },
             closing_code={
                 "html": html_closing,
-                "md": html_closing if md_html else "",
+                "md": "",
             },
         )
 
@@ -51,20 +50,19 @@ class ColorStyleContext:
         """
         Returns a context for the default color
         """
-        md_html = self.builder.md.log_html_only
         if self._bg:
-            html = f'<span style="background-color: transparent;">'
+            html = f' <span style="background-color: transparent;">'
         else:
-            html = f'<span class="vl_default_color">'
+            html = f' <span class="vl_default_color">'
         html_closing = "</span>"
         return ElementContext(
             builder=self.builder,
             opening_code={
                 "html": html,
-                "md": html if md_html else "",
+                "md": "",
             },
             closing_code={
                 "html": html_closing,
-                "md": html_closing if md_html else "",
+                "md": "",
             },
         )

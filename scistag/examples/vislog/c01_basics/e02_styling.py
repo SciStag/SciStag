@@ -26,8 +26,7 @@ class StyleDemo(LogBuilder):
         # Use markdown to make the text **bold** by enclosing it between
         # "double-asteriks"
         self.md("**I am bold**").br()
-        self.text("Or use classic html such as <b>Bold</b>")
-        self.html("<b>Bold as well</b>").br()
+        self.html("Or use classic html such as <b>Bold</b>")
         # By entering the element context such as via with self.style("b"):...
         # all elements within the context are affecting by the style:
         with self.style("b"):
@@ -155,7 +154,7 @@ class StyleDemo(LogBuilder):
     @section("Overview")
     def overview(self):
         # Overview which evaluates every single style
-        self.md("### Overview of all single character style codes", br=False)
+        self.md("### Overview of all single character style codes")
         self.evaluate('self.style("b", "Bold")', -1, ml=True, sl=True)
         self.evaluate('self.style("B", "Heavy")', -1, ml=True, sl=True)
         self.evaluate('self.style("u", "Underlined")', -1, ml=True, sl=True)
@@ -180,12 +179,11 @@ class StyleDemo(LogBuilder):
         self.evaluate('self.style("h", "Highlighted")', -1, ml=True, sl=True)
         self.evaluate('self.style("E", "Error")', -1, ml=True, sl=True)
         self.evaluate('self.style("a", "ASCII\\nis\\nfun ;-)")', -1, ml=True, sl=True)
-        self.md("### Property based style selection", br=False)
+        self.md("### Property based style selection")
         self.evaluate('self.style.bold.add("Bold")', -1, ml=True, sl=True)
         self.evaluate('self.style.italic.add("Italic")', -1, ml=True, sl=True)
         self.evaluate('self.style.underlined.add("Underlined")', -1, ml=True, sl=True)
-        self.br()
-        self.md("### The different ways of color selection", br=False)
+        self.md("### The different ways of color selection")
         self.evaluate('self.style.color("#00CC00").add("Green")', -1, ml=True, sl=True)
         self.evaluate('self.style.color("purple").add("Purple")', -1, ml=True, sl=True)
         self.evaluate('self.style("#fuchsia").add("Fuchsia")', -1, ml=True, sl=True)
@@ -198,4 +196,4 @@ class StyleDemo(LogBuilder):
 
 if VisualLog.is_main():
     vl = VisualLog()
-    vl.run_server(StyleDemo, auto_reload=True)
+    vl.run_server(StyleDemo)

@@ -99,19 +99,18 @@ class StyleContext(BuilderExtension):
         :param css_class: The class to use for the span
         :return: The element context
         """
-        md_html = self.builder.md.log_html_only
         class_str = "" if css_class is None else f' class="{css_class}"'
-        html = f'<span style="{css}"{class_str}>'
+        html = f' <span style="{css}"{class_str}>'
         html_closing = "</span>"
         return ElementContext(
             builder=self.builder,
             opening_code={
                 "html": html,
-                "md": html if md_html else "*",
+                "md": html,
             },
             closing_code={
                 "html": html_closing,
-                "md": html_closing if md_html else "*",
+                "md": html_closing,
             },
         )
 
@@ -165,7 +164,6 @@ class StyleContext(BuilderExtension):
         :return: The context element if no content was provided. Otherwise
             the LogBuilder object.
         """
-        md_html = self.builder.md.log_html_only
         md = []  # code to be inserted in front of md content
         md_closing = []  # code to be inserted after md content
         html = []  # code to be inserted in front of html content
@@ -188,7 +186,7 @@ class StyleContext(BuilderExtension):
         if len(text_deco):
             css_style += [f"text-decoration: {' '.join(text_deco)}"]
         if len(css_style) > 0:
-            html += [f'<span style="{";".join(css_style)}">']
+            html += [f' <span style="{";".join(css_style)}">']
             html_closing += ["</span>"]
         j_html = "".join(html)
         j_html_closing = "".join(html_closing)
@@ -196,10 +194,10 @@ class StyleContext(BuilderExtension):
         j_md_closing = "".join(md_closing)
         context = ElementContext(
             builder=self.builder,
-            opening_code={"html": j_html, "md": j_html if md_html else j_md},
+            opening_code={"html": j_html, "md": j_md},
             closing_code={
                 "html": j_html_closing,
-                "md": j_html_closing if md_html else j_md_closing,
+                "md": j_md_closing,
             },
         )
         if content is not None:
@@ -214,18 +212,17 @@ class StyleContext(BuilderExtension):
 
         :return: The context
         """
-        md_html = self.builder.md.log_html_only
-        html = '<span style="font-weight:bold">'
+        html = ' <span style="font-weight:bold">'
         html_closing = "</span>"
         return ElementContext(
             builder=self.builder,
             opening_code={
                 "html": html,
-                "md": html if md_html else "**",
+                "md": "",
             },
             closing_code={
                 "html": html_closing,
-                "md": html_closing if md_html else "**",
+                "md": "",
             },
         )
 
@@ -236,18 +233,17 @@ class StyleContext(BuilderExtension):
 
         :return: The context
         """
-        md_html = self.builder.md.log_html_only
-        html = '<span style="font-style:italic">'
+        html = ' <span style="font-style:italic">'
         html_closing = "</span>"
         return ElementContext(
             builder=self.builder,
             opening_code={
                 "html": html,
-                "md": html if md_html else "*",
+                "md": "",
             },
             closing_code={
                 "html": html_closing,
-                "md": html_closing if md_html else "*",
+                "md": "",
             },
         )
 
@@ -258,18 +254,17 @@ class StyleContext(BuilderExtension):
 
         :return: The context
         """
-        md_html = self.builder.md.log_html_only
         html = '<span style="text-decoration: underline">'
         html_closing = "</span>"
         return ElementContext(
             builder=self.builder,
             opening_code={
                 "html": html,
-                "md": html if md_html else "",
+                "md": "",
             },
             closing_code={
                 "html": html_closing,
-                "md": html_closing if md_html else "",
+                "md": "",
             },
         )
 
@@ -282,32 +277,22 @@ class StyleContext(BuilderExtension):
 
         if "b" in flag_set:  # bold
             css_style += ["font-weight:bold"]
-            md += ["**"]
-            md_closing += ["**"]
         if "B" in flag_set:  # ultra bold
             css_style += ["font-weight:950"]
-            md += ["**"]
-            md_closing += ["**"]
         if "n" in flag_set:  # thin
             css_style += ["font-weight:400"]
-            md += ["**"]
-            md_closing += ["**"]
         if "t" in flag_set:  # thin
             css_style += ["font-weight:200"]
-            md += ["**"]
-            md_closing += ["**"]
         if "i" in flag_set:  # italic
             css_style += ["font-style:italic"]
-            md += ["*"]
-            md_closing += ["*"]
         if "e" in flag_set:  # emphasized
             html += ["<em>"]
             html_closing += ["</em>"]
         if "h" in flag_set:  # highlighted
-            html += ["<span class='vl_highlighted'>"]
+            html += [" <span class='vl_highlighted'>"]
             html_closing += ["</span>"]
         if "E" in flag_set:  # error
-            html += ["<span class='vl_error'>"]
+            html += [" <span class='vl_error'>"]
             html_closing += ["</span>"]
         if "m" in flag_set:  # marked
             html += ["<mark>"]
@@ -366,7 +351,7 @@ class StyleContext(BuilderExtension):
         """
         Displays help about this element in the current log
         """
-        from scistag.examples.vislog.c01_basics.styling import StyleDemo
+        from scistag.examples.vislog.c01_basics.e02_styling import StyleDemo
 
         source = FileStag.load_text(inspect.getsourcefile(StyleDemo), crlf=False)
         result = StyleDemo.run(

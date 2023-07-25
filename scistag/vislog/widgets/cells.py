@@ -358,7 +358,7 @@ class Cell(LWidget):
         Adds the cell's header elements
         """
         if self.ctype == CELL_TYPE_SECTION:
-            self.builder.br().hr(self.section_name).br()
+            self.builder.br().hr(self.section_name).add_html("\n")
 
     def render_footer(self):
         """

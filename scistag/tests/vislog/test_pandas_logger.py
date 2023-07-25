@@ -56,8 +56,6 @@ def test_dataframe():
         vl.test.assert_df("test_dataframe", df, hash_val="2442")
 
     vl.test.checkpoint("pd.df.wohtml")
-    old_val = vl.options.formats.md.support_html
-    vl.options.formats.md.support_html = False
     vl.pd(df, "DataFrame w/o html")
 
 

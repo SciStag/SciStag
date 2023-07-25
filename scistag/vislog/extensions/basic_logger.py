@@ -144,7 +144,7 @@ class BasicLogger(BuilderExtension):
             )
 
         md_lines = md_text.split("\n")
-        if self.options.formats.md.support_html and level is not None:
+        if level is not None:
             md_lines = "\n".join(md_lines)
             if level in self.level_color:
                 self.builder.add_md(
@@ -162,7 +162,7 @@ class BasicLogger(BuilderExtension):
 
         else:
             lines = "\n".join(md_lines)
-            md_lines = f"<span style='white-space: pre-wrap;'>{lines}{br_code}</span>\n"
+            md_lines = f" <span style='white-space: pre-wrap;'>{lines}{br_code}</span>\n"
             self.builder.add_md(f"{md_lines}", br=br)
         self.builder.add_txt(text, br=br)
         return self.builder

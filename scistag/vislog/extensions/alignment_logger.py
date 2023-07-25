@@ -108,40 +108,38 @@ class AlignmentLogger(BuilderExtension):
         else:
             raise ValueError(f"Unknown alignment {hor_align}")
 
-        md_html = self.builder.md.log_html_only
-
         if block:
-            html = f'<div style="display: flex; justify-content: {hor_align}">\n<div>\n'
+            html = f'<div style="display: flex; justify-content: {hor_align}"><div>'
             context = AlignmentContext(
                 block=block,
                 state=hor_align,
                 builder=self.builder,
                 opening_code={
                     "html": html,
-                    "md": html if md_html else "",
+                    "md": "",
                     "txt": "",
                 },
                 closing_code={
                     "html": "</div>\n</div>\n",
-                    "md": "</div>\n</div>\n" if md_html else "",
+                    "md": "",
                     "txt": "",
                 },
             )
             return context
         else:
-            html = f'<div style="text-align: {hor_align}">\n'
+            html = f'<div style="text-align: {hor_align}">'
             context = AlignmentContext(
                 block=block,
                 state=hor_align,
                 builder=self.builder,
                 opening_code={
                     "html": html,
-                    "md": html if md_html else "",
+                    "md": "",
                     "txt": "",
                 },
                 closing_code={
                     "html": "</div>\n",
-                    "md": "</div>\n" if md_html else "",
+                    "md": "",
                     "txt": "",
                 },
             )

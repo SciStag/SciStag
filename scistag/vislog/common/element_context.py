@@ -68,7 +68,7 @@ class ElementContext:
                 if key == HTML:
                     self.page.write_html(value)
                 elif key == MD:
-                    self.page.write_md(value)
+                    self.page.write_md(value, no_break=True)
                 elif key == TXT:
                     self.page.write_txt(value)
         return self

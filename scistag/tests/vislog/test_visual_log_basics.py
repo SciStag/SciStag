@@ -30,10 +30,8 @@ def test_basics_logging_methods():
     vl.md("* Just a list\n" "* of bullet\n" "* points").br(2)
     vl.md("* Just a list\n" "* of bullet\n" "* points").br(2)
     vl.md("* Just a list\n" "* of bullet\n" "* points", exclude_targets={"html", "md"})
-    vl.md.log_html_only = True
     vl.title("test")
     vl.add_md("nothing_should_happen")
-    vl.md.log_html_only = False
     vl.test.assert_cp_diff("81e249984ee4ef8dabfea39d1b1e0cb1")
     temp_path = vl.get_temp_path()
     assert len(temp_path)

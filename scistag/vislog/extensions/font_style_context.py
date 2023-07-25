@@ -57,7 +57,6 @@ class FontStyleContext:
         :param weight: The fonts weight (from 0 to 1000)
         :return: The context
         """
-        md_html = self.builder.md.log_html_only
         size_change: str = ""
         if size is not None:
             if isinstance(size, int):
@@ -68,24 +67,24 @@ class FontStyleContext:
         family_change = ""
         if family is not None:
             family_change = f"font-family:{family}"
-        html = f"<span style='{family_change};{size_change}'>"
+        html = f" <span style='{family_change};{size_change}'>"
         html_closing = "</span>"
         return ElementContext(
             builder=self.builder,
             opening_code={
                 "html": html,
-                "md": html if md_html else "",
+                "md": "",
             },
             closing_code={
                 "html": html_closing,
-                "md": html_closing if md_html else "",
+                "md": "",
             },
         )
 
     @property
     def default(self) -> ElementContext:
         md_html = ""
-        html = "<span class='vl_default_font'>"
+        html = " <span class='vl_default_font'>"
         html_closing = "</span>"
         return ElementContext(
             builder=self.builder,
