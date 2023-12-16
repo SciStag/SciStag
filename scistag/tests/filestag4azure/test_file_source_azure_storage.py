@@ -14,7 +14,7 @@ from scistag.webstag import web_fetch
 
 ROBOTO_FONT_SIZE_WITHOUT_MD = 2043356
 "The size of the fonts assumed on the server without the README"
-TOTAL_FONT_COUNT = 20
+TOTAL_FONT_COUNT = 21
 "Total number of fonts in the repo"
 ROBOTO_FONT_SIZE = 2054916
 "The size of the fonts assumed on the server"
@@ -22,12 +22,17 @@ ROBOTO_FONT_COUNT = 13
 "The number of fonts assumed on the server"
 
 connection_string = (
-    "azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;"
+    "azure://DefaultEndpointsProtocol=https;AccountName={{env.AZ_TEST_SOURCE_ACCOUNT_NAME}};"
     "AccountKey={{env.AZ_TEST_SOURCE_KEY}};EndpointSuffix="
     "core.windows.net/testsource"
 )
 """
-Test storage
+Test storage source. 
+
+Setup:
+* Copy the whole content of the SciStagEssentialData folder to the test location
+* Assign the tag licenseFile = SciStag to the main LICENSE.txt
+* Assign the tag licenseFile = Roboto to the Roboto folder's LICENSE.txt
 """
 
 test_source_sas_inv = os.environ["AZ_TEST_SOURCE_SAS_INV"]
@@ -78,7 +83,7 @@ def test_prefix():
     data_size = 0
     file_count = 0
     with FileSource.from_source(
-        connection_string + "/fonts/Roboto", search_mask="*.ttf"
+            connection_string + "/fonts/Roboto", search_mask="*.ttf"
     ) as font_source:
         for element in font_source:
             data_size += len(element.data)
@@ -91,10 +96,10 @@ def test_no_recursion():
     """
     Tests that recursion can be suppressed
     """
-    fs = FileSource.from_source(connection_string + "/data", recursive=True)
-    assert len(fs) == 4
-    fs = FileSource.from_source(connection_string + "/data", recursive=False)
-    assert len(fs) == 0
+    fs = FileSource.from_source(connection_string + "/scripts", recursive=True)
+    assert len(fs) == 3
+    fs = FileSource.from_source(connection_string + "/scripts", recursive=False)
+    assert len(fs) == 1
 
 
 def test_default_endpoint():
@@ -103,7 +108,7 @@ def test_default_endpoint():
     """
     wo_azure = connection_string.lstrip("azure://") + "/fonts"
     fs = FileSource.from_source(wo_azure, recursive=True)
-    assert len(fs) == 20
+    assert len(fs) == 21
 
 
 @pytest.mark.skipif(skip_tests, reason="Azure tests disabled or not configured")
@@ -209,17 +214,17 @@ def test_conn_string():
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/{prefix}"
     elements = AzureBlobPath.split_azure_url(full_url)
     assert (
-        elements[0] == conn_string
-        and elements[1] == container
-        and elements[2] == prefix
+            elements[0] == conn_string
+            and elements[1] == container
+            and elements[2] == prefix
     )
     # prefix and unnecessary slash
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/{prefix}/"
     elements = AzureBlobPath.split_azure_url(full_url)
     assert (
-        elements[0] == conn_string
-        and elements[1] == container
-        and elements[2] == prefix
+            elements[0] == conn_string
+            and elements[1] == container
+            and elements[2] == prefix
     )
     # verify connection string parsing
     path = AzureBlobPath.from_string(conn_string)
@@ -260,4 +265,4 @@ def test_sas_listing():
     with pytest.raises(ValueError):
         source = FileSource.from_source(test_source_sas_inv)
     source = FileSource.from_source(test_source_sas, search_path="fonts")
-    assert len(source.file_list) == 20
+    assert len(source.file_list) == 21

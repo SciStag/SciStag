@@ -134,13 +134,13 @@ class BasicLogger(BuilderExtension):
             self.builder.add_html(
                 f'<span class="logtext" style="color:{self.level_color[level]:9s}">'
                 f"{self.builder._html_linebreaks(escaped_text)}</span>"
-                f"{br_code}\n"
+                f"{br_code}"
             )
         else:
             self.builder.add_html(
                 f'<span class="logtext">'
                 f"{self.builder._html_linebreaks(escaped_text)}</span>"
-                f"{br_code}\n"
+                f"{br_code}"
             )
 
         md_lines = md_text.split("\n")
@@ -150,19 +150,19 @@ class BasicLogger(BuilderExtension):
                 self.builder.add_md(
                     f'<span style="white-space: pre-wrap;color:'
                     f'{self.level_color[level]}">{md_lines}{br_code}'
-                    f"</span>\n",
+                    f"</span>",
                     br=False,
                 )
             else:
                 self.builder.add_md(
                     f"<span style='white-space: pre-wrap;'>{md_lines}{br_code}"
-                    f"</span>\n",
+                    f"</span>",
                     br=False,
                 )
 
         else:
             lines = "\n".join(md_lines)
-            md_lines = f" <span style='white-space: pre-wrap;'>{lines}{br_code}</span>\n"
+            md_lines = f"<span style='white-space: pre-wrap;'>{lines}{br_code}</span>"
             self.builder.add_md(f"{md_lines}", br=br)
         self.builder.add_txt(text, br=br)
         return self.builder

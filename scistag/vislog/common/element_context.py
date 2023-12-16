@@ -21,11 +21,11 @@ class ElementContext:
     """
 
     def __init__(
-        self,
-        builder: "LogBuilder",
-        closing_code: str | dict | None = None,
-        opening_code: str | dict | None = None,
-        html_only: bool = False,
+            self,
+            builder: "LogBuilder",
+            closing_code: str | dict | None = None,
+            opening_code: str | dict | None = None,
+            html_only: bool = False,
     ):
         """
         :param builder: The builder object with which we write to the log
@@ -64,6 +64,8 @@ class ElementContext:
         for key, value in self._opening_code.items():
             if key in self.page.log_formats:
                 from scistag.vislog.visual_log import HTML, MD, TXT
+                if value is None or value == "":
+                    continue
 
                 if key == HTML:
                     self.page.write_html(value)
@@ -151,6 +153,9 @@ class ElementContext:
         for key, value in self._closing_code.items():
             if key in self.page.log_formats:
                 from scistag.vislog.visual_log import HTML, MD, TXT
+
+                if value is None or value == "":
+                    continue
 
                 if key == HTML:
                     self.page.write_html(value)

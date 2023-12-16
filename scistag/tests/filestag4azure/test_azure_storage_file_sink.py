@@ -13,7 +13,7 @@ from scistag.webstag import web_fetch
 from scistag.tests import RELEASE_TEST
 
 sink_target_container_string = (
-    "azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;"
+    "azure://DefaultEndpointsProtocol=https;AccountName={{env.AZ_TEST_SOURCE_ACCOUNT_NAME}};"
     "AccountKey={{env.AZ_TEST_SOURCE_KEY}};EndpointSuffix="
     f"core.windows.net/testtarget{SystemInfo.os_type.identifier}"
 )
@@ -21,7 +21,7 @@ sink_target_container_string = (
 Test storage container
 """
 sink_target_connection_string = (
-    "azure://DefaultEndpointsProtocol=https;AccountName=ikemscsteststorage;"
+    "azure://DefaultEndpointsProtocol=https;AccountName={{env.AZ_TEST_SOURCE_ACCOUNT_NAME}};"
     "AccountKey={{env.AZ_TEST_SOURCE_KEY}};EndpointSuffix="
     "core.windows.net"
 )

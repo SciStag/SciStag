@@ -73,7 +73,7 @@ class TableContext(ElementContext):
         linebreak_code = ""
         closing_code = {
             "html": f"</table>\n{linebreak_code}",
-            "md": f"</table>\n\n",
+            "md": f"</table>\n",
             "txt": "",
         }
         super().__init__(builder, closing_code)

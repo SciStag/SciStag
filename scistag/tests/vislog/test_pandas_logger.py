@@ -36,7 +36,7 @@ def test_dataframe():
     vl.options.style.table.data_table_format["html"] = TABULATE_ROUNDED_OUTLINE
     vl.sub_test("HTML table printed as text")
     vl.pd(df, "A simple dataframe w/o pretty html")
-    vl.test.assert_cp_diff(hash_val="a42a25e46a705429714ace6c2eb10367")
+    vl.test.assert_cp_diff(hash_val="605f8c2ed24564719d15182347804231")
     vl.options.style.table.data_table_format["html"] = prev
 
     std_out = StringIO()
@@ -53,7 +53,7 @@ def test_dataframe():
         df.loc["a", "one"] = "NewValue"
         vl.test.assert_df("test_dataframe", df)
     with pytest.raises(AssertionError):
-        vl.test.assert_df("test_dataframe", df, hash_val="2442")
+        vl.test.assert_df("test_dataframe", df, hash_val="locked719f4e4e220e146a50422ba1b60a1ba6")
 
     vl.test.checkpoint("pd.df.wohtml")
     vl.pd(df, "DataFrame w/o html")

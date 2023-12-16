@@ -15,7 +15,7 @@ class MmdLog(LogBuilder):
         # embed a markdown file
         path = FilePath.absolute_comb("test_mermaid_sample.md")
         self.md.embed(path)
-        self.test.assert_cp_diff("d2f9f613f752145947164fa480955261")
+        self.test.assert_cp_diff("5731f15530c9097b5187ef91a3c40a89")
 
 
 def test_mermaid():

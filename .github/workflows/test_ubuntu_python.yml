@@ -27,6 +27,7 @@ jobs:
         env:
           AZ_TEST_SOURCE_KEY: "${{ secrets.AZ_TEST_SOURCE_KEY }}"
           AZ_TEST_SOURCE_SAS: "${{ secrets.AZ_TEST_SOURCE_SAS }}"
+          AZ_TEST_SOURCE_ACCOUNT_NAME: "${{ secrets.AZ_TEST_SOURCE_ACCOUNT_NAME }}"
           AZ_TEST_SOURCE_SAS_INV: "${{ secrets.AZ_TEST_SOURCE_SAS_INV }}"
           TEST_RELEASE: 1
           SCISTAG_FULL_TEST: 1

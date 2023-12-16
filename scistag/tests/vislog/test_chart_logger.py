@@ -13,12 +13,9 @@ def test_direct_logging():
     """
     vl.test.checkpoint("Direct graph logging")
     vl.chart.mmd("graph TD\nTDX-->Y")
-    vl.test.assert_cp_diff("df6ceb10d363027c0bd82ebb97f06fb7")
     path = FilePath.absolute_comb("data/mermaid_sample.mmd")
-    vl.test.checkpoint("Logging from file")
     assert vl.chart.embed(path)
     assert not vl.chart.embed(FilePath.absolute_comb("data/mermaid_samplex.mmd"))
-    vl.test.assert_cp_diff("7eadd73c22351cf9496d968de134e0df")
     assert vl.chart.embed(path, watch=False)
     # provoke wrong type
     with pytest.raises(TypeError):
@@ -27,3 +24,4 @@ def test_direct_logging():
     with pytest.raises(ValueError):
         vl.chart.embed("data/mermaid_sample.xxd")
     vl.chart.embed("data/mermaid_sample.xxd", extension=".mmd")
+    vl.test.assert_cp_diff("b6e0eeb31c866e812149008ddfa69227")

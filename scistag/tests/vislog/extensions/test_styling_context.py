@@ -15,7 +15,7 @@ def test_all_styles():
         def log_style(self):
             self.test.checkpoint("vl_styling")
             self.style.help()
-            self.test.assert_cp_diff("5753dd340c3a96d0e71edd9a7920378a")
+            self.test.assert_cp_diff("9f3cb2dd438670dd171d742bceeac79f")
 
     options = VisualLog.setup_options("disk")
     tl = VisualLog(fixed_session_id="", options=options)
