@@ -61,7 +61,7 @@ def dummy_testc(vl):
     other = VisualLog().default_builder
     vl.test.checkpoint("shouldFail")
     vl.text("This should fail on purpose for a testx")
-    vl.test.assert_cp_diff("{cur_hash}", target=other, ref=True)
+    vl.test.assert_cp_diff("locked{cur_hash}", target=other, ref=True)
     """
     code_third = """
 def dummy_test3(vl):
@@ -69,7 +69,7 @@ def dummy_test3(vl):
     other = VisualLog().default_builder
     vl.test.checkpoint("shouldFail")
     vl.text("This should fail on purpose for a test")
-    vl.test.assert_cp_diff("123456", target=other, ref=True)
+    vl.test.assert_cp_diff("locked123456", target=other, ref=True)
         """
     FileStag.save_text(base_path + "./__init__.py", "")
     FileStag.save_text(base_path + "./generic_hash_replace_nr.py", code)
@@ -86,7 +86,10 @@ def dummy_test3(vl):
     dummy_test(vl)
     from .temp.generic_hash_replace_2 import dummy_test2
 
-    os.remove(ref_data_dir + f"/{cur_hash}.html")
+    try:
+        os.remove(ref_data_dir + f"/{cur_hash}.html")
+    except FileNotFoundError:
+        pass
 
     dummy_test2(vl)
 

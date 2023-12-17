@@ -32,7 +32,7 @@ from .common.log_builder_base import LogBuilderBase
 from .common.log_builder_statistics import LogBuilderStatistics
 from .log_builder_registry import LogBuilderRegistry
 from .pages import PageDescription
-from ..webstag.mime_types import MIMETYPE_MARKDOWN, MIMETYPE_HTML
+from ..webstag.mime_types import MIMETYPE_MARKDOWN, MIMETYPE_HTML, MIMETYPE_ASCII
 from ..webstag.server import WebResponse
 
 if TYPE_CHECKING:
@@ -40,6 +40,7 @@ if TYPE_CHECKING:
     from matplotlib import pyplot as plt
     from scistag.vislog.sessions.page_session import PageSession
     from scistag.vislog.common.page_update_context import PageUpdateContext
+    from .extensions import BuilderExtension
     from .common.element_context import ElementContext
     from .extensions.test_helper import TestHelper
     from .extensions.pyplot_log_context import PyPlotLogContext
@@ -128,6 +129,8 @@ class LogBuilder(LogBuilderBase):
         """
         if self.page_session is None:
             self.page_session = log.default_page
+
+        self._loggers = {"style": {}}
         self._test: Union["TestHelper", None] = None
         """
         Helper class for adding regression tests to the log.
@@ -200,7 +203,7 @@ class LogBuilder(LogBuilderBase):
         """
         Extension to align elements 
         """
-        self._style: Union["StyleContext", None] = None
+        self.style: Union["StyleContext", None] = None
         """
         Extension to temporarily modify the style of the current log region or cell
         and to insert custom CSS code into the document.
@@ -226,9 +229,6 @@ class LogBuilder(LogBuilderBase):
         self._page: str = ""
         """Defines which page is currently visible. Affects all cells which have
         a page property assigned"""
-        self._tab: str = ""
-        """Defines which tab is currently visible. Affects all cells which have a tab
-        property assigned"""
         self.visible_groups: set[str] = {"default"}
         """Defines which groups are currently visible. Placeholders such as * and ?
         are supported"""
@@ -260,7 +260,7 @@ class LogBuilder(LogBuilderBase):
         self.service.register_css("VlComparatorWidget", "vl_comparator.css")
         self.service.register_js("VlComparatorWidget", "vl_comparator.js")
 
-        self.setup_extensions()  # register custom css, js etc.
+        self._setup_extensions()  # register custom css, js etc.
 
         """The website's title"""
         self._provide_live_view()
@@ -288,8 +288,11 @@ class LogBuilder(LogBuilderBase):
         """Defines if the builder was terminated"""
         self.pages: dict[str, PageDescription] = {}
         """Defines a single sub page"""
+        for element in self._loggers:  # remove extension placeholders
+            if element in self.__dict__ and self.__dict__[element] is None:
+                del self.__dict__[element]
 
-    def setup_extensions(self) -> None:
+    def _setup_extensions(self) -> None:
         """
         Setups extensions configured in options.extensions such as custom css or
         javascript
@@ -309,7 +312,28 @@ class LogBuilder(LogBuilderBase):
                 )
             self.service.register_js(key + "_code", code)
 
+    def _setup_logger(self, name: str) -> Union["BuilderExtension", None]:
+        """
+        Setups a logger extension such as .style or .align
+
+        :param name: The extensions name, see self._loggers
+        """
+        if name == "style":
+            from scistag.vislog.extensions.style_context import StyleContext
+
+            style = StyleContext(builder=self)
+            self.style = style
+            return style
+        return None
+
     def build(self):
+        """
+        Custom build function you can overwrite if you do not want to work with cells
+        but just want a minimalistic log
+        """
+        pass
+
+    def _build_page(self):
         """
         Is called when the body of the log shall be build or rebuild.
 
@@ -342,6 +366,9 @@ class LogBuilder(LogBuilderBase):
                     if LOG_CELL_METHOD_FLAG in attr.__dict__ or is_main:
                         cell_methods.append(attr)
 
+        if type(self).build != LogBuilder.build:  # attach build if overridden
+            cell_methods.append(self.build)
+
         for key, value in self.__class__.__dict__.items():
             attr = getattr(self, key)
             if isinstance(attr, types.MethodType):
@@ -371,7 +398,7 @@ class LogBuilder(LogBuilderBase):
         test: bool = False,
         fixed_session_id: str | None = None,
         **kwargs,
-    ) -> dict | WebResponse | None:
+    ) -> dict | WebResponse | None | bytes:
         """
         Executes the builder and returns its response
 
@@ -464,30 +491,54 @@ class LogBuilder(LogBuilderBase):
         """
         self.page_session.embed(page)
 
-    def evaluate(self, code: str, log_code: bool = True) -> Any:
+    def evaluate(
+        self,
+        code: str,
+        log_code: bool | int = True,
+        br: bool = True,
+        ml=False,
+        sl: bool = False,
+    ) -> Any:
         """
         Runs a piece of code and returns it's output
 
         :param code: The code to execute
-        :param log_code: Defines if the code shall be added to the log
+        :param log_code: Defines if the code shall be added to the log. If -1 is passed
+            the code is logged before the execution.
+        :param br: Defines if a whitespace shall be kept between code and result
+        :param ml: If exec is passed multiple lines of code can be executed
+            though no result can be fetched then
+        :param sl: Defines if just a single line of code is used and the result shall
+            be compact
         :return: The returned data (if any)
         """
         import inspect
 
         frame = inspect.currentframe()
-        result = eval(code, frame.f_back.f_globals, frame.f_back.f_locals)
-        if log_code:
+        if log_code == -1:
+            self.code(code, sl=sl)
+
+        if ml:
+            result = exec(code, frame.f_back.f_globals, frame.f_back.f_locals)
+        else:
+            result = eval(code, frame.f_back.f_globals, frame.f_back.f_locals)
+        if log_code and log_code != -1:
+            if br:
+                self.br()
+                self.br()
             if result is not None:
-                self.code(code + f"\n>>> {result}")
+                self.code(code + f"\n>>> {result}", sl=sl)
             else:
                 self.code(code)
+        elif sl:
+            self.br()
         return result
 
     def add(
         self,
         content: LogableContent,
-        br: bool = False,
         mimetype: str | None = None,
+        br: bool = False,
         share: Literal["sessionId"] | None = None,
         **kwargs,
     ) -> LogBuilder:
@@ -583,7 +634,7 @@ class LogBuilder(LogBuilderBase):
         if isinstance(content, np.ndarray):
             self.np(content)
             return self
-        if isinstance(content, (str, int, float)):
+        if isinstance(content, (str, int, float, bool)):
             content = str(content)
         # dict or list
         if isinstance(content, (list, dict)):
@@ -596,7 +647,27 @@ class LogBuilder(LogBuilderBase):
             if mimetype == MIMETYPE_MARKDOWN or mimetype == MD:
                 self.md(str(content), br=br)
                 return self
+            if mimetype == MIMETYPE_ASCII or mimetype == "ascii":
+                self.add_html(content)
+                self.add_txt(content)
+                self.add_md(content)
+                if br:
+                    self.br()
+                return self
         self.text(str(content), br=br)
+        return self
+
+    def __call__(self, *args, **kwargs) -> LogBuilder:
+        """
+        Executes self.add with Markdown as default
+
+        :param args: The positional arguments
+        :param kwargs: The keyword arguments
+        :return: Self
+        """
+        if len(args) == 1 and "mimetype" not in kwargs:
+            kwargs["mimetype"] = "md"
+        self.add(*args, **kwargs)
         return self
 
     def title(self, text: str = "") -> Union[LogBuilder, ElementContext]:
@@ -622,7 +693,7 @@ class LogBuilder(LogBuilderBase):
 
             return ElementContext(
                 self,
-                closing_code=f"</h{level}>",
+                closing_code=f"</h{level}>\n\n",
                 opening_code=f"<h{level}>",
                 html_only=True,
             )
@@ -631,7 +702,7 @@ class LogBuilder(LogBuilderBase):
         md_level = "#" * level
         escaped_lines = html.escape(text)
         for cur_row in escaped_lines.split("\n"):
-            self.add_html(f"<h{level}>{cur_row}</h{level}>\n")
+            self.add_html(f"<h{level}>{cur_row}</h{level}>\n\n")
         self.add_md(f"{md_level} {text}\n")
         if self.add_txt(text) and level <= 4:
             character = "=" if level < 2 else "-"
@@ -655,11 +726,11 @@ class LogBuilder(LogBuilderBase):
         lines = lines.split("\n")
         if br:
             for index, text in enumerate(lines):
-                self.add_html(f"{text}<br>\n")
+                self.add_html(f"{text}<br>")
                 if index == len(lines) - 1:
-                    self.add_md(f"{text}\n")
+                    self.add_md(f"{text}<br>")
                 else:
-                    self.add_md(f"{text}\\")
+                    self.add_md(f"{text}<br>")
                 self.add_txt(text)
         else:  # no line break
             for index, text in enumerate(lines):
@@ -667,18 +738,18 @@ class LogBuilder(LogBuilderBase):
                     self.add_html(f"{text}")
                     self.add_md(f"{text}", br=False)
                 else:  # only break if there is really an explicit line break
-                    self.add_html(f"{text}<br>\n")
-                    self.add_md(f"{text}\\")
+                    self.add_html(f"{text}<br>")
+                    self.add_md(f"{text}<br>")
                 self.add_txt(text, br=False)
         self.handle_modified()
         return self
 
-    def link(self, content: Any, link: str) -> LogBuilder:
+    def link(self, link: str, content: Any) -> LogBuilder:
         """
         Adds a hyperlink to the log
 
-        :param content: The text or content to add to the log
         :param link: The link target
+        :param content: The text or content to add to the log
         :return: The builder
         """
 
@@ -739,11 +810,12 @@ class LogBuilder(LogBuilderBase):
         :return: The builder
         """
         if title is not None:
-            self.add_html(f"<h3 class='vl_section_header'>{title}</h3>")
-            self.add_md(f"---\n### {title}\n\n")
+            self.add_html(f"<h3 class='vl_section_header'>{title}</h3>\n\n")
+            self.add_md(f"\n---\n## {title}\n\n")
+            self.add_txt("---", targets="-md")
         else:
             self.add_html("<hr>")
-        self.add_txt("---", targets="*")
+            self.add_txt("---", targets="*")
         return self
 
     def html(self, code: str | HTMLCode, br: bool = True) -> LogBuilder:
@@ -755,8 +827,10 @@ class LogBuilder(LogBuilderBase):
         """
         if isinstance(code, HTMLCode):
             code = code.to_html()
+
+        code = code + ("<br>" if br else "")
         self.add_md(code, br=br)
-        self.add_html(code + ("\n" if br else ""))
+        self.add_html(code)
         self.handle_modified()
         return self
 
@@ -940,18 +1014,6 @@ class LogBuilder(LogBuilderBase):
         return self._align
 
     @property
-    def style(self) -> "StyleContext":
-        """
-        Extension to temporarily modify the style of the current log region or cell
-        and to insert custom CSS code into the document.
-        """
-        from .extensions.style_context import StyleContext
-
-        if self._style is None:
-            self._style = StyleContext(self)
-        return self._style
-
-    @property
     def builder(self) -> "BuildLogger":
         """
         Extension for embedding other logs (such as LogBuilders) into the main log
@@ -979,13 +1041,17 @@ class LogBuilder(LogBuilderBase):
         """
         return LogBuilderRegistry.current_builder()
 
-    def code(self, code: str) -> LogBuilder:
+    def code(self, code: str, sl: bool = False) -> LogBuilder:
         """
         Adds code to the log
 
         :param code: The code to execute
+        :param sl: Defines if just a single line of code shall be displayed
         :return: The builder
         """
+        if sl:
+            self.md(f"`{code}` -> ", br=False)
+            return self
         escaped_code = html.escape(code).replace("\n", "<br>")
         self.add_html(
             f'Code<br><table class="source_code"\n>'
@@ -1115,8 +1181,6 @@ class LogBuilder(LogBuilderBase):
         :param html_code: The html code
         :return: True if txt logging is enabled
         """
-        if self.md.log_html_only:
-            self.page_session.write_md(html_code, no_break=True)
         self.page_session.write_html(html_code)
 
     def add_md(self, md_code: str, br: bool = True):
@@ -1130,8 +1194,6 @@ class LogBuilder(LogBuilderBase):
         :param br: If defined a linebreak will be inserted afterwards
         :return: True if txt logging is enabled
         """
-        if self.md.log_html_only:
-            return
         self.page_session.write_md(md_code, no_break=not br)
 
     def add_txt(
@@ -1241,6 +1303,7 @@ class LogBuilder(LogBuilderBase):
             "vl_slim": self.options.style.slim,
             "vl_log_updates": self.options.debug.html_client.log_updates,
             "scistag_version": scistag.common.__version__,
+            "scistag_footer_code": self.options.page.footer_promo,
         }
         template = environment.from_string(
             FileStag.load_text(base_path + "/templates/liveLog/default_liveView.html")
@@ -1296,43 +1359,16 @@ class LogBuilder(LogBuilderBase):
         """
         self.set_page(page=page)
 
-    @property
-    def current_tab(self):
-        """
-        The currently visible tab. Only cells with None or the associated tab will
-        be shown and processed.
-        """
-        return self._tab
-
-    @current_tab.setter
-    def current_tab(self, tab: str):
-        """
-        Sets the new tab.
-
-        All cells with given tab name (or without any page) will be set visible,
-        all other pages will be hidden.
-
-        :param tab: The name of the new tab
-        """
-        self._tab = tab
-
-    def set_page(self, page: str | None = None, tab: str | None = None):
+    def set_page(self, page: str | None = None):
         """
         Jumps to given page and tab (without creating an entry in the navigation
         history)
 
         :param page: The page to move to. If no page is passed the current page will
             be kept.
-        :param tab: The tab to move to. If no tab is passed and the page is changed
-            the initial tab will be received from self.pages[page].default_tab if
-            defined.
         """
         if page is not None:
             self._page = page
-            if tab is None and page in self.pages:
-                tab = self.pages[page].default_tab
-        if tab is not None:
-            self._tab = tab
 
     def terminate(self):
         """
@@ -1387,6 +1423,15 @@ class LogBuilder(LogBuilderBase):
 
     def __setitem__(self, key, value):
         return self.cache.__setitem__(key, value)
+
+    def __getattr__(self, item):
+        if (
+            item != "__dict__"
+            and "_loggers" in self.__dict__
+            and item in self.__dict__.get("_loggers")
+        ):  # setup missing loggers
+            return self._setup_logger(item)
+        return super().__getattr__(item)
 
     def __getitem__(self, item):
         return self.cache.__getitem__(item)

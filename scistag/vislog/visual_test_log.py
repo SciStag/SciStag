@@ -1,6 +1,7 @@
 import hashlib
 import os
 
+from scistag.vislog.options.extension_options import MERMAID_EXTENSION
 from scistag.vislog.visual_log import VisualLog
 
 
@@ -28,4 +29,5 @@ class VisualTestLog(VisualLog):
         options.output.formats_out = formats_out
         options.output.ref_dir = cur_dir + "/refdata"
         options.style.image.log_images = log_images
+        options.extensions.add(MERMAID_EXTENSION)
         super().__init__(options=options, **params)

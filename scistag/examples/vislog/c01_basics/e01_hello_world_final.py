@@ -1,13 +1,16 @@
+"""
+In this last hello world demo we
+"""
+
 from scistag.vislog import VisualLog, cell, LogBuilder
 
 
 class HelloWorldLog(LogBuilder):
     @cell
     def hello_world(self):
-        vl = self
-        with vl.align.center:
-            vl.title("Hello world!")
-            vl.emoji("*globe*", size=600).br()
+        with self.align.center:
+            self.title("Hello world!")
+            self.emoji("*globe*", size=600).br()
 
 
 if VisualLog.is_main():

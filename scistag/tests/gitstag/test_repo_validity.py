@@ -14,7 +14,7 @@ REPO_SIZE_LIMIT = 3000000
 "The maximum repo limit of non-ignored files in byte"
 REPO_DIR_COUNT_LIMIT = 350
 "The maximum number of directories in the repo"
-REPO_FILE_COUNT_LIMIT = 600
+REPO_FILE_COUNT_LIMIT = 700
 "The maximum number of files in the repo"
 REPO_HARD_FILE_SIZE_LIMIT = 350000
 "Maximum hard file size limit"

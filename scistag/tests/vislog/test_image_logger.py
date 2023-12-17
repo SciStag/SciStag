@@ -16,6 +16,8 @@ def test_image():
     """
     Tests image logging
     """
+    vl.test.begin("Image Logging")
+
     image_data = render_emoji(":deer:")
     image_data.convert("rgb", bg_fill=Colors.WHITE)
     # logging images
@@ -56,19 +58,21 @@ def test_image():
     vl.test.assert_val(
         "assert_stag", image_data, hash_val="4e5e428357fcf315f25b148747d633db"
     )
-    with pytest.raises(AssertionError):
-        vl.test.assert_val("assert_stag", image_data, hash_val="124567")
+    with pytest.raises(AssertionError):  # note this SHALL fail to test the assertion
+        vl.test.assert_val(
+            "assert_stag", image_data, hash_val="locked4e5e428357fcf315f25b148747d633db"
+        )
     vl.test.checkpoint("image.log.scaled.nodownload")
     vl.sub_test("An image from the web scaled to 50%")
     vl.image(TestConstants.STAG_URL, "anotherStag_1", scaling=0.5, download=False)
-    vl.test.assert_cp_diff(hash_val="28b1f6534b36b20b083ece585b93ec1b")
+    vl.test.assert_cp_diff(hash_val="4e90fb549b9ae11467696ebcc8338b50")
     vl.test.checkpoint("image.log.scaled.downloaded")
     vl.sub_test("An image from the web scaled to 50% w/ downloading")
     vl.image(TestConstants.STAG_URL, "anotherStag_2", scaling=0.5, download=True)
     vl.test.checkpoint("image.log.originalSize")
     vl.sub_test("An image from the web scaled to 100%")
     vl.image(TestConstants.STAG_URL, "anotherStag_3", scaling=1.0)
-    vl.test.assert_cp_diff(hash_val="1b4691fec0fcc6c6ff80a37bef189449")
+    vl.test.assert_cp_diff(hash_val="59861a8d7c639e9c95958248d1642fd6")
     # add image from bytes stream
     vl.sub_test("Logging an image provided as byte stream")
     vl.test.checkpoint("image.log.bytestream")

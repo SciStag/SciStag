@@ -6,7 +6,7 @@ from scistag.vislog.common.log_builder_base import LogBuilderBase
 
 def test_log_builder_basics():
     """
-    Tests the log builder basics
+    Tests the log builder inheritance
     """
 
     class LbSub(LogBuilderBase):

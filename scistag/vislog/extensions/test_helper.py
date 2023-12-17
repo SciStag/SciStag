@@ -21,6 +21,8 @@ from scistag.plotstag import Figure, Plot
 from scistag.filestag import FileStag, FilePath
 from scistag.vislog.extensions.builder_extension import BuilderExtension
 
+LOCKED_HASH_MARKER = "locked"
+
 if TYPE_CHECKING:
     from scistag.vislog.log_builder import LogBuilder
 
@@ -158,7 +160,9 @@ class TestHelper(BuilderExtension):
             df.to_csv(output, lineterminator="\n")
             result_hash_val = hashlib.md5(output.getvalue()).hexdigest()
             if result_hash_val != hash_val:
-                if self.replace_place_holder(new_hash=result_hash_val, stack_level=2):
+                if self.replace_place_holder(
+                    assumed=hash_val, new_hash=result_hash_val, stack_level=2
+                ):
                     return
                 self.page_session.write_to_disk()
                 raise AssertionError(
@@ -336,7 +340,7 @@ class TestHelper(BuilderExtension):
         replaced = None
         if value != assumed:
             replaced = self.replace_place_holder(
-                new_hash=value, stack_level=stack_level
+                assumed=assumed, new_hash=value, stack_level=stack_level
             )
         if value != assumed and replaced is None:
             self.builder.log(
@@ -358,7 +362,7 @@ class TestHelper(BuilderExtension):
         return True
 
     @staticmethod
-    def replace_place_holder(new_hash: str, stack_level=2) -> str | None:
+    def replace_place_holder(assumed: str, new_hash: str, stack_level=2) -> str | None:
         """
         Searches for a placeholder like "???" or "123" in a failed assertion line in
         the source code and replaces it with the correct hash.
@@ -376,6 +380,10 @@ class TestHelper(BuilderExtension):
         lb = windows_linebreak if windows_linebreak in source_code else "\n"
         source_code = source_code.split(lb)
         place_holders = ['"123"', '"???"', "'123'", "'???'"]
+        if os.environ.get("SCISTAG_UPDATE_ALL_HASHES", "0") == "1":  # TODO Document
+            if LOCKED_HASH_MARKER not in assumed:
+                # do not replace marker if it does contain the work "locked"
+                place_holders += [f'"{assumed}"']
         code_change = None
         for off in range(3):
             eff_line = line + off

@@ -30,11 +30,9 @@ def test_basics_logging_methods():
     vl.md("* Just a list\n" "* of bullet\n" "* points").br(2)
     vl.md("* Just a list\n" "* of bullet\n" "* points").br(2)
     vl.md("* Just a list\n" "* of bullet\n" "* points", exclude_targets={"html", "md"})
-    vl.md.log_html_only = True
     vl.title("test")
     vl.add_md("nothing_should_happen")
-    vl.md.log_html_only = False
-    vl.test.assert_cp_diff("81e249984ee4ef8dabfea39d1b1e0cb1")
+    vl.test.assert_cp_diff("c722c8d06a271fa356dcc3a7a67e5a1a")
     temp_path = vl.get_temp_path()
     assert len(temp_path)
     assert vl.get_temp_path("sub_path") == temp_path + "/sub_path"
@@ -45,7 +43,7 @@ def test_basics_logging_methods():
     # test title
     vl.test.checkpoint("log.title")
     vl.title("Title")
-    vl.test.assert_cp_diff(hash_val="3f1c9832d3132dddce5888a95139f8e4")
+    vl.test.assert_cp_diff(hash_val="0a254eff1388eed0b1897ed647440b56")
     # test sub titles
     vl.test.checkpoint("log.subtitle")
     vl.sub("A sub title")
@@ -53,14 +51,14 @@ def test_basics_logging_methods():
     vl.sub("Sub sub sub title", level=4)
     with vl.sub():
         vl.add("Subtitle")
-    vl.test.assert_cp_diff(hash_val="b16a08095ced23ca09a6af0a9a7f6576")
+    vl.test.assert_cp_diff(hash_val="1d80d8e3c606ae88eef589018a0d3d38")
     vl.sub_test("Text and code")
     vl.test.checkpoint("log.code")
     vl.test.begin("Just a piece of text")
     vl.code("How about a little bit of source code?")
     vl.hr()
     vl.page_break()
-    vl.test.assert_cp_diff(hash_val="58f03be4021de8fd19f2a9f59a76ba8a")
+    vl.test.assert_cp_diff(hash_val="60bd057930eba6c1913c786e46547cf2")
     assert not vl.is_micro
 
 
@@ -70,7 +68,7 @@ def test_add_and_links():
     :return:
     """
     vl.test.checkpoint("log.link")
-    vl.link("SciStag", "https://github.com/scistag/scistag").br()
+    vl.link("https://github.com/scistag/scistag", "SciStag").br()
     vl.add("Test text", True)
     vl.add(123, br=True)
     vl.add(123.456, br=True)
@@ -83,16 +81,16 @@ def test_add_and_links():
         stream = io.BytesIO()
         test_image.to_pil().save(stream, "tiff")
         vl.add(stream.getvalue(), br=True)
-    vl.test.assert_cp_diff(hash_val="06a40c0c8c59555546bce15052a1559a")
+    vl.test.assert_cp_diff(hash_val="b159b391aa34ffb7006ebc8e39cf905c")
     vl.test.checkpoint("log.link_adv")
-    vl.link("Multiline\nLink", "https://github.com/scistag/scistag").br()
-    vl.test.assert_cp_diff(hash_val="749e0d5d5ee5556a37b038ea5d380c12")
+    vl.link("https://github.com/scistag/scistag", "Multiline\nLink").br()
+    vl.test.assert_cp_diff(hash_val="c55363f81e747f8ff78bfcf84d8211ef")
     vl.test.checkpoint("callback")
     assert vl.max_fig_size.width > 100
     vl.add(lambda: vl.log("TestCall"))
     vl.add("**Bold**", mimetype="md").br()
     vl.add("<b>Bold</b>", mimetype="html").br()
-    vl.test.assert_cp_diff("1785d8ba1f47b92d37f4781f6990f0c8")
+    vl.test.assert_cp_diff("bab272087e9b7ae1453adc2b90c4316b")
 
     vl.test.checkpoint("add.womime")
     vl.add("A text", mimetype="notexisting")
@@ -106,7 +104,7 @@ def test_html():
     vl.test.checkpoint("logbuilder.html")
     vl.html("<b>A bold html text</b>")
     vl.html(HTMLCode("<b>Another bold html text</b>"))
-    vl.test.assert_cp_diff("b87408f537be6834db17b518376c9451")
+    vl.test.assert_cp_diff("47c74d9c7b9aa67d16090caa0bcceabb")
 
 
 def test_errors():
@@ -135,7 +133,7 @@ def test_dict():
     test_dict["child"]["value"] = 456
     with pytest.raises(AssertionError):
         vl.test.assert_val(
-            "test_dict", test_dict, hash_val="95886f8348cd7b32465f9b96f32b232c"
+            "test_dict", test_dict, hash_val="lockedc1b921dbe20fca8f1fc68543c3de55f3"
         )
 
 
@@ -149,9 +147,9 @@ def test_figure():
     vl.test.assert_val(
         "figure_test", figure, hash_val="a706d00b64ad66ad7009e32f0fcb8709"
     )
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # Note: This test shall fail
         vl.test.assert_val(
-            "figure_test", figure, hash_val="d41d8cd98f00b204e9800998ecf8427c"
+            "figure_test", figure, hash_val="lockeda706d00b64ad66ad7009e32f0fcb8709"
         )
     plot = figure.add_plot().add_image(image_data, size_ratio=1.0)
     vl.test.assert_figure(
@@ -219,13 +217,13 @@ def test_text():
     )
     vl.hr()
     vl.log("Note: The following lines show a failed assertion on purpose for testing")
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # Note: Shall fail
         vl.test.assert_text(
-            "test_text", my_text, hash_val="0956d2fbd5d5c29844a4d21ed2f76e0a"
+            "test_text", my_text, hash_val="locked0956d2fbd5d5c29844a4d21ed2f76e0c"
         )
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError):  # Note: Shall fail
         vl.test.assert_val(
-            "test_text", my_text, hash_val="0956d2fbd5d5c29844a4d21ed2f76e0a"
+            "test_text", my_text, hash_val="locked0956d2fbd5d5c29844a4d21ed2f76e0a"
         )
     vl.hr()
     vl.test.checkpoint("ML text")
@@ -239,7 +237,7 @@ def test_text():
     vl.hr()
     vl.text(123)
     vl.hr(title="This is a section")
-    vl.test.assert_cp_diff("806513cc8e03ccf9e06e957a247fdf5c")
+    vl.test.assert_cp_diff("454ebc6a1a7f0227804cb7de2a1e67fe")
 
 
 @patch("builtins.print")
@@ -405,7 +403,7 @@ def test_backup():
     vl.sub_test("inserting backups")
     vl.test.checkpoint("log.title")
     vl.insert_backup(backup)
-    vl.test.assert_cp_diff(hash_val="e089cbcb0789f120cb0c7dbbd4453f88")
+    vl.test.assert_cp_diff(hash_val="23722b4bf72bb4a187341796c33834be")
 
 
 def test_start_browser():

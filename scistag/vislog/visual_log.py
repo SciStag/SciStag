@@ -163,6 +163,9 @@ class VisualLog:
             self.setup_options("local") if options is None else options.copy(deep=True)
         )
         self.options.validate_options()
+        # override session ID if one is provided
+        if fixed_session_id is None and self.options.page.session_id is not None:
+            fixed_session_id = self.options.page.session_id
         """
         Defines the log's configuration
         """
@@ -598,8 +601,8 @@ class VisualLog:
         """
         with self.default_page._page_lock:
             if builder is not None:
-                if getattr(builder, "build", None) is not None:
-                    builder.build()
+                if getattr(builder, "_build_page", None) is not None:
+                    builder._build_page()
                 else:
                     builder(self.default_builder)
             self.default_page.write_to_disk()

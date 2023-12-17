@@ -22,9 +22,6 @@ class MarkdownLogger(BuilderExtension):
         """
         super().__init__(builder)
         self.add = self.__call__
-        self.log_html_only: bool = False
-        """If defined no markdown will be written temporarily but the HTML output
-        will be used instead"""
 
     def __call__(
         self,
@@ -67,7 +64,7 @@ class MarkdownLogger(BuilderExtension):
         if HTML not in exclude_targets:
             if parsed.startswith("<p>") and parsed.endswith("</p>"):
                 parsed = parsed[3:-4]
-            self.builder.add_html(parsed + "<br>")
+            self.builder.add_html(parsed + ("\n" if br else ""))
         if TXT not in exclude_targets:
             self.builder.add_txt(text, br=br)
         self.builder.handle_modified()
@@ -93,13 +90,13 @@ class MarkdownLogger(BuilderExtension):
                 and text[2:-2].strip(" ").isalnum()
             ):
                 parsed = f"<strong>{text[2:-2]}</strong>"
-        elif (  # italic
-            len(text)
-            and text.startswith("*")
-            and text.endswith("*")
-            and text[1:-1].strip(" ").isalnum()
-        ):
-            parsed = f"<strong>{text[2:-2]}</strong>"
+            elif (  # italic
+                len(text)
+                and text.startswith("*")
+                and text.endswith("*")
+                and text[1:-1].strip(" ").isalnum()
+            ):
+                parsed = f"<strong>{text[2:-2]}</strong>"
         return parsed
 
     def embed(

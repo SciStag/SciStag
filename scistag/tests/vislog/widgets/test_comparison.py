@@ -12,6 +12,8 @@ def test_comparison_init():
     """
     Tests the initializer
     """
+    vl.test.begin("Comparison widget (black gray)")
+
     image_a = Image(size=(128, 128), bg_color=Colors.BLACK, pixel_format="RGBA")
     image_b = Image(size=(128, 128), bg_color=Colors.GRAY)
     vl.test.checkpoint("comparison_black_gray")

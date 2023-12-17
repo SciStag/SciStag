@@ -9,18 +9,20 @@ def test_list():
     """
     Tests the logging of lists
     """
+    vl.test.begin("List")
     vl.test.checkpoint("vislog.list")
     vl.collection.add(
         [1, 2, 3, "a", 123.4, ["A", "B", "C", {"adict": {"withADict": {"value": 123}}}]]
     )
     vl.add([4, 5, 6])
-    vl.test.assert_cp_diff("2bfc775c38423ab9e7a98f6eb6044fff")
+    vl.test.assert_cp_diff("ae0d68b457b295677f5b0b26bae3d87c")
 
 
 def test_dict():
     """
     Tests the logging of a dictionary
     """
+    vl.test.begin("Dictionary")
     vl.test.checkpoint("vislog.dict")
     new_dict = {
         "firstName": "John",
@@ -31,10 +33,8 @@ def test_dict():
         "orderIds": [1234, 5678],
     }
     vl.collection(new_dict)
-    vl.test.assert_cp_diff("1a8c344aa266a2ca3403121ea6ee974d")
-    vl.test.checkpoint("vislog.dict_add")
     vl.add(new_dict)
-    vl.test.assert_cp_diff("1a8c344aa266a2ca3403121ea6ee974d")
+    vl.test.assert_cp_diff("1e942cda678045eedef6bf1bf065ab2d")
 
 
 nested_dict = {
@@ -68,6 +68,7 @@ def test_complex_list():
     """
     Tests the logging of a nested dictionary
     """
+    vl.test.begin("Complex List")
     vl.test.checkpoint("vislog.nested_dict")
     vl.collection(nested_dict)
-    vl.test.assert_cp_diff("b25eacbd43a27eb8d033e12e562d6d86")
+    vl.test.assert_cp_diff("bd4022ab1c483519fdb3a3b5a404e630")

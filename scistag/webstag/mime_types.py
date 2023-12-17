@@ -9,3 +9,6 @@ MIMETYPE_MARKDOWN = "text/markdown"
 
 MIMETYPE_HTML = "text/html"
 """Data data of HTML results"""
+
+MIMETYPE_ASCII = "text/ascii"
+"""Pure ascii text which shall not be reformatted to html"""

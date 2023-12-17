@@ -2,7 +2,6 @@
 Defines the class :class:`BuilderExtension` which is the base class
 for LogBuilder extensions such as adding markdown or HTML.
 """
-from scistag.filestag import FileStag
 from scistag.vislog import LogBuilder
 
 

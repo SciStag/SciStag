@@ -20,6 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 
@@ -28,7 +29,7 @@ requires = ["poetry-core>=1.2.2"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.dependencies]
-python = ">=3.9 <3.12"
+python = ">=3.9 <3.13"
 pandas = ">=1.4.2"
 pydantic = "^1.10.2"
 numpy = "^1.23.5"
@@ -41,7 +42,6 @@ filetype = { version = "^1.1.0", optional = true }
 pyarrow = { version = "^10.0.1", optional = true }
 Jinja2 = { version = "^3.1.2", optional = true }
 CairoSVG = { version = "^2.5.2", optional = true }
-opencv-contrib-python = { version = "^4.5.4.60", optional = true }
 azure-storage-blob = { version = "^12.13.1", optional = true }
 gunicorn = { version = "^20.1.0", optional = true }
 Flask = { version = "^2.1.2", optional = true }
@@ -50,10 +50,12 @@ moviepy = { version = "^1.0.3", optional = true }
 imgkit = { version = "1.2.2", optional = true }
 jupyterlab = { version = ">=3.4.7", optional = true }
 jupyter = { version = "^1.0.0", optional = true }
-PySide6-Addons = { version = "6.4.1", optional = true }
-shiboken6 = { version = "6.4.1", optional = true }
-chartstag = { version = "0.8.1", optional = true }
+PySide6-Addons = { version = "6.4.1", optional = true, python = "<3.12" }
+shiboken6 = { version = "6.4.1", optional = true, python = "<3.12" }
+chartstag = { version = "0.8.2", optional = true }
 mkdocs = { version = "^1.4.3", optional = true }
+opencv-python = { version="^4.7.0.72", optional = true }
+opencv-contrib-python = { version = "^4.7.0.72", optional = true }
 
 
 [tool.poetry.extras]
@@ -61,7 +63,8 @@ logstag = ["pretty-html-table", "Markdown", "tabulate", "filetype", "pyarrow", "
 datastag = ["pyarrow"]
 webstag = ["requests"]
 svg = ["CairoSVG"]
-opencv = ["opencv-contrib-python"]
+opencvcon = ["opencv-contrib-python"]
+opencv = ["opencv-python"]
 flask = ["Flask", "gunicorn"]
 kivy = ["kivy"]
 jupyter = ["jupyter", "jupyterlab"]
@@ -74,9 +77,7 @@ common = [
     "chartstag",
     "pyarrow",
     "CairoSVG",
-    "opencv-contrib-python",
     "Flask", "gunicorn",
-    "azure-storage-blob",
     "moviepy", "imgkit"]
 full = [
     "requests", "matplotlib",

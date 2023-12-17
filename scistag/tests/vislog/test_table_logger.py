@@ -23,13 +23,13 @@ def test_basics_logging_methods():
             for index in range(3):
                 with row.add():
                     vl.add("Test")
-    vl.test.assert_cp_diff(hash_val="a5e585f1b47a4f7879f4efa8bcb49df1")
+    vl.test.assert_cp_diff(hash_val="1e0aa12a91502067a2c259fae68ebc76")
     vl.br()
     vl.test.checkpoint("log.table.fullrow")
     table = vl.table.begin()
     table.add_row(["1", 2, 3.0])
     table.close()
-    vl.test.assert_cp_diff(hash_val="7d60def8b8e69e52e630d5ea77e44820")
+    vl.test.assert_cp_diff(hash_val="a4688359676b94ebf5036d38a55e5b05")
 
 
 def test_table_enumeration():
@@ -43,12 +43,12 @@ def test_table_enumeration():
     for row_index, row in enumerate(vl.table.begin(size=(4, 3))):
         for col_index, col in enumerate(row):
             vl.text(f"{col_index}x{row_index}")
-    vl.test.assert_cp_diff(hash_val="8692cd8b3be7e9c8fcf794e4c594de40")
+    vl.test.assert_cp_diff(hash_val="91fbdb946b2da85aa0876cff2bc78c73")
     vl.test.checkpoint("log.table.iter_pass_size")
     for row_index, row in enumerate(vl.table.begin().iter_rows(3)):
         for col_index, col in enumerate(row.iter_cols(4)):
             vl.text(f"{col_index}x{row_index}")
-    vl.test.assert_cp_diff(hash_val="8692cd8b3be7e9c8fcf794e4c594de40")
+    vl.test.assert_cp_diff(hash_val="91fbdb946b2da85aa0876cff2bc78c73")
 
     with pytest.raises(ValueError):
         with vl.table.begin() as table:
@@ -75,7 +75,7 @@ def test_table_creation():
     vl.test.begin("Table logging direct")
     vl.test.checkpoint("log.table.direct")
     vl.table.show([[1, 2, 3], [4, 5, 6]], index=True)
-    vl.test.assert_cp_diff(hash_val="60784b3ccbef190c9bc519df13a65642")
+    vl.test.assert_cp_diff(hash_val="89b9485ec73a099e524432af56a6281b")
 
     vl.test.checkpoint("log.table.add_col")
     for row_index, row in enumerate(vl.table.begin().iter_rows(3)):
@@ -83,13 +83,15 @@ def test_table_creation():
         row.add("456")
         row.add(lambda: vl.log.info("789", br=False))
         row.add(MDCode("**Markdown**"))
-    vl.test.assert_cp_diff(hash_val="9c684a8191fb92e0edea4d36100532d3")
+    vl.test.assert_cp_diff(hash_val="03ef6f1a347e8611118d1153bdd223e7")
 
 
 def test_content_logging():
     """
     Tests the logging of content directly provided to the table function to the log
     """
+    vl.test.begin("Table logging with content")
+
     vl.test.checkpoint("table_logging")
     with vl.table.begin() as table:
         table.add_row(123)
@@ -105,7 +107,7 @@ def test_content_logging():
     vl.br()
     vl.table.simple_table([456.78, 910], orientation="ver", br=False, index=True)
     # single, vertical
-    vl.test.assert_cp_diff("29193e2317131657e089b5cef547b0a9")
+    vl.test.assert_cp_diff("8a3d68d663478ec784918140857fcba8")
 
 
 def test_custom_class():
@@ -126,7 +128,7 @@ def test_custom_class():
         table.add_row(["Test", "Test2"])
         table.add_row(["Test3", "Test4"])
 
-    temp_log.default_builder.test.assert_cp_diff("a630392f5b62923fd5862df410a548b8")
+    temp_log.default_builder.test.assert_cp_diff("12c2382c34937c23b3219ecc8ec968f6")
 
     backup = temp_log.default_builder.create_backup()
     vl.insert_backup(backup)

@@ -18,7 +18,7 @@ class MyLog(LogBuilder):
     def load_data(self):
         self["data"] = 111
         self.text("once_text")  # should not be ignored
-        self.set_page("first", "start")
+        self.set_page("first.start")
 
     @data(groups={"data"}, output=["data"])
     def we_are_loading_data(self):
@@ -60,7 +60,7 @@ class MyLog(LogBuilder):
         self.text("Hello section with printed text")
         print("Some printed text which will be added too")
 
-    @cell(page="first", tab="start")
+    @cell(page="first.start")
     def just_page(self):
         self.text("First page")
 
@@ -76,11 +76,11 @@ class MyLog(LogBuilder):
     def just_page_not_included(self):
         self.text("Visible page with group but not included")
 
-    @cell(page="first", tab="subtab")
+    @cell(page="first.subtab")
     def page_wrong_tab(self):
         self.text("First page")
 
-    @cell(page="second", tab="main")
+    @cell(page="second.main")
     def sub_sub_section(self):
         self.text("Hello second")
         self.cell.add(section="sub_section")
@@ -109,5 +109,5 @@ def test_adv_cells():
     """
     vl.test.checkpoint("insert_builder")
     vl.add(MyLog, share="sessionId")
-    vl.test.assert_cp_diff("ffb4659baa15b9f52bcc903811a67b69")
+    vl.test.assert_cp_diff("3fffd3a4f0626dfb6b059d1a7c5fd066")
     vl.flush()

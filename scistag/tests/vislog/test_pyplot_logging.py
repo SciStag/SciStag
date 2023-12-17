@@ -11,6 +11,8 @@ def test_pyplot_logging():
     """
     Test the pyplot logging methods
     """
+    vl.test.begin("Pyplot logging")
+
     hash_val = (
         "4973de155aa77f2bd17c8f19a160166a"
         if platform == "darwin"

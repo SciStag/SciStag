@@ -42,4 +42,4 @@ def test_ascii_gray():
     vl.log(gray_image)
     vl.log(gray_image_center)
     vl.flush()
-    vl.test.assert_cp_diff("75408f0187e697a69d0e4f214be063fb")
+    vl.test.assert_cp_diff("c8dc82090942133b8c7265d0a580c98e")
