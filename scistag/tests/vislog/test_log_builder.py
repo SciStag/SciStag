@@ -86,7 +86,6 @@ def main(vl):
 def test_basic_building():
     """
     Tests the basic usage of cells and running the build process
-    :return:
     """
     local_called = False
 
@@ -158,6 +157,7 @@ def test_advanced_br():
     """
     Tests the linebreak method
     """
+    vl.test.begin("Line breaks")
     vl.test.checkpoint("lb.br")
     vl.br(1)
     vl.text("test")

@@ -634,7 +634,7 @@ class LogBuilder(LogBuilderBase):
         if isinstance(content, np.ndarray):
             self.np(content)
             return self
-        if isinstance(content, (str, int, float)):
+        if isinstance(content, (str, int, float, bool)):
             content = str(content)
         # dict or list
         if isinstance(content, (list, dict)):

@@ -16,6 +16,8 @@ def test_np_assert():
     Tests numpy assertion
     """
     # testing numpy assertion
+    vl.test.begin("Numpy assertion")
+
     np_array = np.ones((4, 4), dtype=float)
     with mock.patch("builtins.print"):
         vl.test.assert_np("test_np_array", np_array, dump=True)
@@ -70,10 +72,10 @@ def test_np_logging():
     vl.np(numpy.array([[1], [2], [3], [4], [5]]))
     vl.test.begin("Numpy matrix")
     vl.np(np.identity(3), max_digits=4)
-    vl.test.assert_cp_diff("a03eb8665545a7602236aa21f52a6095")
+    vl.test.assert_cp_diff("635ffe9714db0d621e9eac7eb3462dc8")
     vl.test.checkpoint("numpy.add")
     vl.add(np.identity(3))
-    vl.test.assert_cp_diff("8e7e44fadb1e4f12fc749e4c680abf5d")
+    vl.test.assert_cp_diff("8753e57f33bd2bc32c7e3e92dfc71f80")
 
     with pytest.raises(ValueError):
         vl.np(np.zeros((128, 128)))

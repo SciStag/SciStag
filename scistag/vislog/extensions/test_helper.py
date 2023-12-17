@@ -46,12 +46,12 @@ class TestHelper(BuilderExtension):
         "Data from the last checkpoints"
 
     def assert_figure(
-            self,
-            name: str,
-            figure: plt.Figure | plt.Axes | Figure | Plot,
-            hash_val: str,
-            alt: str | None = None,
-            stack_level: int = 2,
+        self,
+        name: str,
+        figure: plt.Figure | plt.Axes | Figure | Plot,
+        hash_val: str,
+        alt: str | None = None,
+        stack_level: int = 2,
     ):
         """
         Adds a figure to the log and verifies its content to a checksum
@@ -74,13 +74,13 @@ class TestHelper(BuilderExtension):
         self.hash_check_log(result_hash_val, hash_val, stack_level=stack_level + 1)
 
     def assert_image(
-            self,
-            name: str,
-            source: Image | Canvas,
-            hash_val: str,
-            scaling: float = 1.0,
-            alt: str | None = None,
-            stack_level: int = 2,
+        self,
+        name: str,
+        source: Image | Canvas,
+        hash_val: str,
+        scaling: float = 1.0,
+        alt: str | None = None,
+        stack_level: int = 2,
     ):
         """
         Assert an image object and verifies it's hash value matches the object's
@@ -102,11 +102,11 @@ class TestHelper(BuilderExtension):
         self.hash_check_log(result_hash_val, hash_val, stack_level=stack_level + 1)
 
     def log_and_hash_image(
-            self,
-            name: str,
-            data: Image | Canvas,
-            alt: str | None = None,
-            scaling: float = 1.0,
+        self,
+        name: str,
+        data: Image | Canvas,
+        alt: str | None = None,
+        scaling: float = 1.0,
     ) -> str:
         """
         Writes the image to disk for manual verification (if enabled in the
@@ -139,11 +139,11 @@ class TestHelper(BuilderExtension):
         self.hash_check_log(result_hash_val, hash_val)
 
     def assert_df(
-            self,
-            name: str,
-            df: pd.DataFrame,
-            dump: bool = False,
-            hash_val: str | None = None,
+        self,
+        name: str,
+        df: pd.DataFrame,
+        dump: bool = False,
+        hash_val: str | None = None,
     ):
         """
         Asserts the integrity of a dataframe
@@ -160,8 +160,9 @@ class TestHelper(BuilderExtension):
             df.to_csv(output, lineterminator="\n")
             result_hash_val = hashlib.md5(output.getvalue()).hexdigest()
             if result_hash_val != hash_val:
-                if self.replace_place_holder(assumed=hash_val, new_hash=result_hash_val,
-                                             stack_level=2):
+                if self.replace_place_holder(
+                    assumed=hash_val, new_hash=result_hash_val, stack_level=2
+                ):
                     return
                 self.page_session.write_to_disk()
                 raise AssertionError(
@@ -183,13 +184,13 @@ class TestHelper(BuilderExtension):
             raise AssertionError(f"Data mismatch between {name} and it's reference")
 
     def assert_np(
-            self,
-            name: str,
-            data: np.ndarray,
-            variance_abs: float | None = None,
-            dump: bool = False,
-            rounded: int = None,
-            hash_val: bool | None = None,
+        self,
+        name: str,
+        data: np.ndarray,
+        variance_abs: float | None = None,
+        dump: bool = False,
+        rounded: int = None,
+        hash_val: bool | None = None,
     ):
         """
         Asserts a nunpy array for validity and logs it
@@ -213,7 +214,7 @@ class TestHelper(BuilderExtension):
             platform dependent (slight) data discrepancies.
         """
         if rounded is not None:
-            data = (data * (10 ** rounded)).astype(np.int64)
+            data = (data * (10**rounded)).astype(np.int64)
         if hash_val is not None:
             if data.dtype == float:
                 raise NotImplementedError("Hashing not supported for float" "matrices")
@@ -247,11 +248,11 @@ class TestHelper(BuilderExtension):
         raise AssertionError(f"Data mismatch between {name} and it's reference")
 
     def assert_val(
-            self,
-            name: str,
-            data: dict | list | str | Image | Figure | pd.DataFrame,
-            hash_val: str | None = None,
-            stack_level: int = 2,
+        self,
+        name: str,
+        data: dict | list | str | Image | Figure | pd.DataFrame,
+        hash_val: str | None = None,
+        stack_level: int = 2,
     ):
         """
         Asserts a text for validity and logs it
@@ -322,11 +323,11 @@ class TestHelper(BuilderExtension):
         return None
 
     def hash_check_log(
-            self,
-            value: str,
-            assumed: str,
-            target: LogBuilder | None = None,
-            stack_level: int = 3,
+        self,
+        value: str,
+        assumed: str,
+        target: LogBuilder | None = None,
+        stack_level: int = 3,
     ):
         """
         Verifies a hash and adds the outcome of a hash check to the output
@@ -339,8 +340,7 @@ class TestHelper(BuilderExtension):
         replaced = None
         if value != assumed:
             replaced = self.replace_place_holder(
-                assumed=assumed,
-                new_hash=value, stack_level=stack_level
+                assumed=assumed, new_hash=value, stack_level=stack_level
             )
         if value != assumed and replaced is None:
             self.builder.log(
@@ -380,10 +380,10 @@ class TestHelper(BuilderExtension):
         lb = windows_linebreak if windows_linebreak in source_code else "\n"
         source_code = source_code.split(lb)
         place_holders = ['"123"', '"???"', "'123'", "'???'"]
-        if os.environ.get("SCISTAG_UPDATE_ALL_HASHES", "0") == "1":
+        if os.environ.get("SCISTAG_UPDATE_ALL_HASHES", "0") == "1":  # TODO Document
             if LOCKED_HASH_MARKER not in assumed:
                 # do not replace marker if it does contain the work "locked"
-                place_holders += [f"\"{assumed}\""]
+                place_holders += [f'"{assumed}"']
         code_change = None
         for off in range(3):
             eff_line = line + off
@@ -394,9 +394,9 @@ class TestHelper(BuilderExtension):
                 if cur_ph in source_line:
                     new_code = source_line.replace(cur_ph, f'"{new_hash}"')
                     code_change = (
-                            source_code[line].lstrip(" \t")
-                            + " => "
-                            + new_code.lstrip(" \t")
+                        source_code[line].lstrip(" \t")
+                        + " => "
+                        + new_code.lstrip(" \t")
                     )
                     source_code[eff_line] = new_code
                     break
@@ -422,8 +422,7 @@ class TestHelper(BuilderExtension):
         )
 
     def assert_cp_diff(
-            self, hash_val: str, ref: bool | None = None,
-            target: LogBuilder | None = None
+        self, hash_val: str, ref: bool | None = None, target: LogBuilder | None = None
     ):
         """
         Computes a hash value from the difference of the single output

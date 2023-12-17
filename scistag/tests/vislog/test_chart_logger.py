@@ -11,6 +11,7 @@ def test_direct_logging():
     """
     Tests direct logging of charts
     """
+    vl.test.begin("Mermaid charts")
     vl.test.checkpoint("Direct graph logging")
     vl.chart.mmd("graph TD\nTDX-->Y")
     path = FilePath.absolute_comb("data/mermaid_sample.mmd")

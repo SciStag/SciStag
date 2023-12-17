@@ -9,6 +9,7 @@ def test_list():
     """
     Tests the logging of lists
     """
+    vl.test.begin("List")
     vl.test.checkpoint("vislog.list")
     vl.collection.add(
         [1, 2, 3, "a", 123.4, ["A", "B", "C", {"adict": {"withADict": {"value": 123}}}]]
@@ -21,6 +22,7 @@ def test_dict():
     """
     Tests the logging of a dictionary
     """
+    vl.test.begin("Dictionary")
     vl.test.checkpoint("vislog.dict")
     new_dict = {
         "firstName": "John",
@@ -66,6 +68,7 @@ def test_complex_list():
     """
     Tests the logging of a nested dictionary
     """
+    vl.test.begin("Complex List")
     vl.test.checkpoint("vislog.nested_dict")
     vl.collection(nested_dict)
     vl.test.assert_cp_diff("bd4022ab1c483519fdb3a3b5a404e630")

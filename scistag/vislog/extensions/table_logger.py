@@ -492,8 +492,12 @@ class TableLogger(BuilderExtension):
             html_class=html_class,
         )
         with tc:
+            session = self.builder.page_session
+            # remove txt from output
+            using_txt = TXT in session.log_formats
+            if using_txt:
+                session.log_formats.remove(TXT)
             for row_index, row in enumerate(tc):
-                tabs = "\t"
                 for col_index, col in enumerate(row):
                     cur_data = data[row_index][col_index]
                     if isinstance(cur_data, (str, int, float, bool)):
@@ -514,7 +518,10 @@ class TableLogger(BuilderExtension):
                             self.page_session.write_html("</b>")
                     else:
                         self.builder.add(cur_data)
-                    tabs = tabs[0:-1]
+            if using_txt:
+                session.log_formats.add(TXT)
+                self._log_simple_text_table(data)
+        return self.builder
 
     def simple_table(
         self,
@@ -546,6 +553,22 @@ class TableLogger(BuilderExtension):
             else:
                 data = [[element] for element in data]
         # html
+        self._log_simple_html_table(data, index, br, header)
+        # txt
+        self._log_simple_text_table(data)
+        # markdown
+        self._log_simple_text_markdown_table(data)
+        return self.builder
+
+    def _log_simple_html_table(self, data, index, br, header) -> None:
+        """
+        This method logs a simple HTML table.
+
+        :param data: A 2D list containing the data to be logged.
+        :param index: If True, the first column is treated as a header.
+        :param br: If True, a line break is added after the table.
+        :param header: If True, the first row is treated as a header.
+        """
         code = '<table class="vl_log_table">\n'
         for row_index, row in enumerate(data):
             code += f"<tr>"
@@ -564,14 +587,13 @@ class TableLogger(BuilderExtension):
         if br:
             code += "<br>\n"
         self.page_session.write_html(code)
-        # txt
-        for row in data:
-            row_text = "| "
-            for index, col in enumerate(row):
-                col = str(col)
-                row_text += col + " | "
-            self.page_session.write_txt(row_text, targets="-md")
-        # markdown
+
+    def _log_simple_text_markdown_table(self, data) -> None:
+        """
+        This method logs a simple text table in markdown format.
+
+        :param data: A 2D list containing the data to be logged.
+        """
         for row_index, row in enumerate(data):
             row_text = "| "
             for index, col in enumerate(row):
@@ -580,4 +602,17 @@ class TableLogger(BuilderExtension):
             self.page_session.write_md(row_text)
             if row_index == 0:
                 self.page_session.write_md("|" + "---|" * len(row))
-        return self.builder
+
+    def _log_simple_text_table(self, data) -> None:
+        """
+        This method logs a simple text table.
+
+        :param data: A 2D list containing the data to be logged.
+        """
+        for row in data:
+            row_text = "| "
+            for index, col in enumerate(row):
+                col = str(col)
+                row_text += col + " | "
+            row_text += "\n"
+            self.page_session.write_txt(row_text, targets="-md")

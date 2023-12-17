@@ -83,7 +83,7 @@ def test_prefix():
     data_size = 0
     file_count = 0
     with FileSource.from_source(
-            connection_string + "/fonts/Roboto", search_mask="*.ttf"
+        connection_string + "/fonts/Roboto", search_mask="*.ttf"
     ) as font_source:
         for element in font_source:
             data_size += len(element.data)
@@ -214,17 +214,17 @@ def test_conn_string():
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/{prefix}"
     elements = AzureBlobPath.split_azure_url(full_url)
     assert (
-            elements[0] == conn_string
-            and elements[1] == container
-            and elements[2] == prefix
+        elements[0] == conn_string
+        and elements[1] == container
+        and elements[2] == prefix
     )
     # prefix and unnecessary slash
     full_url = f"{AZURE_PROTOCOL_HEADER}{conn_string}/{container}/{prefix}/"
     elements = AzureBlobPath.split_azure_url(full_url)
     assert (
-            elements[0] == conn_string
-            and elements[1] == container
-            and elements[2] == prefix
+        elements[0] == conn_string
+        and elements[1] == container
+        and elements[2] == prefix
     )
     # verify connection string parsing
     path = AzureBlobPath.from_string(conn_string)

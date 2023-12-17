@@ -53,13 +53,17 @@ def test_dataframe():
         df.loc["a", "one"] = "NewValue"
         vl.test.assert_df("test_dataframe", df)
     with pytest.raises(AssertionError):
-        vl.test.assert_df("test_dataframe", df, hash_val="locked719f4e4e220e146a50422ba1b60a1ba6")
+        vl.test.assert_df(
+            "test_dataframe", df, hash_val="locked719f4e4e220e146a50422ba1b60a1ba6"
+        )
 
     vl.test.checkpoint("pd.df.wohtml")
     vl.pd(df, "DataFrame w/o html")
 
 
 def test_add():
+    vl.test.begin("Pandas logging via add")
+
     vl.test.checkpoint("pd.df.nameless")
     vl.pd(df, name=None)
     vl.test.assert_cp_diff("ec571505698e024c483e97277bcb9c12")

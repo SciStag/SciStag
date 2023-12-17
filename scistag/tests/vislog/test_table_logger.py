@@ -75,7 +75,7 @@ def test_table_creation():
     vl.test.begin("Table logging direct")
     vl.test.checkpoint("log.table.direct")
     vl.table.show([[1, 2, 3], [4, 5, 6]], index=True)
-    vl.test.assert_cp_diff(hash_val="1dec37bae2493399ea6912e6e61829e8")
+    vl.test.assert_cp_diff(hash_val="89b9485ec73a099e524432af56a6281b")
 
     vl.test.checkpoint("log.table.add_col")
     for row_index, row in enumerate(vl.table.begin().iter_rows(3)):
@@ -90,6 +90,8 @@ def test_content_logging():
     """
     Tests the logging of content directly provided to the table function to the log
     """
+    vl.test.begin("Table logging with content")
+
     vl.test.checkpoint("table_logging")
     with vl.table.begin() as table:
         table.add_row(123)
@@ -105,7 +107,7 @@ def test_content_logging():
     vl.br()
     vl.table.simple_table([456.78, 910], orientation="ver", br=False, index=True)
     # single, vertical
-    vl.test.assert_cp_diff("4688939a028fb69263ce9e27c975d19a")
+    vl.test.assert_cp_diff("8a3d68d663478ec784918140857fcba8")
 
 
 def test_custom_class():

@@ -16,6 +16,8 @@ def test_image():
     """
     Tests image logging
     """
+    vl.test.begin("Image Logging")
+
     image_data = render_emoji(":deer:")
     image_data.convert("rgb", bg_fill=Colors.WHITE)
     # logging images
@@ -57,7 +59,9 @@ def test_image():
         "assert_stag", image_data, hash_val="4e5e428357fcf315f25b148747d633db"
     )
     with pytest.raises(AssertionError):  # note this SHALL fail to test the assertion
-        vl.test.assert_val("assert_stag", image_data, hash_val="locked4e5e428357fcf315f25b148747d633db")
+        vl.test.assert_val(
+            "assert_stag", image_data, hash_val="locked4e5e428357fcf315f25b148747d633db"
+        )
     vl.test.checkpoint("image.log.scaled.nodownload")
     vl.sub_test("An image from the web scaled to 50%")
     vl.image(TestConstants.STAG_URL, "anotherStag_1", scaling=0.5, download=False)
