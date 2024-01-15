@@ -97,3 +97,4 @@ class OutputOptions(BaseModel):
         """
         Validates the options and checks assumed fields are configured correctly
         """
+        pass

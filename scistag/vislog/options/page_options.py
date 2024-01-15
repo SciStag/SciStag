@@ -22,7 +22,7 @@ class PageOptions(BaseModel):
     title: str = "SciStag - VisualLog"
     """The page's initial title"""
 
-    footer_promo = (
+    footer_promo: str = (
         f'<p style="text-align: center"><small style="color: gray">Built '
         f'with <a style="color: gray" href="https://github.com/scistag/scis'
         f'tag">SciStag v{scistag.common.__version__}</a></small></p>'
@@ -51,3 +51,4 @@ class PageOptions(BaseModel):
         """
         Validates the options and checks assumed fields are configured correctly
         """
+        pass

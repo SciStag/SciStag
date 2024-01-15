@@ -25,19 +25,19 @@ class AzureBlobPath(BaseModel):
     may contain the access key and path to the blob within the container.
     """
 
-    default_endpoints_protocol: Optional[str]
+    default_endpoints_protocol: Optional[str] = None
     "The protocol being used such as https"
-    account_name: Optional[str]
+    account_name: Optional[str] = None
     "The account name"
-    endpoint_suffix: Optional[str]
+    endpoint_suffix: Optional[str] = None
     "The endpoint suffix such as core.windows.net"
-    account_key: Optional[str]
+    account_key: Optional[str] = None
     "The account key, optional"
-    container_name: Optional[str]
+    container_name: Optional[str] = None
     "The container name, optional"
-    blob_name: Optional[str]
+    blob_name: Optional[str] = None
     "The blob name or search mask, optional"
-    sas_url: Optional[str]
+    sas_url: Optional[str] = None
     "The full SAS url if provided as SAS"
 
     @classmethod

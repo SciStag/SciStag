@@ -76,7 +76,7 @@ class BundleInfo(BaseModel):
     "The simple elements which can make use of direct key value storage"
     version: int = 1
     "The protocol version"
-    recursive = False
+    recursive: bool = False
     """
     Defines if the elements of the first level e.g. dictionaries and lists
     may contain further, bundled advanced types such as np.arrays.

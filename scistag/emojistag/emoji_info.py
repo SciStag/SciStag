@@ -24,19 +24,19 @@ class EmojiInfo(BaseModel):
     "The emoji's category, e.g. Animals & Nature"
     subcategory: str
     "The emoji's subcategory, e.g. animal-mammal"
-    markdownName: Optional[str]
+    markdownName: Optional[str] = None
     """
     If there is a GitHub markdown shortcut for the emoji it's provided here.
 
     Note that that EmojiStag and SciStag might not used the same definition
     version at all times but all common emojis should be available.
     """
-    countryCode: Optional[str]
+    countryCode: Optional[str] = None
     """
     If the emoji is a country flag it's two letter code, e.g. DE for Germany
     is provided here
     """
-    countryName: Optional[str]
+    countryName: Optional[str] = None
     """
     The full country name in English such as Germany
     """

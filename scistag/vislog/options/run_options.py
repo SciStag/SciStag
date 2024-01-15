@@ -4,11 +4,11 @@ Defines options for the VisualLog's run behavior
 
 from __future__ import annotations
 
-from typing import Union
+from typing import Union, Literal
 
 from pydantic import BaseModel
 
-from scistag.vislog.options.log_options import APP_MODES
+APP_MODES = Literal["browser", "cute"]
 
 
 class LogRunOptions(BaseModel):
@@ -56,7 +56,7 @@ class LogRunOptions(BaseModel):
     an explicit installation of pyside6 (or above)."""
 
     def setup(
-        self, app_mode: APP_MODES | None = None, refresh_time_s: float | None = None
+            self, app_mode: APP_MODES | None = None, refresh_time_s: float | None = None
     ):
         """
         Setups the startup behavior

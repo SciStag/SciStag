@@ -89,7 +89,7 @@ class FileListModel(BaseModel):
     Defines a list of files storable in a database
     """
 
-    user_version = 1
+    user_version: int = 1
     """
     The user definable version number. If the version of the stored data does
     not match the one passed, the list is considered being invalid
