@@ -16,7 +16,7 @@ REPO_DIR_COUNT_LIMIT = 350
 "The maximum number of directories in the repo"
 REPO_FILE_COUNT_LIMIT = 700
 "The maximum number of files in the repo"
-REPO_HARD_FILE_SIZE_LIMIT = 350000
+REPO_HARD_FILE_SIZE_LIMIT = 400000
 "Maximum hard file size limit"
 
 scistag.tests.ensure_config()

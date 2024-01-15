@@ -108,6 +108,10 @@ class TextTreeBuilderOptions:
     """
     Defines the text to be added after each identifier
     """
+    identifier_postfix_list: str = ":"
+    """
+    Defines the text to be added after each identifier
+    """
 
 
 class TextTree(TextTreeNode):
@@ -165,6 +169,7 @@ class TextTree(TextTreeNode):
         """
         id_pre = options.identifier_prefix
         id_post = options.identifier_postfix
+        id_post_list = options.identifier_postfix_list
         if isinstance(element, dict):
             for key, value in element.items():
                 if isinstance(value, list):
@@ -175,7 +180,7 @@ class TextTree(TextTreeNode):
                         continue
                 if isinstance(value, (dict, list)):
                     new_node = TextTreeNode(
-                        f"{id_pre}{key}{id_post}", parent=node, name=key
+                        f"{id_pre}{key}{id_post_list}", parent=node, name=key
                     )
                     cls._add_collection_to_tree(new_node, value, options=options)
                 else:

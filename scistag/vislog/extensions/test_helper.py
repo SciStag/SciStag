@@ -173,13 +173,13 @@ class TestHelper(BuilderExtension):
             return
         if dump:
             output = io.BytesIO()
-            df.to_parquet(output, engine="pyarrow")
+            df.to_pickle(output)
             self.save_ref(name, output.getvalue())
             print(f"Warning - Updating test reference of {name}")
         comp_data = self.load_ref(name)
         if comp_data is None:
             raise AssertionError(f"No reference data provided for {name}")
-        comp_df = pd.read_parquet(io.BytesIO(comp_data), engine="pyarrow")
+        comp_df = pd.read_pickle(io.BytesIO(comp_data))
         if not comp_df.equals(df):
             raise AssertionError(f"Data mismatch between {name} and it's reference")
 

@@ -38,6 +38,7 @@ class CollectionLogger(BuilderExtension):
         options = TextTreeBuilderOptions()
         options.identifier_prefix = "**"
         options.identifier_postfix = ": **"
+        options.identifier_postfix_list = ":**"
         dict_tree = str(TextTree.from_collection(data, options=options))
         self.builder.md(dict_tree, exclude_targets={"txt"})
         if self.builder.page_session.txt_export:

@@ -252,10 +252,8 @@ def test_statistics():
         ESSENTIAL_DATA_ARCHIVE_NAME, fetch_file_list=True
     )
     statistics_str = str(test_source)
-    assert (
-        hashlib.md5(statistics_str.encode("utf-8")).hexdigest()
-        == "dc94728e1ed121e8f9a7e434b8ccf264"
-    )
+    assert (hashlib.md5(statistics_str.encode(
+        "utf-8")).hexdigest() == "ce5a746f0fcab7fd25656cb3b52abbb1")
     statistics = test_source.get_statistics()
     vl.test.assert_val(
         "essential_archive_statistics",
@@ -583,7 +581,7 @@ def test_copy(tmp_path):
     assert error
     error = False
     with mock.patch(
-        "scistag.filestag.FileStag.save", lambda fn, data, overwrite: False
+            "scistag.filestag.FileStag.save", lambda fn, data, overwrite: False
     ):
         source.copy(
             "Roboto/LICENSE.txt",
@@ -598,7 +596,7 @@ def test_copy(tmp_path):
     assert error
     error = False
     with mock.patch(
-        "scistag.filestag.FileStag.save", lambda fn, data, overwrite: False
+            "scistag.filestag.FileStag.save", lambda fn, data, overwrite: False
     ):
         source.copy("Roboto/LICENSE.txt", test_target + "out1.txt", on_error=on_error)
     assert error

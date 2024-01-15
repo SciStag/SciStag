@@ -15,7 +15,7 @@ def test_list():
         [1, 2, 3, "a", 123.4, ["A", "B", "C", {"adict": {"withADict": {"value": 123}}}]]
     )
     vl.add([4, 5, 6])
-    vl.test.assert_cp_diff("ae0d68b457b295677f5b0b26bae3d87c")
+    vl.test.assert_cp_diff("6a5129ff7bdc3b2c44a5b8f1f111b86c")
 
 
 def test_dict():
@@ -71,4 +71,4 @@ def test_complex_list():
     vl.test.begin("Complex List")
     vl.test.checkpoint("vislog.nested_dict")
     vl.collection(nested_dict)
-    vl.test.assert_cp_diff("bd4022ab1c483519fdb3a3b5a404e630")
+    vl.test.assert_cp_diff("64a7d743e89b413aef60532c1e9e68d4")
