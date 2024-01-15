@@ -123,12 +123,12 @@ class VisualLog:
     """
 
     def __init__(
-        self,
-        options: Union["LogOptions", LOG_DEFAULT_OPTION_LITERALS, None] = None,
-        debug: bool = False,
-        auto_reload: LogBuilder | type | None = None,
-        fixed_session_id: str | None = None,
-        stack_level: int = 1,
+            self,
+            options: Union["LogOptions", LOG_DEFAULT_OPTION_LITERALS, None] = None,
+            debug: bool = False,
+            auto_reload: LogBuilder | type | None = None,
+            fixed_session_id: str | None = None,
+            stack_level: int = 1,
     ):
         """
         :param options: Defines the full set of options.
@@ -160,7 +160,8 @@ class VisualLog:
         if options is not None and isinstance(options, str):
             options = self.setup_options(options)
         self.options = (
-            self.setup_options("local") if options is None else options.model_copy(deep=True)
+            self.setup_options("local") if options is None else options.model_copy(
+                deep=True)
         )
         self.options.validate_options()
         # override session ID if one is provided
@@ -181,9 +182,9 @@ class VisualLog:
         self.options.output.target_dir = target_dir
         try:
             if (
-                self.options.output.clear_target_dir
-                and self.options.output.log_to_disk is not None
-                and self.options.output.log_to_disk
+                    self.options.output.clear_target_dir
+                    and self.options.output.log_to_disk is not None
+                    and self.options.output.log_to_disk
             ):
                 shutil.rmtree(self.options.output.target_dir)
         except FileNotFoundError:
@@ -291,7 +292,7 @@ class VisualLog:
             return self._terminated or self.default_builder.terminated
 
     def create_web_service(
-        self, support_flask: bool = False, url_prefix: str = ""
+            self, support_flask: bool = False, url_prefix: str = ""
     ) -> "WebStagService":
         """
         Creates a web service which provides (for example) a blueprint you
@@ -315,14 +316,14 @@ class VisualLog:
         return service
 
     def run_server(
-        self,
-        builder: BuilderTypes | None = None,
-        test: bool = False,
-        auto_reload=False,
-        show_urls: bool | None = None,
-        params: PARAMETER_TYPES = None,
-        _auto_reload_stag_level: 1 = 1,
-        **kwargs,
+            self,
+            builder: BuilderTypes | None = None,
+            test: bool = False,
+            auto_reload=False,
+            show_urls: bool | None = None,
+            params: PARAMETER_TYPES = None,
+            _auto_reload_stag_level: 1 = 1,
+            **kwargs,
     ) -> VisualLog:
         """
         Hosts the log as web service.
@@ -501,11 +502,11 @@ class VisualLog:
                 self.sleep()
 
     def run(
-        self,
-        builder: BuilderTypes = None,
-        params: PARAMETER_TYPES = None,
-        auto_reload: bool = False,
-        **kwargs,
+            self,
+            builder: BuilderTypes = None,
+            params: PARAMETER_TYPES = None,
+            auto_reload: bool = False,
+            **kwargs,
     ) -> LogBuilder:
         """
         Helper function to update the log via a callback function.
@@ -608,11 +609,11 @@ class VisualLog:
             self.default_page.write_to_disk()
 
     def prepare_builder(
-        self,
-        builder: BuilderTypes,
-        page_session: PageSession,
-        params: PARAMETER_TYPES,
-        kwargs: dict,
+            self,
+            builder: BuilderTypes,
+            page_session: PageSession,
+            params: PARAMETER_TYPES,
+            kwargs: dict,
     ):
         """
         Prepapres the builder to be used for this log
@@ -666,8 +667,8 @@ class VisualLog:
             if time.time() - real_log.default_page.last_page_request > wait_time:
                 webbrowser.open(url)
                 return
-        if len(self.options.run.app_mode) > 0:
-            if self.options.run.app_mode == "cute":
+        if len(self.options.run.app_mode) > 0:  # pragma: no-cover
+            if self.options.run.app_mode == "cute":  # pragma: no-cover
                 from scistag.cutestag import cute_available
 
                 if not cute_available():
@@ -688,7 +689,6 @@ class VisualLog:
                 bg_handler.terminate()  # kill bg thread
                 if self._testing:
                     return
-                # pragma: no-cover
                 if not self._testing:
                     exit(0)
             raise ValueError(f"Unknown application type: {self.options.run.app_mode}")
@@ -828,8 +828,8 @@ class VisualLog:
 
             auto_reload_cache = VisualLogAutoReloader.get_cache_backup()
             if (
-                auto_reload_cache is not None
-                and auto_reload_cache.version != self.options.cache.version
+                    auto_reload_cache is not None
+                    and auto_reload_cache.version != self.options.cache.version
             ):
                 auto_reload_cache = None
         self._cache = (
@@ -895,9 +895,9 @@ class VisualLog:
 
     @staticmethod
     def setup_options(
-        defaults: LOG_DEFAULT_OPTION_LITERALS | None = None,
-        title: str | None = None,
-        index_name: str | None = None,
+            defaults: LOG_DEFAULT_OPTION_LITERALS | None = None,
+            title: str | None = None,
+            index_name: str | None = None,
     ) -> "LogOptions":
         """
         Returns the standard option set

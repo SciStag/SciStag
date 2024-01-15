@@ -1,7 +1,7 @@
 import pytest
 
 from . import vl
-from scistag.imagestag import Canvas, Colors, HTextAlignment, VTextAlignment
+from scistag.imagestag import Canvas, Colors, HTextAlignment, VTextAlignment, Font
 from ...imagestag.anchor2d import Anchor2D
 from . import skip_imagestag
 
@@ -167,3 +167,26 @@ def test_font_bounding():
     vl.test.assert_image(
         "canvas_text", canvas, hash_val="29f469094776ef15d7176f9e846dd023"
     )
+
+
+def test_invalid_font():
+    with pytest.raises(NotImplementedError):
+        font = Font(source="", framework="xyz", size=3)
+
+
+def test_h_alignment():
+    canvas = Canvas(size=(256, 256))
+    font = canvas.get_default_font()
+    area = font.get_covered_area("Hello World!", h_align="left")
+    assert 125 < area.width() < 135
+    assert 20 < area.height() < 25
+    area = font.get_covered_area("Hello World!", h_align="left", v_align="center")
+    assert 125 < area.width() < 135
+    assert area.pos.y < 0
+    assert area.lr.y < 13
+    area = font.get_covered_area("Hello World!", h_align="right")
+    assert 125 < area.width() < 135
+    assert 20 < area.height() < 25
+    area = font.get_covered_area("Hello World!", h_align="center")
+    assert 125 < area.width() < 135
+    assert 20 < area.height() < 25
