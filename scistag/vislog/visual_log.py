@@ -160,7 +160,7 @@ class VisualLog:
         if options is not None and isinstance(options, str):
             options = self.setup_options(options)
         self.options = (
-            self.setup_options("local") if options is None else options.copy(deep=True)
+            self.setup_options("local") if options is None else options.model_copy(deep=True)
         )
         self.options.validate_options()
         # override session ID if one is provided

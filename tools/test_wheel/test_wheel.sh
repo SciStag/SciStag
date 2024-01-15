@@ -6,7 +6,7 @@ echo "Moving to project root ${SCRIPT_DIR}..."
 cd $SCRIPT_DIR
 echo "Testing wheel installation and unit tests..."
 poetry env remove --all
-poetry env use python3.9
+poetry env use python3.10
 poetry lock
 poetry install --sync
 source ./run_test.sh
