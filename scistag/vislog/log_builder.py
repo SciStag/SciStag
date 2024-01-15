@@ -216,7 +216,7 @@ class LogBuilder(LogBuilderBase):
 """
         from scistag.vislog.extensions.service_extension import LogServiceExtension
 
-        self.options: LogOptions = log.options.copy(deep=True)
+        self.options: LogOptions = log.options.model_copy(deep=True)
         """
         Defines the builder's options
         """
@@ -267,7 +267,7 @@ class LogBuilder(LogBuilderBase):
         self.params = params if params is not None else {}
         """Defines the current set of parameters"""
         if isinstance(self.params, dict) and self.params_class is not None:
-            self.params = self.params_class.parse_obj(self.params)
+            self.params = self.params_class.model_validate(self.params)
         self.nested = nested
         """
         Defines if this builder object is nested within another log and shall not
@@ -580,7 +580,7 @@ class LogBuilder(LogBuilderBase):
 
         if isinstance(content, type):  # insert another log into this log
             if LogBuilder in content.__bases__:
-                options = self.options.copy(deep=True)
+                options = self.options.model_copy(deep=True)
                 options.configure_sub_log()
                 details = {}
                 share_session_id = share is not None and share == "sessionId"

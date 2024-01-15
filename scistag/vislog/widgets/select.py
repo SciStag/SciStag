@@ -78,7 +78,7 @@ class LSelect(LValueWidget):
 
         def setup(element):
             if isinstance(element, dict):
-                return self.Element.parse_obj(element)
+                return self.Element.model_validate(element)
             elif isinstance(element, str):
                 return self.Element(text=element)
             if isinstance(element, tuple):

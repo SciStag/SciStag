@@ -2,22 +2,20 @@
 Defines the configuration options for VisualLog and associated classes
 """
 from __future__ import annotations
-from typing import Literal
+from typing import Literal, Union
+from pydantic import BaseModel, Field
+
 
 from scistag.vislog.options.cache_options import CacheOptions
 from scistag.vislog.options.debug_options import LogDebugOptions
 from scistag.vislog.options.extension_options import ExtensionOptions
 from scistag.vislog.options.format_options import FormatOptions
 from scistag.vislog.options.page_options import PageOptions
-
-from pydantic import BaseModel, Field
-
-APP_MODES = Literal["browser", "cute"]
-
 from scistag.vislog.options.style_options import LogStyleOptions
-from scistag.vislog.options.run_options import LogRunOptions
+from scistag.vislog.options.run_options import LogRunOptions, APP_MODES
 from scistag.vislog.options.log_server_options import LogServerOptions
 from scistag.vislog.options.output_options import OutputOptions
+from scistag.imagestag import Size2DTypes, Size2D
 
 LOG_DEFAULT_OPTION_LITERALS = Literal[
     "server", "local", "disk", "console", "disk&console"
@@ -113,3 +111,5 @@ class LogOptions(BaseModel):
         self.output.log_to_stdout = False
         self.server.host_name = ""
         self.server.port = 0
+
+LogOptions.model_rebuild()

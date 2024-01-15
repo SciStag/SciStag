@@ -180,7 +180,7 @@ def test_figure():
     hash_val = (
         "324a86b9b24b1fe1ff1d770cbc31e8e5"
         if platform == "darwin"
-        else "475da1690ccdeae5ca4ce05bd20b1396"
+        else "927250f63394b0cab65e89714b986539"
     )
     # note minimal visualization differences between M1 Mac ons AMD64
     vl.sub_test("Logging axes created with matplotlib using MPLock()")

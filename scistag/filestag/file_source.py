@@ -89,7 +89,7 @@ class FileListModel(BaseModel):
     Defines a list of files storable in a database
     """
 
-    user_version = 1
+    user_version: int = 1
     """
     The user definable version number. If the version of the stored data does
     not match the one passed, the list is considered being invalid
@@ -408,7 +408,7 @@ class FileSource:
 
         :return: The file list
         """
-        file_list = [entry.dict() for entry in self._file_list]
+        file_list = [entry.model_dump() for entry in self._file_list]
         import pandas as pd
 
         return pd.DataFrame(file_list)
@@ -453,7 +453,7 @@ class FileSource:
         key_list = df.columns.to_list()
         self.update_file_list(
             [
-                FileListEntry.parse_obj(dict(zip(key_list, cur_element)))
+                FileListEntry.model_validate(dict(zip(key_list, cur_element)))
                 for cur_element in df.itertuples(index=False, name=None)
             ],
             may_sort=False,

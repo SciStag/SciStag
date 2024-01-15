@@ -280,7 +280,7 @@ class EmojiDb:
         upper_cased = [element.upper() for element in sequence]
         combined = "_".join(upper_cased)
         if combined in main_db:
-            return EmojiInfo.parse_obj(main_db[combined])
+            return EmojiInfo.model_validate(main_db[combined])
         return None
 
     @classmethod
@@ -326,14 +326,14 @@ class EmojiDb:
         main_dict = cls._get_main_dict()
         if subcategory is not None:
             filtered_list = [
-                EmojiInfo.parse_obj(element)
+                EmojiInfo.model_validate(element)
                 for element in main_dict.values()
                 if element["category"] == category
                 and element["subcategory"] == subcategory
             ]
         else:
             filtered_list = [
-                EmojiInfo.parse_obj(element)
+                EmojiInfo.model_validate(element)
                 for element in main_dict.values()
                 if element["category"] == category
             ]
@@ -356,13 +356,13 @@ class EmojiDb:
         main_dict = cls._get_main_dict()
         if md:
             result = [
-                EmojiInfo.parse_obj(element)
+                EmojiInfo.model_validate(element)
                 for element in main_dict.values()
                 if fnmatch(element.get("markdownName", ""), name_mask)
             ]
         else:
             result = [
-                EmojiInfo.parse_obj(element)
+                EmojiInfo.model_validate(element)
                 for element in main_dict.values()
                 if fnmatch(element["name"], name_mask)
             ]

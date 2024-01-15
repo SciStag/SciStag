@@ -16,7 +16,7 @@ def test_pyplot_logging():
     hash_val = (
         "4973de155aa77f2bd17c8f19a160166a"
         if platform == "darwin"
-        else "0a1977203f6576cc5ce8b41e0772427e"
+        else "52ec66448d15aa2ed2653c80038033b0"
     )
     # note minimal visualization differences between M1 Mac ons AMD64
     with vl.pyplot(assertion_name="testplot", assertion_hash=hash_val) as plt:

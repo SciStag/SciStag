@@ -61,7 +61,7 @@ class TableOptions(BaseModel):
         """
         Returns a copy of this option set
         """
-        copy = self.copy(deep=True)
+        copy = self.model_copy(deep=True)
         return copy
 
     def validate_options(self):

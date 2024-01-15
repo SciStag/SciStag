@@ -8,10 +8,6 @@ import time
 import re
 from scistag.datastag.data_stag_connection import DataStagConnection
 
-if TYPE_CHECKING:
-    from scistag.slidestag.slide_application import SlideApp
-
-
 class SessionConfig(BaseModel):
     """
     The base class of a session configuration
@@ -19,8 +15,6 @@ class SessionConfig(BaseModel):
 
     session_id: str
     "Defines the session's ID"
-    app: Union["SlideApp", None] = None
-    "Defines the application class to be used"
 
 
 class Session:
@@ -41,7 +35,7 @@ class Session:
         Set to true when the app is going to be destroyed and should not be used
         anymore
         """
-        self.app: SlideApp | None = config.app
+        self.app = None
         self.session_id = config.session_id
         "The unique session identifier"
         self.guest_id = None

@@ -76,7 +76,7 @@ class BundleInfo(BaseModel):
     "The simple elements which can make use of direct key value storage"
     version: int = 1
     "The protocol version"
-    recursive = False
+    recursive: bool = False
     """
     Defines if the elements of the first level e.g. dictionaries and lists
     may contain further, bundled advanced types such as np.arrays.
@@ -207,7 +207,7 @@ class Bundle:
                 adv_elements=advanced,
             )
             mem_zip.writestr(
-                BUNDLE_INFO_NAME, json.dumps(bundle_info.json()).encode("utf-8")
+                BUNDLE_INFO_NAME, json.dumps(bundle_info.model_dump_json()).encode("utf-8")
             )
         return mem_zip.to_bytes()
 
@@ -228,7 +228,7 @@ class Bundle:
                 raise AssertionError("Could not find bundle info")
             data = mem_zip.read(BUNDLE_INFO_NAME).decode("utf-8")
             data = json.loads(data)
-            bundle_info: BundleInfo = BundleInfo.parse_raw(data)
+            bundle_info: BundleInfo = BundleInfo.model_validate_json(data)
             result = {}
             # reconstruct all objects
             result_elements = []
